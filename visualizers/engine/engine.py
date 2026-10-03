@@ -15,8 +15,14 @@ import os
 import time
 from pathlib import Path
 
+import ctypes
 import numpy as np
 
+os.environ.setdefault("PYOPENGL_PLATFORM", "egl")
+import OpenGL
+OpenGL.ERROR_CHECKING = False
+OpenGL.CONTEXT_CHECKER = None
+OpenGL.STORE_POINTERS = False
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 import pygame  # noqa: E402
 from OpenGL import GL  # noqa: E402
@@ -52,6 +58,21 @@ def create_window(settings: dict, viz_cfg: dict, title: str):
         log.warning("GL 3.1 Core nicht verfügbar (%s), versuche Standard-Kontext", exc)
         pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, 0)
         screen = pygame.display.set_mode(size, flags)
+    # PyOpenGL context-tracking patch: auf Pi5/Wayland gibt GetCurrentContext() 0 zurück.
+    # contextdata.getContext patchen, damit GL-Calls ohne GLX-Context-Tracking laufen.
+    from OpenGL import contextdata as _cd
+    _orig_gc = _cd.getContext
+    def _safe_gc(context=None):
+        if context is not None:
+            return context
+        try:
+            ctx = _orig_gc(context)
+            if ctx:
+                return ctx
+        except Exception:
+            pass
+        return id(screen)  # Dummy-Context-ID
+    _cd.getContext = _safe_gc
     pygame.display.set_caption(title)
     pygame.mouse.set_visible(False)
     log.info("SDL-Treiber %s, GL %s, GLSL %s, Renderer %s", pygame.display.get_driver(),
@@ -120,7 +141,7 @@ class Renderer:
         tri = np.array([-1, -1, 3, -1, -1, 3], dtype=np.float32)
         GL.glBufferData(GL.GL_ARRAY_BUFFER, tri.nbytes, tri, GL.GL_STATIC_DRAW)
         GL.glEnableVertexAttribArray(0)
-        GL.glVertexAttribPointer(0, 2, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+        GL.glVertexAttribPointer(0, 2, GL.GL_FLOAT, GL.GL_FALSE, 0, ctypes.c_void_p(0))
         # Audio-Textur 512x2 R8
         self.tex = GL.glGenTextures(1)
         GL.glBindTexture(GL.GL_TEXTURE_2D, self.tex)

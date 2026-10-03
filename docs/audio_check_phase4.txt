@@ -1,0 +1,37 @@
+
+== Backend ==
+pactl nicht verfügbar
+*		default.clock.rate = "48000"
+
+== PipeWire-Geräte (wpctl status) ==
+Audio
+ ├─ Devices:
+ │      48. Built-in Audio                      [alsa]
+ │      49. Built-in Audio                      [alsa]
+ │  
+ ├─ Sinks:
+ │  *   56. Dummy Output                        [vol: 1.00]
+ │  
+ ├─ Sources:
+ │  
+ ├─ Filters:
+ │  
+ └─ Streams:
+Video
+
+== ALSA-Geräte ==
+-- Aufnahme --
+**** List of CAPTURE Hardware Devices ****
+-- Wiedergabe --
+**** List of PLAYBACK Hardware Devices ****
+card 0: vc4hdmi0 [vc4-hdmi-0], device 0: MAI PCM i2s-hifi-0 [MAI PCM i2s-hifi-0]
+card 1: vc4hdmi1 [vc4-hdmi-1], device 0: MAI PCM i2s-hifi-0 [MAI PCM i2s-hifi-0]
+-- USB --
+(nur Hub/Tastatur/Maus)
+
+== pipewire-alsa (ALSA default -> PipeWire) ==
+installiert
+
+== Mikrofontest (3 s) ==
+Keine Aufnahmequelle in PipeWire. Mikrofon oder USB-Soundkarte anschließen, dann erneut prüfen.
+  (wpctl status zeigt dann unter Sources den neuen Eintrag)
