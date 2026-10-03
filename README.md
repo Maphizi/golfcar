@@ -3,7 +3,7 @@
 Fullscreen-Appliance: Retro-Gaming, drei GPU-Audio-Visualizer und der lokale
 Sprachassistent KITT. Bedienung über F1–F6, später über eine USB-HID-Buttonbox.
 
-Stand: **Phase 5** (Launcher, RetroPie als F1, Visualizer F2–F4, Spracherkennung whisper.cpp + Silero VAD).
+Stand: **Phase 6** (Launcher, RetroPie als F1, Visualizer F2–F4, Spracherkennung whisper.cpp + Silero VAD, llama.cpp mit Qwen als KITT-Gehirn).
 Phasenplan und Anforderungen: `docs/KITT_Masterprompt_V1_erweitert.md`.
 Hardware-Inventur: `docs/inventory_phase1.txt`.
 
@@ -52,7 +52,9 @@ Grundsätze:
 | `visualizers/engine/` | Audio-Capture, Analyse, GL-Engine |
 | `visualizers/shaders/<szene>/frag.glsl` | die drei Szenen, `common/vert.glsl` gemeinsam |
 | `kitt/stt/` | VAD, Listener, whisper.cpp-Client, Test-WAVs |
-| `kitt/llm/`, `kitt/tts/`, `kitt/personality/` | ab Phase 6–8 |
+| `kitt/llm/` | llama-server-Wrapper, Streaming-Client, Dialogzustand, Benchmark |
+| `kitt/personality/` | KITT-System-Prompt und Benchmark-Fragen |
+| `kitt/tts/` | ab Phase 7 |
 | `config/kitt.toml` | STT-, VAD-, LLM- und TTS-Einstellungen |
 | `models/` | Whisper-, VAD-, LLM-, TTS-Modelle (nicht im Repo) |
 | `vendor/` | whisper.cpp, llama.cpp (nicht im Repo) |
@@ -110,7 +112,9 @@ Alle Logs liegen in `logs/` (Pfad in `config/settings.toml`, kann auf ein tmpfs 
 
 - `stt.log` – STT-Werkzeug und Listener, `whisper-server.log` – Ausgabe des Servers
 
-Ab Phase 6 kommen `llm.log` und `tts.log` dazu.
+- `llm.log` – LLM-Werkzeug, `llama-server.log` – Ausgabe des Servers
+
+Ab Phase 7 kommt `tts.log` dazu.
 
 ## Fehlerdiagnose
 
@@ -139,6 +143,11 @@ Ab Phase 6 kommen `llm.log` und `tts.log` dazu.
   (`ss -ltnp | grep 8178`), Modell fehlt in `models/`, oder Build fehlt (`scripts/setup_phase5.sh`).
 - **VAD reagiert nicht / zu oft:** `scripts/stt_mic.sh` zeigt die Zustände. `start_threshold`
   (höher = unempfindlicher) und `end_silence_ms` (länger = weniger abgeschnittene Sätze) in `config/kitt.toml`.
+- **Sprachmodell: llama-server startet nicht oder antwortet Kauderwelsch:** `logs/llama-server.log`.
+  Port 8179 belegt, Modell fehlt, oder ein zu neues Modellformat für den Build
+  (`scripts/setup_phase6.sh` zieht llama.cpp nach und baut neu, wenn `vendor/llama.cpp/build` gelöscht wird).
+- **KITT antwortet zu lang oder mit Floskeln:** System-Prompt in `kitt/personality/system_prompt.txt`,
+  `max_tokens` und `temperature` in `config/kitt.toml`.
 - **Launcher hängt:** `scripts/kittctl state` und `pgrep -af launcher`. Ein zweiter
   Launcher übernimmt den Socket, also vorher den alten beenden.
 
@@ -268,6 +277,38 @@ transkribiert die Test-WAVs und schreibt Ladezeit, RAM, Latenz, Real-Time-Faktor
 
 **Live-Test:** `scripts/stt_mic.sh` hört über das Mikrofon, zeigt die Zustände `listening`/`idle`
 und gibt Transkripte mit Latenz aus. Einzelne Dateien: `.venv/bin/python -m kitt.stt --wav datei.wav`.
+
+## F5 – Sprachmodell (Phase 6)
+
+**Installation:** `scripts/setup_phase6.sh` baut [llama.cpp](https://github.com/ggml-org/llama.cpp)
+nach `vendor/llama.cpp` (CPU, NEON, ohne libcurl) und lädt die Kandidaten aus
+`config/kitt.toml` `[llm.bench].models` nach `models/`:
+
+| Datei | Quelle | Parameter |
+|---|---|---|
+| `qwen2.5-1.5b-instruct-q4_k_m.gguf` | huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF | 1,5 B |
+| `Qwen3.5-0.8B-Q4_K_M.gguf` | huggingface.co/unsloth/Qwen3.5-0.8B-GGUF | 0,8 B |
+| `Qwen3.5-2B-Q4_K_M.gguf` | huggingface.co/unsloth/Qwen3.5-2B-GGUF | 2 B |
+| `Qwen3.5-4B-Q4_K_M.gguf` | huggingface.co/unsloth/Qwen3.5-4B-GGUF | 4 B (Obergrenze) |
+
+Alle Q4_K_M. Qwen3/Qwen3.5 sind Thinking-Modelle, das Denken ist abgeschaltet
+(`--reasoning-budget 0`, `enable_thinking=false`), weil KITT sofort antworten soll.
+
+**Betrieb** (`kitt/llm/llama_client.py`): `llama-server` läuft dauerhaft auf 127.0.0.1:8179 mit
+geladenem Modell (OpenAI-kompatible API, `--jinja` für die Qwen-Chat-Templates). Der Client
+streamt Tokens, damit Phase 7 satzweise an die Sprachausgabe übergeben kann, und misst
+Time-to-first-token und Tokens/s. `Kitt` hält System-Prompt und die letzten `history_turns`
+Dialogrunden. Antwortlänge ist auf `max_tokens = 80` begrenzt.
+
+**Personality:** `kitt/personality/system_prompt.txt` (Charakter, Regeln, die drei Beispiele aus dem
+Master-Prompt als Few-Shot). Phase 8 verfeinert ihn anhand echter Dialoge.
+
+**Modellwahl:** `scripts/llm_bench.sh` lädt nacheinander alle Kandidaten, stellt die zehn Fragen aus
+`kitt/personality/bench_prompts.txt` jeweils ohne Vorgeschichte und schreibt nach
+`docs/llm_bench_phase6.md`: Ladezeit, RSS, TTFT, Tokens/s, Antwortzeit, Antworttext und
+automatisch erkannte Regelverstöße (mehr als 3 Sätze, Emoji, "Natürlich"/"Gerne", Listen,
+englische Antwort). Deutsche Sprachqualität und Persona bewertet man an den Texten. Das gewählte
+Modell kommt in `[llm].model`. Einzelfragen: `scripts/kitt_ask.sh "KITT, wie sieht's aus?"`.
 
 ## Noch offen
 
