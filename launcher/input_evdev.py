@@ -29,7 +29,7 @@ class EvdevInput(threading.Thread):
         super().__init__(name="evdev-input", daemon=True)
         self.queue = queue
         self.rescan_interval = rescan_interval
-        self._stop = threading.Event()
+        self._stop_event = threading.Event()
         self._devices: dict[str, evdev.InputDevice] = {}
         self.device_patterns: list[str] = keymap_cfg.get("devices", {}).get("include", ["*"])
         self.device_excludes: list[str] = keymap_cfg.get("devices", {}).get("exclude", [])
@@ -81,7 +81,7 @@ class EvdevInput(threading.Thread):
     # -- Loop ------------------------------------------------------------
     def run(self) -> None:
         last_scan = 0.0
-        while not self._stop.is_set():
+        while not self._stop_event.is_set():
             now = time.monotonic()
             if now - last_scan >= self.rescan_interval:
                 self._rescan()
@@ -113,4 +113,4 @@ class EvdevInput(threading.Thread):
             self.queue.put(action)
 
     def stop(self) -> None:
-        self._stop.set()
+        self._stop_event.set()

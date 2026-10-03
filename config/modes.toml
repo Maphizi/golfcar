@@ -10,10 +10,11 @@ stop_timeout = 2
 
 [modes.gaming]
 label = "RETRO GAMING"
-# Phase 3: wird auf EmulationStation umgestellt
-command = ["{python}", "-m", "launcher.placeholder", "F1  RETRO GAMING"]
-cwd = "{root}"
+command = ["{root}/scripts/run_gaming.sh"]
+cwd = "{home}"
 stop_timeout = 8
+# Backend siehe scripts/run_gaming.sh: "xwayland" (Standard) oder "wayland"
+env = { KITT_GAMING_BACKEND = "xwayland" }
 
 [modes.viz_psychedelic]
 label = "PSYCHEDELIC"

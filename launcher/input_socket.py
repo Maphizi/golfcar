@@ -22,7 +22,7 @@ class SocketInput(threading.Thread):
         super().__init__(name="socket-input", daemon=True)
         self.path = path
         self.queue = queue
-        self._stop = threading.Event()
+        self._stop_event = threading.Event()
         if self.path.exists():
             self.path.unlink()
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
@@ -32,7 +32,7 @@ class SocketInput(threading.Thread):
         log.info("Steuer-Socket: %s", self.path)
 
     def run(self) -> None:
-        while not self._stop.is_set():
+        while not self._stop_event.is_set():
             try:
                 data = self.sock.recv(256)
             except socket.timeout:
@@ -48,7 +48,7 @@ class SocketInput(threading.Thread):
             self.queue.put(action)
 
     def stop(self) -> None:
-        self._stop.set()
+        self._stop_event.set()
         try:
             self.sock.close()
         finally:

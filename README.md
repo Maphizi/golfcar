@@ -3,7 +3,7 @@
 Fullscreen-Appliance: Retro-Gaming, drei GPU-Audio-Visualizer und der lokale
 Sprachassistent KITT. Bedienung über F1–F6, später über eine USB-HID-Buttonbox.
 
-Stand: **Phase 2** (Projektstruktur, Launcher, F1–F6-Grundfunktion mit Platzhaltern).
+Stand: **Phase 3** (Launcher fertig, RetroPie als F1-Modus).
 Phasenplan und Anforderungen: `docs/KITT_Masterprompt_V1_erweitert.md`.
 Hardware-Inventur: `docs/inventory_phase1.txt`.
 
@@ -98,6 +98,7 @@ Alle Logs liegen in `logs/` (Pfad in `config/settings.toml`, kann auf ein tmpfs 
 
 - `launcher.log` – Kern: Moduswechsel, Exit-Codes, alle 60 s Temperatur/Last/RAM
 - `home.log`, `gaming.log`, `viz_*.log`, `kitt.log` – stdout/stderr des jeweiligen Modus
+- `retropie/<modul>.log` – Build-Logs der RetroPie-Installation, EmulationStation schreibt zusätzlich `~/.emulationstation/es_log.txt`
 
 Ab Phase 4/5 kommen `audio.log`, `stt.log`, `llm.log`, `tts.log` dazu.
 
@@ -112,6 +113,11 @@ Ab Phase 4/5 kommen `audio.log`, `stt.log`, `llm.log`, `tts.log` dazu.
 - **Tasten ohne Hardware testen:** `sudo .venv/bin/python scripts/inject_key.py KEY_F3`
   (virtuelles Gerät über uinput).
 - **Modus startet nicht:** `logs/<modus>.log` ansehen, der Kern fällt auf Home zurück.
+- **EmulationStation startet nicht:** `logs/gaming.log` und `~/.emulationstation/es_log.txt`.
+  Steht dort ein SDL-Video-Fehler, in `run_gaming.sh` das Backend prüfen (`SDL_VIDEODRIVER=x11`
+  braucht Xwayland, `DISPLAY=:0`).
+- **Home-Screen nach RetroPie-Installation schwarz:** Das RetroPie-SDL hat evtl. keinen
+  Wayland-Treiber. `sdl_videodriver = "x11"` in `config/settings.toml` setzen.
 - **Launcher hängt:** `scripts/kittctl state` und `pgrep -af launcher`. Ein zweiter
   Launcher übernimmt den Socket, also vorher den alten beenden.
 
@@ -126,6 +132,48 @@ Die meisten Buttonboxen melden sich als USB-Tastatur. Dann gibt es zwei Wege:
 
 Eine Box, die kein Tastaturgerät ist (z. B. serielle Taster), schickt die Action-Namen an
 den Unix-Socket `$XDG_RUNTIME_DIR/kitt-launcher.sock` (siehe `launcher/input_socket.py`).
+
+## F1 – Retro-Gaming (Phase 3)
+
+**Installation:** `scripts/setup_phase3.sh` klont [RetroPie-Setup](https://github.com/RetroPie/RetroPie-Setup)
+nach `~/RetroPie-Setup` und installiert über `retropie_packages.sh` genau diese Module:
+
+| Modul | Zweck |
+|---|---|
+| `sdl2` | SDL 2.32.10 (RetroPie-Build mit KMS/X11), ersetzt das System-SDL und wird per apt-hold festgehalten |
+| `retroarch` | libretro-Frontend |
+| `emulationstation`, `retropiemenu`, `runcommand` | Menü, RetroPie-Konfigurationssystem, Start-Wrapper |
+| `lr-fceumm` | NES |
+| `lr-snes9x` | SNES |
+| `lr-genesis-plus-gx` | Mega Drive / Genesis |
+| `lr-gambatte` | Game Boy, Game Boy Color |
+| `lr-mgba` | Game Boy Advance |
+| `lr-pcsx-rearmed` | PlayStation 1 (BIOS nach `~/RetroPie/BIOS`) |
+
+Auf Debian 13 gibt es keine RetroPie-Binärpakete, alle Module werden aus dem Quellcode gebaut
+(45 bis 90 Minuten). Das Skript ist idempotent, fertige Module werden übersprungen
+(`logs/retropie/<modul>.done`). Nicht installiert wird `basic_install` von RetroPie, das wären
+Dutzende Emulatoren.
+
+**Anpassungen** (`scripts/configure_gaming.sh`, idempotent):
+
+- ROM-Ordner `~/RetroPie/roms/{nes,snes,megadrive,gb,gbc,gba,psx}`. Eigene ROMs dort ablegen,
+  danach in EmulationStation Start → Quit → Restart EmulationStation oder F6 und wieder F1.
+- Tastatur ist in EmulationStation vorkonfiguriert (`config/es_input.cfg`): Pfeile, X=A, Z=B,
+  S=X, A=Y, Q=L, W=R, Enter=Start, RShift=Select. Ein Gamepad wird in EmulationStation über
+  Start → Configure Input eingerichtet, RetroPie übernimmt die Belegung dann für RetroArch.
+- RetroArch-Hotkeys auf F2, F4, F6 sind abgeschaltet, diese Tasten gehören dem Launcher.
+  F1 öffnet weiterhin das RetroArch-Menü, ESC beendet das laufende Spiel.
+- Audio: RetroArch und SDL sprechen ALSA, `pipewire-alsa` leitet das an PipeWire weiter.
+
+**Display-Backend:** RetroPies RetroArch wird ohne Wayland-Support gebaut. Der Gaming-Modus
+(`scripts/run_gaming.sh`) läuft deshalb über Xwayland in der labwc-Session
+(`KITT_GAMING_BACKEND=xwayland` in `config/modes.toml`). Falls das Probleme macht (Tearing,
+kein Vollbild, Eingabe), ist der Fallback die X11-Session von Raspberry Pi OS:
+`sudo raspi-config nonint do_wayland W1` und Neustart. Der Launcher läuft dort unverändert.
+
+**Verlassen:** EmulationStation Start → Quit → Quit EmulationStation beendet den Prozess, der
+Launcher zeigt wieder Home. F6 beendet den Gaming-Modus jederzeit hart (SIGTERM, nach 8 s SIGKILL).
 
 ## Noch offen
 
