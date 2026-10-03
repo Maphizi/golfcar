@@ -3,7 +3,7 @@
 Fullscreen-Appliance: Retro-Gaming, drei GPU-Audio-Visualizer und der lokale
 Sprachassistent KITT. Bedienung über F1–F6, später über eine USB-HID-Buttonbox.
 
-Stand: **Phase 4** (Launcher, RetroPie als F1, gemeinsame Audio-Analyse und drei GL-Visualizer als F2–F4).
+Stand: **Phase 5** (Launcher, RetroPie als F1, Visualizer F2–F4, Spracherkennung whisper.cpp + Silero VAD).
 Phasenplan und Anforderungen: `docs/KITT_Masterprompt_V1_erweitert.md`.
 Hardware-Inventur: `docs/inventory_phase1.txt`.
 
@@ -51,7 +51,11 @@ Grundsätze:
 | `config/visualizer.toml` | FPS, Render-Skalierung, Hot-Reload der Shader |
 | `visualizers/engine/` | Audio-Capture, Analyse, GL-Engine |
 | `visualizers/shaders/<szene>/frag.glsl` | die drei Szenen, `common/vert.glsl` gemeinsam |
-| `kitt/` | STT, LLM, TTS, Personality (ab Phase 5) |
+| `kitt/stt/` | VAD, Listener, whisper.cpp-Client, Test-WAVs |
+| `kitt/llm/`, `kitt/tts/`, `kitt/personality/` | ab Phase 6–8 |
+| `config/kitt.toml` | STT-, VAD-, LLM- und TTS-Einstellungen |
+| `models/` | Whisper-, VAD-, LLM-, TTS-Modelle (nicht im Repo) |
+| `vendor/` | whisper.cpp, llama.cpp (nicht im Repo) |
 | `scripts/` | Setup, Start, Steuerung, Inventur, Autostart |
 | `systemd/` | User-Unit für den Autostart |
 | `logs/` | Logs (nicht im Repo) |
@@ -104,7 +108,9 @@ Alle Logs liegen in `logs/` (Pfad in `config/settings.toml`, kann auf ein tmpfs 
 
 - `viz_<szene>.log` enthält alle 10 s FPS und die Audio-Pegel, dazu das Capture-Backend
 
-Ab Phase 5 kommen `stt.log`, `llm.log`, `tts.log` dazu.
+- `stt.log` – STT-Werkzeug und Listener, `whisper-server.log` – Ausgabe des Servers
+
+Ab Phase 6 kommen `llm.log` und `tts.log` dazu.
 
 ## Fehlerdiagnose
 
@@ -126,6 +132,13 @@ Ab Phase 5 kommen `stt.log`, `llm.log`, `tts.log` dazu.
   "Keine Audioquelle". `scripts/audio_check.sh` ausführen, Quelle in `config/audio.toml` eintragen.
   Steht dort `(Stille)` trotz Musik, `noise_gate` senken oder Mikrofonpegel erhöhen.
 - **Visualizer ruckelt:** `render_scale` der Szene in `config/visualizer.toml` senken.
+- **Visualizer: GL-Fehler oder schwarzes Bild unter Wayland:** PyOpenGL verfolgt den GL-Kontext über
+  GLX und findet unter SDL/Wayland keinen. `engine.py` setzt deshalb `PYOPENGL_PLATFORM=egl`,
+  schaltet die Fehlerprüfung ab und patcht die Kontextsuche (Abschnitt "contextdata").
+- **Spracherkennung: whisper-server startet nicht:** `logs/whisper-server.log`. Port 8178 belegt
+  (`ss -ltnp | grep 8178`), Modell fehlt in `models/`, oder Build fehlt (`scripts/setup_phase5.sh`).
+- **VAD reagiert nicht / zu oft:** `scripts/stt_mic.sh` zeigt die Zustände. `start_threshold`
+  (höher = unempfindlicher) und `end_silence_ms` (länger = weniger abgeschnittene Sätze) in `config/kitt.toml`.
 - **Launcher hängt:** `scripts/kittctl state` und `pgrep -af launcher`. Ein zweiter
   Launcher übernimmt den Socket, also vorher den alten beenden.
 
@@ -224,6 +237,37 @@ Shader laufen und steht im Log.
 Signal (Kick 120 BPM, Melodie, Hi-Hats, alle 24 s vier Sekunden Pause) ein und legt nach 12 s
 einen Screenshot in `docs/` ab. `--windowed` öffnet ein Fenster statt Vollbild. Standalone
 beendet ESC die Szene, unter dem Launcher übernimmt F6.
+
+## F5 – Spracherkennung (Phase 5)
+
+**Installation:** `scripts/setup_phase5.sh` baut [whisper.cpp](https://github.com/ggml-org/whisper.cpp)
+nach `vendor/whisper.cpp` (CPU, NEON), lädt die Modelle nach `models/` und erzeugt deutsche
+Test-WAVs mit espeak-ng in `kitt/stt/testdata/`.
+
+| Datei | Quelle | Zweck |
+|---|---|---|
+| `ggml-base.bin` (148 MB) | huggingface.co/ggerganov/whisper.cpp | Whisper base, multilingual |
+| `ggml-small-q5_1.bin` (190 MB) | huggingface.co/ggerganov/whisper.cpp | Whisper small, 5-bit quantisiert |
+| `silero_vad.onnx` (2,3 MB) | github.com/snakers4/silero-vad (MIT) | Silero VAD v5 |
+
+**Pipeline** (`kitt/stt/`): Der Audiostrom kommt mit 48 kHz vom gemeinsamen Capture
+(`visualizers/engine/audio_capture.py`, Subscriber-Callback), wird auf 16 kHz dezimiert und in
+32-ms-Chunks durch Silero VAD geschickt (`vad.py`, onnxruntime, ~0,2 ms je Chunk). Der
+`Listener` schneidet Äußerungen: Sprache ab `start_threshold` für `start_ms`, Ende nach
+`end_silence_ms` Stille, mit `pre_roll_ms` Vorlauf und einer Obergrenze `max_speech_ms`. Ohne
+onnxruntime fällt die VAD auf eine energiebasierte Variante zurück.
+
+`whisper-server` läuft dauerhaft mit geladenem Modell auf 127.0.0.1:8178 (kein Modell-Laden pro
+Anfrage). `whisper_client.py` startet ihn und schickt Äußerungen als WAV per HTTP. Decoding ist
+greedy (`beam_size = 1`, `best_of = 1`), `audio_ctx = 768` verkürzt die Encoder-Zeit für kurze
+Äußerungen. Alle Parameter stehen in `config/kitt.toml` unter `[stt]` und `[vad]`.
+
+**Modellwahl:** `scripts/stt_bench.sh` lädt nacheinander alle Modelle aus `[stt.bench].models`,
+transkribiert die Test-WAVs und schreibt Ladezeit, RAM, Latenz, Real-Time-Faktor und Text nach
+`docs/stt_bench_phase5.md`. Das gewählte Modell kommt in `[stt].model`.
+
+**Live-Test:** `scripts/stt_mic.sh` hört über das Mikrofon, zeigt die Zustände `listening`/`idle`
+und gibt Transkripte mit Latenz aus. Einzelne Dateien: `.venv/bin/python -m kitt.stt --wav datei.wav`.
 
 ## Noch offen
 

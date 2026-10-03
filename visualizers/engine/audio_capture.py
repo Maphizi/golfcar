@@ -33,6 +33,7 @@ class AudioCapture(threading.Thread):
         self.proc: subprocess.Popen | None = None
         self.active_backend = "none"
         self.blocks = 0
+        self.subscribers: list = []     # Callbacks, die jeden Block (float32, 48 kHz) bekommen
         self._stop_event = threading.Event()
 
     # -- Öffentlich ------------------------------------------------------
@@ -63,6 +64,11 @@ class AudioCapture(threading.Thread):
                 self.ring[:n - k] = samples[k:]
             self.pos = end % len(self.ring)
             self.blocks += 1
+        for cb in self.subscribers:
+            try:
+                cb(samples)
+            except Exception:
+                log.exception("Audio-Subscriber")
 
     def _commands(self) -> list[tuple[str, list[str]]]:
         cmds = []

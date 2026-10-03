@@ -18,11 +18,23 @@ echo "  ~/RetroPie/roms/{nes,snes,megadrive,gb,gbc,gba,psx}  (PS1 braucht zusät
 
 echo "== EmulationStation: Tastatur vorkonfigurieren =="
 mkdir -p "$ES_DIR"
+# RetroPie legt beim ES-Install bereits eine es_input.cfg nur mit der onfinish-Action an.
+# Fehlt darin die Tastatur, wird unser <inputConfig type="keyboard"> vor </inputList> eingefügt.
 if [ ! -f "$ES_DIR/es_input.cfg" ]; then
   cp "$ROOT/config/es_input.cfg" "$ES_DIR/es_input.cfg"
   echo "  es_input.cfg angelegt (Tastatur: Pfeile, X=A, Z=B, S=X, A=Y, Enter=Start, RShift=Select)"
+elif grep -q 'type="keyboard"' "$ES_DIR/es_input.cfg"; then
+  echo "  es_input.cfg enthält bereits eine Tastatur, nicht angefasst"
 else
-  echo "  es_input.cfg existiert, nicht angefasst"
+  python3 - "$ES_DIR/es_input.cfg" "$ROOT/config/es_input.cfg" <<'PY'
+import re, sys
+dst, src = sys.argv[1], sys.argv[2]
+cur = open(dst).read()
+kb = re.search(r'<inputConfig type="keyboard".*?</inputConfig>', open(src).read(), re.S).group(0)
+cur = cur.replace("</inputList>", "  " + kb + "\n</inputList>")
+open(dst, "w").write(cur)
+PY
+  echo "  Tastatur in bestehende es_input.cfg eingefügt"
 fi
 
 echo "== RetroArch: Hotkeys an den Launcher abgeben =="

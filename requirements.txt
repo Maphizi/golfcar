@@ -3,3 +3,4 @@ pygame>=2.6
 evdev>=1.7
 PyOpenGL>=3.1
 numpy>=1.24
+onnxruntime>=1.17

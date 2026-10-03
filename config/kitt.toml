@@ -1,0 +1,38 @@
+# KITT Sprachassistent: STT (Phase 5), LLM (Phase 6), TTS (Phase 7)
+# Pfade: ~ wird expandiert, {root} = Projektverzeichnis
+
+[stt]
+whisper_dir = "{root}/vendor/whisper.cpp"
+models_dir = "{root}/models"
+# Nach dem Benchmark (scripts/stt_bench.sh) hier das gewählte Modell eintragen
+model = "ggml-base.bin"
+language = "de"
+threads = 4
+port = 8178
+# Audio-Kontext des Encoders: 0 = voll (30 s). 768 halbiert die Encoder-Zeit bei Äußerungen bis ~15 s.
+audio_ctx = 768
+# Greedy-Decoding für geringste Latenz
+beam_size = 1
+best_of = 1
+# Initialer Prompt lenkt Schreibweise/Sprache (kein Inhalt, nur Stil-Hinweis)
+prompt = "KITT, der Bordcomputer des Golfcarts. Der Fahrer spricht Deutsch."
+
+[stt.bench]
+# Kandidaten für scripts/stt_bench.sh, alle multilingual (für Deutsch nötig)
+models = ["ggml-base.bin", "ggml-small-q5_1.bin"]
+
+[vad]
+# auto = Silero (onnxruntime), Fallback energiebasiert | silero | energy
+backend = "auto"
+model = "{root}/models/silero_vad.onnx"
+# Silero-Wahrscheinlichkeit, ab der Sprache beginnt / unter der sie endet
+start_threshold = 0.6
+end_threshold = 0.35
+# Sprache muss so lange anhalten, bis "LISTENING" beginnt (Vielfache von 32 ms)
+start_ms = 64
+# Stille, nach der die Äußerung abgeschlossen ist
+end_silence_ms = 700
+# Audio vor dem Sprachbeginn, das mitgeschickt wird
+pre_roll_ms = 300
+min_speech_ms = 300
+max_speech_ms = 12000

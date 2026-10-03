@@ -12,3 +12,4 @@ models/
 *.bin
 # ROMs gehören nicht ins Repo
 roms/
+vendor/
