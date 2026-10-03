@@ -1,0 +1,24 @@
+# Gemeinsame GL-Visualizer-Engine (F2–F4)
+
+[engine]
+fps_cap = 60
+# alle n Sekunden FPS und Audio-Pegel ins Log
+log_interval = 10
+# Shader-Dateien bei Änderung automatisch neu laden (Entwicklung)
+hot_reload = true
+# Ziel-Auflösung der GL-Fläche: 0 = Display
+width = 0
+height = 0
+
+# render_scale < 1 rendert in einen kleineren Framebuffer und skaliert hoch (spart GPU-Zeit).
+[scenes.psychedelic]
+shader = "psychedelic"
+render_scale = 0.75
+
+[scenes.crt]
+shader = "crt"
+render_scale = 1.0
+
+[scenes.eye]
+shader = "eye"
+render_scale = 0.85

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -14,9 +15,11 @@ def setup(name: str, logs_dir: Path, level: str = "INFO", max_bytes: int = 512_0
     root.setLevel(getattr(logging, level.upper(), logging.INFO))
     for h in list(root.handlers):
         root.removeHandler(h)
-    fh = RotatingFileHandler(logs_dir / f"{name}.log", maxBytes=max_bytes, backupCount=backups)
-    fh.setFormatter(fmt)
-    root.addHandler(fh)
+    # Unter dem Launcher landet stderr bereits in logs/<modus>.log, dann keine zweite Datei
+    if not os.environ.get("KITT_MODE"):
+        fh = RotatingFileHandler(logs_dir / f"{name}.log", maxBytes=max_bytes, backupCount=backups)
+        fh.setFormatter(fmt)
+        root.addHandler(fh)
     sh = logging.StreamHandler(sys.stderr)
     sh.setFormatter(fmt)
     root.addHandler(sh)

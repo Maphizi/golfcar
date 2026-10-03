@@ -1,0 +1,8 @@
+#version 140
+// Vollbild-Dreieck. vUv: 0..1 über den Bildschirm.
+in vec2 aPos;
+out vec2 vUv;
+void main() {
+    vUv = aPos * 0.5 + 0.5;
+    gl_Position = vec4(aPos, 0.0, 1.0);
+}

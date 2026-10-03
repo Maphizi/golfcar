@@ -3,7 +3,7 @@
 Fullscreen-Appliance: Retro-Gaming, drei GPU-Audio-Visualizer und der lokale
 Sprachassistent KITT. Bedienung über F1–F6, später über eine USB-HID-Buttonbox.
 
-Stand: **Phase 3** (Launcher fertig, RetroPie als F1-Modus).
+Stand: **Phase 4** (Launcher, RetroPie als F1, gemeinsame Audio-Analyse und drei GL-Visualizer als F2–F4).
 Phasenplan und Anforderungen: `docs/KITT_Masterprompt_V1_erweitert.md`.
 Hardware-Inventur: `docs/inventory_phase1.txt`.
 
@@ -47,8 +47,10 @@ Grundsätze:
 | `config/settings.toml` | Display, Logging, Entwickler-Schalter |
 | `config/keymap.toml` | Taste → Action |
 | `config/modes.toml` | Modus → Kommando, Timeout, Label |
-| `config/audio.toml` | Audio-Geräte (ab Phase 4) |
-| `visualizers/` | GL-Engine und Shader (ab Phase 4) |
+| `config/audio.toml` | Audio-Geräte, Capture-Backend, Analyse-Parameter |
+| `config/visualizer.toml` | FPS, Render-Skalierung, Hot-Reload der Shader |
+| `visualizers/engine/` | Audio-Capture, Analyse, GL-Engine |
+| `visualizers/shaders/<szene>/frag.glsl` | die drei Szenen, `common/vert.glsl` gemeinsam |
 | `kitt/` | STT, LLM, TTS, Personality (ab Phase 5) |
 | `scripts/` | Setup, Start, Steuerung, Inventur, Autostart |
 | `systemd/` | User-Unit für den Autostart |
@@ -100,7 +102,9 @@ Alle Logs liegen in `logs/` (Pfad in `config/settings.toml`, kann auf ein tmpfs 
 - `home.log`, `gaming.log`, `viz_*.log`, `kitt.log` – stdout/stderr des jeweiligen Modus
 - `retropie/<modul>.log` – Build-Logs der RetroPie-Installation, EmulationStation schreibt zusätzlich `~/.emulationstation/es_log.txt`
 
-Ab Phase 4/5 kommen `audio.log`, `stt.log`, `llm.log`, `tts.log` dazu.
+- `viz_<szene>.log` enthält alle 10 s FPS und die Audio-Pegel, dazu das Capture-Backend
+
+Ab Phase 5 kommen `stt.log`, `llm.log`, `tts.log` dazu.
 
 ## Fehlerdiagnose
 
@@ -118,6 +122,10 @@ Ab Phase 4/5 kommen `audio.log`, `stt.log`, `llm.log`, `tts.log` dazu.
   braucht Xwayland, `DISPLAY=:0`).
 - **Home-Screen nach RetroPie-Installation schwarz:** Das RetroPie-SDL hat evtl. keinen
   Wayland-Treiber. `sdl_videodriver = "x11"` in `config/settings.toml` setzen.
+- **Visualizer reagiert nicht auf Musik:** `logs/viz_<szene>.log` zeigt `audio=none` und
+  "Keine Audioquelle". `scripts/audio_check.sh` ausführen, Quelle in `config/audio.toml` eintragen.
+  Steht dort `(Stille)` trotz Musik, `noise_gate` senken oder Mikrofonpegel erhöhen.
+- **Visualizer ruckelt:** `render_scale` der Szene in `config/visualizer.toml` senken.
 - **Launcher hängt:** `scripts/kittctl state` und `pgrep -af launcher`. Ein zweiter
   Launcher übernimmt den Socket, also vorher den alten beenden.
 
@@ -174,6 +182,48 @@ kein Vollbild, Eingabe), ist der Fallback die X11-Session von Raspberry Pi OS:
 
 **Verlassen:** EmulationStation Start → Quit → Quit EmulationStation beendet den Prozess, der
 Launcher zeigt wieder Home. F6 beendet den Gaming-Modus jederzeit hart (SIGTERM, nach 8 s SIGKILL).
+
+## F2–F4 – Audio-Visualizer (Phase 4)
+
+**Audio-Konfiguration** (`config/audio.toml`): Geräte werden nicht im Code, sondern nur hier
+eingetragen. `scripts/audio_check.sh` zeigt Backend (PipeWire), Quellen, Senken, Samplerate und
+macht einen 3-Sekunden-Mikrofontest mit Pegelanzeige. Der Capture-Prozess ist `pw-record`
+(PipeWire), Fallback `arecord` über `pipewire-alsa`. Es werden keine Audio-Bindings kompiliert.
+`target` bleibt leer für die Standardquelle oder bekommt den Node-Namen aus `wpctl status`.
+
+**Analyse** (`visualizers/engine/analysis.py`), ~60 Updates/s über einen 2048er-FFT:
+
+| Wert | Bedeutung |
+|---|---|
+| `uRms` | Gesamtlautstärke 0..1, Auto-Gain, geglättet |
+| `uBass`, `uMid`, `uHigh` | 20–150 Hz, 150–2000 Hz, 2–12 kHz, je 0..1 |
+| `uBeat` | 1.0 bei Bass-Transient über 1,6× Mittel der letzten Sekunde, klingt ab |
+| `uSilent` | 1.0 unter `noise_gate`, dann laufen die Visuals nur über `iTime` weiter |
+| `uAudioTex` | 512×2-Textur: Zeile 0.25 = Spektrum (64 log-Bins), Zeile 0.75 = Waveform |
+
+**Engine** (`visualizers/engine/engine.py`): pygame-Fenster mit OpenGL-3.1-Kontext, ein
+Vollbild-Dreieck, ein Fragment-Shader pro Szene (`#version 140`). `render_scale` in
+`config/visualizer.toml` rendert in einen kleineren Framebuffer und skaliert hoch, um GPU-Zeit zu
+sparen. Shader-Dateien werden bei Änderung automatisch neu geladen, ein Fehler lässt den alten
+Shader laufen und steht im Log.
+
+**Szenen:**
+
+- `psychedelic` (F2): Kaleidoskop-Tunnel mit FBM-Plasma. Bass zoomt und pulst den Kern,
+  Mitten drehen, Höhen erzeugen Glitch-Zeilen, Lautstärke steuert die Intensität. Die
+  ShaderToy-Referenz MsdBR8 diente nur als optische Orientierung, es wurde kein Code übernommen
+  (ShaderToy-Shader stehen standardmäßig unter CC BY-NC-SA 3.0).
+- `crt` (F3): grünes Phosphor-Instrument mit echter Waveform, 32 Spektrum-Balken, zwei
+  VU-Metern, Zahlenanzeigen (Bass/Mitten/Höhen in Prozent, Zeit), Statusleuchte, Scanlines,
+  Wölbung, Flimmern, Rollbalken, Rauschen.
+- `eye` (F4): Maschinenauge mit Lid und Lidschlag. Bass öffnet die Pupille, Lautstärke pulst
+  das ganze Auge, Mitten drehen die Iris, Höhen verschieben Zeilen, der Beat sendet einen Ring
+  nach außen. Pixelraster und Scanlines.
+
+**Testen ohne Mikrofon:** `scripts/viz_test.sh crt --test-signal` spielt ein synthetisches
+Signal (Kick 120 BPM, Melodie, Hi-Hats, alle 24 s vier Sekunden Pause) ein und legt nach 12 s
+einen Screenshot in `docs/` ab. `--windowed` öffnet ein Fenster statt Vollbild. Standalone
+beendet ESC die Szene, unter dem Launcher übernimmt F6.
 
 ## Noch offen
 

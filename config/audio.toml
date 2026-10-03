@@ -1,0 +1,39 @@
+# Zentrale Audio-Konfiguration. Keine Geräte-IDs im Quellcode.
+# Geräte ermitteln:  scripts/audio_check.sh
+
+[capture]
+# auto = pw-record (PipeWire) mit Fallback auf arecord (ALSA über pipewire-alsa)
+# pipewire | alsa | test   (test = synthetisches Musiksignal ohne Mikrofon)
+backend = "auto"
+# PipeWire: Node-Name oder -ID (wpctl status), ALSA: Gerät wie "default" oder "hw:1,0".
+# Leer = Standardquelle von PipeWire/ALSA.
+target = ""
+sample_rate = 48000
+# Samples pro Block (1024 bei 48 kHz = 21 ms). Kleiner = reaktiver, mehr CPU.
+block_size = 1024
+
+[output]
+# Ziel für Sprachausgabe (Phase 7). Leer = Standard-Sink.
+target = ""
+
+[analysis]
+fft_size = 2048
+spectrum_bins = 64
+wave_len = 512
+# Pegel (RMS, 0..1) unterhalb dessen als Stille gilt
+noise_gate = 0.003
+# Auto-Gain: Referenzpegel sinkt nie unter diesen Wert, sonst wird Rauschen zu 100 %
+gain_floor = 0.02
+gain_decay = 0.9995
+# Glättung pro Frame (0..1): attack schnell hoch, release langsam runter
+attack = 0.6
+release = 0.12
+# Beat: Bass-Energie > beat_threshold * Mittel der letzten Sekunde
+beat_threshold = 1.6
+beat_min_interval = 0.22
+beat_decay = 0.88
+
+[analysis.bands]
+bass = [20, 150]
+mid = [150, 2000]
+high = [2000, 12000]

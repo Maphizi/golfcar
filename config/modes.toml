@@ -18,19 +18,19 @@ env = { KITT_GAMING_BACKEND = "xwayland" }
 
 [modes.viz_psychedelic]
 label = "PSYCHEDELIC"
-command = ["{python}", "-m", "launcher.placeholder", "F2  PSYCHEDELIC"]
+command = ["{python}", "-m", "visualizers.engine", "psychedelic"]
 cwd = "{root}"
 stop_timeout = 3
 
 [modes.viz_crt]
 label = "CRT SCOPE"
-command = ["{python}", "-m", "launcher.placeholder", "F3  CRT SCOPE"]
+command = ["{python}", "-m", "visualizers.engine", "crt"]
 cwd = "{root}"
 stop_timeout = 3
 
 [modes.viz_eye]
 label = "DIGITAL EYE"
-command = ["{python}", "-m", "launcher.placeholder", "F4  DIGITAL EYE"]
+command = ["{python}", "-m", "visualizers.engine", "eye"]
 cwd = "{root}"
 stop_timeout = 3
 
