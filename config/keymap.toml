@@ -1,0 +1,40 @@
+# Eingabe-Mapping: Taste (evdev-Keycode-Name) -> Action
+# Actions: gaming, viz_psychedelic, viz_crt, viz_eye, kitt, home, quit, status
+#
+# Später für die USB-HID-Buttonbox: Die Box erscheint als Tastatur-Gerät.
+# Entweder sendet sie dieselben F-Tasten (dann ist nichts zu ändern), oder
+# ihre Keycodes werden hier zusätzlich eingetragen. Keycode-Namen findet man mit:
+#   python3 -m evdev.evtest
+
+[devices]
+# Nur Geräte mit passendem Namen werden gelesen (fnmatch-Muster).
+include = ["*"]
+exclude = []
+
+[[bindings]]
+key = "KEY_F1"
+action = "gaming"
+
+[[bindings]]
+key = "KEY_F2"
+action = "viz_psychedelic"
+
+[[bindings]]
+key = "KEY_F3"
+action = "viz_crt"
+
+[[bindings]]
+key = "KEY_F4"
+action = "viz_eye"
+
+[[bindings]]
+key = "KEY_F5"
+action = "kitt"
+
+[[bindings]]
+key = "KEY_F6"
+action = "home"
+
+[[bindings]]
+key = "KEY_ESC"
+action = "quit"

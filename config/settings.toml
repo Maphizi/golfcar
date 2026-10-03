@@ -1,0 +1,23 @@
+# KITT-Cart – allgemeine Einstellungen
+
+[launcher]
+# ESC beendet den gesamten Launcher (nur während der Entwicklung sinnvoll).
+# Für den Appliance-Betrieb auf false setzen.
+dev_emergency_exit = true
+# Alle n Sekunden Temperatur/Last/RAM ins Launcher-Log schreiben
+status_interval = 60
+
+[display]
+# 0 = native Auflösung des Displays (1920x1080 am Ninja V)
+width = 0
+height = 0
+vsync = true
+home_fps = 30
+# "auto" = SDL wählt (Wayland unter labwc). Alternativ "wayland", "x11", "kmsdrm".
+sdl_videodriver = "auto"
+
+[logging]
+# Verzeichnis für Logs. Relativ zum Projekt oder absolut.
+# Um SD-Schreibzugriffe zu sparen, kann hier später ein tmpfs stehen, z. B. "/run/user/1000/kitt-logs".
+dir = "logs"
+level = "INFO"

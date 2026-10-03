@@ -1,0 +1,14 @@
+# Laufzeit
+logs/
+*.log
+.venv/
+venv/
+__pycache__/
+*.pyc
+# Modelle und große Binärdateien (werden per Skript geladen)
+models/
+*.gguf
+*.onnx
+*.bin
+# ROMs gehören nicht ins Repo
+roms/
