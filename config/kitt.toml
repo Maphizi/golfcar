@@ -5,17 +5,17 @@
 whisper_dir = "{root}/vendor/whisper.cpp"
 models_dir = "{root}/models"
 # Nach dem Benchmark (scripts/stt_bench.sh) hier das gewählte Modell eintragen
-model = "ggml-base.bin"
+model = "ggml-small-q5_1.bin"
 language = "de"
 threads = 4
 port = 8178
 # Audio-Kontext des Encoders: 0 = voll (30 s). 768 halbiert die Encoder-Zeit bei Äußerungen bis ~15 s.
-audio_ctx = 768
+audio_ctx = 512
 # Greedy-Decoding für geringste Latenz
 beam_size = 1
 best_of = 1
 # Initialer Prompt lenkt Schreibweise/Sprache (kein Inhalt, nur Stil-Hinweis)
-prompt = "KITT, der Bordcomputer des Golfcarts. Der Fahrer spricht Deutsch."
+prompt = "KITT."
 
 [stt.bench]
 # Kandidaten für scripts/stt_bench.sh, alle multilingual (für Deutsch nötig)
@@ -41,13 +41,13 @@ max_speech_ms = 12000
 llama_dir = "{root}/vendor/llama.cpp"
 models_dir = "{root}/models"
 # Nach dem Benchmark (scripts/llm_bench.sh) hier das gewählte Modell eintragen
-model = "qwen2.5-1.5b-instruct-q4_k_m.gguf"
+model = "Qwen3.5-2B-Q4_K_M.gguf"
 port = 8179
 threads = 4
 # Kontextfenster: System-Prompt + wenige Dialogrunden reichen
 ctx = 2048
 # Antworten kurz halten
-max_tokens = 80
+max_tokens = 60
 temperature = 0.7
 top_p = 0.8
 repeat_penalty = 1.05
