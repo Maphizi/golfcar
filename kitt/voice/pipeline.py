@@ -104,9 +104,22 @@ class VoicePipeline:
         if not (self.whisper.proc and self.llama.proc):
             raise RuntimeError("whisper-server oder llama-server nicht gestartet, siehe logs/")
         self.kitt = Kitt(self.llama.port, kcfg.path(llm["system_prompt"]).read_text().strip(), llm)
-        if self.vcfg.get("context", True):
-            from kitt.context import context_block
-            self.kitt.context_provider = context_block
+        from kitt.context import context_block, mood_of_day
+        mood = mood_of_day(self.vcfg)
+        if mood:
+            log.info("Tagesform: %s", mood.get("name"))
+        use_ctx = self.vcfg.get("context", True)
+
+        def provider() -> str:
+            parts = []
+            if mood:
+                parts.append(mood.get("prompt", ""))
+            if use_ctx:
+                parts.append(context_block())
+            return "\n\n".join(p for p in parts if p)
+
+        if mood or use_ctx:
+            self.kitt.context_provider = provider
         # Prompt-Cache füllen, damit die erste echte Antwort schnell kommt
         try:
             self.kitt.ask("Systemcheck.")

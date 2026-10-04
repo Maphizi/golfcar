@@ -56,6 +56,30 @@ DAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "S
 MONTHS = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"]
 
 
+def mood_of_day(cfg: dict | None = None, day: str | None = None) -> dict:
+    """Laune des Tages: gewichtete Wahl, deterministisch aus dem Datum. {} wenn aus."""
+    import random
+    import tomllib
+    cfg = cfg or {}
+    if not cfg.get("mood", True):
+        return {}
+    try:
+        moods = tomllib.load(open(lcfg.ROOT / "kitt" / "personality" / "moods.toml", "rb")).get("moods", [])
+    except (OSError, tomllib.TOMLDecodeError):
+        return {}
+    if not moods:
+        return {}
+    fixed = cfg.get("mood_fixed", "")
+    if fixed:
+        for m in moods:
+            if m.get("name") == fixed:
+                return m
+    day = day or time.strftime("%Y-%m-%d")
+    rng = random.Random(f"kitt-mood-{day}")
+    weights = [float(m.get("weight", 1)) for m in moods]
+    return rng.choices(moods, weights=weights, k=1)[0]
+
+
 def context_block() -> str:
     lt = time.localtime()
     lines = [f"Uhrzeit laut Bordcomputer: {time.strftime('%H:%M', lt)}, {DAYS[lt.tm_wday]}, {lt.tm_mday}. {MONTHS[lt.tm_mon - 1]}."]

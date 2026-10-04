@@ -463,6 +463,13 @@ Spiel mit System, Uhrzeit und Dauer, Sitzungen heute, meistgespieltes Spiel) plu
 das je Anfrage an den System-Prompt gehängt wird. KITT darf diese Fakten nennen, alles andere weiterhin
 nicht erfinden. Aus mit `context = false` in `[voice]`.
 
+**Tagesform:** KITT hat jeden Tag eine andere Laune aus `kitt/personality/moods.toml` (neutral,
+genervt, pedantisch, nostalgisch, gönnerhaft, philosophisch, effizient, verschwörerisch, sportlich,
+melancholisch), gewichtet und deterministisch aus dem Datum gewählt, also den ganzen Tag gleich. Der
+Satz hängt am System-Prompt. `mood_fixed = "pedantisch"` in `[voice]` erzwingt eine Laune, `mood = false`
+schaltet ab. Der Benchmark läuft ohne Tagesform, damit die Zahlen vergleichbar bleiben;
+`scripts/kitt_ask.sh` zeigt sie an.
+
 **Anrede-Erkennung:** Mit `require_name = true` (Standard) reagiert KITT nur, wenn "KITT" in der
 Äußerung vorkommt. Die Prüfung macht ein zweiter whisper-server mit `ggml-tiny.bin` auf Port 8177
 in etwa 0,3 s; erst bei Treffer läuft die genaue Erkennung mit dem großen Modell. Gespräche im Cart

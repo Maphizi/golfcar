@@ -112,6 +112,10 @@ require_name = true
 name_variants = ["kitt", "kit ", "kit,", "kid", "kitty", "kiet", "kitte"]
 # Bordbuch (Uhrzeit, Laufzeit, Spiele) an den System-Prompt hängen
 context = true
+# Tagesform: jeden Tag eine andere Laune aus kitt/personality/moods.toml (deterministisch aus dem Datum)
+mood = true
+# Laune erzwingen (Name aus moods.toml), leer = Tageswahl
+mood_fixed = ""
 # Höchstens so viele Sätze sprechen, danach wird die Generierung abgebrochen
 max_sentences = 3
 # Floskeln, die am Satzanfang gestrichen werden

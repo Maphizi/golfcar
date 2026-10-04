@@ -109,6 +109,12 @@ def cmd_ask(args, llm, llama_dir, models_dir, logs_dir, system_prompt) -> int:
     load = srv.start()
     print(f"{srv.model_path.name}: geladen in {load:.1f}s, RSS {srv.rss_mb():.0f} MB")
     k = Kitt(srv.port, system_prompt, llm)
+    from kitt.context import context_block, mood_of_day
+    vcfg = kcfg.load().get("voice", {})
+    mood = mood_of_day(vcfg)
+    if mood:
+        print(f"Tagesform: {mood.get('name')}")
+    k.context_provider = lambda: "\n\n".join(p for p in [mood.get("prompt", "") if mood else "", context_block() if vcfg.get("context", True) else ""] if p)
     try:
         if args.ask:
             print(f"Fahrer: {args.ask}")
