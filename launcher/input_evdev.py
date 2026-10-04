@@ -99,12 +99,12 @@ class EvdevInput(threading.Thread):
                 dev = fds[fd]
                 try:
                     for ev in dev.read():
-                        self._handle(ev, dev)
+                        self._on_event(ev, dev)
                 except OSError:
                     log.info("Gerät weg: %s", dev.name)
                     self._devices = {p: d for p, d in self._devices.items() if d is not dev}
 
-    def _handle(self, ev, dev) -> None:
+    def _on_event(self, ev, dev) -> None:
         if ev.type != ecodes.EV_KEY or ev.value != 1:  # nur Tastendruck, keine Repeats
             return
         action = self.bindings.get(ev.code)
