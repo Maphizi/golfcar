@@ -3,6 +3,7 @@
   python -m kitt.voice                       Mikrofon-Betrieb, Zustände und Texte im Terminal
   python -m kitt.voice --say "Text"          nur Sprachausgabe
   python -m kitt.voice --text "Frage"        Frage per Text, Antwort wird gesprochen (ohne Mikrofon)
+  python -m kitt.voice --texts-file DATEI    alle Zeilen der Datei nacheinander (Latenztest)
   --seconds N   nach N Sekunden beenden      --beep  Testtöne statt Piper      --no-audio  nichts abspielen
 """
 from __future__ import annotations
@@ -24,6 +25,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--say")
     ap.add_argument("--text")
+    ap.add_argument("--texts-file")
     ap.add_argument("--seconds", type=float, default=0)
     ap.add_argument("--beep", action="store_true")
     ap.add_argument("--no-audio", action="store_true")
@@ -35,7 +37,7 @@ def main() -> int:
     audio_cfg = lcfg._load("audio.toml")
     if args.no_audio:
         cfg["tts"]["player"] = "none"
-    use_mic = not (args.say or args.text)
+    use_mic = not (args.say or args.text or args.texts_file)
     pipe = VoicePipeline(cfg, audio_cfg, logs_dir,
                          on_state=lambda s: print(f"  [{time.strftime('%H:%M:%S')}] STATE {s.upper()}", flush=True),
                          on_text=lambda r, t: print(f"  {'Fahrer' if r == 'user' else 'KITT'}: {t}", flush=True),
@@ -50,6 +52,15 @@ def main() -> int:
         pipe.start()
         if args.text:
             pipe.handle_text(args.text)
+            return 0
+        if args.texts_file:
+            for line in open(args.texts_file, encoding="utf-8"):
+                q = line.strip()
+                if q and not q.startswith("#"):
+                    print(f"  Fahrer: {q}", flush=True)
+                    pipe.handle_text(q)
+                    pipe.kitt.reset()
+                    time.sleep(0.5)
             return 0
         print("KITT hört zu. Sprich ins Mikrofon. Strg+C beendet.", flush=True)
         t0 = time.monotonic()

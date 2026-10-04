@@ -3,7 +3,7 @@
 Fullscreen-Appliance: Retro-Gaming, drei GPU-Audio-Visualizer und der lokale
 Sprachassistent KITT. Bedienung über F1–F6, später über eine USB-HID-Buttonbox.
 
-Stand: **Phase 9** (alle Modi, Appliance-Autostart mit Recovery).
+Stand: **Phase 10** (alle Modi, Appliance-Autostart, Test- und Performance-Werkzeuge).
 Phasenplan und Anforderungen: `docs/KITT_Masterprompt_V1_erweitert.md`.
 Hardware-Inventur: `docs/inventory_phase1.txt`.
 
@@ -431,7 +431,36 @@ Neustart kommt. Für den Alltag `dev_emergency_exit = false` setzen.
 auf die Karte schreiben will, setzt in `config/settings.toml` `dir = "/run/user/1000/kitt-logs"`
 (tmpfs, weg nach dem Neustart).
 
-## Noch offen
+## Gesamttest und Performance (Phase 10)
 
-- Installierte Pakete, Repositories, Modelle, Audio- und LLM-Konfiguration, Shader-Verzeichnis:
-  werden mit den jeweiligen Phasen ergänzt.
+| Werkzeug | Zweck |
+|---|---|
+| `scripts/health.sh` | Momentaufnahme: Temperatur, Throttling-Flags, Takt, RAM, Launcher, Server, Audio |
+| `scripts/soak_test.sh [--hours N] [--stay MODUS]` | Dauertest gegen den laufenden Launcher: schaltet alle Modi im Kreis (Gaming 5 min, jede Szene 5 min, KITT 8 min) und schreibt alle 30 s eine Zeile nach `logs/soak.csv` |
+| `scripts/kitt_latency.sh` | zehn Fragen in einer Server-Sitzung, Latenzen je Runde in `logs/kitt.log` |
+| `scripts/perf_report.py` | wertet `soak.csv` und alle Logs aus: Temperatur je Modus, Throttling, Launcher-Neustarts, FPS je Szene, KITT-Latenzen, Fehlerzeilen. Ergebnis `docs/perf_phase10.md` |
+
+Abnahmekriterien für den Golfcart-Betrieb:
+
+- Throttling-Flags bleiben `0x0` über die gesamte Laufzeit (kein `0x80000` = Temperaturlimit seit Boot,
+  kein `0x50000` = Unterspannung seit Boot). Sonst Kühlung bzw. Netzteil/Spannungswandler prüfen.
+- RAM-Belegung steigt über Stunden nicht an (keine Lecks), Launcher-Neustarts = 0.
+- Visualizer über 50 fps bei 1080p; sonst `render_scale` der Szene senken.
+- KITT: erste Sprache unter 3 s nach Ende der Äußerung ist das Ziel. Größter Posten ist die
+  Spracherkennung (small-q5_1 ≈ 4 s je Satz). Schneller geht `ggml-base.bin` in `[stt].model`,
+  mit spürbar schlechterer Erkennung; die Benchmarks in `docs/stt_bench_phase5.md` zeigen beides.
+
+Performance-Entscheidungen, die bereits drin sind: Modelle werden beim Launcher-Start in den
+RAM-Cache vorgelesen; whisper mit greedy decoding und `audio_ctx 512`; LLM-Antworten auf 60 Tokens
+und 3 Sätze begrenzt mit Abbruch der Generierung; Prompt-Cache im llama-server; Szenen mit
+`render_scale`; Logs rotiert; genau ein Modus-Prozess zur Zeit, KITT und RetroPie nie parallel.
+
+## Noch offen (Hardware und Inhalte, kein Code)
+
+- **USB-Soundkarte oder USB-Mikrofon plus Lautsprecher** am Pi. Ohne Mikrofon hört KITT nichts und
+  die Visualizer reagieren nicht; ohne Lautsprecher spricht KITT stumm. Danach
+  `scripts/audio_check.sh` ausführen und bei Bedarf `target` in `config/audio.toml` setzen.
+- **ROMs** nach `~/RetroPie/roms/<system>`, PS1-BIOS nach `~/RetroPie/BIOS`.
+- **Gamepad** in EmulationStation über Start → Configure Input einrichten.
+- **USB-HID-Buttonbox** statt F1–F6: siehe Abschnitt oben, meist nur `config/keymap.toml`.
+- Für den Alltag `dev_emergency_exit = false` in `config/settings.toml`.
