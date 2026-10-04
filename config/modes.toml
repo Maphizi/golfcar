@@ -2,6 +2,12 @@
 # Platzhalter: {python} = Interpreter des Launchers, {root} = Projektverzeichnis, {home} = Home-Verzeichnis
 # stop_timeout: Sekunden zwischen SIGTERM und SIGKILL beim Umschalten
 
+[modes.boot]
+label = "BOOT"
+command = ["{python}", "-m", "launcher.boot_screen"]
+cwd = "{root}"
+stop_timeout = 1
+
 [modes.home]
 label = "HOME"
 command = ["{python}", "-m", "launcher.home_screen"]

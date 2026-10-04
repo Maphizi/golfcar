@@ -20,11 +20,14 @@ log = logging.getLogger("audio.capture")
 
 
 class AudioCapture(threading.Thread):
-    def __init__(self, cfg: dict, ring_seconds: float = 2.0):
+    def __init__(self, cfg: dict, ring_seconds: float = 2.0, source: str | None = None):
         super().__init__(name="audio-capture", daemon=True)
         cap = cfg.get("capture", {})
         self.backend = cap.get("backend", "auto")
+        self.source = source or cap.get("source", "mic")
         self.target = cap.get("target", "") or ""
+        if self.source == "playback":
+            self.target = cfg.get("output", {}).get("target", "") or ""
         self.rate = int(cap.get("sample_rate", 48000))
         self.block = int(cap.get("block_size", 1024))
         self.ring = np.zeros(int(self.rate * ring_seconds), dtype=np.float32)
@@ -75,10 +78,12 @@ class AudioCapture(threading.Thread):
         if self.backend in ("auto", "pipewire") and shutil.which("pw-record"):
             c = ["pw-record", "--raw", "--rate", str(self.rate), "--channels", "1", "--format", "s16",
                  "--latency", f"{self.block}/{self.rate}"]
+            if self.source == "playback":
+                c += ["-P", "{ stream.capture.sink = true }"]      # Monitor des Sinks statt Mikrofon
             if self.target:
                 c += ["--target", self.target]
             cmds.append(("pipewire", c + ["-"]))
-        if self.backend in ("auto", "alsa") and shutil.which("arecord"):
+        if self.backend in ("auto", "alsa") and shutil.which("arecord") and self.source != "playback":
             dev = self.target if (self.backend == "alsa" and self.target) else "default"
             cmds.append(("alsa", ["arecord", "-q", "-D", dev, "-f", "S16_LE", "-r", str(self.rate),
                                    "-c", "1", "-t", "raw", "--buffer-size", str(self.block * 4), "-"]))

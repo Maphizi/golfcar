@@ -1,0 +1,39 @@
+# Ansagen beim Moduswechsel und beim Boot. Werden einmal mit Piper vorgerendert
+# (scripts/announce_build.sh -> models/announce/*.wav) und vom Launcher ohne Verzögerung abgespielt.
+# Pro Eintrag wird zufällig ein Satz gewählt. Leere Liste = keine Ansage.
+
+enabled = true
+
+[lines]
+boot = [
+  "KITT-Cart online. Alle Systeme nominal. Fahrer leider auch.",
+  "Systeme hochgefahren. Ich bin bereit. Du hoffentlich auch.",
+  "Guten Tag. Ich übernehme die Unterhaltung, du das Lenken. Vorerst.",
+]
+gaming = [
+  "Spiele. Natürlich.",
+  "Retro-Gaming. Ich dachte, wir wären hier zum Golfen.",
+  "Spielkonsole aktiviert. Deine Reflexe sind ab jetzt dokumentiert.",
+]
+viz_psychedelic = [
+  "Psychedelik. Bitte trotzdem auf den Weg achten.",
+  "Farben. Viele Farben. Ich bin unbeeindruckt.",
+]
+viz_crt = [
+  "Messinstrumente. Endlich etwas Seriöses.",
+  "Oszilloskop aktiv. Es misst nichts Wichtiges, aber es sieht gut aus.",
+]
+viz_eye = [
+  "Ich beobachte dich. Das tue ich sowieso, jetzt sieht man es.",
+  "Das Auge ist offen. Zwinkern optional.",
+]
+campfire = [
+  "Lagerfeuer. Ich simuliere Wärme. Mehr geht nicht.",
+  "Feuer an. Marshmallows bringst du selbst mit.",
+  "Ein Lagerfeuer auf einem Bildschirm. Romantik, technisch gelöst.",
+]
+home = [
+  "Hauptmenü.",
+  "Zurück zum Anfang. Eine deiner besseren Entscheidungen.",
+]
+kitt = []   # der KITT-Modus begrüßt selbst ([ui].greeting in kitt.toml)

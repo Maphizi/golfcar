@@ -38,6 +38,7 @@ dl() {  # dl <datei> <url>
   curl -sS -L -f -C - --retry 3 -o "$MDIR/$1.part" "$2" && mv "$MDIR/$1.part" "$MDIR/$1" && echo "  ok ($(du -h "$MDIR/$1" | cut -f1))" || { echo "  FEHLER beim Laden von $1"; return 1; }
 }
 HF=https://huggingface.co/ggerganov/whisper.cpp/resolve/main
+dl ggml-tiny.bin "$HF/ggml-tiny.bin"
 dl ggml-base.bin "$HF/ggml-base.bin"
 dl ggml-small-q5_1.bin "$HF/ggml-small-q5_1.bin"
 dl silero_vad.onnx https://raw.githubusercontent.com/snakers4/silero-vad/master/src/silero_vad/data/silero_vad.onnx

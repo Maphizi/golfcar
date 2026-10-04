@@ -4,6 +4,9 @@
 # ESC beendet den gesamten Launcher. Im Appliance-Betrieb (systemd) bleibt der Dienst dann aus
 # (schwarzer Bildschirm) bis zum Neustart; für den Alltag auf false setzen.
 dev_emergency_exit = true
+# Boot-Sequenz vor dem Home-Screen (Sekunden, 0 = aus) und Ansagen (config/announce.toml)
+boot_seconds = 4
+announce = true
 # Alle n Sekunden Temperatur/Last/RAM ins Launcher-Log schreiben
 status_interval = 60
 # Nach dem Start die KITT-Modelle (Whisper, Qwen, VAD, Piper) im Hintergrund in den RAM-Cache lesen.

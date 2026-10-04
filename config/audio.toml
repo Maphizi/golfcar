@@ -2,6 +2,11 @@
 # Geräte ermitteln:  scripts/audio_check.sh
 
 [capture]
+# Was die Visualizer analysieren:
+#   mic      = Mikrofon (Standardquelle bzw. target)
+#   playback = das, was gerade abgespielt wird (Monitor des Standard-Sinks): Bluetooth vom Handy,
+#              Spiele, KITT-Stimme. Braucht kein Mikrofon. Die KITT-Spracherkennung nutzt immer das Mikrofon.
+source = "mic"
 # auto = pw-record (PipeWire) mit Fallback auf arecord (ALSA über pipewire-alsa)
 # pipewire | alsa | test   (test = synthetisches Musiksignal ohne Mikrofon)
 backend = "auto"

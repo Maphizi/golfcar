@@ -58,4 +58,11 @@ if [ -f "$RA_CFG" ]; then
 else
   echo "  $RA_CFG fehlt, RetroArch noch nicht installiert"
 fi
+echo "== runcommand-Hooks (Spielstatistik für KITT) =="
+if [ -d /opt/retropie/configs/all ]; then
+  for h in onstart onend; do
+    sudo install -m 755 "$ROOT/scripts/retropie_hooks/runcommand-$h.sh" "/opt/retropie/configs/all/runcommand-$h.sh"
+  done
+  echo "  /opt/retropie/configs/all/runcommand-onstart.sh und -onend.sh schreiben logs/games.jsonl"
+fi
 echo "fertig"

@@ -3,7 +3,7 @@
 Fullscreen-Appliance: Retro-Gaming, drei GPU-Audio-Visualizer und der lokale
 Sprachassistent KITT. Bedienung über F1–F6, später über eine USB-HID-Buttonbox.
 
-Stand: **Phase 10** (alle Modi, Appliance-Autostart, Test- und Performance-Werkzeuge).
+Stand: **Phase 10 + Extras** (alle Modi, Lagerfeuer, Ansagen, Boot-Sequenz, Bluetooth-Quelle, Spielstatistik, Anrede-Erkennung).
 Phasenplan und Anforderungen: `docs/KITT_Masterprompt_V1_erweitert.md`.
 Hardware-Inventur: `docs/inventory_phase1.txt`.
 
@@ -437,6 +437,39 @@ Neustart kommt. Für den Alltag `dev_emergency_exit = false` setzen.
 auf die Karte schreiben will, setzt in `config/settings.toml` `dir = "/run/user/1000/kitt-logs"`
 (tmpfs, weg nach dem Neustart).
 
+## Extras
+
+**Ansagen beim Moduswechsel** (`config/announce.toml`): KITT kommentiert jeden Tastendruck mit einem
+zufälligen Satz aus der Liste des Modus, dazu eine Boot-Ansage. Die Sätze werden einmal mit Piper
+vorgerendert (`scripts/announce_build.sh`, nach jeder Textänderung erneut) und liegen als WAV in
+`models/announce/`. Der Launcher spielt sie ohne Modell-Ladezeit über `pw-play` ab. Aus mit
+`announce = false` in `settings.toml` oder einer leeren Liste je Modus.
+
+**Boot-Sequenz:** vor dem Home-Screen vier Sekunden Scanner, Systemcheck-Zeilen und "KITT-CART
+ONLINE" mit Sprachansage (`boot_seconds` in `settings.toml`, 0 = aus). Der Boot-Modus ist ein
+gewöhnlicher Modus, der sich selbst beendet.
+
+**Bluetooth vom Handy als Musikquelle:** `scripts/setup_bluetooth.sh` macht den Pi zum
+Bluetooth-Lautsprecher "KITT-Cart" (A2DP-Senke über PipeWire, Auto-Pairing-Agent als User-Dienst).
+Musik vom Telefon läuft über den Standard-Sink des Pi. Mit `source = "playback"` in
+`config/audio.toml` analysieren die Visualizer das Abgespielte statt des Mikrofons, also Bluetooth,
+Spiele und KITTs Stimme, ganz ohne Mikrofon. Die Spracherkennung bleibt immer am Mikrofon.
+Test: `scripts/viz_test.sh crt --source playback`.
+
+**Spielstatistik für KITT:** `scripts/configure_gaming.sh` installiert zwei RetroPie-Hooks
+(`runcommand-onstart.sh`, `runcommand-onend.sh`), die jeden Spielstart und jedes Spielende nach
+`logs/games.jsonl` schreiben. `kitt/context.py` macht daraus ein kurzes Bordbuch (zuletzt gespieltes
+Spiel mit System, Uhrzeit und Dauer, Sitzungen heute, meistgespieltes Spiel) plus Uhrzeit und Laufzeit,
+das je Anfrage an den System-Prompt gehängt wird. KITT darf diese Fakten nennen, alles andere weiterhin
+nicht erfinden. Aus mit `context = false` in `[voice]`.
+
+**Anrede-Erkennung:** Mit `require_name = true` (Standard) reagiert KITT nur, wenn "KITT" in der
+Äußerung vorkommt. Die Prüfung macht ein zweiter whisper-server mit `ggml-tiny.bin` auf Port 8177
+in etwa 0,3 s; erst bei Treffer läuft die genaue Erkennung mit dem großen Modell. Gespräche im Cart
+ohne Anrede kosten so kaum CPU. `name_variants` enthält die Schreibweisen, die whisper für den
+Namen liefert ("Kit", "Kid", "Kitty"). Fehlt das tiny-Modell (`scripts/setup_phase5.sh` lädt es nach),
+prüft das Hauptmodell die Anrede.
+
 ## Gesamttest und Performance (Phase 10)
 
 | Werkzeug | Zweck |
@@ -468,5 +501,6 @@ und 3 Sätze begrenzt mit Abbruch der Generierung; Prompt-Cache im llama-server;
   `scripts/audio_check.sh` ausführen und bei Bedarf `target` in `config/audio.toml` setzen.
 - **ROMs** nach `~/RetroPie/roms/<system>`, PS1-BIOS nach `~/RetroPie/BIOS`.
 - **Gamepad** in EmulationStation über Start → Configure Input einrichten.
-- **USB-HID-Buttonbox** statt F1–F6: siehe Abschnitt oben, meist nur `config/keymap.toml`.
+- **USB-HID-Buttonbox** statt F1–F7: siehe Abschnitt oben, meist nur `config/keymap.toml`.
+- **Bluetooth** nur, wenn gewünscht: `scripts/setup_bluetooth.sh`, dann Handy koppeln.
 - Für den Alltag `dev_emergency_exit = false` in `config/settings.toml`.

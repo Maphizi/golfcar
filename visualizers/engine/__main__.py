@@ -28,6 +28,7 @@ def main() -> int:
     ap.add_argument("--seconds", type=float, default=0.0)
     ap.add_argument("--screenshot", default="")
     ap.add_argument("--windowed", action="store_true")
+    ap.add_argument("--source", choices=["mic", "playback"], help="überschreibt [capture].source")
     args = ap.parse_args()
     if args.windowed:
         os.environ["KITT_VIZ_WINDOWED"] = "1"
@@ -38,6 +39,8 @@ def main() -> int:
     viz_cfg = config._load("visualizer.toml")
     if args.test_signal:
         audio_cfg.setdefault("capture", {})["backend"] = "test"
+    if args.source:
+        audio_cfg.setdefault("capture", {})["source"] = args.source
 
     import pygame
     from visualizers.engine import engine as eng

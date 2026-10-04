@@ -37,6 +37,23 @@ class Launcher:
         self.status_interval = float(self.settings.get("launcher", {}).get("status_interval", 60))
         self.state_file = config.runtime_dir() / "kitt-launcher.state"
         self._home_fail_times: list[float] = []
+        self.announce_enabled = bool(self.settings.get("launcher", {}).get("announce", True))
+        self.boot_seconds = float(self.settings.get("launcher", {}).get("boot_seconds", 0))
+
+    def announce(self, group: str) -> None:
+        """Vorgerenderte Ansage abspielen (nicht-blockierend, scheitert leise)."""
+        if not self.announce_enabled:
+            return
+        try:
+            from kitt import announce
+            target = ""
+            try:
+                target = config._load("audio.toml").get("output", {}).get("target", "")
+            except Exception:
+                pass
+            announce.play(group, target)
+        except Exception as exc:
+            log.debug("Ansage %s: %s", group, exc)
 
     # -- Setup -----------------------------------------------------------
     def prefetch_models(self) -> None:
@@ -137,7 +154,10 @@ class Launcher:
         mode = ACTION_TO_MODE.get(action)
         if mode:
             log.info("Action %s -> Modus %s", action.value, mode)
+            already = self.pm.current and self.pm.current.name == mode and self.pm.is_running()
             self.switch(mode)
+            if not already:
+                self.announce(mode)
 
     # -- Hauptschleife ---------------------------------------------------
     def run(self) -> None:
@@ -146,7 +166,11 @@ class Launcher:
         signal.signal(signal.SIGTERM, lambda *_: setattr(self, "running", False))
         signal.signal(signal.SIGINT, lambda *_: setattr(self, "running", False))
         self.start_inputs()
-        self.go_home()
+        if self.boot_seconds > 0 and "boot" in self.pm.modes:
+            self.switch("boot")            # beendet sich selbst, danach geht es automatisch auf Home
+            self.announce("boot")
+        else:
+            self.go_home()
         self.prefetch_models()
         last_status = time.monotonic()
         while self.running:

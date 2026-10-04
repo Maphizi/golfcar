@@ -56,6 +56,7 @@ class VoicePipeline:
         self.tts_backend = tts_backend
         self.stt_cfg, self.llm_cfg, self.tts_cfg, self.vcfg = cfg["stt"], cfg["llm"], cfg["tts"], cfg.get("voice", {})
         self.whisper: WhisperServer | None = None
+        self.gate: WhisperServer | None = None
         self.llama: LlamaServer | None = None
         self.kitt: Kitt | None = None
         self.tts: PiperTTS | None = None
@@ -81,16 +82,31 @@ class VoicePipeline:
         llm = self.llm_cfg
         self.llama = LlamaServer(kcfg.path(llm["llama_dir"]), kcfg.path(llm["models_dir"]) / llm["model"], int(llm["port"]),
                                  int(llm.get("threads", 4)), int(llm.get("ctx", 2048)), self.logs_dir / "llama-server.log")
-        # Server parallel starten (beide laden nur, CPU-Last entsteht erst bei Anfragen)
+        gate_model = kcfg.path(stt["models_dir"]) / stt.get("gate_model", "")
+        if self.vcfg.get("require_name", False) and stt.get("gate_model") and gate_model.exists():
+            self.gate = WhisperServer(kcfg.path(stt["whisper_dir"]), gate_model, int(stt.get("gate_port", 8177)),
+                                      stt.get("language", "de"), 2, 512, 1, 1, self.logs_dir / "whisper-gate.log")
+        # Server parallel starten (alle laden nur, CPU-Last entsteht erst bei Anfragen)
         t_w = threading.Thread(target=self.whisper.start, daemon=True)
         t_l = threading.Thread(target=self.llama.start, daemon=True)
+        t_g = threading.Thread(target=self.gate.start, daemon=True) if self.gate else None
         t_w.start(); t_l.start()
+        if t_g:
+            t_g.start()
         self.tts = PiperTTS(self.tts_cfg, kcfg.path(self.tts_cfg["voices_dir"]),
                             self.audio_cfg.get("output", {}).get("target", ""), self.tts_backend)
         t_w.join(); t_l.join()
+        if t_g:
+            t_g.join()
+            if not self.gate.proc:
+                log.warning("Anrede-Vorfilter nicht gestartet, prüfe Anrede mit dem Hauptmodell")
+                self.gate = None
         if not (self.whisper.proc and self.llama.proc):
             raise RuntimeError("whisper-server oder llama-server nicht gestartet, siehe logs/")
         self.kitt = Kitt(self.llama.port, kcfg.path(llm["system_prompt"]).read_text().strip(), llm)
+        if self.vcfg.get("context", True):
+            from kitt.context import context_block
+            self.kitt.context_provider = context_block
         # Prompt-Cache füllen, damit die erste echte Antwort schnell kommt
         try:
             self.kitt.ask("Systemcheck.")
@@ -102,7 +118,7 @@ class VoicePipeline:
             vad = load_vad(self.cfg["vad"], kcfg.path(self.cfg["vad"]["model"]))
             self.listener = Listener(self.cfg["vad"], vad, self._on_utterance, self._on_listen_state,
                                      rate_in=int(self.audio_cfg["capture"]["sample_rate"]), on_level=self.on_level)
-            self.cap = AudioCapture(self.audio_cfg)
+            self.cap = AudioCapture(self.audio_cfg, source="mic")
             self.cap.subscribers.append(self.listener.feed)
             self.cap.start()
         self._set("idle")
@@ -113,6 +129,8 @@ class VoicePipeline:
             self.cap.stop()
         if self.whisper:
             self.whisper.stop()
+        if self.gate:
+            self.gate.stop()
         if self.llama:
             self.llama.stop()
         self._set("stopped")
@@ -137,10 +155,14 @@ class VoicePipeline:
         if any(p in t for p in self.vcfg.get("ignore_phrases", [])):
             log.info("Ignoriert (Halluzinationsfilter): %r", text)
             return False
-        if self.vcfg.get("require_name", False) and "kitt" not in t and "kid" not in t:
+        if self.vcfg.get("require_name", False) and not self._has_name(t):
             log.info("Ignoriert (keine Anrede): %r", text)
             return False
         return True
+
+    def _has_name(self, t: str) -> bool:
+        t = " " + t.lower() + " "
+        return any(v in t for v in self.vcfg.get("name_variants", ["kitt"]))
 
     def handle_audio(self, pcm16k: np.ndarray) -> None:
         """Äußerung -> Text -> Antwort -> Sprache. Läuft im eigenen Thread."""
@@ -153,6 +175,13 @@ class VoicePipeline:
         try:
             self._set("thinking")
             t0 = time.monotonic()
+            if self.gate:
+                gtext, gdt = transcribe(pcm16k, self.gate.port, "KITT.")
+                if not self._has_name(gtext):
+                    log.info("Vorfilter %.2fs: keine Anrede: %r", gdt, gtext)
+                    self._set("idle")
+                    return
+                log.info("Vorfilter %.2fs: Anrede erkannt: %r", gdt, gtext)
             text, dt = transcribe(pcm16k, self.whisper.port, self.stt_cfg.get("prompt", ""))
             log.info("STT %.2fs (%.1fs Audio): %r", dt, len(pcm16k) / STT_RATE, text)
             if not self._accept(text):

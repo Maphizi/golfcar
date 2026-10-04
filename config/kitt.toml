@@ -17,6 +17,11 @@ best_of = 1
 # Initialer Prompt lenkt Schreibweise/Sprache (kein Inhalt, nur Stil-Hinweis)
 prompt = "KITT."
 
+# Anrede-Vorfilter: kleines Modell prüft nur, ob "KITT" gesagt wurde, bevor das große Modell läuft
+# (nur aktiv, wenn [voice].require_name = true). Spart CPU bei Gesprächen im Cart.
+gate_model = "ggml-tiny.bin"
+gate_port = 8177
+
 [stt.bench]
 # Kandidaten für scripts/stt_bench.sh, alle multilingual (für Deutsch nötig)
 models = ["ggml-base.bin", "ggml-small-q5_1.bin"]
@@ -100,8 +105,13 @@ resume_delay_ms = 400
 ignore_phrases = ["untertitel", "zdf", "vielen dank", "copyright", "amara.org", "www."]
 # Mindestanzahl Wörter, damit eine Äußerung an das LLM geht
 min_words = 2
-# Wenn true, antwortet KITT nur, wenn "kitt" im Transkript vorkommt (Anrede). Sonst auf alles.
-require_name = false
+# Wenn true, antwortet KITT nur auf Anrede ("KITT, ..."). Die Prüfung macht das schnelle gate_model,
+# erst bei Treffer läuft die genaue Erkennung. false = KITT antwortet auf alles, was er hört.
+require_name = true
+# Schreibweisen, die whisper für "KITT" liefert
+name_variants = ["kitt", "kit ", "kit,", "kid", "kitty", "kiet", "kitte"]
+# Bordbuch (Uhrzeit, Laufzeit, Spiele) an den System-Prompt hängen
+context = true
 # Höchstens so viele Sätze sprechen, danach wird die Generierung abgebrochen
 max_sentences = 3
 # Floskeln, die am Satzanfang gestrichen werden

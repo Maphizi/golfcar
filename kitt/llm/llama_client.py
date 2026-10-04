@@ -198,8 +198,16 @@ class Kitt:
         self.history_turns = int(cfg.get("history_turns", 4))
         self.history: list[dict] = []
 
+    context_provider = None     # Callable[[], str], liefert den Bordbuch-Block (optional)
+
     def ask(self, user_text: str, on_token=None) -> Result:
-        msgs = [{"role": "system", "content": self.system}] + self.history[-2 * self.history_turns:] + \
+        system = self.system
+        if self.context_provider:
+            try:
+                system = system + "\n\n" + self.context_provider()
+            except Exception:
+                pass
+        msgs = [{"role": "system", "content": system}] + self.history[-2 * self.history_turns:] + \
                [{"role": "user", "content": user_text}]
         res = chat(self.port, msgs, self.max_tokens, self.temperature, self.top_p, self.repeat_penalty, on_token)
         self.history += [{"role": "user", "content": user_text}, {"role": "assistant", "content": res.text}]
