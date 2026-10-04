@@ -13,6 +13,7 @@ class Action(str, Enum):
     VIZ_CRT = "viz_crt"        # F3
     VIZ_EYE = "viz_eye"        # F4
     KITT = "kitt"              # F5
+    CAMPFIRE = "campfire"      # F7
     HOME = "home"              # F6
     QUIT = "quit"              # ESC (nur Entwicklung)
     STATUS = "status"          # Zustand ins Log schreiben
@@ -25,6 +26,7 @@ ACTION_TO_MODE = {
     Action.VIZ_CRT: "viz_crt",
     Action.VIZ_EYE: "viz_eye",
     Action.KITT: "kitt",
+    Action.CAMPFIRE: "campfire",
     Action.HOME: "home",
 }
 

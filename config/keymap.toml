@@ -1,5 +1,5 @@
 # Eingabe-Mapping: Taste (evdev-Keycode-Name) -> Action
-# Actions: gaming, viz_psychedelic, viz_crt, viz_eye, kitt, home, quit, status
+# Actions: gaming, viz_psychedelic, viz_crt, viz_eye, kitt, campfire, home, quit, status
 #
 # Später für die USB-HID-Buttonbox: Die Box erscheint als Tastatur-Gerät.
 # Entweder sendet sie dieselben F-Tasten (dann ist nichts zu ändern), oder
@@ -34,6 +34,10 @@ action = "kitt"
 [[bindings]]
 key = "KEY_F6"
 action = "home"
+
+[[bindings]]
+key = "KEY_F7"
+action = "campfire"
 
 [[bindings]]
 key = "KEY_ESC"

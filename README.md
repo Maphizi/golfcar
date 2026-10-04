@@ -75,6 +75,7 @@ Grundsätze:
 | F4 | `viz_eye` | Digital Eye |
 | F5 | `kitt` | KITT Sprachassistent mit Oberfläche |
 | F6 | `home` | Home-Screen |
+| F7 | `campfire` | Lagerfeuer (Pixel-Art) |
 | ESC | `quit` | Launcher beenden (nur wenn `dev_emergency_exit = true`) |
 
 Ohne Tastatur, z. B. per SSH: `scripts/kittctl viz_crt`, `scripts/kittctl home`,
@@ -255,6 +256,11 @@ Shader laufen und steht im Log.
 - `eye` (F4): Maschinenauge mit Lid und Lidschlag. Bass öffnet die Pupille, Lautstärke pulst
   das ganze Auge, Mitten drehen die Iris, Höhen verschieben Zeilen, der Beat sendet einen Ring
   nach außen. Pixelraster und Scanlines.
+
+- `campfire` (F7): Pixel-Art-Lagerfeuer auf 90 Zeilen Raster. Zündet nach dem Start in etwa fünf
+  Sekunden an (Funke, dann wachsende Flamme), zwei gekreuzte Scheite mit Glut, aufsteigende Funken,
+  flackernder Lichtschein auf dem Boden, Sternenhimmel. Braucht kein Mikrofon; mit Musik werden
+  Flamme und Funken etwas lebhafter. Rendert mit `render_scale 0.5`, da das Pixelraster ohnehin grob ist.
 
 **Testen ohne Mikrofon:** `scripts/viz_test.sh crt --test-signal` spielt ein synthetisches
 Signal (Kick 120 BPM, Melodie, Hi-Hats, alle 24 s vier Sekunden Pause) ein und legt nach 12 s

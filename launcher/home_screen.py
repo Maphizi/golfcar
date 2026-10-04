@@ -49,7 +49,7 @@ def main() -> int:
     f_small = display.font(int(h * 0.028))
     menu = [
         ("F1", "gaming"), ("F2", "viz_psychedelic"), ("F3", "viz_crt"),
-        ("F4", "viz_eye"), ("F5", "kitt"),
+        ("F4", "viz_eye"), ("F5", "kitt"), ("F7", "campfire"),
     ]
     t0 = time.monotonic()
     last_sys = 0.0
@@ -66,7 +66,7 @@ def main() -> int:
         title = f_title.render("KITT-CART", True, RED)
         screen.blit(title, ((w - title.get_width()) // 2, int(h * 0.08)))
         draw_scanner(screen, (int(w * 0.15), int(h * 0.22), int(w * 0.7), int(h * 0.035)), t)
-        y = int(h * 0.36)
+        y = int(h * 0.33)
         for key, mode in menu:
             spec = modes.get(mode, {})
             label = spec.get("label", mode)
@@ -76,7 +76,7 @@ def main() -> int:
             lab = f_item.render(label, True, WHITE if enabled else GREY)
             screen.blit(k, (int(w * 0.25), y))
             screen.blit(lab, (int(w * 0.34), y))
-            y += int(h * 0.075)
+            y += int(h * 0.068)
         foot = f_small.render("F6 HOME     ESC EXIT (DEV)", True, GREY)
         screen.blit(foot, ((w - foot.get_width()) // 2, int(h * 0.80)))
         s = f_small.render(sys_line, True, GREY)

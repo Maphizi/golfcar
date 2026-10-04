@@ -40,3 +40,8 @@ command = ["{python}", "-m", "kitt.ui"]
 cwd = "{root}"
 # Beim Beenden müssen whisper-server und llama-server mit sterben; sie laufen in derselben Prozessgruppe
 stop_timeout = 8
+[modes.campfire]
+label = "LAGERFEUER"
+command = ["{python}", "-m", "visualizers.engine", "campfire"]
+cwd = "{root}"
+stop_timeout = 3
