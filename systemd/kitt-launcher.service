@@ -1,21 +1,21 @@
-# User-Unit: ~/.config/systemd/user/kitt-launcher.service (wird von scripts/autostart_enable.sh installiert)
-# Läuft in der Wayland-Session des Autologin-Benutzers.
+# User-Unit: ~/.config/systemd/user/kitt-launcher.service (installiert von scripts/autostart_enable.sh)
+# Wird von scripts/session_start.sh in der Wayland-Session gestartet, nicht beim Boot "enabled":
+# ohne Compositor gibt es nichts anzuzeigen.
 [Unit]
 Description=KITT-Cart Launcher
-After=graphical-session.target
-PartOf=graphical-session.target
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple
 WorkingDirectory=__ROOT__
-Environment=XDG_RUNTIME_DIR=/run/user/%U
-Environment=WAYLAND_DISPLAY=wayland-0
 Environment=PYGAME_HIDE_SUPPORT_PROMPT=1
 ExecStart=__ROOT__/scripts/run_launcher.sh
-Restart=always
-RestartSec=3
-# Launcher-Kern niedrig halten, Modi erben das nicht zwingend
-Nice=-5
+# Absturz (Exit != 0, Signal, OOM) -> Neustart. Sauberes Ende (ESC, systemctl stop) -> bleibt aus.
+Restart=on-failure
+RestartSec=2
+# Beim Stop die ganze Gruppe inkl. Modus-Prozessen und Servern beenden
+KillMode=control-group
+TimeoutStopSec=15
 
 [Install]
 WantedBy=default.target

@@ -64,7 +64,13 @@ class ProcessManager:
         if extra_env:
             env.update(extra_env)
         env["KITT_MODE"] = name
-        self._logfh = open(self.logs_dir / f"{name}.log", "ab", buffering=0)
+        logpath = self.logs_dir / f"{name}.log"
+        try:
+            if logpath.exists() and logpath.stat().st_size > 2_000_000:
+                logpath.rename(logpath.with_suffix(".log.1"))     # eine Generation behalten
+        except OSError:
+            pass
+        self._logfh = open(logpath, "ab", buffering=0)
         self._logfh.write(f"\n===== {time.strftime('%Y-%m-%d %H:%M:%S')} start {spec.command}\n".encode())
         try:
             self.proc = subprocess.Popen(

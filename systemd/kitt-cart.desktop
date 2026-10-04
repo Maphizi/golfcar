@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=KITT-Cart
+Comment=KITT Golfcart Appliance (labwc + Launcher)
+Exec=__ROOT__/scripts/session_kitt.sh
+Type=Application
+DesktopNames=labwc

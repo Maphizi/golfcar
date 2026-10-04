@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!-- Minimaler labwc-Compositor für den Appliance-Betrieb: keine Dekorationen, kein Panel, kein Desktop. -->
+<labwc_config>
+  <core>
+    <decoration>server</decoration>
+    <gap>0</gap>
+    <adaptiveSync>no</adaptiveSync>
+  </core>
+  <theme>
+    <cornerRadius>0</cornerRadius>
+  </theme>
+  <focus>
+    <followMouse>no</followMouse>
+  </focus>
+  <!-- Keine Compositor-Tastenkürzel, die F1–F6 oder ESC abfangen könnten -->
+  <keyboard>
+    <keybind key="C-A-BackSpace"><action name="Exit" /></keybind>
+  </keyboard>
+  <windowRules>
+    <windowRule identifier="*" serverDecoration="no" />
+  </windowRules>
+</labwc_config>

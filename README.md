@@ -3,7 +3,7 @@
 Fullscreen-Appliance: Retro-Gaming, drei GPU-Audio-Visualizer und der lokale
 Sprachassistent KITT. Bedienung über F1–F6, später über eine USB-HID-Buttonbox.
 
-Stand: **Phase 8** (Launcher, RetroPie als F1, Visualizer F2–F4, KITT als F5 mit Vollbild-Oberfläche und kompletter Sprachpipeline).
+Stand: **Phase 9** (alle Modi, Appliance-Autostart mit Recovery).
 Phasenplan und Anforderungen: `docs/KITT_Masterprompt_V1_erweitert.md`.
 Hardware-Inventur: `docs/inventory_phase1.txt`.
 
@@ -95,12 +95,12 @@ bei Start per SSH auf dem HDMI-Display erscheinen.
 
 | Zweck | Befehl |
 |---|---|
-| Entwicklung, Vordergrund | `scripts/run_launcher.sh` |
-| Autostart aktivieren | `scripts/autostart_enable.sh` dann `systemctl --user start kitt-launcher` |
-| Autostart für Wartung aus | `scripts/autostart_disable.sh` |
-| Status des Dienstes | `systemctl --user status kitt-launcher` |
-
-Der Autostart wird erst in Phase 9 scharf geschaltet und getestet.
+| Entwicklung, Vordergrund (auf dem Desktop) | `scripts/run_launcher.sh` |
+| Appliance-Autostart einschalten | `scripts/autostart_enable.sh && sudo reboot` |
+| Wartung: zurück zum normalen Desktop | `scripts/autostart_disable.sh && sudo reboot` |
+| Zustand anzeigen | `scripts/autostart_status.sh` |
+| Launcher-Dienst stoppen / starten (in der Appliance-Session) | `systemctl --user stop kitt-launcher`, `... restart kitt-launcher` |
+| Modus per SSH wechseln | `scripts/kittctl home` usw. |
 
 ## Logs
 
@@ -157,6 +157,10 @@ Alle Logs liegen in `logs/` (Pfad in `config/settings.toml`, kann auf ein tmpfs 
   HDMI-Sink wählen und in `config/audio.toml` `[output].target` eintragen.
 - **KITT hört sich selbst / antwortet auf sich:** `resume_delay_ms` erhöhen, Mikrofon vom
   Lautsprecher weg, `require_name = true`.
+- **Nach dem Boot schwarzer Bildschirm, kein Home:** per SSH `scripts/autostart_status.sh` und
+  `journalctl --user -u kitt-launcher -n 50`. Steht dort "Kein Wayland-Socket", ist die Session nicht
+  gestartet: `cat ~/golfcar/logs/session.log` und `grep session /etc/lightdm/lightdm.conf`.
+  Notausgang: `scripts/autostart_disable.sh && sudo reboot` bringt den Desktop zurück.
 - **Launcher hängt:** `scripts/kittctl state` und `pgrep -af launcher`. Ein zweiter
   Launcher übernimmt den Socket, also vorher den alten beenden.
 
@@ -393,6 +397,38 @@ geschlossen, der Slot wird frei, die Historie enthält nur das Gesagte).
 **Prozess-Hygiene:** whisper-server und llama-server laufen in der Prozessgruppe des F5-Modus.
 Der Launcher beendet beim Moduswechsel oder nach einem Absturz immer die ganze Gruppe, damit
 keine Server mit belegten Ports zurückbleiben.
+
+## Autostart und Recovery (Phase 9)
+
+```
+Strom an → Raspberry Pi OS → lightdm (Autologin maphizi) → Session "KITT-Cart"
+        → labwc (config/labwc/, ohne Panel und Desktop, schwarzer Hintergrund)
+        → scripts/session_start.sh → systemd --user: kitt-launcher.service
+        → scripts/run_launcher.sh → Launcher → Home-Screen
+```
+
+`scripts/autostart_enable.sh` installiert die Wayland-Session `/usr/share/wayland-sessions/kitt-cart.desktop`,
+die User-Unit `~/.config/systemd/user/kitt-launcher.service`, aktiviert Linger für den Benutzer und
+setzt in `/etc/lightdm/lightdm.conf` `autologin-session=kitt-cart` (Backup in
+`lightdm.conf.kitt-backup`). Der normale Pi-Desktop bleibt installiert; `scripts/autostart_disable.sh`
+schaltet lightdm zurück auf `rpd-labwc`. Beides wird mit dem nächsten Neustart wirksam. SSH geht
+in beiden Betriebsarten.
+
+**Recovery, drei Ebenen:**
+
+1. Stürzt ein Modus ab (Spiel, Visualizer, KITT), startet der Launcher-Kern Home. Stürzt Home
+   wiederholt ab, wartet er 10 s.
+2. Stürzt der Launcher selbst ab, startet systemd ihn nach 2 s neu (`Restart=on-failure`, ohne
+   Ratenlimit). Beim Stop wird die ganze Prozessgruppe beendet (Emulatoren, Server).
+3. Stürzt der Compositor, beendet lightdm die Session und meldet neu an.
+
+Ein sauberes Ende per ESC (`dev_emergency_exit = true`) oder `systemctl --user stop` wird nicht
+neu gestartet, der Bildschirm bleibt schwarz, bis `systemctl --user restart kitt-launcher` oder ein
+Neustart kommt. Für den Alltag `dev_emergency_exit = false` setzen.
+
+**SD-Karte:** Logs werden rotiert (Launcher-Logs 512 KB × 3, Modus-Logs 2 MB × 2). Wer gar nicht
+auf die Karte schreiben will, setzt in `config/settings.toml` `dir = "/run/user/1000/kitt-logs"`
+(tmpfs, weg nach dem Neustart).
 
 ## Noch offen
 

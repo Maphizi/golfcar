@@ -1,8 +1,8 @@
 # KITT-Cart – allgemeine Einstellungen
 
 [launcher]
-# ESC beendet den gesamten Launcher (nur während der Entwicklung sinnvoll).
-# Für den Appliance-Betrieb auf false setzen.
+# ESC beendet den gesamten Launcher. Im Appliance-Betrieb (systemd) bleibt der Dienst dann aus
+# (schwarzer Bildschirm) bis zum Neustart; für den Alltag auf false setzen.
 dev_emergency_exit = true
 # Alle n Sekunden Temperatur/Last/RAM ins Launcher-Log schreiben
 status_interval = 60
