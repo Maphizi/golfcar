@@ -36,6 +36,7 @@ stop_timeout = 3
 
 [modes.kitt]
 label = "KITT"
-command = ["{python}", "-m", "launcher.placeholder", "F5  KITT"]
+command = ["{python}", "-m", "kitt.ui"]
 cwd = "{root}"
-stop_timeout = 5
+# Beim Beenden müssen whisper-server und llama-server mit sterben; sie laufen in derselben Prozessgruppe
+stop_timeout = 8

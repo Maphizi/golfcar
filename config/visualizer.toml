@@ -22,3 +22,7 @@ render_scale = 1.0
 [scenes.eye]
 shader = "eye"
 render_scale = 0.85
+
+[scenes.kitt]
+shader = "kitt"
+render_scale = 1.0

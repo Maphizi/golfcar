@@ -22,7 +22,6 @@ os.environ.setdefault("PYOPENGL_PLATFORM", "egl")
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 OpenGL.CONTEXT_CHECKER = None
-OpenGL.STORE_POINTERS = False
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 import pygame  # noqa: E402
 from OpenGL import GL  # noqa: E402
@@ -82,8 +81,9 @@ def create_window(settings: dict, viz_cfg: dict, title: str):
 
 
 class Scene:
-    def __init__(self, name: str, scene_cfg: dict, hot_reload: bool):
+    def __init__(self, name: str, scene_cfg: dict, hot_reload: bool, extra_uniforms: tuple[str, ...] = ()):
         self.name = name
+        self.extra_uniforms = tuple(extra_uniforms)
         self.frag_path = SHADER_DIR / scene_cfg.get("shader", name) / "frag.glsl"
         self.vert_path = SHADER_DIR / "common" / "vert.glsl"
         self.render_scale = float(scene_cfg.get("render_scale", 1.0))
@@ -107,7 +107,8 @@ class Scene:
             GL.glDeleteProgram(self.program)
         self.program = prog
         self.uniforms = {n: GL.glGetUniformLocation(prog, n) for n in
-                         ("iTime", "iResolution", "uRms", "uBass", "uMid", "uHigh", "uBeat", "uSilent", "uAudioTex")}
+                         ("iTime", "iResolution", "uRms", "uBass", "uMid", "uHigh", "uBeat", "uSilent", "uAudioTex")
+                         + self.extra_uniforms}
         self._mtime = self.frag_path.stat().st_mtime
         log.info("Shader geladen: %s (render_scale %.2f)", self.frag_path, self.render_scale)
 
@@ -180,7 +181,7 @@ class Renderer:
         GL.glBindTexture(GL.GL_TEXTURE_2D, self.tex)
         GL.glTexSubImage2D(GL.GL_TEXTURE_2D, 0, 0, 0, TEX_W, 2, GL.GL_RED, GL.GL_UNSIGNED_BYTE, self.texdata)
 
-    def draw(self, t: float, f) -> None:
+    def draw(self, t: float, f, extra: dict | None = None) -> None:
         sc = self.scene
         u = sc.uniforms
         GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self.fbo or 0)
@@ -194,6 +195,10 @@ class Renderer:
         GL.glUniform1f(u["uHigh"], f.high)
         GL.glUniform1f(u["uBeat"], f.beat)
         GL.glUniform1f(u["uSilent"], 1.0 if f.silent else 0.0)
+        for name, val in (extra or {}).items():
+            loc = u.get(name, -1)
+            if loc >= 0:
+                GL.glUniform1f(loc, float(val))
         GL.glActiveTexture(GL.GL_TEXTURE0)
         GL.glBindTexture(GL.GL_TEXTURE_2D, self.tex)
         GL.glUniform1i(u["uAudioTex"], 0)
@@ -212,3 +217,87 @@ class Renderer:
         surf = pygame.image.fromstring(data, (self.w, self.h), "RGB", True)
         pygame.image.save(surf, path)
         log.info("Screenshot: %s", path)
+
+
+TEXT_VERT = """#version 140
+in vec2 aPos;
+out vec2 vUv;
+uniform vec4 uRect;   // x, y, w, h in 0..1 (unten links)
+void main() {
+    vec2 p = aPos * 0.5 + 0.5;           // 0..1 im Dreieck
+    vUv = vec2(p.x, 1.0 - p.y);
+    vec2 q = uRect.xy + p * uRect.zw;
+    gl_Position = vec4(q * 2.0 - 1.0, 0.0, 1.0);
+}
+"""
+TEXT_FRAG = """#version 140
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uTex;
+uniform float uAlpha;
+void main() {
+    vec4 c = texture(uTex, vUv);
+    if (vUv.x > 1.0 || vUv.y > 1.0) discard;
+    fragColor = vec4(c.rgb, c.a * uAlpha);
+}
+"""
+
+
+class TextOverlay:
+    """Textzeilen über pygame.font rendern und als Textur über die Szene blenden."""
+
+    def __init__(self, font_px: int):
+        pygame.font.init()
+        path = pygame.font.match_font("dejavusansmono") or pygame.font.match_font("liberationmono")
+        self.font = pygame.font.Font(path, font_px) if path else pygame.font.SysFont(None, font_px)
+        self.prog = shaders.compileProgram(shaders.compileShader(TEXT_VERT, GL.GL_VERTEX_SHADER),
+                                           shaders.compileShader(TEXT_FRAG, GL.GL_FRAGMENT_SHADER))
+        self.u_rect = GL.glGetUniformLocation(self.prog, "uRect")
+        self.u_alpha = GL.glGetUniformLocation(self.prog, "uAlpha")
+        self.u_tex = GL.glGetUniformLocation(self.prog, "uTex")
+        self.vao = GL.glGenVertexArrays(1)
+        GL.glBindVertexArray(self.vao)
+        vbo = GL.glGenBuffers(1)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, vbo)
+        quad = np.array([-1, -1, 1, -1, -1, 1, 1, -1, 1, 1, -1, 1], dtype=np.float32)
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, quad.nbytes, quad, GL.GL_STATIC_DRAW)
+        GL.glEnableVertexAttribArray(0)
+        GL.glVertexAttribPointer(0, 2, GL.GL_FLOAT, GL.GL_FALSE, 0, None)
+        self.tex = GL.glGenTextures(1)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, self.tex)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE)
+        self._cache_key = None
+        self._size = (1, 1)
+
+    def set_text(self, text: str, color=(230, 230, 230)) -> None:
+        key = (text, color)
+        if key == self._cache_key:
+            return
+        self._cache_key = key
+        surf = self.font.render(text or " ", True, color).convert_alpha()
+        w, h = surf.get_size()
+        data = pygame.image.tostring(surf, "RGBA", False)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, self.tex)
+        GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
+        GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA8, w, h, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, data)
+        self._size = (w, h)
+
+    def draw(self, screen_w: int, screen_h: int, x_px: float, y_px: float, alpha: float = 1.0, center: bool = False) -> None:
+        """x_px/y_px: Position in Pixeln vom linken unteren Rand."""
+        w, h = self._size
+        if center:
+            x_px -= w / 2
+        GL.glEnable(GL.GL_BLEND)
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+        GL.glUseProgram(self.prog)
+        GL.glUniform4f(self.u_rect, x_px / screen_w, y_px / screen_h, w / screen_w, h / screen_h)
+        GL.glUniform1f(self.u_alpha, alpha)
+        GL.glActiveTexture(GL.GL_TEXTURE1)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, self.tex)
+        GL.glUniform1i(self.u_tex, 1)
+        GL.glBindVertexArray(self.vao)
+        GL.glDrawArrays(GL.GL_TRIANGLES, 0, 6)
+        GL.glDisable(GL.GL_BLEND)

@@ -43,7 +43,7 @@ class WhisperServer:
         self._logfh = open(self.log_path, "ab") if self.log_path else subprocess.DEVNULL
         t0 = time.monotonic()
         self.proc = subprocess.Popen([str(self.binary)] + self.args, stdout=self._logfh, stderr=subprocess.STDOUT,
-                                     stdin=subprocess.DEVNULL, start_new_session=True)
+                                     stdin=subprocess.DEVNULL, start_new_session=False)
         while time.monotonic() - t0 < timeout:
             if self.proc.poll() is not None:
                 raise RuntimeError(f"whisper-server beendet (exit {self.proc.returncode}), siehe {self.log_path}")

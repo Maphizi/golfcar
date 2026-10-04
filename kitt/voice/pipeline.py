@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 
 from kitt import config as kcfg
-from kitt.llm.llama_client import Kitt, LlamaServer
+from kitt.llm.llama_client import Kitt, LlamaServer, StopGeneration
 from kitt.stt.listener import Listener
 from kitt.stt.vad import RATE as STT_RATE, load_vad
 from kitt.stt.whisper_client import WhisperServer, transcribe
@@ -23,6 +23,21 @@ from kitt.voice.sentences import SentenceSplitter
 from launcher import config as lcfg
 
 log = logging.getLogger("voice")
+
+
+def clean_sentence(s: str, openers: list[str]) -> str:
+    """Floskeln am Satzanfang entfernen ("Natürlich!", "Gerne,"), Markdown-Reste und Emojis streichen."""
+    import re
+    s = re.sub(r"[*_#`]+", "", s).strip()
+    s = re.sub(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]", "", s)
+    low = s.lower()
+    for o in openers:
+        if low.startswith(o.lower()):
+            rest = s[len(o):].lstrip(" ,.!:;-")
+            if len(rest) < 3:
+                return ""           # Satz bestand nur aus der Floskel
+            return rest[0].upper() + rest[1:]
+    return s
 
 
 class VoicePipeline:
@@ -159,23 +174,35 @@ class VoicePipeline:
         done = threading.Event()
         speaker = self.tts.speaker(on_audio=self.on_audio, on_done=done.set)
         spoken = []
+        max_sentences = int(self.vcfg.get("max_sentences", 3))
+
+        def emit(s: str) -> None:
+            s = clean_sentence(s, self.vcfg.get("strip_openers", []))
+            if not s:
+                return
+            if len(spoken) >= max_sentences:
+                raise StopGeneration()
+            if not spoken:
+                self._set("speaking")
+            spoken.append(s)
+            self.on_text("kitt", s)
+            speaker.feed(s)
 
         def on_token(tok: str) -> None:
             for s in splitter.feed(tok):
-                if not spoken:
-                    self._set("speaking")
-                spoken.append(s)
-                self.on_text("kitt", s)
-                speaker.feed(s)
+                emit(s)
 
         try:
             res = self.kitt.ask(text, on_token=on_token)
-            for s in splitter.flush():
-                if not spoken:
-                    self._set("speaking")
-                spoken.append(s)
-                self.on_text("kitt", s)
-                speaker.feed(s)
+            if not res.stopped:
+                for s in splitter.flush():
+                    try:
+                        emit(s)
+                    except StopGeneration:
+                        break
+            if res.stopped:
+                # Historie auf das Gesprochene kürzen, sonst "erinnert" KITT sich an ungesagte Sätze
+                self.kitt.history[-1]["content"] = " ".join(spoken)
             if not spoken:
                 log.warning("Leere Antwort")
         finally:

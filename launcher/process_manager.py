@@ -34,6 +34,7 @@ class ProcessManager:
         self.logs_dir = logs_dir
         self.current: ModeSpec | None = None
         self.proc: subprocess.Popen | None = None
+        self.pgid: int | None = None
         self.started_at: float = 0.0
         self._logfh = None
 
@@ -82,6 +83,7 @@ class ProcessManager:
             self.current = None
             return False
         self.current = spec
+        self.pgid = self.proc.pid          # start_new_session: pgid == pid
         self.started_at = time.monotonic()
         log.info("Modus gestartet: %s (pid %d)", name, self.proc.pid)
         return True
@@ -107,6 +109,15 @@ class ProcessManager:
                     log.error("Modus %s lässt sich nicht beenden", spec.name)
                     code = None
         log.info("Modus beendet: %s (exit %s, Laufzeit %.0fs)", spec.name, code, time.monotonic() - self.started_at)
+        # Reste der Prozessgruppe (Server, Emulatoren) sicher beenden, auch wenn der Hauptprozess schon weg ist
+        if self.pgid:
+            try:
+                os.killpg(self.pgid, signal.SIGTERM)
+                time.sleep(0.3)
+                os.killpg(self.pgid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            self.pgid = None
         self._close_log()
         self.proc = None
         self.current = None

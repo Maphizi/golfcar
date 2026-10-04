@@ -3,7 +3,7 @@
 Fullscreen-Appliance: Retro-Gaming, drei GPU-Audio-Visualizer und der lokale
 Sprachassistent KITT. Bedienung über F1–F6, später über eine USB-HID-Buttonbox.
 
-Stand: **Phase 7** (Launcher, RetroPie als F1, Visualizer F2–F4, komplette KITT-Sprachpipeline: Silero VAD, whisper.cpp, llama.cpp/Qwen, Piper).
+Stand: **Phase 8** (Launcher, RetroPie als F1, Visualizer F2–F4, KITT als F5 mit Vollbild-Oberfläche und kompletter Sprachpipeline).
 Phasenplan und Anforderungen: `docs/KITT_Masterprompt_V1_erweitert.md`.
 Hardware-Inventur: `docs/inventory_phase1.txt`.
 
@@ -56,6 +56,7 @@ Grundsätze:
 | `kitt/personality/` | KITT-System-Prompt und Benchmark-Fragen |
 | `kitt/tts/` | Piper-Sprachausgabe mit Streaming-Wiedergabe |
 | `kitt/voice/` | Pipeline-Zustandsmaschine, Satz-Splitter, Headless-Runner |
+| `kitt/ui/` | KITT-Vollbildoberfläche (F5), bindet Szene `kitt` und Pipeline zusammen |
 | `config/kitt.toml` | STT-, VAD-, LLM- und TTS-Einstellungen |
 | `models/` | Whisper-, VAD-, LLM-, TTS-Modelle (nicht im Repo) |
 | `vendor/` | whisper.cpp, llama.cpp (nicht im Repo) |
@@ -72,7 +73,7 @@ Grundsätze:
 | F2 | `viz_psychedelic` | Psychedelic Visualizer |
 | F3 | `viz_crt` | CRT / Oscilloscope |
 | F4 | `viz_eye` | Digital Eye |
-| F5 | `kitt` | KITT Sprachassistent |
+| F5 | `kitt` | KITT Sprachassistent mit Oberfläche |
 | F6 | `home` | Home-Screen |
 | ESC | `quit` | Launcher beenden (nur wenn `dev_emergency_exit = true`) |
 
@@ -147,6 +148,8 @@ Alle Logs liegen in `logs/` (Pfad in `config/settings.toml`, kann auf ein tmpfs 
 - **Sprachmodell: llama-server startet nicht oder antwortet Kauderwelsch:** `logs/llama-server.log`.
   Port 8179 belegt, Modell fehlt, oder ein zu neues Modellformat für den Build
   (`scripts/setup_phase6.sh` zieht llama.cpp nach und baut neu, wenn `vendor/llama.cpp/build` gelöscht wird).
+- **F5 zeigt lange "SYSTEME LADEN":** beim ersten Start nach dem Boot lesen beide Server ihre
+  Modelle von der SD-Karte (bis zu 40 s), danach aus dem Cache in wenigen Sekunden. `logs/kitt.log`.
 - **KITT antwortet zu lang oder mit Floskeln:** System-Prompt in `kitt/personality/system_prompt.txt`,
   `max_tokens` und `temperature` in `config/kitt.toml`.
 - **Sprachausgabe stumm:** `wpctl status` zeigt unter Sinks nur "Dummy Output", wenn kein
@@ -354,6 +357,42 @@ Mikrofon (48 kHz) → Listener/VAD → whisper-server → llama-server → Satz-
 `scripts/kitt_voice.sh --text "KITT, wie sieht's aus?"` (LLM + TTS ohne Mikrofon),
 `scripts/kitt_voice.sh --seconds 60` (voller Mikrofonbetrieb, Zustände im Terminal). Das Log
 `logs/kitt.log` enthält je Runde STT-Zeit, LLM-TTFT, Zeit bis zur ersten Sprache und Gesamtzeit.
+
+## F5 – KITT-Oberfläche und Persönlichkeit (Phase 8)
+
+`python -m kitt.ui` ist der F5-Modus: dieselbe GL-Engine wie die Visualizer mit der Szene
+`visualizers/shaders/kitt/frag.glsl`, dazu die Sprachpipeline in Threads. Kein Chatfenster, keine
+Eingabe. Schwarzer Hintergrund, 80er-Fahrzeugcomputer:
+
+- oben der horizontale Scanner (32 Segmente, Tempo je Zustand), darunter vier Zustands-LEDs
+- in der Mitte der Voice-Modulator mit drei Säulen, die beim Sprechen mit dem TTS-Signal
+  ausschlagen und beim Zuhören mit der VAD-Wahrscheinlichkeit
+- unten die Waveform (Mikrofon oder Stimme), Readouts mit Pegel und Sekunden im Zustand
+- eine Readout-Zeile mit dem letzten Transkript bzw. dem gesprochenen Satz (`[ui].show_text`)
+- CRT-Scanlines, Wölbung, Flimmern
+
+| Zustand | Anzeige |
+|---|---|
+| SYSTEME LADEN | Scanner schnell, Säulen atmen, bis whisper-server und llama-server bereit sind |
+| BEREIT | Scanner langsam, Säulen ruhen |
+| HÖRE ZU | Säulen grünlich, folgen dem Mikrofonpegel, Waveform aktiv |
+| VERARBEITE | Scanner rast, zufällige Segmente flackern, LED bernstein |
+| SPRECHE | Säulen und Scanner pulsen mit der Stimme, Waveform bernstein |
+
+Während KITT spricht, speist die Pipeline das Piper-Audio direkt in die Analyse (kein Monitor-Capture
+nötig). `python -m kitt.ui --demo` läuft die Zustände ohne Server und Hardware durch, mit
+`--screenshot` zur Kontrolle.
+
+**Persönlichkeit:** Der System-Prompt in `kitt/personality/system_prompt.txt` wurde nach dem
+Benchmark nachgeschärft (keine erfundenen Uhrzeiten oder Messwerte, Beispiele nicht wörtlich
+wiederholen, keine Selbsterzählungen). Zusätzlich greifen zwei Mechanismen in der Pipeline:
+`[voice].strip_openers` streicht Floskeln wie "Natürlich!" am Satzanfang, und `max_sentences`
+bricht die Generierung nach drei gesprochenen Sätzen ab (die Verbindung zum llama-server wird
+geschlossen, der Slot wird frei, die Historie enthält nur das Gesagte).
+
+**Prozess-Hygiene:** whisper-server und llama-server laufen in der Prozessgruppe des F5-Modus.
+Der Launcher beendet beim Moduswechsel oder nach einem Absturz immer die ganze Gruppe, damit
+keine Server mit belegten Ports zurückbleiben.
 
 ## Noch offen
 

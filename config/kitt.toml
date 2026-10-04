@@ -102,3 +102,15 @@ ignore_phrases = ["untertitel", "zdf", "vielen dank", "copyright", "amara.org", 
 min_words = 2
 # Wenn true, antwortet KITT nur, wenn "kitt" im Transkript vorkommt (Anrede). Sonst auf alles.
 require_name = false
+# Höchstens so viele Sätze sprechen, danach wird die Generierung abgebrochen
+max_sentences = 3
+# Floskeln, die am Satzanfang gestrichen werden
+strip_openers = ["Natürlich!", "Natürlich,", "Natürlich.", "Gerne!", "Gerne,", "Gerne.", "Kein Problem!", "Kein Problem,", "Selbstverständlich!", "Selbstverständlich,", "Klar!", "Klar,", "Okay,", "Ok,"]
+
+[ui]
+# Readout-Zeile mit letztem Transkript / gesprochenem Satz (kein Chatfenster, eine Zeile)
+show_text = true
+# Sekunden, die die Zeile nach einer Antwort stehen bleibt
+text_hold_s = 8
+# Begrüßung nach dem Laden (leer = keine)
+greeting = "KITT online."

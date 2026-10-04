@@ -43,7 +43,7 @@ class LlamaServer:
         self._logfh = open(self.log_path, "ab") if self.log_path else subprocess.DEVNULL
         t0 = time.monotonic()
         self.proc = subprocess.Popen([str(self.binary)] + self.args, stdout=self._logfh, stderr=subprocess.STDOUT,
-                                     stdin=subprocess.DEVNULL, start_new_session=True)
+                                     stdin=subprocess.DEVNULL, start_new_session=False)
         while time.monotonic() - t0 < timeout:
             if self.proc.poll() is not None:
                 raise RuntimeError(f"llama-server beendet (exit {self.proc.returncode}), siehe {self.log_path}")
@@ -98,6 +98,10 @@ class LlamaServer:
         self._logfh = None
 
 
+class StopGeneration(Exception):
+    """Aus on_token werfen, um die Generierung abzubrechen (Verbindung wird geschlossen, Slot frei)."""
+
+
 class Result:
     def __init__(self):
         self.text = ""
@@ -107,6 +111,7 @@ class Result:
         self.tps = 0.0           # Tokens/s laut Server (oder berechnet)
         self.prompt_tokens = 0
         self.prompt_ms = 0.0
+        self.stopped = False
 
 
 def chat(port: int, messages: list[dict], max_tokens: int = 80, temperature: float = 0.7, top_p: float = 0.8,
@@ -158,7 +163,17 @@ def chat(port: int, messages: list[dict], max_tokens: int = 80, temperature: flo
                     res.tokens += 1
                     res.text += delta
                     if on_token:
-                        on_token(delta)
+                        try:
+                            on_token(delta)
+                        except StopGeneration:
+                            res.stopped = True
+                            buf = b""
+                            chunk = b""
+                            break
+            if getattr(res, "stopped", False):
+                break
+        if getattr(res, "stopped", False):
+            break
     conn.close()
     res.total = time.monotonic() - t0
     res.text = THINK_RE.sub("", res.text).strip()
