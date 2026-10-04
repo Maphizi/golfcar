@@ -1,0 +1,106 @@
+2026-10-03 22:38:59 INFO  launcher: KITT-Cart Launcher startet (pid 45490)
+2026-10-03 22:38:59 INFO  launcher: System: temp 48.5°C  load 0.00/4  ram 2475/8058 MB
+2026-10-03 22:38:59 INFO  input.evdev: Bindings: {'KEY_F1': 'gaming', 'KEY_F2': 'viz_psychedelic', 'KEY_F3': 'viz_crt', 'KEY_F4': 'viz_eye', 'KEY_F5': 'kitt', 'KEY_F6': 'home', 'KEY_ESC': 'quit'}
+2026-10-03 22:38:59 INFO  input.socket: Steuer-Socket: /run/user/1000/kitt-launcher.sock
+2026-10-03 22:38:59 INFO  input.evdev: Gerät aktiv: vc4-hdmi-1 (/dev/input/event3)
+2026-10-03 22:38:59 INFO  input.evdev: Gerät aktiv: vc4-hdmi-0 (/dev/input/event1)
+2026-10-03 22:38:59 INFO  procman: Modus gestartet: home (pid 45501)
+2026-10-03 22:38:59 INFO  input.evdev: Gerät aktiv: Cherry USB keyboard (/dev/input/event5)
+2026-10-03 22:39:12 INFO  launcher: Action viz_psychedelic -> Modus viz_psychedelic
+2026-10-03 22:39:12 INFO  procman: Beende Modus home (pid 45501) mit SIGTERM
+2026-10-03 22:39:13 INFO  procman: Modus beendet: home (exit 0, Laufzeit 13s)
+2026-10-03 22:39:13 INFO  procman: Modus gestartet: viz_psychedelic (pid 45540)
+2026-10-03 22:39:14 INFO  procman: Modus beendet: viz_psychedelic (exit 1, Laufzeit 1s)
+2026-10-03 22:39:14 INFO  launcher: Modus viz_psychedelic beendet (exit 1), zurück zu Home
+2026-10-03 22:39:14 INFO  procman: Modus gestartet: home (pid 45548)
+2026-10-03 22:40:00 INFO  launcher: Status: mode=home temp 56.8°C  load 0.45/4  ram 2605/8058 MB
+2026-10-03 22:40:06 INFO  launcher: Action viz_psychedelic -> Modus viz_psychedelic
+2026-10-03 22:40:06 INFO  procman: Beende Modus home (pid 45548) mit SIGTERM
+2026-10-03 22:40:06 INFO  procman: Modus beendet: home (exit 0, Laufzeit 52s)
+2026-10-03 22:40:06 INFO  procman: Modus gestartet: viz_psychedelic (pid 45642)
+2026-10-03 22:40:07 INFO  procman: Modus beendet: viz_psychedelic (exit 1, Laufzeit 1s)
+2026-10-03 22:40:07 INFO  launcher: Modus viz_psychedelic beendet (exit 1), zurück zu Home
+2026-10-03 22:40:07 INFO  procman: Modus gestartet: home (pid 45650)
+2026-10-03 22:40:44 INFO  launcher: Action viz_psychedelic -> Modus viz_psychedelic
+2026-10-03 22:40:44 INFO  procman: Beende Modus home (pid 45650) mit SIGTERM
+2026-10-03 22:40:45 INFO  procman: Modus beendet: home (exit 0, Laufzeit 37s)
+2026-10-03 22:40:45 INFO  procman: Modus gestartet: viz_psychedelic (pid 45716)
+2026-10-03 22:40:46 INFO  procman: Modus beendet: viz_psychedelic (exit 1, Laufzeit 1s)
+2026-10-03 22:40:46 INFO  launcher: Modus viz_psychedelic beendet (exit 1), zurück zu Home
+2026-10-03 22:40:46 INFO  procman: Modus gestartet: home (pid 45724)
+2026-10-03 22:41:00 INFO  launcher: Status: mode=home temp 59.5°C  load 0.81/4  ram 2647/8058 MB
+2026-10-03 22:41:20 INFO  launcher: Action viz_psychedelic -> Modus viz_psychedelic
+2026-10-03 22:41:20 INFO  procman: Beende Modus home (pid 45724) mit SIGTERM
+2026-10-03 22:41:21 INFO  procman: Modus beendet: home (exit 0, Laufzeit 35s)
+2026-10-03 22:41:21 INFO  procman: Modus gestartet: viz_psychedelic (pid 45807)
+2026-10-03 22:41:22 INFO  procman: Modus beendet: viz_psychedelic (exit 1, Laufzeit 1s)
+2026-10-03 22:41:22 INFO  launcher: Modus viz_psychedelic beendet (exit 1), zurück zu Home
+2026-10-03 22:41:22 INFO  procman: Modus gestartet: home (pid 45815)
+2026-10-03 22:42:00 INFO  launcher: Status: mode=home temp 61.1°C  load 0.92/4  ram 2605/8058 MB
+2026-10-03 22:42:13 INFO  launcher: Action viz_psychedelic -> Modus viz_psychedelic
+2026-10-03 22:42:13 INFO  procman: Beende Modus home (pid 45815) mit SIGTERM
+2026-10-03 22:42:14 INFO  procman: Modus beendet: home (exit 0, Laufzeit 52s)
+2026-10-03 22:42:14 INFO  procman: Modus gestartet: viz_psychedelic (pid 45875)
+2026-10-03 22:42:15 INFO  procman: Modus beendet: viz_psychedelic (exit 1, Laufzeit 1s)
+2026-10-03 22:42:15 INFO  launcher: Modus viz_psychedelic beendet (exit 1), zurück zu Home
+2026-10-03 22:42:15 INFO  procman: Modus gestartet: home (pid 45883)
+2026-10-03 22:42:50 INFO  launcher: Action viz_psychedelic -> Modus viz_psychedelic
+2026-10-03 22:42:50 INFO  procman: Beende Modus home (pid 45883) mit SIGTERM
+2026-10-03 22:42:50 INFO  procman: Modus beendet: home (exit 0, Laufzeit 35s)
+2026-10-03 22:42:50 INFO  procman: Modus gestartet: viz_psychedelic (pid 45961)
+2026-10-03 22:43:01 INFO  launcher: Status: mode=viz_psychedelic temp 65.0°C  load 0.83/4  ram 2664/8058 MB
+2026-10-03 22:43:10 INFO  launcher: Action viz_crt -> Modus viz_crt
+2026-10-03 22:43:10 INFO  procman: Beende Modus viz_psychedelic (pid 45961) mit SIGTERM
+2026-10-03 22:43:10 INFO  procman: Modus beendet: viz_psychedelic (exit 0, Laufzeit 20s)
+2026-10-03 22:43:10 INFO  procman: Modus gestartet: viz_crt (pid 46021)
+2026-10-03 22:43:32 INFO  launcher: Action viz_eye -> Modus viz_eye
+2026-10-03 22:43:32 INFO  procman: Beende Modus viz_crt (pid 46021) mit SIGTERM
+2026-10-03 22:43:32 INFO  procman: Modus beendet: viz_crt (exit 0, Laufzeit 22s)
+2026-10-03 22:43:32 INFO  procman: Modus gestartet: viz_eye (pid 46068)
+2026-10-03 22:43:57 INFO  launcher: Action home -> Modus home
+2026-10-03 22:43:57 INFO  procman: Beende Modus viz_eye (pid 46068) mit SIGTERM
+2026-10-03 22:43:57 INFO  procman: Modus beendet: viz_eye (exit 0, Laufzeit 25s)
+2026-10-03 22:43:57 INFO  procman: Modus gestartet: home (pid 46116)
+2026-10-03 22:44:00 INFO  launcher: Emergency Exit (ESC)
+2026-10-03 22:44:00 INFO  launcher: Launcher fährt herunter
+2026-10-03 22:44:00 INFO  procman: Beende Modus home (pid 46116) mit SIGTERM
+2026-10-03 22:44:00 INFO  procman: Modus beendet: home (exit 0, Laufzeit 3s)
+2026-10-03 22:44:00 INFO  launcher: Launcher beendet
+2026-10-04 09:40:42 INFO  launcher: KITT-Cart Launcher startet (pid 56739)
+2026-10-04 09:40:42 INFO  launcher: System: temp 51.8°C  load 0.43/4  ram 2427/8058 MB
+2026-10-04 09:40:42 INFO  input.evdev: Bindings: {'KEY_F1': 'gaming', 'KEY_F2': 'viz_psychedelic', 'KEY_F3': 'viz_crt', 'KEY_F4': 'viz_eye', 'KEY_F5': 'kitt', 'KEY_F6': 'home', 'KEY_ESC': 'quit'}
+2026-10-04 09:40:42 INFO  input.socket: Steuer-Socket: /run/user/1000/kitt-launcher.sock
+2026-10-04 09:40:42 INFO  procman: Modus gestartet: home (pid 56749)
+2026-10-04 09:40:42 INFO  input.evdev: Gerät aktiv: vc4-hdmi-1 (/dev/input/event3)
+2026-10-04 09:40:42 INFO  input.evdev: Gerät aktiv: Cherry USB keyboard (/dev/input/event5)
+2026-10-04 09:40:42 INFO  input.evdev: Gerät aktiv: vc4-hdmi-0 (/dev/input/event1)
+2026-10-04 09:41:05 INFO  launcher: Action kitt -> Modus kitt
+2026-10-04 09:41:05 INFO  procman: Beende Modus home (pid 56749) mit SIGTERM
+2026-10-04 09:41:05 INFO  procman: Modus beendet: home (exit 0, Laufzeit 23s)
+2026-10-04 09:41:05 INFO  procman: Modus gestartet: kitt (pid 56784)
+2026-10-04 09:41:42 INFO  launcher: Status: mode=kitt temp 62.8°C  load 2.69/4  ram 2913/8058 MB
+2026-10-04 09:42:14 INFO  launcher: Action home -> Modus home
+2026-10-04 09:42:14 INFO  procman: Beende Modus kitt (pid 56784) mit SIGTERM
+2026-10-04 09:42:14 INFO  procman: Modus beendet: kitt (exit 0, Laufzeit 69s)
+2026-10-04 09:42:14 INFO  procman: Modus gestartet: home (pid 56880)
+2026-10-04 09:42:25 INFO  launcher: Emergency Exit (ESC)
+2026-10-04 09:42:25 INFO  launcher: Launcher fährt herunter
+2026-10-04 09:42:25 INFO  procman: Beende Modus home (pid 56880) mit SIGTERM
+2026-10-04 09:42:25 INFO  procman: Modus beendet: home (exit 0, Laufzeit 11s)
+2026-10-04 09:42:25 INFO  launcher: Launcher beendet
+2026-10-04 09:44:59 INFO  launcher: KITT-Cart Launcher startet (pid 57008)
+2026-10-04 09:44:59 INFO  launcher: System: temp 85.3°C  load 3.35/4  ram 2220/8058 MB
+2026-10-04 09:44:59 INFO  input.evdev: Bindings: {'KEY_F1': 'gaming', 'KEY_F2': 'viz_psychedelic', 'KEY_F3': 'viz_crt', 'KEY_F4': 'viz_eye', 'KEY_F5': 'kitt', 'KEY_F6': 'home', 'KEY_ESC': 'quit'}
+2026-10-04 09:44:59 INFO  input.socket: Steuer-Socket: /run/user/1000/kitt-launcher.sock
+2026-10-04 09:44:59 INFO  input.evdev: Gerät aktiv: vc4-hdmi-0 (/dev/input/event1)
+2026-10-04 09:44:59 INFO  procman: Modus gestartet: home (pid 57013)
+2026-10-04 09:44:59 INFO  input.evdev: Gerät aktiv: vc4-hdmi-1 (/dev/input/event3)
+2026-10-04 09:44:59 INFO  input.evdev: Gerät aktiv: Cherry USB keyboard (/dev/input/event5)
+2026-10-04 09:45:59 INFO  launcher: Status: mode=home temp 72.2°C  load 3.47/4  ram 2330/8058 MB
+2026-10-04 09:46:59 INFO  launcher: Status: mode=home temp 71.0°C  load 2.64/4  ram 2438/8058 MB
+2026-10-04 09:47:34 INFO  procman: Modus beendet: home (exit 0, Laufzeit 156s)
+2026-10-04 09:47:34 WARNING launcher: Home beendet (exit 0 nach 155.6s), starte neu
+2026-10-04 09:47:34 INFO  procman: Modus gestartet: home (pid 57067)
+2026-10-04 09:47:39 INFO  procman: Modus beendet: home (exit 0, Laufzeit 5s)
+2026-10-04 09:47:39 WARNING launcher: Home beendet (exit 0 nach 4.5s), starte neu
+2026-10-04 09:47:39 INFO  procman: Modus gestartet: home (pid 57077)

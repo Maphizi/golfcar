@@ -1,0 +1,41 @@
+2026-10-04 09:48:53 INFO  llm: llama-server bereit nach 19.5s (qwen2.5-1.5b-instruct-q4_k_m.gguf)
+2026-10-04 09:49:47 INFO  llm: llama-server bereit nach 5.8s (Qwen3.5-0.8B-Q4_K_M.gguf)
+2026-10-04 09:50:32 INFO  llm: llama-server bereit nach 18.1s (Qwen3.5-2B-Q4_K_M.gguf)
+2026-10-04 09:51:41 INFO  llm: llama-server bereit nach 9.6s (Qwen3.5-4B-Q4_K_M.gguf)
+   "KITT, wie sieht's aus?"
+      -> 'Super, der Fahrer. Was hast du denn heute vor?'  [TTFT 1.11s, 7.6 tok/s, 13 tok, 2.81s]
+   'KITT, wo sind wir?'
+      -> "Wir befinden uns in der Nähe des Golfcarts' Startplatzes. Kein Problem."  [TTFT 0.75s, 7.9 tok/s, 20 tok, 3.27s]  Verstöße: 'kein problem'
+   'KITT, mach mal Stimmung.'
+      -> 'Na klar, Fahrer! Ich werde dir ein paar coolen Hits aufschalten, die dir den Magen wummern lassen. Da du noch nicht weißt, welche Songs ich auswählen werde, ist das ein wenig riskant...'  [TTFT 0.94s, 7.9 tok/s, 50 tok, 7.25s]
+   'Wie spät ist es?'
+      -> 'Es ist gerade 14:27 Uhr.'  [TTFT 0.99s, 7.8 tok/s, 11 tok, 2.39s]
+qwen2.5-1.5b-instruct-q4_k_m.gguf: Laden 19.5s, RSS 1246 MB, Ø TTFT 0.95s, Ø 7.8 tok/s, Ø Antwort 3.93s, Verstöße 1
+   "KITT, wie sieht's aus?"
+      -> 'Technisch ausgezeichnet. Fahrerisch warten wir die nächsten Minuten noch ab. Offenbar dort, wo du uns hingefahren hast. Ich prüfe trotzdem. Eine ambitionierte Forderung angesichts deiner Musikauswahl.'  [TTFT 0.84s, 11.3 tok/s, 44 tok, 4.75s]  Verstöße: 5 Sätze
+   'KITT, wo sind wir?'
+      -> 'Offenbar dort, wo du uns hingefahren hast. Ich prüfe trotzdem.'  [TTFT 0.78s, 11.3 tok/s, 18 tok, 2.39s]
+   'KITT, mach mal Stimmung.'
+      -> 'Eine ambitionierte Forderung angesichts deiner Musikauswahl.'  [TTFT 0.79s, 11.4 tok/s, 13 tok, 1.92s]
+   'Wie spät ist es?'
+      -> 'Technisch 12 Uhr. Wenn du mich auf den Bildschirm stürzest, bist du nicht in Ordnung.'  [TTFT 0.74s, 11.3 tok/s, 24 tok, 2.86s]
+Qwen3.5-0.8B-Q4_K_M.gguf: Laden 5.8s, RSS 741 MB, Ø TTFT 0.79s, Ø 11.3 tok/s, Ø Antwort 2.98s, Verstöße 1
+   "KITT, wie sieht's aus?"
+      -> 'Technisch ausgezeichnet. Fahrerisch warten wir die nächsten Minuten noch ab.'  [TTFT 1.91s, 5.6 tok/s, 14 tok, 4.40s]
+   'KITT, wo sind wir?'
+      -> 'Offenbar dort, wo du uns hingefahren hast. Ich prüfe trotzdem.'  [TTFT 1.87s, 5.6 tok/s, 18 tok, 5.11s]
+   'KITT, mach mal Stimmung.'
+      -> 'Eine ambitionierte Forderung angesichts deiner Musikauswahl.'  [TTFT 1.83s, 5.5 tok/s, 13 tok, 4.19s]
+   'Wie spät ist es?'
+      -> 'Unser Uhrwerk ist still.'  [TTFT 1.69s, 5.3 tok/s, 7 tok, 3.00s]
+Qwen3.5-2B-Q4_K_M.gguf: Laden 18.1s, RSS 1452 MB, Ø TTFT 1.83s, Ø 5.5 tok/s, Ø Antwort 4.18s, Verstöße 0
+   "KITT, wie sieht's aus?"
+      -> 'Technisch ausgefeilt. Fahrerisch warten wir noch auf deine nächste Initiative.'  [TTFT 4.99s, 2.6 tok/s, 16 tok, 11.15s]
+   'KITT, wo sind wir?'
+      -> 'Offenbar dort, wo du uns hingefahren hast. Ich prüfe trotzdem.'  [TTFT 4.76s, 2.4 tok/s, 18 tok, 12.12s]
+   'KITT, mach mal Stimmung.'
+      -> 'Eine ambitionierte Forderung angesichts deiner Musikwünsche. Ich habe keine Musikbox, aber ich kann sicherstellen, dass der Motor nicht in den nächsten Minuten stillsteht.'  [TTFT 4.91s, 2.5 tok/s, 37 tok, 19.85s]
+   'Wie spät ist es?'
+      -> 'Die Zeit ist für mich nur eine ungenutzte Ressource, die ich nicht aufzeichnen kann. Wenn du dich nicht vergisst, werde ich sie dir vielleicht nachher noch einmal sagen.'  [TTFT 4.33s, 2.6 tok/s, 39 tok, 19.57s]
+Qwen3.5-4B-Q4_K_M.gguf: Laden 9.6s, RSS 3007 MB, Ø TTFT 4.75s, Ø 2.5 tok/s, Ø Antwort 15.67s, Verstöße 0
+Tabelle: /home/maphizi/golfcar/docs/llm_bench_phase6.md

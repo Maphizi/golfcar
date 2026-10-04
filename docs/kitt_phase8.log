@@ -1,0 +1,69 @@
+2026-10-04 07:21:01 INFO  tts: Piper-Stimme de_DE-thorsten-medium geladen in 2.0s (22050 Hz)
+2026-10-04 07:21:01 INFO  voice: STATE SPEAKING
+2026-10-04 07:21:01 INFO  tts: TTS 0.11s für 0.8s Audio: 'Test.'
+2026-10-04 07:21:02 INFO  voice: STATE IDLE
+2026-10-04 07:21:03 INFO  voice: STATE STOPPED
+2026-10-04 07:21:21 INFO  tts: Piper-Stimme de_DE-thorsten-medium geladen in 2.0s (22050 Hz)
+2026-10-04 07:21:21 INFO  voice: STATE SPEAKING
+2026-10-04 07:21:21 INFO  tts: TTS 0.14s für 1.2s Audio: 'KITT online.'
+2026-10-04 07:21:21 INFO  tts: TTS 0.15s für 1.4s Audio: 'Alle Systeme nominal.'
+2026-10-04 07:21:21 INFO  tts: TTS 0.14s für 1.3s Audio: 'Fahrer leider auch.'
+2026-10-04 07:21:25 INFO  voice: STATE IDLE
+2026-10-04 07:21:25 INFO  voice: STATE STOPPED
+2026-10-04 07:21:31 INFO  voice: STATE LOADING
+2026-10-04 07:21:33 INFO  tts: Piper-Stimme de_DE-thorsten-medium geladen in 2.0s (22050 Hz)
+2026-10-04 07:21:39 INFO  stt: whisper-server bereit nach 7.8s (ggml-base.bin)
+2026-10-04 07:21:48 INFO  llm: llama-server bereit nach 17.5s (qwen2.5-1.5b-instruct-q4_k_m.gguf)
+2026-10-04 07:22:09 INFO  voice: STATE IDLE
+2026-10-04 07:22:09 INFO  voice: Pipeline bereit: STT ggml-base.bin, LLM qwen2.5-1.5b-instruct-q4_k_m.gguf, TTS de_DE-thorsten-medium
+2026-10-04 07:22:09 INFO  voice: STATE THINKING
+2026-10-04 07:22:10 INFO  voice: STATE SPEAKING
+2026-10-04 07:22:10 INFO  tts: TTS 0.28s für 1.0s Audio: 'Gut gemacht!'
+2026-10-04 07:22:12 INFO  tts: TTS 0.40s für 2.1s Audio: 'Es wird Zeit, weiterzufahren.'
+2026-10-04 07:22:14 INFO  tts: TTS 0.66s für 3.5s Audio: 'Was hältst du davon, wenn wir uns auf den Fluss konzentrieren?'
+2026-10-04 07:22:18 INFO  voice: Runde: LLM TTFT 0.79s, 7.2 tok/s, erste Sprache nach 1.38s, gesamt 9.15s: 'Gut gemacht! Es wird Zeit, weiterzufahren. Was hältst du davon, wenn wir uns auf den Fluss konzentrieren?'
+2026-10-04 07:22:18 INFO  voice: STATE IDLE
+2026-10-04 07:22:18 INFO  voice: STATE STOPPED
+2026-10-04 09:40:12 INFO  OpenGL.acceleratesupport: No OpenGL_accelerate module loaded: No module named 'OpenGL_accelerate'
+2026-10-04 09:40:14 INFO  viz.engine: SDL-Treiber x11, GL 3.1 Mesa 26.2.2-1~bpo13+0~rpt1, GLSL 1.40, Renderer V3D 7.1.10.2
+2026-10-04 09:40:14 INFO  viz.engine: Shader geladen: /home/maphizi/golfcar/visualizers/shaders/kitt/frag.glsl (render_scale 1.00)
+2026-10-04 09:40:14 INFO  viz.engine: Render 1920x1080 auf Display 1920x1080
+2026-10-04 09:40:24 INFO  kitt.ui: fps 43.5 state=listening rms=0.00
+2026-10-04 09:40:35 INFO  viz.engine: Screenshot: docs/screenshot_kitt_demo.png
+2026-10-04 09:40:35 INFO  kitt.ui: fps 39.6 state=loading rms=0.00
+
+===== 2026-10-04 09:41:05 start ['/home/maphizi/golfcar/.venv/bin/python', '-m', 'kitt.ui']
+2026-10-04 09:41:05 INFO  OpenGL.acceleratesupport: No OpenGL_accelerate module loaded: No module named 'OpenGL_accelerate'
+2026-10-04 09:41:06 INFO  viz.engine: SDL-Treiber x11, GL 3.1 Mesa 26.2.2-1~bpo13+0~rpt1, GLSL 1.40, Renderer V3D 7.1.10.2
+2026-10-04 09:41:06 INFO  viz.engine: Shader geladen: /home/maphizi/golfcar/visualizers/shaders/kitt/frag.glsl (render_scale 1.00)
+2026-10-04 09:41:06 INFO  viz.engine: Render 1920x1080 auf Display 1920x1080
+2026-10-04 09:41:06 INFO  voice: STATE LOADING
+2026-10-04 09:41:09 INFO  tts: Piper-Stimme de_DE-thorsten-medium geladen in 3.3s (22050 Hz)
+2026-10-04 09:41:16 INFO  kitt.ui: fps 29.4 state=loading rms=0.00
+2026-10-04 09:41:26 INFO  kitt.ui: fps 44.0 state=loading rms=0.00
+2026-10-04 09:41:32 INFO  stt: whisper-server bereit nach 26.2s (ggml-small-q5_1.bin)
+2026-10-04 09:41:36 INFO  kitt.ui: fps 44.1 state=loading rms=0.00
+2026-10-04 09:41:46 INFO  kitt.ui: fps 44.1 state=loading rms=0.00
+2026-10-04 09:41:56 INFO  kitt.ui: fps 44.0 state=loading rms=0.00
+2026-10-04 09:42:06 INFO  kitt.ui: fps 44.0 state=loading rms=0.00
+2026-10-04 09:42:14 INFO  voice: STATE STOPPED
+Exception in thread Thread-3 (start):
+Traceback (most recent call last):
+  File "/usr/lib/python3.13/threading.py", line 1043, in _bootstrap_inner
+    self.run()
+    ~~~~~~~~^^
+  File "/usr/lib/python3.13/threading.py", line 994, in run
+    self._target(*self._args, **self._kwargs)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/maphizi/golfcar/kitt/llm/llama_client.py", line 48, in start
+    if self.proc.poll() is not None:
+       ^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'poll'
+2026-10-04 09:42:14 ERROR kitt.ui: Pipeline-Start fehlgeschlagen
+Traceback (most recent call last):
+  File "/home/maphizi/golfcar/kitt/ui/app.py", line 105, in start_pipeline
+    self.pipe.start()
+    ~~~~~~~~~~~~~~~^^
+  File "/home/maphizi/golfcar/kitt/voice/pipeline.py", line 92, in start
+    raise RuntimeError("whisper-server oder llama-server nicht gestartet, siehe logs/")
+RuntimeError: whisper-server oder llama-server nicht gestartet, siehe logs/
