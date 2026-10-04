@@ -1,0 +1,11 @@
+== Pakete ==
+== Session-Datei ==
+  /usr/share/wayland-sessions/kitt-cart.desktop
+== systemd --user ==
+== lightdm ==
+  user-session=kitt-cart
+  autologin-user=maphizi
+  autologin-session=kitt-cart
+
+Autostart aktiv. Wirksam nach Neustart:  sudo reboot
+Zurück zum normalen Desktop:  scripts/autostart_disable.sh && sudo reboot

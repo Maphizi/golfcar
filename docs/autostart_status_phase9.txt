@@ -1,0 +1,19 @@
+== lightdm ==
+  user-session=kitt-cart
+  autologin-user=maphizi
+  autologin-session=kitt-cart
+== Session-Prozesse ==
+  1358 labwc -C /home/maphizi/golfcar/config/labwc -s /home/maphizi/golfcar/scripts/session_start.sh
+== Launcher-Dienst ==
+  ● kitt-launcher.service - KITT-Cart Launcher
+       Loaded: loaded (/home/maphizi/.config/systemd/user/kitt-launcher.service; disabled; preset: enabled)
+       Active: active (running) since Sun 2026-10-04 10:26:28 CEST; 1min 51s ago
+   Invocation: 618372e8d1834952ba62639423677714
+     Main PID: 1563 (python)
+        Tasks: 11 (limit: 9621)
+== Launcher-Zustand ==
+  {
+    "mode": "home",
+    "pid": 1569,
+    "since": 1791102388.590367
+  }

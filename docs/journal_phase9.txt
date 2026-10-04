@@ -1,0 +1,16 @@
+No journal files were found.
+-- No entries --
+Environment variable $XCURSOR_SIZE not set, ignoring.
+Environment variable $XCURSOR_THEME not set, ignoring.
+[2026-10-04 10:26:28] session_start: WAYLAND_DISPLAY=wayland-0 DISPLAY=:0
+2026-10-04 10:26:28 - [main.c:282] Found config * for output HDMI-A-1 (ATS NINJA V 0x00000001)
+The XKEYBOARD keymap compiler (xkbcomp) reports:
+> Warning:          Unsupported maximum keycode 708, clipping.
+>                   X11 cannot support keycodes above 255.
+> Warning:          Virtual modifier ScrollLock multiply defined
+>                   Using 0, ignoring 0
+Errors from xkbcomp are not fatal to the X server
+00:00:03.374 [ERROR] [xwayland/xwm.c:1984] xcb error: op ChangeProperty (no minor), code Window (no extension), sequence 221, value 4194309
+00:00:03.374 [ERROR] [xwayland/xwm.c:1984] xcb error: op DeleteProperty (no minor), code Window (no extension), sequence 222, value 4194309
+00:00:03.374 [ERROR] [xwayland/xwm.c:1984] xcb error: op ChangeProperty (no minor), code Window (no extension), sequence 224, value 4194309
+00:00:03.374 [ERROR] [xwayland/xwm.c:1984] xcb error: op DeleteProperty (no minor), code Window (no extension), sequence 225, value 4194309
