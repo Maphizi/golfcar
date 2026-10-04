@@ -3,7 +3,7 @@
 Fullscreen-Appliance: Retro-Gaming, drei GPU-Audio-Visualizer und der lokale
 Sprachassistent KITT. Bedienung über F1–F6, später über eine USB-HID-Buttonbox.
 
-Stand: **Phase 6** (Launcher, RetroPie als F1, Visualizer F2–F4, Spracherkennung whisper.cpp + Silero VAD, llama.cpp mit Qwen als KITT-Gehirn).
+Stand: **Phase 7** (Launcher, RetroPie als F1, Visualizer F2–F4, komplette KITT-Sprachpipeline: Silero VAD, whisper.cpp, llama.cpp/Qwen, Piper).
 Phasenplan und Anforderungen: `docs/KITT_Masterprompt_V1_erweitert.md`.
 Hardware-Inventur: `docs/inventory_phase1.txt`.
 
@@ -54,7 +54,8 @@ Grundsätze:
 | `kitt/stt/` | VAD, Listener, whisper.cpp-Client, Test-WAVs |
 | `kitt/llm/` | llama-server-Wrapper, Streaming-Client, Dialogzustand, Benchmark |
 | `kitt/personality/` | KITT-System-Prompt und Benchmark-Fragen |
-| `kitt/tts/` | ab Phase 7 |
+| `kitt/tts/` | Piper-Sprachausgabe mit Streaming-Wiedergabe |
+| `kitt/voice/` | Pipeline-Zustandsmaschine, Satz-Splitter, Headless-Runner |
 | `config/kitt.toml` | STT-, VAD-, LLM- und TTS-Einstellungen |
 | `models/` | Whisper-, VAD-, LLM-, TTS-Modelle (nicht im Repo) |
 | `vendor/` | whisper.cpp, llama.cpp (nicht im Repo) |
@@ -114,7 +115,7 @@ Alle Logs liegen in `logs/` (Pfad in `config/settings.toml`, kann auf ein tmpfs 
 
 - `llm.log` – LLM-Werkzeug, `llama-server.log` – Ausgabe des Servers
 
-Ab Phase 7 kommt `tts.log` dazu.
+- `kitt.log` – Sprachpipeline: Zustände, Transkripte, Antworten, Zeiten je Runde
 
 ## Fehlerdiagnose
 
@@ -148,6 +149,11 @@ Ab Phase 7 kommt `tts.log` dazu.
   (`scripts/setup_phase6.sh` zieht llama.cpp nach und baut neu, wenn `vendor/llama.cpp/build` gelöscht wird).
 - **KITT antwortet zu lang oder mit Floskeln:** System-Prompt in `kitt/personality/system_prompt.txt`,
   `max_tokens` und `temperature` in `config/kitt.toml`.
+- **Sprachausgabe stumm:** `wpctl status` zeigt unter Sinks nur "Dummy Output", wenn kein
+  Audioausgang da ist (HDMI-Ton nur, wenn das Display ihn annimmt). USB-Soundkarte oder
+  HDMI-Sink wählen und in `config/audio.toml` `[output].target` eintragen.
+- **KITT hört sich selbst / antwortet auf sich:** `resume_delay_ms` erhöhen, Mikrofon vom
+  Lautsprecher weg, `require_name = true`.
 - **Launcher hängt:** `scripts/kittctl state` und `pgrep -af launcher`. Ein zweiter
   Launcher übernimmt den Socket, also vorher den alten beenden.
 
@@ -309,6 +315,45 @@ Master-Prompt als Few-Shot). Phase 8 verfeinert ihn anhand echter Dialoge.
 automatisch erkannte Regelverstöße (mehr als 3 Sätze, Emoji, "Natürlich"/"Gerne", Listen,
 englische Antwort). Deutsche Sprachqualität und Persona bewertet man an den Texten. Das gewählte
 Modell kommt in `[llm].model`. Einzelfragen: `scripts/kitt_ask.sh "KITT, wie sieht's aus?"`.
+
+## F5 – Sprachausgabe und komplette Pipeline (Phase 7)
+
+**Installation:** `scripts/setup_phase7.sh` installiert das pip-Paket `piper-tts` (bringt espeak-ng-Daten
+und läuft über onnxruntime), lädt die Stimmen aus `config/kitt.toml` `[tts]` nach `models/piper/`
+(Quelle huggingface.co/rhasspy/piper-voices) und schreibt Hörproben nach `docs/tts_sample_*.wav`.
+
+| Stimme | Charakter |
+|---|---|
+| `de_DE-thorsten-medium` (Standard) | männlich, ruhig, neutral, schnell |
+| `de_DE-thorsten-high` | dieselbe Stimme, höhere Qualität, langsamer |
+
+Beide sind synthetische Stimmen aus dem offenen Thorsten-Voice-Datensatz, keine Imitation eines
+Schauspielers. `pitch_factor = 0.94` spielt die Ausgabe etwas langsamer und damit tiefer ab,
+`length_scale` steuert das Tempo. Wiedergabe über `pw-play` (PipeWire), Fallback `aplay`; das Ziel
+kommt aus `config/audio.toml` `[output]`.
+
+**Pipeline** (`kitt/voice/pipeline.py`):
+
+```
+Mikrofon (48 kHz) → Listener/VAD → whisper-server → llama-server → Satz-Splitter → Piper → pw-play
+   idle              listening       thinking         thinking/speaking            speaking      idle
+```
+
+- Beide Server starten parallel und bleiben geladen. Ein Warm-up füllt den Prompt-Cache des LLM.
+- Antworten werden satzweise gesprochen, sobald ein Satz aus dem Token-Strom vollständig ist. Die
+  erste Sprache kommt so nach LLM-TTFT plus einem Satz, nicht erst nach der ganzen Antwort.
+- Während KITT spricht, ist der Listener pausiert (`resume_delay_ms` Nachlauf), damit er sich
+  nicht selbst hört.
+- `[voice].ignore_phrases` filtert typische Whisper-Halluzinationen bei Stille ("Untertitel",
+  "Vielen Dank"), `min_words` verwirft Einwort-Fetzen, `require_name = true` lässt KITT nur auf
+  Anrede reagieren.
+- Jeder Audio-Block der Sprachausgabe geht per Callback an die UI (Phase 8), damit die
+  Visualisierung auf das TTS-Signal reagiert.
+
+**Tests ohne Oberfläche:** `scripts/kitt_voice.sh --say "Text"` (nur TTS),
+`scripts/kitt_voice.sh --text "KITT, wie sieht's aus?"` (LLM + TTS ohne Mikrofon),
+`scripts/kitt_voice.sh --seconds 60` (voller Mikrofonbetrieb, Zustände im Terminal). Das Log
+`logs/kitt.log` enthält je Runde STT-Zeit, LLM-TTFT, Zeit bis zur ersten Sprache und Gesamtzeit.
 
 ## Noch offen
 

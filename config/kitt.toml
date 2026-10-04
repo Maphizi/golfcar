@@ -75,3 +75,30 @@ url = "https://huggingface.co/unsloth/Qwen3.5-2B-GGUF/resolve/main/Qwen3.5-2B-Q4
 [[llm.bench.models]]
 file = "Qwen3.5-4B-Q4_K_M.gguf"
 url = "https://huggingface.co/unsloth/Qwen3.5-4B-GGUF/resolve/main/Qwen3.5-4B-Q4_K_M.gguf"
+
+[tts]
+# Piper (pip-Paket piper-tts). Stimme: deutsch, männlich, ruhig. Keine Imitation eines Schauspielers.
+voices_dir = "{root}/models/piper"
+voice = "de_DE-thorsten-medium"
+# Alternativen (werden von scripts/setup_phase7.sh mitgeladen, wenn in bench_voices):
+bench_voices = ["de_DE-thorsten-medium", "de_DE-thorsten-high"]
+# Sprechtempo: >1 langsamer, <1 schneller
+length_scale = 1.0
+# Spielt das Audio um diesen Faktor langsamer ab (tiefere Stimme). 1.0 = aus, 0.94 ≈ ein Halbton tiefer.
+pitch_factor = 0.94
+# Pause zwischen Sätzen in Sekunden
+sentence_silence = 0.15
+# Lautstärke 0..1
+volume = 1.0
+# Wiedergabe: auto = pw-play (PipeWire), Fallback aplay (ALSA/pipewire-alsa). Ziel aus config/audio.toml [output].
+player = "auto"
+
+[voice]
+# Nach dem Sprechen so lange nicht zuhören (Nachhall, Lautsprecher -> Mikrofon)
+resume_delay_ms = 400
+# Transkripte, die whisper bei Stille/Rauschen gern halluziniert, werden ignoriert
+ignore_phrases = ["untertitel", "zdf", "vielen dank", "copyright", "amara.org", "www."]
+# Mindestanzahl Wörter, damit eine Äußerung an das LLM geht
+min_words = 2
+# Wenn true, antwortet KITT nur, wenn "kitt" im Transkript vorkommt (Anrede). Sonst auf alles.
+require_name = false
