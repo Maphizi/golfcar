@@ -1,0 +1,23 @@
+2026-10-04 07:21:31 INFO  voice: STATE LOADING
+  [07:21:31] STATE LOADING
+2026-10-04 07:21:33 INFO  tts: Piper-Stimme de_DE-thorsten-medium geladen in 2.0s (22050 Hz)
+2026-10-04 07:21:39 INFO  stt: whisper-server bereit nach 7.8s (ggml-base.bin)
+2026-10-04 07:21:48 INFO  llm: llama-server bereit nach 17.5s (qwen2.5-1.5b-instruct-q4_k_m.gguf)
+2026-10-04 07:22:09 INFO  voice: STATE IDLE
+  [07:22:09] STATE IDLE
+2026-10-04 07:22:09 INFO  voice: Pipeline bereit: STT ggml-base.bin, LLM qwen2.5-1.5b-instruct-q4_k_m.gguf, TTS de_DE-thorsten-medium
+2026-10-04 07:22:09 INFO  voice: STATE THINKING
+  [07:22:09] STATE THINKING
+2026-10-04 07:22:10 INFO  voice: STATE SPEAKING
+  [07:22:10] STATE SPEAKING
+  KITT: Gut gemacht!
+2026-10-04 07:22:10 INFO  tts: TTS 0.28s für 1.0s Audio: 'Gut gemacht!'
+  KITT: Es wird Zeit, weiterzufahren.
+2026-10-04 07:22:12 INFO  tts: TTS 0.40s für 2.1s Audio: 'Es wird Zeit, weiterzufahren.'
+  KITT: Was hältst du davon, wenn wir uns auf den Fluss konzentrieren?
+2026-10-04 07:22:14 INFO  tts: TTS 0.66s für 3.5s Audio: 'Was hältst du davon, wenn wir uns auf den Fluss konzentrieren?'
+2026-10-04 07:22:18 INFO  voice: Runde: LLM TTFT 0.79s, 7.2 tok/s, erste Sprache nach 1.38s, gesamt 9.15s: 'Gut gemacht! Es wird Zeit, weiterzufahren. Was hältst du davon, wenn wir uns auf den Fluss konzentrieren?'
+2026-10-04 07:22:18 INFO  voice: STATE IDLE
+  [07:22:18] STATE IDLE
+2026-10-04 07:22:18 INFO  voice: STATE STOPPED
+  [07:22:18] STATE STOPPED

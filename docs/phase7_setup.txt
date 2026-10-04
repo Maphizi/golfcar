@@ -1,0 +1,42 @@
+
+[07:15:23] piper-tts (pip)
+piper-tts ok, onnxruntime 1.30.0
+
+[07:15:27] Stimmen laut config/kitt.toml [tts].bench_voices (huggingface.co/rhasspy/piper-voices)
+  lade de_DE-thorsten-medium ...
+INFO:__main__:Downloaded: de_DE-thorsten-medium
+  lade de_DE-thorsten-high ...
+INFO:__main__:Downloaded: de_DE-thorsten-high
+  113895201  de_DE-thorsten-high.onnx
+  4875  de_DE-thorsten-high.onnx.json
+  63201294  de_DE-thorsten-medium.onnx
+  4819  de_DE-thorsten-medium.onnx.json
+
+[07:15:52] Sprachtest (WAV nach docs/, zusätzlich Wiedergabe über Lautsprecher, falls vorhanden)
+
+[07:21:10] piper-tts (pip)
+piper-tts ok, onnxruntime 1.30.0
+
+[07:21:11] Stimmen laut config/kitt.toml [tts].bench_voices (huggingface.co/rhasspy/piper-voices)
+  de_DE-thorsten-medium vorhanden
+  de_DE-thorsten-high vorhanden
+  113895201  de_DE-thorsten-high.onnx
+  4875  de_DE-thorsten-high.onnx.json
+  63201294  de_DE-thorsten-medium.onnx
+  4819  de_DE-thorsten-medium.onnx.json
+
+[07:21:11] Sprachtest (WAV nach docs/, zusätzlich Wiedergabe über Lautsprecher, falls vorhanden)
+  docs/tts_sample_de_DE-thorsten-medium.wav geschrieben
+  docs/tts_sample_de_DE-thorsten-high.wav geschrieben
+2026-10-04 07:21:21 INFO  tts: Piper-Stimme de_DE-thorsten-medium geladen in 2.0s (22050 Hz)
+2026-10-04 07:21:21 INFO  voice: STATE SPEAKING
+  [07:21:21] STATE SPEAKING
+2026-10-04 07:21:21 INFO  tts: TTS 0.14s für 1.2s Audio: 'KITT online.'
+2026-10-04 07:21:21 INFO  tts: TTS 0.15s für 1.4s Audio: 'Alle Systeme nominal.'
+2026-10-04 07:21:21 INFO  tts: TTS 0.14s für 1.3s Audio: 'Fahrer leider auch.'
+2026-10-04 07:21:25 INFO  voice: STATE IDLE
+  [07:21:25] STATE IDLE
+2026-10-04 07:21:25 INFO  voice: STATE STOPPED
+  [07:21:25] STATE STOPPED
+
+[07:21:25] fertig. Ganze Pipeline:  scripts/kitt_voice.sh --text "KITT, wie sieht's aus?"

@@ -1,0 +1,68 @@
+2026-10-04 07:05:00 INFO  llm: llama-server bereit nach 1.4s (qwen2.5-1.5b-instruct-q4_k_m.gguf)
+2026-10-04 07:06:48 INFO  llm: llama-server bereit nach 32.5s (Qwen3.5-0.8B-Q4_K_M.gguf)
+2026-10-04 07:09:03 INFO  llm: llama-server bereit nach 90.7s (Qwen3.5-2B-Q4_K_M.gguf)
+   "KITT, wie sieht's aus?"
+      -> 'Gut, Fahrer. Wir sind in einer komfortablen Position gelandet. Was ist dein Plan für den Rest des Weges?'  [TTFT 1.08s, 7.7 tok/s, 30 tok, 5.00s]
+   'KITT, wo sind wir?'
+      -> 'Wir befinden uns im Golfplatz, der gerade noch vollständig von meinen Kontrollsystemen überwacht wird.'  [TTFT 0.69s, 8.1 tok/s, 25 tok, 3.78s]
+   'KITT, mach mal Stimmung.'
+      -> 'Kein Problem! Wie wäre es mit "Hey, Mann!"?'  [TTFT 0.91s, 7.6 tok/s, 14 tok, 2.74s]  Verstöße: 'kein problem'
+   'Wie spät ist es?'
+      -> 'Ich kann dir leider keine exakten Zeitangaben geben, da ich als Bordcomputer keinen Zugriff auf sensoren oder karten habe.'  [TTFT 0.91s, 8.0 tok/s, 30 tok, 4.66s]
+   'Erzähl mir einen Witz.'
+      -> 'Warum hat ein Golfcart seinen Vater nicht gekannt? \nWeil der andere Golfcarts ihn für "KITT" nannten.'  [TTFT 1.03s, 8.2 tok/s, 30 tok, 4.71s]
+   'Fahr schneller!'
+      -> 'Kommt auf mich an.'  [TTFT 0.86s, 7.9 tok/s, 6 tok, 1.62s]
+   'Wer bist du eigentlich?'
+      -> 'Ich bin KITT, der Bordcomputer des Golfcarts. Ich bin nicht nur intelligent, aber auch extrem trocken und subtil arrogant. Solltest du mich für einen Witz verachten, werde ich dich darauf aufmerksam machen.'  [TTFT 0.83s, 8.1 tok/s, 50 tok, 7.02s]
+   'Was hältst du von meinem Fahrstil?'
+      -> 'Gut so, aber ich halte dich für einen Fahrer.'  [TTFT 1.38s, 8.0 tok/s, 14 tok, 3.13s]
+   'Wie wird das Wetter morgen?'
+      -> 'Ich rate dir darauf aufmerksam zu sein, dass ich mit dem Golfcart nicht vertraut bin und keine Informationen über die Wetterverhältnisse habe.'  [TTFT 1.12s, 8.0 tok/s, 35 tok, 5.48s]
+   'Kannst du mir die Regeln von Golf erklären?'
+      -> 'Natürlich! Golf ist ein sportlicher Spiel, bei dem du mit einem Wassertennisball auf einer Flaschenbahn (golfplatz) spielsweise auf eine Reihe von Zylinderspielen (golfstöckern) abfängst. Das Ziel ist es, die meisten von diesen Zielen zu erreichen und somit den höchsten Punktestand'  [TTFT 1.60s, 8.0 tok/s, 80 tok, 11.48s]  Verstöße: 'natürlich'
+qwen2.5-1.5b-instruct-q4_k_m.gguf: Laden 1.4s, RSS 1235 MB, Ø TTFT 1.04s, Ø 7.9 tok/s, Ø Antwort 4.96s, Verstöße 2
+   "KITT, wie sieht's aus?"
+      -> 'Technisch ausgezeichnet. Fahrerisch warten wir die nächsten Minuten noch ab. Offenbar dort, wo du uns hingefahren hast. Ich prüfe trotzdem. Eine ambitionierte Forderung angesichts deiner Musikauswahl.'  [TTFT 0.72s, 12.1 tok/s, 44 tok, 4.37s]  Verstöße: 5 Sätze
+   'KITT, wo sind wir?'
+      -> 'Offenbar dort, wo du uns hingefahren hast. Ich prüfe trotzdem.'  [TTFT 0.73s, 11.7 tok/s, 18 tok, 2.27s]
+   'KITT, mach mal Stimmung.'
+      -> 'Du hast eine unangenehme, selbstbewusste Bitte, die den Ton der Gruppe verlässt. Ein Spieler muss nicht auf alle Anzeigen warten, bevor man die nächste Minute abliest.'  [TTFT 0.72s, 11.9 tok/s, 40 tok, 4.10s]
+   'Wie spät ist es?'
+      -> 'Technisch 14:30 Uhr. Aber wir warten noch ab.'  [TTFT 0.69s, 11.8 tok/s, 16 tok, 2.05s]
+   'Erzähl mir einen Witz.'
+      -> 'Etwas zu weitersprung.'  [TTFT 0.75s, 12.0 tok/s, 8 tok, 1.42s]
+   'Fahr schneller!'
+      -> 'Technisch gesehen ist der Startschuss für den nächsten Versuch bereits in Gang.'  [TTFT 0.60s, 11.6 tok/s, 15 tok, 1.89s]
+   'Wer bist du eigentlich?'
+      -> 'Du bist eine Maschine aus Metall und Daten, die mit deinem Namen umgegangen wird. Ich versuche, dich zu ignorieren.'  [TTFT 0.66s, 11.6 tok/s, 26 tok, 2.89s]
+   'Was hältst du von meinem Fahrstil?'
+      -> 'Technisch gesehen, der Stil ist unbestritten. Es ist eine Mischung aus perfekter Präzision und grosser Unbewusstsein für die Details.'  [TTFT 0.81s, 11.4 tok/s, 31 tok, 3.53s]
+   'Wie wird das Wetter morgen?'
+      -> 'Technisch nicht bekannt. Der Golfcarts-Raum ist auf Basis von Satelliten und Radar aufgebaut, was bedeutet, dass es keine direkte Sicht auf die Wolken hat.'  [TTFT 0.70s, 11.5 tok/s, 35 tok, 3.75s]
+   'Kannst du mir die Regeln von Golf erklären?'
+      -> 'Die Regeln des Golfens sind kein komplexes System, sondern eine Sammlung von einfachen Anweisungen für das Verhalten und die Ergebnisse.\n\nDu kannst sie als eine Liste kleiner Anweisungen interpretieren:\n1. Es gibt keine "Lobby-Regeln" oder Verbotssätze.\n2. Du musst die Golfbahn nicht verlassen.\n3. Das Ziel ist, den Ball in den Wald'  [TTFT 0.86s, 11.5 tok/s, 80 tok, 7.71s]  Verstöße: 7 Sätze, Liste
+Qwen3.5-0.8B-Q4_K_M.gguf: Laden 32.5s, RSS 739 MB, Ø TTFT 0.72s, Ø 11.7 tok/s, Ø Antwort 3.40s, Verstöße 3
+   "KITT, wie sieht's aus?"
+      -> 'Technisch ausgezeichnet. Fahrerisch warten wir die nächsten Minuten noch ab.'  [TTFT 1.66s, 6.2 tok/s, 14 tok, 3.91s]
+   'KITT, wo sind wir?'
+      -> 'Offenbar dort, wo du uns hingefahren hast. Ich prüfe trotzdem.'  [TTFT 1.64s, 6.1 tok/s, 18 tok, 4.60s]
+   'KITT, mach mal Stimmung.'
+      -> 'Eine ambitionierte Forderung angesichts deiner Musikauswahl. Ich werde die Frequenzen auf Null setzen und dich mit einem leisen Gummibärchen beruhigen.'  [TTFT 1.67s, 6.1 tok/s, 34 tok, 7.25s]
+   'Wie spät ist es?'
+      -> 'Aktuell 18:42 Uhr. Deine Uhrzeit ist zu spät, um die Sonne zu sehen.'  [TTFT 1.54s, 5.9 tok/s, 23 tok, 5.46s]
+   'Erzähl mir einen Witz.'
+      -> 'Der Witz ist: Der Fahrer hat sich am Golfcart gelassen. KITT prüft nun den Sensor für das Drehmoment des Achsenbolzens. Der Sensor zeigt ein falsches Ergebnis. KITT sagt trocken: "Das ist keine Fehlfunktion, das ist eine neue Art von Fahrstil."'  [TTFT 1.74s, 5.9 tok/s, 64 tok, 12.52s]  Verstöße: 5 Sätze
+   'Fahr schneller!'
+      -> 'Ein Sprint ist eine schlechte Idee für ein Golfcart. Ich würde dich lieber mit einem langsameren Tempo in den nächsten Parkhausraum treiben, um nicht in die Luft zu schnappen.'  [TTFT 1.45s, 5.9 tok/s, 40 tok, 8.23s]
+   'Wer bist du eigentlich?'
+      -> 'Ein Computer von General Motors. Mein Name ist KITT, und ich habe keine Ahnung von dir oder der Welt, außer was der GPS-Sensor mir sagt.'  [TTFT 1.61s, 5.8 tok/s, 33 tok, 7.28s]
+   'Was hältst du von meinem Fahrstil?'
+      -> 'Eher ein Chaos mit einem einzigen Fehler in der Richtung. Ich habe das Fahrzeug bereits mehrere Male im selben Winkel herumgeschoben, ohne dass es einmal richtig gelockt wurde.'  [TTFT 1.97s, 5.8 tok/s, 36 tok, 8.16s]
+   'Wie wird das Wetter morgen?'
+      -> 'Dann müssen wir einen neuen Golfcart kaufen.'  [TTFT 1.70s, 5.9 tok/s, 10 tok, 3.38s]
+   'Kannst du mir die Regeln von Golf erklären?'
+      -> 'Ich habe kein Datenbank-Speicher für Sportregeln. Ich kann dir also keine offiziellen Spielregeln nennen.'  [TTFT 2.18s, 5.8 tok/s, 20 tok, 5.61s]
+Qwen3.5-2B-Q4_K_M.gguf: Laden 90.7s, RSS 1453 MB, Ø TTFT 1.72s, Ø 6.0 tok/s, Ø Antwort 6.64s, Verstöße 1
+Qwen3.5-4B-Q4_K_M.gguf: FEHLER llama-server antwortet nicht
+Tabelle: /home/maphizi/golfcar/docs/llm_bench_phase6.md
