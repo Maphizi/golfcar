@@ -45,8 +45,11 @@ class LlamaServer:
         self.proc = subprocess.Popen([str(self.binary)] + self.args, stdout=self._logfh, stderr=subprocess.STDOUT,
                                      stdin=subprocess.DEVNULL, start_new_session=False)
         while time.monotonic() - t0 < timeout:
-            if self.proc.poll() is not None:
-                raise RuntimeError(f"llama-server beendet (exit {self.proc.returncode}), siehe {self.log_path}")
+            proc = self.proc
+            if proc is None:
+                raise RuntimeError("Start abgebrochen (stop() wurde aufgerufen)")
+            if proc.poll() is not None:
+                raise RuntimeError(f"llama-server beendet (exit {proc.returncode}), siehe {self.log_path}")
             if self._healthy():
                 dt = time.monotonic() - t0
                 log.info("llama-server bereit nach %.1fs (%s)", dt, self.model_path.name)

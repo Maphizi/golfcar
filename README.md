@@ -148,8 +148,9 @@ Alle Logs liegen in `logs/` (Pfad in `config/settings.toml`, kann auf ein tmpfs 
 - **Sprachmodell: llama-server startet nicht oder antwortet Kauderwelsch:** `logs/llama-server.log`.
   Port 8179 belegt, Modell fehlt, oder ein zu neues Modellformat für den Build
   (`scripts/setup_phase6.sh` zieht llama.cpp nach und baut neu, wenn `vendor/llama.cpp/build` gelöscht wird).
-- **F5 zeigt lange "SYSTEME LADEN":** beim ersten Start nach dem Boot lesen beide Server ihre
-  Modelle von der SD-Karte (bis zu 40 s), danach aus dem Cache in wenigen Sekunden. `logs/kitt.log`.
+- **F5 zeigt lange "SYSTEME LADEN":** beide Server lesen ihre Modelle; kalt von der SD-Karte dauert
+  das bis zu 90 s, aus dem RAM-Cache etwa 20 s. Der Launcher liest die Modelle deshalb nach dem Start
+  im Hintergrund vor (`prefetch_models` in `settings.toml`, Log-Zeile "Prefetch fertig"). `logs/kitt.log`.
 - **KITT antwortet zu lang oder mit Floskeln:** System-Prompt in `kitt/personality/system_prompt.txt`,
   `max_tokens` und `temperature` in `config/kitt.toml`.
 - **Sprachausgabe stumm:** `wpctl status` zeigt unter Sinks nur "Dummy Output", wenn kein

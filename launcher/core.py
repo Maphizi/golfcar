@@ -39,6 +39,40 @@ class Launcher:
         self._home_fail_times: list[float] = []
 
     # -- Setup -----------------------------------------------------------
+    def prefetch_models(self) -> None:
+        """Modelldateien einmal lesen, damit sie im RAM-Cache liegen (F5 lädt dann in Sekunden statt Minuten).
+        Läuft mit niedrigster IO-Priorität im Hintergrund und stört die anderen Modi nicht."""
+        if not self.settings.get("launcher", {}).get("prefetch_models", True):
+            return
+        try:
+            from kitt import config as kcfg
+            k = kcfg.load()
+            files = [kcfg.path(k["stt"]["models_dir"]) / k["stt"]["model"],
+                     kcfg.path(k["llm"]["models_dir"]) / k["llm"]["model"],
+                     kcfg.path(k["vad"]["model"]),
+                     kcfg.path(k["tts"]["voices_dir"]) / (k["tts"]["voice"] + ".onnx")]
+        except Exception as exc:
+            log.warning("Prefetch: Konfiguration nicht lesbar: %s", exc)
+            return
+        files = [str(f) for f in files if f.exists()]
+        if not files:
+            return
+        import shutil
+        import subprocess
+        cmd = (["ionice", "-c", "3"] if shutil.which("ionice") else []) + ["nice", "-n", "19", "cat"] + files
+        log.info("Prefetch: %d Modelldateien in den Cache lesen", len(files))
+
+        def run():
+            t0 = time.monotonic()
+            try:
+                subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+                log.info("Prefetch fertig nach %.0fs", time.monotonic() - t0)
+            except Exception as exc:
+                log.warning("Prefetch fehlgeschlagen: %s", exc)
+
+        import threading
+        threading.Thread(target=run, name="prefetch", daemon=True).start()
+
     def start_inputs(self) -> None:
         try:
             ev = EvdevInput(config.load_keymap(), self.queue)
@@ -113,6 +147,7 @@ class Launcher:
         signal.signal(signal.SIGINT, lambda *_: setattr(self, "running", False))
         self.start_inputs()
         self.go_home()
+        self.prefetch_models()
         last_status = time.monotonic()
         while self.running:
             try:

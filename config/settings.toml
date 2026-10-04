@@ -6,6 +6,9 @@
 dev_emergency_exit = true
 # Alle n Sekunden Temperatur/Last/RAM ins Launcher-Log schreiben
 status_interval = 60
+# Nach dem Start die KITT-Modelle (Whisper, Qwen, VAD, Piper) im Hintergrund in den RAM-Cache lesen.
+# Kostet einmalig ca. 2 GB Cache, F5 ist dann in ~20 s statt ~90 s bereit.
+prefetch_models = true
 
 [display]
 # 0 = native Auflösung des Displays (1920x1080 am Ninja V)
