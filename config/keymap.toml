@@ -42,3 +42,45 @@ action = "campfire"
 [[bindings]]
 key = "KEY_ESC"
 action = "quit"
+
+# PXN-CB1 Buttonboard — 8 Haupttasten (BTN_0–BTN_7 = F1–F8)
+[[bindings]]
+key    = "BTN_MISC"   # BTN_0 / HANDLE
+action = "gaming"
+
+[[bindings]]
+key    = "BTN_1"      # CRUISE
+action = "viz_psychedelic"
+
+[[bindings]]
+key    = "BTN_2"      # FLASH
+action = "viz_crt"
+
+[[bindings]]
+key    = "BTN_3"      # AUDIO
+action = "viz_eye"
+
+[[bindings]]
+key    = "BTN_4"      # WIPERS
+action = "kitt"
+
+[[bindings]]
+key    = "BTN_5"      # MAP
+action = "home"
+
+[[bindings]]
+key    = "BTN_6"      # LIGHT
+action = "campfire"
+
+[[bindings]]
+key    = "BTN_7"      # E-TALK
+action = "status"
+
+# Joystick ESC/ENTER
+[[bindings]]
+key    = "BTN_8"      # ESC-Knopf am Joystick
+action = "quit"
+
+[[bindings]]
+key    = "BTN_9"      # weitere Joystick-Taste
+action = "home"
