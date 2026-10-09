@@ -1,0 +1,70 @@
+# WLED LED-Controller – Konfiguration
+# Dig_Next_2 @ 192.168.2.150
+
+[controller]
+host    = "192.168.2.150"
+port    = 80
+timeout = 2          # Sekunden; bei Timeout weiterfahren, LEDs nicht blockieren
+enabled = true
+
+# Pro Modus: Helligkeit (bri 0-255), Effekt-ID (fx), Farbe [R,G,B], Geschwindigkeit (sx), Intensität (ix)
+# fx-IDs: 0=Solid, 2=Breathe, 9=Rainbow, 40=Scanner, 45=Fire Flicker, 66=Fire 2012,
+#         59=Multi Comet, 76=Meteor, 94=Sinelon Rainbow, 137=Freqwave, 162=Pulser
+#
+# AudioReactive-Effekte laufen automatisch wenn der Controller Sound-Input hat.
+
+[modes.home]
+bri = 60
+fx  = 2          # Breathe – ruhig, warmes Weiß
+col = [255, 200, 120]
+sx  = 80
+ix  = 128
+
+[modes.boot]
+bri = 200
+fx  = 40         # Scanner – klassischer KITT-Scan
+col = [255, 0, 0]
+sx  = 160
+ix  = 128
+
+[modes.gaming]
+bri = 220
+fx  = 94         # Sinelon Rainbow – lebendig, bunt
+col = [0, 200, 255]
+sx  = 180
+ix  = 200
+
+[modes.viz_psychedelic]
+bri = 255
+fx  = 9          # Rainbow – volle Farben zum Visualizer
+col = [0, 0, 0]  # ignoriert bei Rainbow
+sx  = 200
+ix  = 200
+
+[modes.viz_crt]
+bri = 180
+fx  = 59         # Multi Comet – grüne Kometen wie CRT-Phosphor
+col = [0, 255, 60]
+sx  = 140
+ix  = 160
+
+[modes.viz_eye]
+bri = 200
+fx  = 162        # Pulser – pulsierendes Auge
+col = [180, 0, 255]
+sx  = 120
+ix  = 180
+
+[modes.kitt]
+bri = 200
+fx  = 40         # Scanner – KITT-Scan, rot
+col = [255, 0, 0]
+sx  = 200
+ix  = 128
+
+[modes.campfire]
+bri = 200
+fx  = 66         # Fire 2012 – realistisches Feuer
+col = [255, 80, 0]
+sx  = 120
+ix  = 200

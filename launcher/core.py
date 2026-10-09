@@ -14,7 +14,7 @@ import signal
 import time
 from queue import Empty, Queue
 
-from . import config, sysmon
+from . import config, sysmon, wled
 from .actions import ACTION_TO_MODE, Action
 from .input_evdev import EvdevInput
 from .input_socket import SocketInput
@@ -129,6 +129,10 @@ class Launcher:
             log.warning("Fallback auf Home")
             self.pm.start(HOME)
         self._write_state()
+        try:
+            wled.apply_mode(mode)
+        except Exception as exc:
+            log.debug("WLED-Fehler: %s", exc)
 
     def go_home(self) -> None:
         # Crash-Loop-Schutz: 3 schnelle Abstürze -> 10 s Pause
