@@ -1,14 +1,13 @@
 """Joystick-zu-Tastatur-Bridge für den PXN-CB1 Steuerknüppel.
 
-Der Joystick sendet REL_MISC-Events. Dieses Modul liest sie und
-injiziert KEY_LEFT / KEY_RIGHT über ein virtuelles uinput-Gerät,
-damit alle laufenden Anwendungen (pygame, evdev-Launcher) sie sehen.
+Der Joystick sendet REL_MISC-Events kontinuierlich solange er gehalten wird.
+Die Bridge feuert KEY_LEFT / KEY_RIGHT genau einmal pro Geste — wenn der
+Stick losgelassen wird (150ms Stille nach letztem Event).
 
 Positiver Wert  → KEY_RIGHT
 Negativer Wert  → KEY_LEFT
-Null            → ignoriert
 
-Throttle: max. 8 Ereignisse/Sekunde (125 ms Mindestabstand).
+Zusätzlicher Throttle: min. 400ms zwischen zwei Aktionen.
 """
 from __future__ import annotations
 
@@ -22,8 +21,9 @@ from evdev import UInput, ecodes as ec
 
 log = logging.getLogger("joystick")
 
-REL_MISC = ec.REL_MISC   # = 9
-THROTTLE_S = 0.125        # 8 Hz max
+REL_MISC   = ec.REL_MISC   # = 9
+THROTTLE_S = 0.4            # Mindestpause zwischen zwei Aktionen
+SILENCE_S  = 0.15           # Pause nach letztem Event = "Stick losgelassen"
 
 
 class JoystickBridge(threading.Thread):
@@ -43,9 +43,8 @@ class JoystickBridge(threading.Thread):
             log.warning("JoystickBridge beendet: %s", exc)
 
     def _loop(self) -> None:
-        # Warte bis ein PXN-Gerät vorhanden ist
         devices: list[evdev.InputDevice] = []
-        for attempt in range(30):          # max 15 s warten
+        for attempt in range(30):
             devices = [
                 evdev.InputDevice(p)
                 for p in evdev.list_devices()
@@ -59,17 +58,21 @@ class JoystickBridge(threading.Thread):
             log.warning("Kein PXN-Gerät gefunden, Joystick-Bridge inaktiv")
             return
 
-        # Virtuelles Tastatur-Gerät für die Ausgabe
         ui = UInput(
             {ec.EV_KEY: [ec.KEY_LEFT, ec.KEY_RIGHT, ec.KEY_UP, ec.KEY_DOWN]},
             name="KITT Joystick Bridge",
         )
         log.info("JoystickBridge aktiv: %d PXN-Gerät(e)", len(devices))
 
-        last_inject = 0.0
+        last_inject  = 0.0
+        last_event_t = 0.0   # Zeitpunkt des letzten REL_MISC-Events
+        pending_key  = None  # Richtung, die beim Loslassen gefeuert wird
 
         while not self._stop.is_set():
-            r, _, _ = select.select(devices, [], [], 0.2)
+            r, _, _ = select.select(devices, [], [], 0.05)
+            now = time.monotonic()
+
+            # Events lesen und Richtung merken
             for dev in r:
                 try:
                     for ev in dev.read():
@@ -77,23 +80,26 @@ class JoystickBridge(threading.Thread):
                             continue
                         if ev.value == 0:
                             continue
-                        now = time.monotonic()
-                        if now - last_inject < THROTTLE_S:
-                            continue
-                        last_inject = now
-                        key = ec.KEY_RIGHT if ev.value > 0 else ec.KEY_LEFT
-                        ui.write(ec.EV_KEY, key, 1)
-                        ui.syn()
-                        time.sleep(0.02)
-                        ui.write(ec.EV_KEY, key, 0)
-                        ui.syn()
-                        log.debug(
-                            "Joystick REL_MISC=%d → %s",
-                            ev.value,
-                            "KEY_RIGHT" if key == ec.KEY_RIGHT else "KEY_LEFT",
-                        )
+                        last_event_t = now
+                        # Richtung beim ersten Event der Geste merken
+                        if pending_key is None and now - last_inject >= THROTTLE_S:
+                            pending_key = ec.KEY_RIGHT if ev.value > 0 else ec.KEY_LEFT
                 except OSError:
                     pass
+
+            # Key feuern wenn Stick losgelassen (SILENCE_S Pause)
+            if pending_key is not None and now - last_event_t >= SILENCE_S:
+                ui.write(ec.EV_KEY, pending_key, 1)
+                ui.syn()
+                time.sleep(0.02)
+                ui.write(ec.EV_KEY, pending_key, 0)
+                ui.syn()
+                log.debug(
+                    "Joystick → %s",
+                    "KEY_RIGHT" if pending_key == ec.KEY_RIGHT else "KEY_LEFT",
+                )
+                last_inject = now
+                pending_key = None
 
         ui.close()
         log.info("JoystickBridge gestoppt")
