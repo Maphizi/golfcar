@@ -54,7 +54,7 @@ class JoystickBridge(threading.Thread):
             return
 
         ui = UInput(
-            {ec.EV_KEY: *** ec.KEY_RIGHT,
+            {ec.EV_KEY: [ec.KEY_LEFT, ec.KEY_RIGHT,
                            ec.KEY_UP, ec.KEY_DOWN,
                            ec.KEY_F13, ec.KEY_F14]},
             name="KITT Joystick Bridge",
