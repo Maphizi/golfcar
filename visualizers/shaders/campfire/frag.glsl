@@ -11,6 +11,8 @@ uniform float uEventForce;   // Test: >0 erzwingt Ereignis (Wert-1), 0 = zufäll
 
 const float CELLS_Y = 90.0;      // Pixelraster: 90 Zeilen, Breite nach Seitenverhältnis
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+// Ganzzahl-Hash ohne sin(): auf jeder GPU gleich (die sin-Variante driftet bei großen Argumenten je nach Treiber)
+float hash1(float n) { n = fract(n * 0.1031); n *= n + 33.33; n *= n + n; return fract(n); }
 float noise(vec2 p) {
     vec2 i = floor(p), f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
@@ -170,15 +172,15 @@ vec3 searchlight(vec2 p, float t, float x0, float groundY, vec3 col) {
 vec3 events(vec2 p, vec2 cellsz, float t, float groundY, vec3 col) {
     float slot = floor(t / 16.0);
     float u = fract(t / 16.0);                     // 0..1 im Zeitfenster
-    float kind = floor(hash(vec2(slot, 3.7)) * 16.0);  // 0..15: 14 Ereignisse, 14/15 = Pause
+    float kind = floor(hash1(slot + 3.7) * 16.0);  // 0..15: 14 Ereignisse, 14/15 = Pause
     if (uEventForce > 0.5) kind = uEventForce - 1.0;
     // Orbitalstation: langsam driftender Lichtpunkt, in jedem dritten Fenster sichtbar
     if (mod(slot, 3.0) < 1.0) {
-        vec2 st = p - vec2(mix(-1.2, 1.2, u) * (step(0.5, hash(vec2(slot, 4.4))) * 2.0 - 1.0), 0.9);
+        vec2 st = p - vec2(mix(-1.2, 1.2, u) * (step(0.5, hash1(slot + 44.4)) * 2.0 - 1.0), 0.9);
         col += vec3(0.9, 0.95, 1.0) * step(length(st), 0.008);
         col += vec3(1.0, 0.3, 0.2) * step(0.5, fract(t * 1.0)) * step(length(st - vec2(0.012, 0.0)), 0.006);
     }
-    float dir = step(0.5, hash(vec2(slot, 9.1))) * 2.0 - 1.0;
+    float dir = step(0.5, hash1(slot + 91.1)) * 2.0 - 1.0;
     float x = mix(-1.3, 1.3, u) * dir;             // von links nach rechts oder umgekehrt
     vec2 q;
     if (kind < 1.0) {                              // Transporter hoch über dem Horizont

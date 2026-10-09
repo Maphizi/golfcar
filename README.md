@@ -477,8 +477,12 @@ Shuttle, das hinten landet, kurz steht und wieder startet, Konvoi aus drei Fahrz
 Droide nah am Feuer, Raupenkriecher am Horizont, Meteorschauer, Suchscheinwerfer einer fernen Basis
 und eine Patrouille aus Transporter mit Jägereskorte. Dazu in jedem dritten Fenster eine driftende
 Orbitalstation und die Sternschnuppe alle neun Sekunden. Alles sind eigene Pixel-Silhouetten im
-Shader (`visualizers/shaders/campfire/frag.glsl`, Funktion `events`). Zum Prüfen lässt sich ein
-Ereignis über das Uniform `uEventForce` (Wert = Nummer + 1) erzwingen.
+Shader (`visualizers/shaders/campfire/frag.glsl`, Funktion `events`). Die Fahrzeuge kommen vom
+Rand herein, in den ersten Sekunden eines Fensters ist also noch nichts zu sehen, und am Horizont
+verdeckt das Feuer sie in der Bildmitte kurz. Zum Prüfen lässt sich ein Ereignis erzwingen:
+`scripts/viz_test.sh campfire --test-signal --seconds 5 --uniform uEventForce=8` (Wert = Nummer + 1,
+1 Transporter … 14 Patrouille). `--uniform NAME=WERT` setzt allgemein ein Shader-Uniform fest und
+ist mehrfach erlaubt.
 
 **Roboterstimme:** `[tts].robot = true` legt Ringmodulation (`robot_freq`), einen kurzen Kammfilter
 (`robot_comb_ms`) und Bit-Reduktion (`robot_bits`) über die Piper-Stimme. `robot_mix` regelt den

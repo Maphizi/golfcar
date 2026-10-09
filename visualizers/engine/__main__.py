@@ -30,7 +30,16 @@ def main() -> int:
     ap.add_argument("--windowed", action="store_true")
     ap.add_argument("--source", choices=["mic", "playback"], help="überschreibt [capture].source")
     ap.add_argument("--demo", action="store_true", help="Szenen-Controller läuft automatisch (Tests)")
+    ap.add_argument("--uniform", action="append", default=[], metavar="NAME=WERT",
+                    help="setzt ein Shader-Uniform fest, z. B. uEventForce=3 (mehrfach möglich, Tests)")
     args = ap.parse_args()
+    fixed: dict[str, float] = {}
+    for item in args.uniform:
+        name, _, val = item.partition("=")
+        try:
+            fixed[name.strip()] = float(val)
+        except ValueError:
+            ap.error(f"--uniform erwartet NAME=ZAHL, nicht {item!r}")
     if args.windowed:
         os.environ["KITT_VIZ_WINDOWED"] = "1"
 
@@ -56,7 +65,7 @@ def main() -> int:
         import importlib
         ctrl = importlib.import_module(f"visualizers.scenes.{ctrl_name}").Controller(scene_cfg, demo=args.demo)
     scene = eng.Scene(args.scene, scene_cfg, bool(viz_cfg.get("engine", {}).get("hot_reload", True)),
-                      tuple(ctrl.uniform_names()) if ctrl else ())
+                      (tuple(ctrl.uniform_names()) if ctrl else ()) + tuple(fixed))
     try:
         scene.load()
     except eng.GLError as exc:
@@ -98,7 +107,7 @@ def main() -> int:
             f = analyzer.update(cap.latest(analyzer.n), now)
             scene.maybe_reload(now)
             renderer.upload_audio(f.spectrum, f.wave)
-            renderer.draw(t, f, ctrl.uniforms(t, f) if ctrl else None)
+            renderer.draw(t, f, {**fixed, **(ctrl.uniforms(t, f) if ctrl else {})})
             if ctrl:
                 for text, size_frac, x_frac, y_frac, color, alpha in ctrl.overlays(t):
                     ov = overlay(size_frac)
