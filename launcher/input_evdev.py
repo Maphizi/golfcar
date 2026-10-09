@@ -41,7 +41,7 @@ class EvdevInput(threading.Thread):
                 log.warning("Ungültiges Binding ignoriert: %s", b)
                 continue
             self.bindings[code] = action
-        log.info("Bindings: %s", {ecodes.KEY[c]: a.value for c, a in self.bindings.items()})
+        log.info("Bindings: %s", {(ecodes.KEY.get(c) or ecodes.BTN.get(c) or str(c)): a.value for c, a in self.bindings.items()})
 
     # -- Geräte ----------------------------------------------------------
     def _wanted(self, dev: evdev.InputDevice) -> bool:
