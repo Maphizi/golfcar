@@ -15,6 +15,7 @@ import time
 from queue import Empty, Queue
 
 from . import config, sysmon, wled
+from .joystick import JoystickBridge
 from .actions import ACTION_TO_MODE, Action
 from .input_evdev import EvdevInput
 from .input_socket import SocketInput
@@ -97,6 +98,12 @@ class Launcher:
             self.inputs.append(ev)
         except Exception as exc:  # evdev nicht verfügbar o. ä.
             log.error("evdev-Eingabe nicht verfügbar: %s", exc)
+        try:
+            jb = JoystickBridge()
+            jb.start()
+            self.inputs.append(jb)
+        except Exception as exc:
+            log.warning("JoystickBridge nicht gestartet: %s", exc)
         try:
             so = SocketInput(config.socket_path(), self.queue)
             so.start()
