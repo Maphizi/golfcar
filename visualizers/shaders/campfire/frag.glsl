@@ -237,7 +237,7 @@ vec3 events(vec2 p, vec2 cellsz, float t, float groundY, vec3 col) {
             col += vec3(1.0, 0.95, 0.8) * shoot;
         }
     } else if (kind < 13.0) {                      // Suchscheinwerfer einer fernen Basis
-        col = searchlight(p, t, 1.1 * dir, groundY, col);
+        col = searchlight(p, t, 0.82 * dir, groundY, col);   // p.x reicht nur bis ±0.89
     } else if (kind < 14.0) {                      // Patrouille: Transporter plus zwei Jäger als Eskorte
         q = p - vec2(x, 0.72); q.x *= dir; col = transporter(q, 0.14, t, col);
         q = p - vec2(x + 0.3 * dir, 0.66); q.x *= dir; col = fighter(q, 0.07, t, col);
