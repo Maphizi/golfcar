@@ -470,11 +470,15 @@ der Mitte. Zeiten in `config/visualizer.toml` unter `[scenes.psychedelic]`. Die 
 weitere Welten einfach an die TOML anhängen.
 
 **Lagerfeuer-Ereignisse (F7):** Alle 16 Sekunden ein Zeitfenster, der Inhalt kommt aus einem
-Hash der Fensternummer (zwei von neun Fenstern bleiben leer): Transporter mit Positionslichtern hoch
-am Himmel, zwei Jäger mit roten Triebwerksschweifen, ein vierbeiniger Läufer am Horizont, ein
-Gleiter mit Staubfahne am Boden, eine Sonde mit rotem Scanstrahl, ein Großschiff weit oben, ferne
-Gefechtsblitze am Horizont, dazu die Sternschnuppe alle neun Sekunden. Alles sind eigene
-Pixel-Silhouetten im Shader (`visualizers/shaders/campfire/frag.glsl`, Funktion `events`).
+Hash der Fensternummer (zwei von sechzehn Fenstern bleiben leer), 14 Ereignisse: Transporter mit
+Positionslichtern, zwei Jäger mit roten Schweifen, vierbeiniger Läufer am Horizont, Gleiter mit
+Staubfahne, Sonde mit rotem Scanstrahl, Großschiff weit oben, ferne Gefechtsblitze mit Leuchtspuren,
+Shuttle, das hinten landet, kurz steht und wieder startet, Konvoi aus drei Fahrzeugen, rollender
+Droide nah am Feuer, Raupenkriecher am Horizont, Meteorschauer, Suchscheinwerfer einer fernen Basis
+und eine Patrouille aus Transporter mit Jägereskorte. Dazu in jedem dritten Fenster eine driftende
+Orbitalstation und die Sternschnuppe alle neun Sekunden. Alles sind eigene Pixel-Silhouetten im
+Shader (`visualizers/shaders/campfire/frag.glsl`, Funktion `events`). Zum Prüfen lässt sich ein
+Ereignis über das Uniform `uEventForce` (Wert = Nummer + 1) erzwingen.
 
 **Roboterstimme:** `[tts].robot = true` legt Ringmodulation (`robot_freq`), einen kurzen Kammfilter
 (`robot_comb_ms`) und Bit-Reduktion (`robot_bits`) über die Piper-Stimme. `robot_mix` regelt den

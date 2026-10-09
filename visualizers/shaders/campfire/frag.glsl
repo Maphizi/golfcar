@@ -7,6 +7,7 @@ uniform float iTime;
 uniform vec2 iResolution;
 uniform float uRms, uBass, uMid, uHigh, uBeat, uSilent;
 uniform sampler2D uAudioTex;
+uniform float uEventForce;   // Test: >0 erzwingt Ereignis (Wert-1), 0 = zufällig
 
 const float CELLS_Y = 90.0;      // Pixelraster: 90 Zeilen, Breite nach Seitenverhältnis
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -109,10 +110,74 @@ vec3 capital(vec2 q, float s, float t, vec3 col) {
     return c;
 }
 
+
+// Shuttle: landet weit hinten, steht, startet wieder (Flügel klappen beim Landen ein)
+vec3 shuttle(vec2 q, float s, float t, float fold, vec3 col) {
+    q /= s;
+    float body = boxf(q, vec2(0.0, 0.15), vec2(0.14, 0.3)) + boxf(q, vec2(0.0, 0.5), vec2(0.06, 0.2));
+    float wingL = tri(q, vec2(-0.12, 0.0), vec2(-0.12, 0.45), vec2(-0.75 + fold * 0.5, -0.3 + fold * 0.6));
+    float wingR = tri(q, vec2(0.12, 0.0), vec2(0.12, 0.45), vec2(0.75 - fold * 0.5, -0.3 + fold * 0.6));
+    vec3 c = mix(col, vec3(0.55, 0.56, 0.6), clamp(body + wingL + wingR, 0.0, 1.0));
+    c += vec3(0.4, 0.7, 1.0) * boxf(q, vec2(0.0, -0.17), vec2(0.1, 0.03)) * (0.5 + 0.5 * sin(t * 25.0)) * (1.0 - fold);
+    c += vec3(1.0, 0.3, 0.1) * step(0.5, fract(t * 1.5)) * boxf(q, vec2(0.0, 0.72), vec2(0.02, 0.02));
+    return c;
+}
+// Konvoi: drei kastige Fahrzeuge hintereinander mit Scheinwerfern
+vec3 convoy(vec2 q, float s, float t, float dir, vec3 col) {
+    q /= s;
+    vec3 c = col;
+    for (int i = 0; i < 3; i++) {
+        vec2 o = q - vec2(float(i) * 1.5, 0.0);
+        float hull = boxf(o, vec2(0.0, 0.18), vec2(0.5, 0.14)) + boxf(o, vec2(0.25, 0.4), vec2(0.2, 0.1));
+        float wheels = boxf(o, vec2(-0.3, 0.0), vec2(0.1, 0.06)) + boxf(o, vec2(0.3, 0.0), vec2(0.1, 0.06));
+        c = mix(c, vec3(0.38, 0.33, 0.28) * (0.8 + 0.2 * float(i)), clamp(hull + wheels, 0.0, 1.0));
+        c += vec3(1.0, 0.95, 0.7) * boxf(o, vec2(0.52 * dir, 0.2), vec2(0.04, 0.03));
+    }
+    return c;
+}
+// Droide: runde Kuppel auf Zylinder, rollt nah am Boden vorbei, Lichter blinken
+vec3 droid(vec2 q, float s, float t, vec3 col) {
+    q /= s;
+    float body = boxf(q, vec2(0.0, 0.25), vec2(0.22, 0.3)) + step(length((q - vec2(0.0, 0.55)) * vec2(1.0, 1.3)), 0.22);
+    float legs = boxf(q, vec2(-0.3, 0.2), vec2(0.06, 0.28)) + boxf(q, vec2(0.3, 0.2), vec2(0.06, 0.28));
+    vec3 c = mix(col, vec3(0.8, 0.8, 0.85), clamp(body + legs, 0.0, 1.0));
+    c = mix(c, vec3(0.2, 0.4, 0.9), boxf(q, vec2(0.0, 0.3), vec2(0.22, 0.04)) + boxf(q, vec2(0.0, 0.12), vec2(0.22, 0.04)));
+    c += vec3(1.0, 0.2, 0.2) * step(0.5, fract(t * 3.0)) * step(length(q - vec2(0.08, 0.62)), 0.04);
+    c += vec3(0.3, 0.6, 1.0) * step(0.5, fract(t * 1.7 + 0.5)) * step(length(q - vec2(-0.08, 0.5)), 0.035);
+    return c;
+}
+// Kriecher: riesige Kastenmaschine auf Raupen, kriecht am Horizont
+vec3 crawler(vec2 q, float s, float t, vec3 col) {
+    q /= s;
+    float hull = tri(q, vec2(-1.0, 0.2), vec2(1.0, 0.2), vec2(0.0, 0.9)) * step(0.2, q.y) + boxf(q, vec2(0.0, 0.12), vec2(1.0, 0.12));
+    float treads = boxf(q, vec2(0.0, -0.05), vec2(0.95, 0.07)) * step(0.5, fract(q.x * 12.0 - t * 2.0));
+    vec3 c = mix(col, vec3(0.3, 0.26, 0.22), clamp(hull + treads, 0.0, 1.0));
+    c += vec3(1.0, 0.9, 0.6) * step(0.8, hash(vec2(floor(q.x * 10.0), floor(q.y * 10.0)))) * hull * step(0.25, q.y) * 0.5;
+    return c;
+}
+// Suchscheinwerfer einer fernen Basis: Kegel schwenkt über den Himmel
+vec3 searchlight(vec2 p, float t, float x0, float groundY, vec3 col) {
+    vec2 d = p - vec2(x0, groundY);
+    float ang = atan(d.y, d.x);
+    float target = 1.2 + 0.7 * sin(t * 0.6);
+    if (x0 > 0.0) target = 3.14159 - target;           // von rechts nach links in die Szene leuchten
+    float beam = smoothstep(0.1, 0.0, abs(ang - target)) * smoothstep(0.0, 0.1, d.y) * exp(-length(d) * 0.9);
+    col += vec3(0.8, 0.9, 1.0) * beam * 0.7;
+    col += vec3(1.0, 0.95, 0.8) * step(length(d * vec2(1.0, 2.0)), 0.015);
+    return col;
+}
+
 vec3 events(vec2 p, vec2 cellsz, float t, float groundY, vec3 col) {
     float slot = floor(t / 16.0);
     float u = fract(t / 16.0);                     // 0..1 im Zeitfenster
-    float kind = floor(hash(vec2(slot, 3.7)) * 9.0);   // 0..8, 7/8 = Pause
+    float kind = floor(hash(vec2(slot, 3.7)) * 16.0);  // 0..15: 14 Ereignisse, 14/15 = Pause
+    if (uEventForce > 0.5) kind = uEventForce - 1.0;
+    // Orbitalstation: langsam driftender Lichtpunkt, in jedem dritten Fenster sichtbar
+    if (mod(slot, 3.0) < 1.0) {
+        vec2 st = p - vec2(mix(-1.2, 1.2, u) * (step(0.5, hash(vec2(slot, 4.4))) * 2.0 - 1.0), 0.9);
+        col += vec3(0.9, 0.95, 1.0) * step(length(st), 0.008);
+        col += vec3(1.0, 0.3, 0.2) * step(0.5, fract(t * 1.0)) * step(length(st - vec2(0.012, 0.0)), 0.006);
+    }
     float dir = step(0.5, hash(vec2(slot, 9.1))) * 2.0 - 1.0;
     float x = mix(-1.3, 1.3, u) * dir;             // von links nach rechts oder umgekehrt
     vec2 q;
@@ -142,7 +207,43 @@ vec3 events(vec2 p, vec2 cellsz, float t, float groundY, vec3 col) {
     } else if (kind < 6.0) {                       // Großschiff, weit und langsam
         float xx = mix(-1.2, 1.2, u) * dir;
         q = p - vec2(xx, 0.85); q.x *= dir; col = capital(q, 0.22, t, col);
-    } else if (kind < 7.0) {                       // Ferne Gefechtsblitze am Horizont
+    } else if (kind < 7.0) {                       // Ferne Gefechtsblitze am Horizont (siehe unten)
+    } else if (kind < 8.0) {                       // Shuttle landet hinten, bleibt, startet wieder
+        float xx = 0.75 * dir;
+        float land = smoothstep(0.0, 0.3, u), lift = smoothstep(0.7, 1.0, u);
+        float yy = groundY + 0.03 + (1.0 - land) * 0.7 + lift * 0.8;
+        float fold = smoothstep(0.2, 0.3, u) * (1.0 - smoothstep(0.7, 0.8, u));
+        q = p - vec2(xx, yy); col = shuttle(q, 0.17, t, fold, col);
+        // Landelicht auf dem Boden, solange es steht
+        col += vec3(0.4, 0.7, 1.0) * fold * 0.25 * exp(-length((p - vec2(xx, groundY)) * vec2(2.0, 8.0)) * 3.0);
+    } else if (kind < 9.0) {                       // Konvoi hinten über den Boden
+        float xx = mix(-1.6, 1.6, u) * dir;
+        q = p - vec2(xx, groundY + 0.01); q.x *= dir; col = convoy(q, 0.06, t, dir, col);
+    } else if (kind < 10.0) {                      // Droide rollt nah vorbei
+        float uu = u * 1.6;
+        if (uu < 1.2) {
+            float xx = mix(-1.5, 1.5, uu) * dir;
+            q = p - vec2(xx, groundY - 0.1 + 0.01 * abs(sin(t * 6.0))); col = droid(q, 0.08, t, col);
+        }
+    } else if (kind < 11.0) {                      // Kriecher am Horizont, sehr langsam
+        float xx = mix(-0.9, 0.9, u) * dir;
+        q = p - vec2(xx, groundY + 0.02); q.x *= dir; col = crawler(q, 0.09, t, col);
+    } else if (kind < 12.0) {                      // Meteorschauer
+        for (int i = 0; i < 6; i++) {
+            float fi = float(i);
+            float ph = fract(t / 1.8 + hash(vec2(fi, slot)));
+            vec2 sp = vec2(-1.2 + hash(vec2(fi, slot + 1.0)) * 2.4 + ph * 0.9, 0.98 - ph * 0.45);
+            float shoot = smoothstep(0.012, 0.0, segDist(p, sp, sp - vec2(0.09, 0.035))) * step(ph, 0.55) * step(0.15, u) * step(u, 0.95);
+            col += vec3(1.0, 0.95, 0.8) * shoot;
+        }
+    } else if (kind < 13.0) {                      // Suchscheinwerfer einer fernen Basis
+        col = searchlight(p, t, 1.1 * dir, groundY, col);
+    } else if (kind < 14.0) {                      // Patrouille: Transporter plus zwei Jäger als Eskorte
+        q = p - vec2(x, 0.72); q.x *= dir; col = transporter(q, 0.14, t, col);
+        q = p - vec2(x + 0.3 * dir, 0.66); q.x *= dir; col = fighter(q, 0.07, t, col);
+        q = p - vec2(x + 0.3 * dir, 0.78); q.x *= dir; col = fighter(q, 0.07, t + 1.0, col);
+    }
+    if (kind >= 6.0 && kind < 7.0) {               // Gefecht
         float fl = step(0.93, hash(vec2(floor(t * 6.0), slot))) * step(0.2, u) * step(u, 0.8);
         float fx = (hash(vec2(floor(t * 6.0), 1.0)) - 0.5) * 2.0;
         col += vec3(1.0, 0.75, 0.45) * fl * exp(-length((p - vec2(fx, groundY + 0.04)) * vec2(1.0, 3.0)) * 3.5) * 1.6;
