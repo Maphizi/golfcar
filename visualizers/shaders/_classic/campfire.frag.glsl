@@ -1,5 +1,5 @@
 #version 140
-// F7 – Lagerfeuer auf einem fremden Planeten: Pixel-Art-Feuer, zwei Monde, Ringplanet, Nebel, Sternschnuppen.
+// F7 – Lagerfeuer: Pixel-Art-Feuer mit Scheiten, Funken, Lichtschein und Sternenhimmel.
 // Zündet in den ersten Sekunden an (iTime startet beim Modusstart bei 0). Reagiert leicht auf Audio.
 in vec2 vUv;
 out vec4 fragColor;
@@ -22,11 +22,11 @@ float fbm(vec2 p) {
 }
 // Feuerfarben, auf 6 Stufen quantisiert (Pixel-Look)
 vec3 firePal(int k) {           // k = 1..5, Stufen von dunkelrot bis weißgelb
-    if (k <= 1) return vec3(0.45, 0.05, 0.35);     // violetter Saum
-    if (k == 2) return vec3(0.85, 0.15, 0.25);
-    if (k == 3) return vec3(1.0, 0.45, 0.08);
-    if (k == 4) return vec3(1.0, 0.80, 0.25);
-    return vec3(0.85, 0.95, 1.0);                  // weißblauer Kern
+    if (k <= 1) return vec3(0.55, 0.06, 0.0);
+    if (k == 2) return vec3(0.90, 0.20, 0.0);
+    if (k == 3) return vec3(1.0, 0.48, 0.03);
+    if (k == 4) return vec3(1.0, 0.80, 0.18);
+    return vec3(1.0, 0.97, 0.72);
 }
 // Abstand Punkt–Strecke (für die Scheite)
 float segDist(vec2 p, vec2 a, vec2 b) {
@@ -48,40 +48,18 @@ void main() {
     float flameH = mix(0.05, 1.0, ignite) * (1.0 + 0.12 * uRms * (1.0 - uSilent));
     float t = iTime;
 
-    // ---- Himmel: violetter Nebel, zwei Monde, Ringplanet, Sternschnuppe; Boden: fremder Staub
-    vec3 col = mix(vec3(0.02, 0.01, 0.05), vec3(0.08, 0.03, 0.14), uv.y);
-    float neb = fbm(vec2(uv.x * 3.0 + 1.0, uv.y * 2.0 + t * 0.01));
-    col += vec3(0.25, 0.08, 0.35) * pow(neb, 2.2) * step(0.3, uv.y) * 1.3;
-    col += vec3(0.05, 0.2, 0.35) * pow(fbm(vec2(uv.x * 2.0 + 7.0, uv.y * 3.0)), 3.0) * step(0.3, uv.y);
-    float star = step(0.994, hash(cell)) * (0.5 + 0.5 * sin(t * 2.0 + hash(cell + 7.0) * 6.28)) * step(0.3, uv.y);
+    // ---- Himmel und Boden
+    vec3 col = mix(vec3(0.01, 0.01, 0.03), vec3(0.03, 0.03, 0.07), uv.y);
+    float star = step(0.995, hash(cell)) * (0.5 + 0.5 * sin(t * 2.0 + hash(cell + 7.0) * 6.28)) * step(0.45, uv.y);
     col += vec3(0.8, 0.85, 1.0) * star * 0.7;
-    // großer Mond mit Kratern
-    vec2 m1 = (p - vec2(0.55, 0.78)) * vec2(1.0, 1.0);
-    float moon = smoothstep(0.075, 0.07, length(m1));
-    float crater = 1.0 - 0.35 * step(0.6, noise(m1 * 60.0)) ;
-    col = mix(col, vec3(0.75, 0.72, 0.65) * crater * (0.6 + 0.4 * smoothstep(0.07, -0.02, m1.x)), moon);
-    // kleiner Ringplanet
-    vec2 m2 = p - vec2(-0.6, 0.72);
-    float planet = smoothstep(0.045, 0.04, length(m2));
-    float ring = smoothstep(0.012, 0.0, abs(length(m2 * vec2(1.0, 3.5)) - 0.085)) * (1.0 - planet * step(0.0, m2.y));
-    col = mix(col, vec3(0.9, 0.6, 0.35), planet);
-    col += vec3(0.8, 0.7, 0.5) * ring * 0.8;
-    // Sternschnuppe alle ~9 s
-    float sh = fract(t / 9.0);
-    vec2 sp = vec2(-0.9 + sh * 2.2, 0.95 - sh * 0.5);
-    float shoot = smoothstep(0.012, 0.0, segDist(p, sp, sp - vec2(0.08, 0.018))) * step(sh, 0.35);
-    col += vec3(1.0, 0.95, 0.8) * shoot;
     float groundY = 0.22;
     float ground = step(uv.y, groundY);
-    col = mix(col, vec3(0.08, 0.05, 0.09) * (0.5 + 0.5 * hash(cell * 0.37)), ground);
-    // Steine
-    float rock = step(0.985, hash(floor(cell / 3.0))) * ground * step(uv.y, groundY - 0.02);
-    col = mix(col, vec3(0.3, 0.28, 0.33), rock);
+    col = mix(col, vec3(0.05, 0.035, 0.02) * (0.6 + 0.4 * hash(cell * 0.37)), ground);
 
     // ---- Lichtschein des Feuers (flackert)
     float flick = 0.85 + 0.15 * noise(vec2(t * 7.0, 3.0)) + 0.1 * uBeat;
     float d = length((p - vec2(0.0, groundY + 0.05)) * vec2(1.0, 1.4));
-    col += vec3(1.0, 0.5, 0.3) * exp(-d * 4.5) * 0.35 * flick * ignite;
+    col += vec3(1.0, 0.5, 0.15) * exp(-d * 4.5) * 0.35 * flick * ignite;
     col += vec3(1.0, 0.35, 0.1) * exp(-d * 1.8) * 0.08 * flick * ignite;
 
     // ---- Scheite (zwei gekreuzte Stämme, Streifen in Holzmaserung)

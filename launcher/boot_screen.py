@@ -6,11 +6,11 @@ import sys
 import time
 
 from . import config, display
-from .home_screen import draw_scanner, RED, AMBER, GREY, BLACK
+from .home_screen import draw_scanner, draw_glyphs, RED, AMBER, GREY, BLACK
 
 import pygame
 
-LINES = ["SYSTEMCHECK", "SENSOREN  . . . . OK", "STIMME  . . . . . OK", "FAHRER  . . . . . UNGEPRÜFT", "KITT-CART ONLINE"]
+LINES = ["SYSTEMCHECK", "HYPERANTRIEB  . . . TARNUNG AKTIV", "SCHILDE . . . . . . OK", "DROIDENKERN . . . . OK", "PILOT . . . . . . . UNGEPRÜFT", "KITT-CART ONLINE"]
 
 
 def main() -> int:
@@ -35,6 +35,7 @@ def main() -> int:
         title = f_title.render("KITT-CART", True, (int(220 * a), int(30 * a), int(30 * a)))
         screen.blit(title, ((w - title.get_width()) // 2, int(h * 0.18)))
         draw_scanner(screen, (int(w * 0.15), int(h * 0.32), int(w * 0.7), int(h * 0.035)), t * 1.6)
+        draw_glyphs(screen, int(w * 0.3), int(h * 0.40), 10, max(2, int(h * 0.005)), 3, GREY)
         # Zeilen erscheinen nacheinander
         y = int(h * 0.45)
         per = (dur - 1.0) / len(LINES)

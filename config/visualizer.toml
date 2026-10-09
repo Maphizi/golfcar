@@ -12,21 +12,33 @@ height = 0
 
 # render_scale < 1 rendert in einen kleineren Framebuffer und skaliert hoch (spart GPU-Zeit).
 [scenes.psychedelic]
-shader = "psychedelic"
+shader = "hyperspace"      # Space-Thema; klassisch: "psychedelic"
 render_scale = 0.75
 
 [scenes.crt]
-shader = "crt"
+shader = "target"          # Space-Thema; klassisch: "crt"
 render_scale = 1.0
 
 [scenes.eye]
-shader = "eye"
+shader = "tactical"        # Space-Thema; klassisch: "eye"
 render_scale = 0.85
 
 [scenes.kitt]
-shader = "kitt"
+shader = "shipcomputer"    # Space-Thema; klassisch: "kitt"
 render_scale = 1.0
 
 [scenes.campfire]
 shader = "campfire"
 render_scale = 0.5
+
+[scenes.hyperspace]
+shader = "hyperspace"
+render_scale = 0.75
+
+[scenes.target]
+shader = "target"
+render_scale = 1.0
+
+[scenes.tactical]
+shader = "tactical"
+render_scale = 1.0

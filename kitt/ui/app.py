@@ -20,7 +20,7 @@ from visualizers.engine.analysis import Analyzer
 
 log = logging.getLogger("kitt.ui")
 STATES = {"idle": 0, "listening": 1, "thinking": 2, "speaking": 3, "loading": 4, "init": 4, "stopped": 0}
-LABELS = {"idle": "BEREIT", "listening": "HÖRE ZU", "thinking": "VERARBEITE", "speaking": "SPRECHE",
+LABELS = {"idle": "BEREIT", "listening": "EMPFANG", "thinking": "DROIDENKERN RECHNET", "speaking": "SENDE",
           "loading": "SYSTEME LADEN", "init": "SYSTEME LADEN", "stopped": "AUS"}
 
 
@@ -176,12 +176,12 @@ class KittUI:
                 renderer.upload_audio(f.spectrum, f.wave)
                 renderer.draw(t, f, {"uState": STATES.get(state, 0), "uStateT": now - since, "uLevel": self.level})
                 # Zustandslabel und Readout-Zeile
-                label.set_text(LABELS.get(state, state.upper()), (255, 120, 60))
-                label.draw(w, h, w * 0.5, h * 0.745, 0.9, center=True)
+                label.set_text(LABELS.get(state, state.upper()), (255, 214, 10))
+                label.draw(w, h, w * 0.36, h * 0.66, 0.95, center=True)
                 if overlay and now < self.text_until and (lu or lk):
                     line = (("> " + lu) if state in ("listening", "thinking") or not lk else ("KITT: " + lk))[-110:]
-                    overlay.set_text(line, (200, 200, 200))
-                    overlay.draw(w, h, w * 0.5, h * 0.08, 0.85, center=True)
+                    overlay.set_text(line, (255, 236, 120))
+                    overlay.draw(w, h, w * 0.5, h * 0.025, 0.9, center=True)
                 if screenshot and not shot_done and t >= (seconds - 0.5 if seconds else 3.0):
                     renderer.screenshot(screenshot)
                     shot_done = True

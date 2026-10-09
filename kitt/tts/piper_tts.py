@@ -19,6 +19,25 @@ import numpy as np
 log = logging.getLogger("tts")
 
 
+def robotize(pcm: np.ndarray, rate: int, freq: float = 60.0, mix: float = 0.55, bits: int = 0, comb_ms: float = 6.0) -> np.ndarray:
+    """Roboter-/Droiden-Stimme: Ringmodulation (metallisch), kurzer Kammfilter (blechern),
+    optionale Bit-Reduktion (digital), weiche Begrenzung. Bleibt verständlich."""
+    t = np.arange(len(pcm), dtype=np.float32) / rate
+    carrier = np.sign(np.sin(2 * np.pi * freq * t)) * 0.5 + 0.5 * np.sin(2 * np.pi * freq * t)   # Rechteck+Sinus
+    out = pcm * (1.0 - mix) + pcm * carrier * mix
+    d = int(rate * comb_ms / 1000.0)
+    if d > 0 and len(out) > d:
+        comb = np.zeros_like(out)
+        comb[d:] = out[:-d]
+        out = out * 0.7 + comb * 0.5
+    if bits and 4 <= bits < 16:
+        q = float(2 ** (bits - 1))
+        out = np.round(out * q) / q
+    out = np.tanh(out * 1.6) / np.tanh(1.6)
+    peak = float(np.abs(out).max()) or 1.0
+    return (out / peak * min(1.0, float(np.abs(pcm).max()) * 1.25 + 0.05)).astype(np.float32)
+
+
 class Player:
     """Ein Wiedergabeprozess pro Antwort: rohe S16-Samples auf stdin."""
 
@@ -75,6 +94,11 @@ class PiperTTS:
         self.pitch_factor = float(cfg.get("pitch_factor", 1.0))
         self.sentence_silence = float(cfg.get("sentence_silence", 0.15))
         self.volume = float(cfg.get("volume", 1.0))
+        self.robot = bool(cfg.get("robot", False))
+        self.robot_freq = float(cfg.get("robot_freq", 60.0))
+        self.robot_mix = float(cfg.get("robot_mix", 0.55))
+        self.robot_bits = int(cfg.get("robot_bits", 0))
+        self.robot_comb_ms = float(cfg.get("robot_comb_ms", 6.0))
         self.player_kind = cfg.get("player", "auto")
         self.output_target = output_target
         self.voice = None
@@ -107,6 +131,8 @@ class PiperTTS:
             # langsamer abspielen = tiefer: Samples strecken, Rate bleibt
             n = int(len(pcm) / self.pitch_factor)
             pcm = np.interp(np.linspace(0, len(pcm) - 1, n), np.arange(len(pcm)), pcm).astype(np.float32)
+        if self.robot and len(pcm):
+            pcm = robotize(pcm, self.rate, self.robot_freq, self.robot_mix, self.robot_bits, self.robot_comb_ms)
         if self.sentence_silence > 0:
             pcm = np.concatenate((pcm, np.zeros(int(self.rate * self.sentence_silence), dtype=np.float32)))
         return pcm

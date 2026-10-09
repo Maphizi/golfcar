@@ -17,12 +17,25 @@ except ImportError:  # pragma: no cover
     print("pygame fehlt", file=sys.stderr)
     sys.exit(1)
 
-RED = (220, 30, 30)
-DIM = (90, 10, 10)
-AMBER = (230, 160, 40)
-GREY = (120, 120, 120)
-WHITE = (235, 235, 235)
+# Space-Thema: gelbes Monochrom-Display
+RED = (255, 214, 10)        # Hauptfarbe (Name aus dem Klassik-Thema beibehalten)
+DIM = (70, 58, 5)
+AMBER = (255, 160, 30)
+GREY = (120, 110, 60)
+WHITE = (255, 236, 120)
 BLACK = (0, 0, 0)
+
+
+def draw_glyphs(surf, x, y, n, cell, seed, color):
+    """Dekorative fremde Schrift: 3x5-Pixelmuster je Zeichen aus einem Hash."""
+    import random
+    rng = random.Random(seed)
+    for i in range(n):
+        head = rng.random() > 0.3
+        for cy in range(5):
+            for cx in range(3):
+                if rng.random() > 0.55 or (cy == 0 and head):
+                    pygame.draw.rect(surf, color, (x + i * cell * 4 + cx * cell, y + cy * cell, cell - 1, cell - 1))
 
 
 def draw_scanner(surf, rect, t):
@@ -34,7 +47,7 @@ def draw_scanner(surf, rect, t):
     for i in range(n):
         d = abs(i - pos)
         bright = max(0.0, 1.0 - d / 4.0) ** 2
-        col = (int(DIM[0] + (RED[0] - DIM[0]) * bright) , int(10 + 40 * bright), int(10 + 30 * bright))
+        col = tuple(int(DIM[k] + (RED[k] - DIM[k]) * bright) for k in range(3))
         pygame.draw.rect(surf, col, (x0 + i * seg_w + 2, y, seg_w - 4, h))
 
 
@@ -64,8 +77,10 @@ def main() -> int:
             last_sys = t
         screen.fill(BLACK)
         title = f_title.render("KITT-CART", True, RED)
-        screen.blit(title, ((w - title.get_width()) // 2, int(h * 0.08)))
-        draw_scanner(screen, (int(w * 0.15), int(h * 0.22), int(w * 0.7), int(h * 0.035)), t)
+        screen.blit(title, ((w - title.get_width()) // 2, int(h * 0.06)))
+        draw_glyphs(screen, int(w * 0.36), int(h * 0.17), 12, max(2, int(h * 0.006)), 7, AMBER)
+        draw_scanner(screen, (int(w * 0.15), int(h * 0.23), int(w * 0.7), int(h * 0.035)), t)
+        pygame.draw.rect(screen, DIM, (int(w * 0.06), int(h * 0.04), int(w * 0.88), int(h * 0.92)), 2)
         y = int(h * 0.33)
         for key, mode in menu:
             spec = modes.get(mode, {})
@@ -77,10 +92,11 @@ def main() -> int:
             screen.blit(k, (int(w * 0.25), y))
             screen.blit(lab, (int(w * 0.34), y))
             y += int(h * 0.068)
-        foot = f_small.render("F6 HOME     ESC EXIT (DEV)", True, GREY)
+        foot = f_small.render("F6 HAUPTMENÜ     ESC EXIT (DEV)", True, GREY)
         screen.blit(foot, ((w - foot.get_width()) // 2, int(h * 0.80)))
         s = f_small.render(sys_line, True, GREY)
         screen.blit(s, ((w - s.get_width()) // 2, int(h * 0.88)))
+        draw_glyphs(screen, int(w * 0.62), int(h * 0.88), 8, max(2, int(h * 0.005)), 23, DIM)
         # Scanlines für CRT-Anmutung (günstig: jede 3. Zeile abdunkeln)
         for yy in range(0, h, 3):
             pygame.draw.line(screen, (0, 0, 0), (0, yy), (w, yy))

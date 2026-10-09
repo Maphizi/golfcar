@@ -3,7 +3,7 @@
 Fullscreen-Appliance: Retro-Gaming, drei GPU-Audio-Visualizer und der lokale
 Sprachassistent KITT. Bedienung über F1–F6, später über eine USB-HID-Buttonbox.
 
-Stand: **Phase 10 + Extras** (alle Modi, Lagerfeuer, Ansagen, Boot-Sequenz, Bluetooth-Quelle, Spielstatistik, Anrede-Erkennung).
+Stand: **Space-Thema** (alle Modi im Raumschiff-Look, Roboterstimme, Lagerfeuer am Außenposten) auf Phase 10 + Extras.
 Phasenplan und Anforderungen: `docs/KITT_Masterprompt_V1_erweitert.md`.
 Hardware-Inventur: `docs/inventory_phase1.txt`.
 
@@ -436,6 +436,34 @@ Neustart kommt. Für den Alltag `dev_emergency_exit = false` setzen.
 **SD-Karte:** Logs werden rotiert (Launcher-Logs 512 KB × 3, Modus-Logs 2 MB × 2). Wer gar nicht
 auf die Karte schreiben will, setzt in `config/settings.toml` `dir = "/run/user/1000/kitt-logs"`
 (tmpfs, weg nach dem Neustart).
+
+## Space-Thema
+
+Alle Oberflächen sind auf Raumschiff-Optik umgestellt (eigene Entwürfe, keine fremden Assets,
+Markennamen oder Figuren). Die klassischen Shader liegen zum Zurückschalten in
+`visualizers/shaders/_classic/`; welcher Shader hinter welcher Taste steckt, steht in
+`config/visualizer.toml` (`[scenes.<modus>].shader`).
+
+| Taste | Modus | Szene |
+|---|---|---|
+| F1 | HOLO-ARCADE | RetroPie, unverändert |
+| F2 | HYPERRAUM | `hyperspace`: Sternenfeld, Bass löst den Sprung aus (Streifen, blauer Tunnel), Mitten rollen, Höhen funkeln, Spektrum als Ring um den Fluchtpunkt |
+| F3 | ZIELCOMPUTER | `target`: gelber Drahtgitter-Graben in Perspektive (Tempo nach Bass, jede vierte Strebe rot), Zähler, Statusfelder nach Bändern, unten Zielkreis mit Sweep und Waveform, fremde Schrift |
+| F4 | TAKTIK-SCANNER | `tactical`: grünes Gitter, weißes 3D-Drahtgitter eines Gleiters (dreht mit den Mitten, Triebwerk glüht mit Bass), Radar mit Blips aus dem Spektrum, Waveform, rote Pegelbalken |
+| F5 | BORDCOMPUTER | `shipcomputer`: gelbes Pixel-OLED mit Panels, Radar, Spektrum, Status-Symbolen (Kreis, Sanduhr, Dreieck), Thermometer und sechs Balken, Zustände EMPFANG, DROIDENKERN RECHNET, SENDE |
+| F7 | LAGERFEUER / AUSSENPOSTEN | `campfire`: Pixel-Feuer mit violettem Saum unter zwei Monden, Ringplanet, Nebel, Sternschnuppen |
+
+Die fremde Schrift in den Szenen ist ein eigenes Zufallsmuster aus 3×5-Pixelglyphen, keine
+lesbare oder fremde Schriftart. Home- und Boot-Screen sind gelb-monochrom mit Glyphenzeilen.
+
+**Roboterstimme:** `[tts].robot = true` legt Ringmodulation (`robot_freq`), einen kurzen Kammfilter
+(`robot_comb_ms`) und Bit-Reduktion (`robot_bits`) über die Piper-Stimme. `robot_mix` regelt den
+Anteil, 0 = normale Stimme. Nach einer Änderung `scripts/announce_build.sh` erneut ausführen, damit
+auch die Ansagen die neue Stimme bekommen (vorher `rm models/announce/*.wav`).
+
+**Persönlichkeit:** KITT ist jetzt der Bordcomputer eines getarnten Raumgleiters, redet in
+Raumfahrtbegriffen (Sektor, Schilde, Hyperantrieb, Basis statt Clubhaus), bleibt aber trocken und
+erfindet keine Markennamen oder Figuren. Ansagen in `config/announce.toml` entsprechend.
 
 ## Extras
 

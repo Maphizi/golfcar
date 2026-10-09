@@ -9,13 +9,13 @@ cwd = "{root}"
 stop_timeout = 1
 
 [modes.home]
-label = "HOME"
+label = "HAUPTMENÜ"
 command = ["{python}", "-m", "launcher.home_screen"]
 cwd = "{root}"
 stop_timeout = 2
 
 [modes.gaming]
-label = "RETRO GAMING"
+label = "HOLO-ARCADE"
 command = ["{root}/scripts/run_gaming.sh"]
 cwd = "{home}"
 stop_timeout = 8
@@ -23,31 +23,31 @@ stop_timeout = 8
 env = { KITT_GAMING_BACKEND = "xwayland" }
 
 [modes.viz_psychedelic]
-label = "PSYCHEDELIC"
+label = "HYPERRAUM"
 command = ["{python}", "-m", "visualizers.engine", "psychedelic"]
 cwd = "{root}"
 stop_timeout = 3
 
 [modes.viz_crt]
-label = "CRT SCOPE"
+label = "ZIELCOMPUTER"
 command = ["{python}", "-m", "visualizers.engine", "crt"]
 cwd = "{root}"
 stop_timeout = 3
 
 [modes.viz_eye]
-label = "DIGITAL EYE"
+label = "TAKTIK-SCANNER"
 command = ["{python}", "-m", "visualizers.engine", "eye"]
 cwd = "{root}"
 stop_timeout = 3
 
 [modes.kitt]
-label = "KITT"
+label = "BORDCOMPUTER"
 command = ["{python}", "-m", "kitt.ui"]
 cwd = "{root}"
 # Beim Beenden müssen whisper-server und llama-server mit sterben; sie laufen in derselben Prozessgruppe
 stop_timeout = 8
 [modes.campfire]
-label = "LAGERFEUER"
+label = "LAGERFEUER / AUSSENPOSTEN"
 command = ["{python}", "-m", "visualizers.engine", "campfire"]
 cwd = "{root}"
 stop_timeout = 3

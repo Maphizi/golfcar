@@ -23,7 +23,7 @@ from visualizers.engine.audio_capture import AudioCapture  # noqa: E402
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("scene", choices=["psychedelic", "crt", "eye", "campfire", "kitt"])
+    ap.add_argument("scene", choices=["psychedelic", "crt", "eye", "campfire", "kitt", "hyperspace", "target", "tactical"])
     ap.add_argument("--test-signal", action="store_true")
     ap.add_argument("--seconds", type=float, default=0.0)
     ap.add_argument("--screenshot", default="")

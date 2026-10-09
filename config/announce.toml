@@ -6,34 +6,34 @@ enabled = true
 
 [lines]
 boot = [
-  "KITT-Cart online. Alle Systeme nominal. Fahrer leider auch.",
-  "Systeme hochgefahren. Ich bin bereit. Du hoffentlich auch.",
-  "Guten Tag. Ich übernehme die Unterhaltung, du das Lenken. Vorerst.",
+  "KITT-Cart online. Hyperantrieb getarnt, Schilde bereit. Pilot leider auch.",
+  "Systeme hochgefahren. Droidenkern aktiv. Ich bin bereit. Du hoffentlich auch.",
+  "Guten Tag, Pilot. Ich übernehme die Systeme, du das Steuer. Vorerst.",
 ]
 gaming = [
-  "Spiele. Natürlich.",
-  "Retro-Gaming. Ich dachte, wir wären hier zum Golfen.",
-  "Spielkonsole aktiviert. Deine Reflexe sind ab jetzt dokumentiert.",
+  "Holo-Arcade. Natürlich.",
+  "Spielkonsole aktiviert. Deine Reflexe werden ab jetzt protokolliert.",
+  "Simulationsdeck geladen. Ich dachte, wir wären hier zum Golfen.",
 ]
 viz_psychedelic = [
-  "Psychedelik. Bitte trotzdem auf den Weg achten.",
-  "Farben. Viele Farben. Ich bin unbeeindruckt.",
+  "Hyperraum. Bitte trotzdem auf den Fairway achten.",
+  "Sprung vorbereitet. Koordinaten: irgendwo zwischen Loch vier und fünf.",
 ]
 viz_crt = [
-  "Messinstrumente. Endlich etwas Seriöses.",
-  "Oszilloskop aktiv. Es misst nichts Wichtiges, aber es sieht gut aus.",
+  "Zielcomputer aktiv. Er zielt auf nichts, aber er sieht gut dabei aus.",
+  "Zielerfassung. Bitte nicht auf das Clubhaus.",
 ]
 viz_eye = [
-  "Ich beobachte dich. Das tue ich sowieso, jetzt sieht man es.",
-  "Das Auge ist offen. Zwinkern optional.",
+  "Taktik-Scanner. Fremde Gleiter in Reichweite: zwei. Beide langsamer als wir.",
+  "Scanner aktiv. Ich sehe alles. Das meiste ignoriere ich.",
 ]
 campfire = [
-  "Lagerfeuer. Ich simuliere Wärme. Mehr geht nicht.",
-  "Feuer an. Marshmallows bringst du selbst mit.",
-  "Ein Lagerfeuer auf einem Bildschirm. Romantik, technisch gelöst.",
+  "Lagerfeuer am Außenposten. Ich simuliere Wärme. Mehr geht nicht.",
+  "Feuer an, zwei Monde oben. Marshmallows bringst du selbst mit.",
+  "Ein Lagerfeuer auf einem fremden Planeten. Romantik, technisch gelöst.",
 ]
 home = [
   "Hauptmenü.",
-  "Zurück zum Anfang. Eine deiner besseren Entscheidungen.",
+  "Zurück zur Brücke. Eine deiner besseren Entscheidungen.",
 ]
-kitt = []   # der KITT-Modus begrüßt selbst ([ui].greeting in kitt.toml)
+kitt = []   # der Bordcomputer-Modus begrüßt selbst ([ui].greeting in kitt.toml)

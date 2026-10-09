@@ -95,6 +95,12 @@ pitch_factor = 0.94
 sentence_silence = 0.15
 # Lautstärke 0..1
 volume = 1.0
+# Roboter-/Droidenstimme: Ringmodulation + Kammfilter + Bit-Reduktion auf die Piper-Stimme
+robot = true
+robot_freq = 60.0      # Modulationsfrequenz in Hz (40–90 = metallisch, höher = kratziger)
+robot_mix = 0.55       # Anteil 0..1 (0 = normale Stimme)
+robot_bits = 9         # 0 = aus, 6–10 = hörbar digital
+robot_comb_ms = 6.0    # Kammfilter-Verzögerung in ms (0 = aus)
 # Wiedergabe: auto = pw-play (PipeWire), Fallback aplay (ALSA/pipewire-alsa). Ziel aus config/audio.toml [output].
 player = "auto"
 
@@ -127,4 +133,4 @@ show_text = true
 # Sekunden, die die Zeile nach einer Antwort stehen bleibt
 text_hold_s = 8
 # Begrüßung nach dem Laden (leer = keine)
-greeting = "KITT online."
+greeting = "Bordcomputer online. Droidenkern bereit."
