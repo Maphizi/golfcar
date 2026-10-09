@@ -38,10 +38,22 @@ class Controller:
         self.demo = demo
         self.demo_next = time.monotonic() + 3.0
         self.rng = random.Random()
+        self.armed = False  # Kippschalter-Zustand
 
     # -- Eingabe ---------------------------------------------------------
     def handle_event(self, ev) -> None:
         if ev.type == pygame.KEYDOWN:
+            if ev.key == pygame.K_F13:  # Kippschalter
+                if self.phase in (PHASE_LAUNCH, PHASE_CRUISE, PHASE_ARRIVE):
+                    self._set_phase(PHASE_BROWSE)  # Cruise abbrechen
+                    self.armed = False
+                else:
+                    self.armed = not self.armed
+                return
+            if ev.key == pygame.K_F14:  # Startknopf
+                if self.armed:
+                    self.fly()
+                return
             if ev.key in (pygame.K_LEFT, pygame.K_a):
                 self.select(-1)
             elif ev.key in (pygame.K_RIGHT, pygame.K_d):
@@ -136,7 +148,10 @@ class Controller:
                 (p["name"].upper(), 0.075, 0.28, 0.60, YEL, 0.95 * fade),
                 (kind + ("   ·   " + "  ·  ".join(extra) if extra else ""), 0.026, 0.28, 0.535, (255, 236, 120), 0.85 * fade),
                 (p.get("subtitle", ""), 0.026, 0.28, 0.485, (200, 185, 110), 0.85 * fade),
-                ("<  WÄHLEN  >          MITTE / ENTER  KURS SETZEN", 0.024, 0.5, 0.05, DIM, 0.7 + 0.3 * math.sin(t * 2.0)),
+                ("<  WÄHLEN  >     KIPPSCHALTER + START  KURS SETZEN", 0.024, 0.5, 0.05, DIM, 0.7 + 0.3 * math.sin(t * 2.0)),
+                ("[ ARMED  —  START DRÜCKEN ]" if self.armed else "[ GESICHERT ]",
+                 0.026, 0.72, 0.13,
+                 (255, 60, 60) if self.armed else (70, 70, 70), 0.9),
             ]
         if self.phase == PHASE_LAUNCH:
             return [(f"KURS: {p['name'].upper()}", 0.05, 0.5, 0.88, YEL, 0.9), ("HYPERANTRIEB LÄDT", 0.028, 0.5, 0.83, (255, 236, 120), 0.5 + 0.5 * math.sin(t * 8.0))]
