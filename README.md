@@ -447,14 +447,34 @@ Markennamen oder Figuren). Die klassischen Shader liegen zum Zurückschalten in
 | Taste | Modus | Szene |
 |---|---|---|
 | F1 | HOLO-ARCADE | RetroPie, unverändert |
-| F2 | HYPERRAUM | `hyperspace`: Sternenfeld, Bass löst den Sprung aus (Streifen, blauer Tunnel), Mitten rollen, Höhen funkeln, Spektrum als Ring um den Fluchtpunkt |
+| F2 | HYPERRAUM | `navcomputer`: Navigationscomputer mit Planetenkatalog und Anflug (siehe unten). Alternative ohne Steuerung: `hyperspace` |
 | F3 | ZIELCOMPUTER | `target`: gelber Drahtgitter-Graben in Perspektive (Tempo nach Bass, jede vierte Strebe rot), Zähler, Statusfelder nach Bändern, unten Zielkreis mit Sweep und Waveform, fremde Schrift |
 | F4 | TAKTIK-SCANNER | `tactical`: grünes Gitter, weißes 3D-Drahtgitter eines Gleiters (dreht mit den Mitten, Triebwerk glüht mit Bass), Radar mit Blips aus dem Spektrum, Waveform, rote Pegelbalken |
 | F5 | BORDCOMPUTER | `shipcomputer`: gelbes Pixel-OLED mit Panels, Radar, Spektrum, Status-Symbolen (Kreis, Sanduhr, Dreieck), Thermometer und sechs Balken, Zustände EMPFANG, DROIDENKERN RECHNET, SENDE |
-| F7 | LAGERFEUER / AUSSENPOSTEN | `campfire`: Pixel-Feuer mit violettem Saum unter zwei Monden, Ringplanet, Nebel, Sternschnuppen |
+| F7 | LAGERFEUER / AUSSENPOSTEN | `campfire`: Pixel-Feuer mit violettem Saum unter zwei Monden, Ringplanet, Nebel, Sternschnuppen, dazu Hintergrund-Ereignisse (siehe unten) |
 
 Die fremde Schrift in den Szenen ist ein eigenes Zufallsmuster aus 3×5-Pixelglyphen, keine
 lesbare oder fremde Schriftart. Home- und Boot-Screen sind gelb-monochrom mit Glyphenzeilen.
+
+**Navigationscomputer (F2):** `config/planets.toml` enthält 32 bekannte Welten der Saga mit Typ
+(Wüste, Eis, Wald, Ozean, Stadt, Vulkan, Gasriese, Sumpf, Gras, Fels, Kristall), Farben, Größe, Monden,
+Ringen und einer eigenen Kurzbeschreibung. Der Shader rendert daraus eine beleuchtete Kugel mit
+typischer Oberfläche (Stadtlichter auf der Nachtseite, Lavaadern, Wolken, Bänder), Atmosphärensaum,
+Monden und Ringen. Bedienung: Maus links / Pfeil links = vorheriger Planet, Maus rechts / Pfeil
+rechts = nächster, Mausrad blättert, Maus Mitte / Enter / Leertaste = Kurs setzen. Ablauf: ruhende
+Sterne mit Planet rechts und Katalogtext links, beim Start weicht der Planet zurück und die Sterne
+ziehen sich über 3,5 s zu langen Streifen, dann 14 s träger psychedelischer Schweif (Farben wandern,
+Bass pulst den Tunnel, Beat blitzt), zum Schluss bricht der Tunnel zusammen und das Ziel wächst aus
+der Mitte. Zeiten in `config/visualizer.toml` unter `[scenes.psychedelic]`. Die Logik steckt in
+`visualizers/scenes/navcomputer.py` (Szenen-Controller der Engine: Eingabe, Phasen, Text-Overlays),
+weitere Welten einfach an die TOML anhängen.
+
+**Lagerfeuer-Ereignisse (F7):** Alle 16 Sekunden ein Zeitfenster, der Inhalt kommt aus einem
+Hash der Fensternummer (zwei von neun Fenstern bleiben leer): Transporter mit Positionslichtern hoch
+am Himmel, zwei Jäger mit roten Triebwerksschweifen, ein vierbeiniger Läufer am Horizont, ein
+Gleiter mit Staubfahne am Boden, eine Sonde mit rotem Scanstrahl, ein Großschiff weit oben, ferne
+Gefechtsblitze am Horizont, dazu die Sternschnuppe alle neun Sekunden. Alles sind eigene
+Pixel-Silhouetten im Shader (`visualizers/shaders/campfire/frag.glsl`, Funktion `events`).
 
 **Roboterstimme:** `[tts].robot = true` legt Ringmodulation (`robot_freq`), einen kurzen Kammfilter
 (`robot_comb_ms`) und Bit-Reduktion (`robot_bits`) über die Piper-Stimme. `robot_mix` regelt den

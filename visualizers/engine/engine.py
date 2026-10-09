@@ -197,7 +197,16 @@ class Renderer:
         GL.glUniform1f(u["uSilent"], 1.0 if f.silent else 0.0)
         for name, val in (extra or {}).items():
             loc = u.get(name, -1)
-            if loc >= 0:
+            if loc < 0:
+                continue
+            if isinstance(val, (tuple, list)):
+                if len(val) == 3:
+                    GL.glUniform3f(loc, float(val[0]), float(val[1]), float(val[2]))
+                elif len(val) == 2:
+                    GL.glUniform2f(loc, float(val[0]), float(val[1]))
+                elif len(val) == 4:
+                    GL.glUniform4f(loc, *[float(v) for v in val])
+            else:
                 GL.glUniform1f(loc, float(val))
         GL.glActiveTexture(GL.GL_TEXTURE0)
         GL.glBindTexture(GL.GL_TEXTURE_2D, self.tex)
@@ -209,6 +218,7 @@ class Renderer:
             GL.glBindFramebuffer(GL.GL_DRAW_FRAMEBUFFER, 0)
             GL.glBlitFramebuffer(0, 0, self.rw, self.rh, 0, 0, self.w, self.h, GL.GL_COLOR_BUFFER_BIT, GL.GL_LINEAR)
             GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
+            GL.glViewport(0, 0, self.w, self.h)       # Overlays danach in voller Auflösung
 
     def screenshot(self, path: str) -> None:
         GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, 0)

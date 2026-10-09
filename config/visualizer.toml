@@ -12,8 +12,12 @@ height = 0
 
 # render_scale < 1 rendert in einen kleineren Framebuffer und skaliert hoch (spart GPU-Zeit).
 [scenes.psychedelic]
-shader = "hyperspace"      # Space-Thema; klassisch: "psychedelic"
+shader = "navcomputer"     # Navigationscomputer; Alternativen: "hyperspace", klassisch "psychedelic"
+controller = "navcomputer"
 render_scale = 0.75
+launch_seconds = 3.5
+cruise_seconds = 14.0
+arrive_seconds = 4.0
 
 [scenes.crt]
 shader = "target"          # Space-Thema; klassisch: "crt"
@@ -42,3 +46,8 @@ render_scale = 1.0
 [scenes.tactical]
 shader = "tactical"
 render_scale = 1.0
+
+[scenes.navcomputer]
+shader = "navcomputer"
+controller = "navcomputer"
+render_scale = 0.75

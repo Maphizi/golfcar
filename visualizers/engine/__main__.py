@@ -23,12 +23,13 @@ from visualizers.engine.audio_capture import AudioCapture  # noqa: E402
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("scene", choices=["psychedelic", "crt", "eye", "campfire", "kitt", "hyperspace", "target", "tactical"])
+    ap.add_argument("scene", choices=["psychedelic", "crt", "eye", "campfire", "kitt", "hyperspace", "target", "tactical", "navcomputer"])
     ap.add_argument("--test-signal", action="store_true")
     ap.add_argument("--seconds", type=float, default=0.0)
     ap.add_argument("--screenshot", default="")
     ap.add_argument("--windowed", action="store_true")
     ap.add_argument("--source", choices=["mic", "playback"], help="überschreibt [capture].source")
+    ap.add_argument("--demo", action="store_true", help="Szenen-Controller läuft automatisch (Tests)")
     args = ap.parse_args()
     if args.windowed:
         os.environ["KITT_VIZ_WINDOWED"] = "1"
@@ -47,13 +48,28 @@ def main() -> int:
 
     screen = eng.create_window(settings, viz_cfg, f"KITT VIZ {args.scene}")
     w, h = screen.get_size()
-    scene = eng.Scene(args.scene, viz_cfg.get("scenes", {}).get(args.scene, {}), bool(viz_cfg.get("engine", {}).get("hot_reload", True)))
+    scene_cfg = viz_cfg.get("scenes", {}).get(args.scene, {})
+    # Optionaler Szenen-Controller (Eingabe, Zustand, Overlays), z. B. der Navigationscomputer
+    ctrl = None
+    ctrl_name = scene_cfg.get("controller", "")
+    if ctrl_name:
+        import importlib
+        ctrl = importlib.import_module(f"visualizers.scenes.{ctrl_name}").Controller(scene_cfg, demo=args.demo)
+    scene = eng.Scene(args.scene, scene_cfg, bool(viz_cfg.get("engine", {}).get("hot_reload", True)),
+                      tuple(ctrl.uniform_names()) if ctrl else ())
     try:
         scene.load()
     except eng.GLError as exc:
         log.error("%s", exc)
         return 2
     renderer = eng.Renderer(scene, w, h)
+    overlays: dict[int, eng.TextOverlay] = {}
+
+    def overlay(size_frac: float) -> eng.TextOverlay:
+        px = max(10, int(h * size_frac))
+        if px not in overlays:
+            overlays[px] = eng.TextOverlay(px)
+        return overlays[px]
 
     cap = AudioCapture(audio_cfg)
     cap.start()
@@ -75,12 +91,19 @@ def main() -> int:
                     raise KeyboardInterrupt
                 if ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE and not under_launcher:
                     raise KeyboardInterrupt
+                if ctrl:
+                    ctrl.handle_event(ev)
             now = time.monotonic()
             t = now - t0
             f = analyzer.update(cap.latest(analyzer.n), now)
             scene.maybe_reload(now)
             renderer.upload_audio(f.spectrum, f.wave)
-            renderer.draw(t, f)
+            renderer.draw(t, f, ctrl.uniforms(t, f) if ctrl else None)
+            if ctrl:
+                for text, size_frac, x_frac, y_frac, color, alpha in ctrl.overlays(t):
+                    ov = overlay(size_frac)
+                    ov.set_text(text, color)
+                    ov.draw(w, h, w * x_frac, h * y_frac, alpha, center=True)
             if args.screenshot and not shot_done and (t >= (args.seconds - 0.5 if args.seconds else 3.0)):
                 renderer.screenshot(args.screenshot)   # vor dem Flip aus dem Back-Buffer
                 shot_done = True

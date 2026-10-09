@@ -35,6 +35,127 @@ float segDist(vec2 p, vec2 a, vec2 b) {
     return length(pa - ba * h);
 }
 
+
+// ---- Hintergrund-Ereignisse (alle 16 s ein Fenster, Typ per Hash; manche Fenster bleiben leer)
+float boxf(vec2 p, vec2 c, vec2 h) { vec2 d = abs(p - c) - h; return step(max(d.x, d.y), 0.0); }
+float tri(vec2 p, vec2 a, vec2 b, vec2 c) {   // Punkt im Dreieck
+    float s1 = sign((b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x));
+    float s2 = sign((c.x - b.x) * (p.y - b.y) - (c.y - b.y) * (p.x - b.x));
+    float s3 = sign((a.x - c.x) * (p.y - c.y) - (a.y - c.y) * (p.x - c.x));
+    return step(2.5, abs(s1 + s2 + s3));
+}
+// Transporter: breiter Rumpf, Flügel, blinkende Lichter, Triebwerksglühen. q relativ zur Mitte, Größe s
+vec3 transporter(vec2 q, float s, float t, vec3 col) {
+    q /= s;
+    float body = boxf(q, vec2(0.0, 0.0), vec2(0.5, 0.09)) + boxf(q, vec2(0.15, 0.12), vec2(0.18, 0.06));
+    float wing = tri(q, vec2(-0.2, 0.0), vec2(0.35, 0.0), vec2(0.0, -0.32)) + tri(q, vec2(-0.2, 0.0), vec2(0.35, 0.0), vec2(0.0, 0.3));
+    float hull = clamp(body + wing, 0.0, 1.0);
+    vec3 c = mix(col, vec3(0.22, 0.24, 0.28), hull);
+    c = mix(c, vec3(0.35, 0.38, 0.42), hull * step(0.5, fract(q.y * 12.0)));             // Panels
+    c += vec3(1.0, 0.3, 0.1) * step(0.5, fract(t * 2.0)) * boxf(q, vec2(0.48, 0.0), vec2(0.03, 0.03));
+    c += vec3(0.3, 0.6, 1.0) * boxf(q, vec2(-0.52, 0.0), vec2(0.06, 0.05)) * (0.7 + 0.3 * sin(t * 30.0));
+    return c;
+}
+// Jäger: kleiner Keil mit zwei Streben, roter Schweif
+vec3 fighter(vec2 q, float s, float t, vec3 col) {
+    q /= s;
+    float hull = tri(q, vec2(0.5, 0.0), vec2(-0.3, 0.18), vec2(-0.3, -0.18)) + boxf(q, vec2(-0.35, 0.0), vec2(0.08, 0.3));
+    vec3 c = mix(col, vec3(0.75, 0.75, 0.8), clamp(hull, 0.0, 1.0));
+    float trail = boxf(q, vec2(-0.9, 0.0), vec2(0.55, 0.05)) * smoothstep(-1.45, -0.4, q.x);
+    c += vec3(1.0, 0.25, 0.15) * trail * 0.9;
+    return c;
+}
+// Läufer: Kastenkopf, Rumpf, vier Beine (zwei Phasen), weit hinten am Horizont
+vec3 walker(vec2 q, float s, float t, vec3 col) {
+    q /= s;
+    float legA = 0.5 + 0.5 * sin(t * 2.5), legB = 0.5 - 0.5 * sin(t * 2.5);
+    float body = boxf(q, vec2(0.0, 0.55), vec2(0.45, 0.18)) + boxf(q, vec2(0.55, 0.5), vec2(0.18, 0.12)) + boxf(q, vec2(0.68, 0.42), vec2(0.06, 0.04));
+    float legs = boxf(q, vec2(-0.3 + legA * 0.1, 0.18), vec2(0.06, 0.2)) + boxf(q, vec2(0.3 + legB * 0.1, 0.18), vec2(0.06, 0.2))
+               + boxf(q, vec2(-0.3 - legA * 0.15, -0.1), vec2(0.07, 0.1)) + boxf(q, vec2(0.3 - legB * 0.15, -0.1), vec2(0.07, 0.1))
+               + boxf(q, vec2(-0.1 + legB * 0.1, 0.18), vec2(0.05, 0.2)) + boxf(q, vec2(0.12 + legA * 0.1, -0.1), vec2(0.06, 0.1));
+    vec3 c = mix(col, vec3(0.24, 0.25, 0.28), clamp(body + legs, 0.0, 1.0));
+    c += vec3(1.0, 0.2, 0.1) * step(0.7, fract(t * 1.5)) * boxf(q, vec2(0.6, 0.5), vec2(0.03, 0.02));
+    return c;
+}
+// Gleiter am Boden: flach, schnell, Staubfahne
+vec3 speeder(vec2 q, float s, float t, vec3 col) {
+    q /= s;
+    float hull = boxf(q, vec2(0.0, 0.05), vec2(0.5, 0.07)) + boxf(q, vec2(0.1, 0.17), vec2(0.15, 0.06)) + boxf(q, vec2(-0.45, 0.1), vec2(0.08, 0.1));
+    vec3 c = mix(col, vec3(0.5, 0.42, 0.3), clamp(hull, 0.0, 1.0));
+    float dust = step(0.6, hash(vec2(floor(q.x * 8.0), floor(t * 12.0)))) * boxf(q, vec2(-1.0, -0.05), vec2(0.6, 0.12));
+    c = mix(c, vec3(0.35, 0.3, 0.32), dust * 0.7);
+    c += vec3(0.4, 0.7, 1.0) * boxf(q, vec2(-0.52, 0.05), vec2(0.04, 0.04));
+    return c;
+}
+// Sonde: schwebende Kugel mit Armen, roter Scanstrahl nach unten
+vec3 probe(vec2 q, float s, float t, vec3 col) {
+    q /= s;
+    float head = step(length(q - vec2(0.0, 0.3)), 0.22);
+    float arms = boxf(q, vec2(0.0, 0.0), vec2(0.04, 0.3)) + boxf(q, vec2(-0.25, 0.05), vec2(0.03, 0.2)) + boxf(q, vec2(0.25, 0.05), vec2(0.03, 0.2));
+    vec3 c = mix(col, vec3(0.2, 0.2, 0.22), clamp(head + arms, 0.0, 1.0));
+    float beam = step(abs(q.x - sin(t * 3.0) * 0.4 * (-q.y + 0.3)), 0.04 + 0.05 * (0.3 - q.y)) * step(q.y, 0.1) * step(-2.5, q.y) * step(0.5, fract(t * 1.3));
+    c += vec3(1.0, 0.15, 0.1) * beam * 0.6;
+    c += vec3(1.0, 0.2, 0.1) * step(length(q - vec2(0.0, 0.3)), 0.06) * (0.5 + 0.5 * sin(t * 20.0));
+    return c;
+}
+// Großschiff: schmaler Keil hoch am Himmel, Positionslichter, sehr langsam
+vec3 capital(vec2 q, float s, float t, vec3 col) {
+    q /= s;
+    float hull = tri(q, vec2(0.7, 0.0), vec2(-0.7, 0.22), vec2(-0.7, -0.22)) + boxf(q, vec2(-0.3, 0.3), vec2(0.15, 0.1)) + boxf(q, vec2(-0.3, 0.42), vec2(0.03, 0.08));
+    vec3 c = mix(col, vec3(0.3, 0.3, 0.34), clamp(hull, 0.0, 1.0));
+    float lights = step(0.9, hash(vec2(floor(q.x * 30.0), floor(q.y * 30.0)))) * hull;
+    c += vec3(0.9, 0.95, 1.0) * lights * 0.6;
+    c += vec3(0.3, 0.6, 1.0) * boxf(q, vec2(-0.72, 0.0), vec2(0.04, 0.12));
+    return c;
+}
+
+vec3 events(vec2 p, vec2 cellsz, float t, float groundY, vec3 col) {
+    float slot = floor(t / 16.0);
+    float u = fract(t / 16.0);                     // 0..1 im Zeitfenster
+    float kind = floor(hash(vec2(slot, 3.7)) * 9.0);   // 0..8, 7/8 = Pause
+    float dir = step(0.5, hash(vec2(slot, 9.1))) * 2.0 - 1.0;
+    float x = mix(-1.3, 1.3, u) * dir;             // von links nach rechts oder umgekehrt
+    vec2 q;
+    if (kind < 1.0) {                              // Transporter hoch über dem Horizont
+        q = p - vec2(x, 0.72 + 0.03 * sin(u * 6.28)); q.x *= dir;
+        col = transporter(q, 0.16, t, col);
+    } else if (kind < 2.0) {                       // zwei Jäger, schnell (nur im ersten Drittel)
+        float uu = u * 3.0;
+        if (uu < 1.2) {
+            float xx = mix(-1.5, 1.5, uu) * dir;
+            q = p - vec2(xx, 0.62); q.x *= dir; col = fighter(q, 0.09, t, col);
+            q = p - vec2(xx - 0.22 * dir, 0.56); q.x *= dir; col = fighter(q, 0.08, t + 1.0, col);
+        }
+    } else if (kind < 3.0) {                       // Läufer am Horizont, sehr langsam
+        float xx = mix(-1.1, 1.1, u) * dir;
+        q = p - vec2(xx, groundY + 0.06); q.x *= dir; col = walker(q, 0.09, t, col);
+    } else if (kind < 4.0) {                       // Gleiter am Boden, zügig
+        float uu = u * 2.0;
+        if (uu < 1.3) {
+            float xx = mix(-1.5, 1.5, uu) * dir;
+            q = p - vec2(xx, groundY - 0.04); q.x *= dir; col = speeder(q, 0.1, t, col);
+        }
+    } else if (kind < 5.0) {                       // Sonde kommt, scannt, verschwindet
+        float xx = mix(-1.2, 0.5 * dir, smoothstep(0.0, 0.4, u)) * (dir) + (1.0 - smoothstep(0.75, 1.0, u)) * 0.0;
+        xx = mix(xx, 1.4 * dir, smoothstep(0.75, 1.0, u));
+        q = p - vec2(xx, 0.5 + 0.02 * sin(t * 2.0)); col = probe(q, 0.09, t, col);
+    } else if (kind < 6.0) {                       // Großschiff, weit und langsam
+        float xx = mix(-1.2, 1.2, u) * dir;
+        q = p - vec2(xx, 0.85); q.x *= dir; col = capital(q, 0.22, t, col);
+    } else if (kind < 7.0) {                       // Ferne Gefechtsblitze am Horizont
+        float fl = step(0.93, hash(vec2(floor(t * 6.0), slot))) * step(0.2, u) * step(u, 0.8);
+        float fx = (hash(vec2(floor(t * 6.0), 1.0)) - 0.5) * 2.0;
+        col += vec3(1.0, 0.75, 0.45) * fl * exp(-length((p - vec2(fx, groundY + 0.04)) * vec2(1.0, 3.0)) * 3.5) * 1.6;
+        col += vec3(1.0, 0.4, 0.2) * fl * step(length((p - vec2(fx, groundY + 0.04)) * vec2(1.0, 1.6)), 0.03);
+        col += vec3(0.6, 0.5, 0.6) * fl * 0.12 * step(groundY, p.y);          // Himmel hellt kurz auf
+        // Leuchtspuren, die zum Blitz hinziehen
+        float tr = step(0.97, hash(vec2(floor(t * 9.0), slot + 2.0))) * step(0.2, u) * step(u, 0.8);
+        float ty = groundY + 0.05 + fract(t * 0.9) * 0.25;
+        col += vec3(0.3, 1.0, 0.4) * tr * step(abs(p.x - fx - (ty - groundY) * 0.6), 0.006) * step(abs(p.y - ty), 0.03);
+    }
+    return col;
+}
+
 void main() {
     float aspect = iResolution.x / iResolution.y;
     float cellsX = floor(CELLS_Y * aspect);
@@ -77,6 +198,9 @@ void main() {
     // Steine
     float rock = step(0.985, hash(floor(cell / 3.0))) * ground * step(uv.y, groundY - 0.02);
     col = mix(col, vec3(0.3, 0.28, 0.33), rock);
+
+    // ---- Ereignisse im Hintergrund (Fahrzeuge, Läufer, Sonden, Gefechte)
+    col = events(p, vec2(1.0 / cellsX, 1.0 / CELLS_Y), t, groundY, col);
 
     // ---- Lichtschein des Feuers (flackert)
     float flick = 0.85 + 0.15 * noise(vec2(t * 7.0, 3.0)) + 0.1 * uBeat;
