@@ -268,7 +268,9 @@ Shader laufen und steht im Log.
   das ganze Auge, Mitten drehen die Iris, Höhen verschieben Zeilen, der Beat sendet einen Ring
   nach außen. Pixelraster und Scanlines.
 
-- `campfire` (F7): Pixel-Art-Lagerfeuer auf 90 Zeilen Raster. Zündet nach dem Start in etwa fünf
+- `campfire` (F7): Pixel-Art-Lagerfeuer auf 128 Zeilen Raster. Flamme mit seitlichen Zungen, die
+  abreißen, Fetzen über der Spitze, Rauch, der im Wind abdriftet, Hitzeflimmern über dem Feuer,
+  glühende Risse in den Scheiten, 22 Funken in Wirbeln und alle paar Sekunden ein Funkenregen. Zündet nach dem Start in etwa fünf
   Sekunden an (Funke, dann wachsende Flamme), zwei gekreuzte Scheite mit Glut, aufsteigende Funken,
   flackernder Lichtschein auf dem Boden, Sternenhimmel. Braucht kein Mikrofon; mit Musik werden
   Flamme und Funken etwas lebhafter. Pixelraster 128 Zeilen, `render_scale 0.6`.
@@ -506,10 +508,12 @@ Flugdauer aus `config/visualizer.toml`. Logik in `visualizers/scenes/navcomputer
 
 **Space-Slotmaschine (Taste 5, `slots`):** Nahaufnahme von drei Walzen, die das ganze Bild füllen:
 gedruckte Symbole auf gewölbten Trommeln mit Papierkorn, Licht von oben, dunkle Trennstege, Glasreflex.
-Die Maschine steht still; beim Drehen verschwimmt das Bild langsam wie im Traum (weiche Unschärfe,
-Bewegungsunschärfe, wanderndes Doppelbild, hellere Farben) und wird nach dem Stillstand wieder
-scharf. Die Walzen laufen gemächlich, das Einrasten hat einen kleinen Rückprall. Sechs übergeordnete Themen, zufällig gewählt und alle vier bis acht Runden gewechselt
-(Weißblitz, Pfeiltasten wechseln sofort): KANTINE, IMPERIUM, SCHROTTPLATZ, ORBIT-GOLF,
+Die Maschine steht still; nur eine Walze, die sich dreht, verschwimmt (weiche Unschärfe,
+Bewegungsunschärfe, wanderndes Doppelbild), und sobald sie steht, ist sie wieder scharf. Die
+Trommeln tragen tiefe, ruhige Farben des Themas, die langsam ineinanderfließen, jedes Symbol auf
+einem etwas helleren Etikett. Die Walzen laufen gemächlich, das Einrasten hat einen kleinen
+Rückprall. Sechs übergeordnete Themen; jedes Einschalten des Modus bringt das nächste (Zähler in
+`logs/slots_theme.txt`), innerhalb einer Sitzung bleibt es, Pfeiltasten wechseln von Hand: KANTINE, IMPERIUM, SCHROTTPLATZ, ORBIT-GOLF,
 SCHMUGGLERKASINO, RAUMFAHRT-RETRO. Jedes Thema bringt sieben eigene 16×16-Pixel-Symbole (das
 letzte ist das Jackpot-Symbol: Kuss, Totenkopf, Schädel, Pokal, Geldsack, Astronaut), zwei
 Farben für Rahmen und Nebel, einen Titel und Sprüche für Verlust, Beinahe-Treffer, kleinen Gewinn,
@@ -527,7 +531,8 @@ den der Controller (`visualizers/scenes/slots.py`) als Textur an den Shader
 hoch. Neue Themen: Eintrag in `THEMES` mit sieben ASCII-Sprites, Farben und Sprüchen.
 
 **Systemfehler-Modus (Taste 8, `error`):** Grüner Code, der zusammenbricht. Den Ablauf steuert
-`visualizers/scenes/error.py`, jeder Durchlauf fällt anders aus: 9 bis 18 Sekunden Code in einer
+`visualizers/scenes/error.py`, jeder Durchlauf fällt anders aus, und auch der Einstieg ist zufällig
+(meist mitten in einer Code-Phase, manchmal direkt in einem Ereignis): 9 bis 18 Sekunden Code in einer
 von sechs Varianten (Zeichenregen, Hexdump, Boot-Protokoll mit `[ OK ]`/`[WARN]`/`[FAIL]`, Bitraster,
 Quelltext mit roten FEHLERCODE-Zeilen, Spektrum als Zeichensäulen; nie zweimal dieselbe
 hintereinander), dann würfelt der Controller, was passiert:

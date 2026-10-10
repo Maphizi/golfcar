@@ -271,6 +271,11 @@ void main() {
     float ignite = smoothstep(0.8, 5.0, iTime);
     float flameH = mix(0.05, 1.0, ignite) * (1.0 + 0.12 * uRms * (1.0 - uSilent));
     float t = iTime;
+    // Hitzeflimmern: über dem Feuer wabert der Himmel (Feuer, Scheite und Boden bleiben unverzerrt)
+    vec2 pF = p, uvF = uv;
+    float heat = smoothstep(0.5, 0.0, abs(p.x)) * smoothstep(0.27, 0.6, uv.y) * smoothstep(1.05, 0.7, uv.y) * ignite;
+    float shim = (noise(vec2(p.x * 14.0, uv.y * 9.0 - t * 2.8)) - 0.5) * 0.022 * heat;
+    p.x += shim; uv.x += shim / aspect;
 
     // ---- Himmel: violetter Nebel, zwei Monde, Ringplanet, Sternschnuppe; Boden: fremder Staub
     vec3 col = mix(vec3(0.02, 0.01, 0.05), vec3(0.08, 0.03, 0.14), uv.y);
@@ -296,6 +301,7 @@ void main() {
     float shoot = smoothstep(0.012, 0.0, segDist(p, sp, sp - vec2(0.08, 0.018))) * step(sh, 0.35);
     col += vec3(1.0, 0.95, 0.8) * shoot;
     float groundY = 0.22;
+    p = pF; uv = uvF;
     float ground = step(uv.y, groundY);
     col = mix(col, vec3(0.08, 0.05, 0.09) * (0.5 + 0.5 * hash(cell * 0.37)), ground);
     // Steine
@@ -306,10 +312,13 @@ void main() {
     col = events(p, vec2(1.0 / cellsX, 1.0 / CELLS_Y), t, groundY, col);
 
     // ---- Lichtschein des Feuers (flackert)
-    float flick = 0.85 + 0.15 * noise(vec2(t * 7.0, 3.0)) + 0.1 * uBeat;
+    float flick = 0.75 + 0.2 * noise(vec2(t * 7.0, 3.0)) + 0.12 * noise(vec2(t * 23.0, 9.0)) + 0.1 * uBeat;
     float d = length((p - vec2(0.0, groundY + 0.05)) * vec2(1.0, 1.4));
-    col += vec3(1.0, 0.5, 0.3) * exp(-d * 4.5) * 0.35 * flick * ignite;
-    col += vec3(1.0, 0.35, 0.1) * exp(-d * 1.8) * 0.08 * flick * ignite;
+    col += vec3(1.0, 0.5, 0.3) * exp(-d * 4.5) * 0.4 * flick * ignite;
+    col += vec3(1.0, 0.35, 0.1) * exp(-d * 1.8) * 0.1 * flick * ignite;
+    // Lichtflecken auf dem Boden, die mit dem Flackern wandern
+    float groundLit = ground * exp(-d * 3.0) * flick * ignite;
+    col += vec3(0.9, 0.45, 0.2) * groundLit * 0.25 * step(0.4, noise(vec2(p.x * 25.0, p.y * 25.0 + t * 0.8)));
 
     // ---- Scheite (zwei gekreuzte Stämme, Streifen in Holzmaserung)
     float logs = 0.0;
@@ -319,23 +328,46 @@ void main() {
     if (dl < 0.035) {
         float stripe = step(0.5, fract((p.x + p.y * 0.3) * 30.0 + hash(vec2(floor(dl * 60.0), 1.0)) * 0.5));
         vec3 wood = mix(vec3(0.30, 0.16, 0.07), vec3(0.18, 0.09, 0.04), stripe);
-        // Glut an den Innenseiten
-        float glow = smoothstep(0.08, 0.0, abs(p.x)) * ignite * (0.6 + 0.4 * noise(vec2(t * 3.0, p.x * 20.0)));
+        // Glut an den Innenseiten und glühende Risse, die pulsieren
+        float glow = smoothstep(0.1, 0.0, abs(p.x)) * ignite * (0.6 + 0.4 * noise(vec2(t * 3.0, p.x * 20.0)));
+        float crack = step(0.72, noise(vec2(p.x * 45.0, p.y * 45.0))) * ignite * (0.5 + 0.5 * sin(t * 2.5 + p.x * 30.0));
         wood = mix(wood, vec3(1.0, 0.35, 0.05), glow * 0.7);
+        wood = mix(wood, vec3(1.0, 0.55, 0.15), crack * (0.3 + 0.7 * smoothstep(0.2, 0.0, abs(p.x))));
         col = wood;
         logs = 1.0;
     }
 
-    // ---- Flammen: Rauschen, das nach oben zieht, mit Form (unten breit, oben spitz)
+    // ---- Rauch: dunkle Schwaden über dem Feuer, die im Wind abdriften (Flammen übermalen ihn)
     float fy = (uv.y - groundY) / (0.55 * flameH);     // 0 am Boden, 1 an der Spitze
-    if (fy > -0.05 && fy < 1.3 && logs < 0.5) {
-        // Flammenzungen: Rauschen zieht nach oben, die Kontur wackelt mit
+    if (logs < 0.5 && uv.y > groundY + 0.25 * flameH) {
+        float wind = sin(t * 0.17) * 0.35;
+        float drift = (uv.y - groundY) * wind + sin(uv.y * 6.0 - t * 0.5) * 0.04;
+        float sm = fbm(vec2(p.x * 4.0 - drift * 2.0 + t * 0.1, uv.y * 3.0 - t * 0.55));
+        float column = smoothstep(0.28, 0.0, abs(p.x - drift)) * smoothstep(groundY + 0.3 * flameH, groundY + 0.7 * flameH, uv.y) * smoothstep(1.15, 0.75, uv.y);
+        float smoke = smoothstep(0.45, 0.75, sm) * column * ignite * 0.6;
+        col = mix(col, vec3(0.17, 0.14, 0.2), smoke);
+    }
+    // ---- Flammen: Rauschen, das nach oben zieht, mit Form (unten breit, oben spitz), seitliche
+    //      Zungen, die abreißen, und Fetzen, die über der Spitze davonfliegen
+    if (fy > -0.05 && fy < 1.45 && logs < 0.5) {
         float n = fbm(vec2(p.x * 5.0 + sin(t * 0.7) * 0.3, uv.y * 6.0 - t * 2.4));
         float n2 = noise(vec2(p.x * 12.0 + 3.0, uv.y * 16.0 - t * 4.5));
+        float n3 = fbm(vec2(p.x * 9.0 - t * 0.4, uv.y * 10.0 - t * 3.6));
         float wobble = (n - 0.5) * 0.12 * (0.3 + fy);
-        float width = 0.30 * flameH * (1.0 - fy * 0.8) + wobble;   // etwas breiter
-        float shape = 1.0 - clamp(abs(p.x + (n2 - 0.5) * 0.06 * fy) / max(width, 0.001), 0.0, 1.0);
+        float width = 0.30 * flameH * (1.0 - fy * 0.8) + wobble;
+        float cx = (n2 - 0.5) * 0.06 * fy + (n3 - 0.5) * 0.09 * fy * fy;   // die Spitze schwankt stärker
+        float shape = 1.0 - clamp(abs(p.x + cx) / max(width, 0.001), 0.0, 1.0);
         float v = shape * (0.35 + 1.1 * n + 0.3 * n2) - fy * 0.75;
+        for (int sgn = -1; sgn <= 1; sgn += 2) {
+            float sx = float(sgn) * (0.14 + 0.03 * sin(t * 1.7 + float(sgn)));
+            float ty = fy * 1.7;
+            float tn = noise(vec2(p.x * 10.0 + float(sgn) * 7.0, uv.y * 14.0 - t * 5.0));
+            float tw = 0.10 * flameH * (1.0 - ty * 0.7) * (0.5 + 0.7 * tn);
+            float ts = 1.0 - clamp(abs(p.x - sx) / max(tw, 0.001), 0.0, 1.0);
+            v = max(v, ts * (0.3 + 0.9 * tn) - ty * 0.6);
+        }
+        float torn = noise(vec2(p.x * 8.0, uv.y * 9.0 - t * 3.4));
+        v += step(0.95, fy) * step(0.8, torn) * 0.55 * (1.45 - fy) * smoothstep(0.25, 0.0, abs(p.x + cx));
         v += 0.1 * uMid * (1.0 - uSilent);
         int k = int(clamp(v, 0.0, 0.999) * 6.0);
         if (k >= 1) {
@@ -347,18 +379,34 @@ void main() {
         col = vec3(1.0, 0.9, 0.5);
     }
 
-    // ---- Funken: 14 Partikel, steigen auf, driften, verlöschen
-    for (int i = 0; i < 14; i++) {
+    // ---- Funken: 22 Partikel steigen in Wirbeln auf, kühlen von gelb nach dunkelrot ab und verlöschen
+    for (int i = 0; i < 22; i++) {
         float fi = float(i);
-        float speed = 0.12 + 0.1 * hash(vec2(fi, 2.0));
+        float speed = 0.1 + 0.12 * hash(vec2(fi, 2.0));
         float life = fract(t * speed + hash(vec2(fi, 3.0)));         // 0..1 Lebenszeit
-        float sx = (hash(vec2(fi, 4.0)) - 0.5) * 0.25 + sin(t * 1.3 + fi) * 0.05 * life + life * (hash(vec2(fi, 5.0)) - 0.5) * 0.2;
-        float sy = groundY + 0.08 + life * (0.5 + 0.3 * hash(vec2(fi, 6.0)));
+        float sx = (hash(vec2(fi, 4.0)) - 0.5) * 0.25 + sin(t * 1.3 + fi) * 0.05 * life
+                 + life * (hash(vec2(fi, 5.0)) - 0.5) * 0.25 + 0.03 * sin(t * 4.0 + fi * 2.0) * life;
+        float sy = groundY + 0.08 + life * (0.45 + 0.4 * hash(vec2(fi, 6.0)));
         vec2 sc = floor(vec2(sx / aspect + 0.5, sy) * vec2(cellsX, CELLS_Y));
-        float bright = (1.0 - life) * ignite * step(0.3, hash(vec2(fi, floor(t * 6.0))));
+        float bright = (1.0 - life) * ignite * step(0.25, hash(vec2(fi, floor(t * 6.0))));
         bright *= 1.0 + 1.5 * uBeat;
-        if (sc == cell && bright > 0.15) {
-            col = mix(vec3(1.0, 0.5, 0.1), vec3(1.0, 0.9, 0.5), bright) ;
+        if (sc == cell && bright > 0.12) {
+            col = mix(vec3(0.6, 0.12, 0.02), mix(vec3(1.0, 0.5, 0.1), vec3(1.0, 0.9, 0.5), bright), smoothstep(0.1, 0.6, bright));
+        }
+    }
+    // ---- Knistern: alle paar Sekunden sprüht ein Funkenregen aus dem Scheit
+    float burstT = mod(t, 3.0);
+    float burstOn = step(0.55, hash(vec2(floor(t / 3.0), 7.0))) * ignite;
+    if (burstOn > 0.5 && burstT < 1.0) {
+        for (int i = 0; i < 8; i++) {
+            float fi = float(i);
+            float seed = floor(t / 3.0) * 10.0 + fi;
+            float vx = (hash(vec2(seed, 1.0)) - 0.5) * 0.9;
+            float vy = 0.5 + hash(vec2(seed, 2.0)) * 0.7;
+            float bx = (hash(vec2(seed, 3.0)) - 0.5) * 0.15 + vx * burstT;
+            float by = groundY + 0.06 + vy * burstT - 0.45 * burstT * burstT;
+            vec2 sc = floor(vec2(bx / aspect + 0.5, by) * vec2(cellsX, CELLS_Y));
+            if (sc == cell) col = mix(vec3(1.0, 0.95, 0.7), vec3(1.0, 0.4, 0.1), burstT);
         }
     }
 

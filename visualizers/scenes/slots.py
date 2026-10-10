@@ -16,7 +16,25 @@ import time
 import numpy as np
 import pygame
 
+from launcher import config as lcfg
 from visualizers.scenes import slots_art as art
+
+THEME_FILE = lcfg.ROOT / "logs" / "slots_theme.txt"   # Zähler: jedes Einschalten das nächste Thema
+
+
+def next_theme_index() -> int:
+    """Liest den Zähler, gibt das Thema für diesen Start zurück und schreibt den Zähler für den nächsten."""
+    n = 0
+    try:
+        n = int(THEME_FILE.read_text().strip() or "0")
+    except (OSError, ValueError):
+        n = 0
+    try:
+        THEME_FILE.parent.mkdir(parents=True, exist_ok=True)
+        THEME_FILE.write_text(str((n + 1) % len(art.THEMES)))
+    except OSError:
+        pass
+    return n % len(art.THEMES)
 
 STRIP_LEN = 32          # Symbole pro Walze
 N_REELS = 3
@@ -127,7 +145,7 @@ class Controller:
     def __init__(self, scene_cfg: dict, demo: bool = False):
         self.rng = random.Random()
         self.demo = demo
-        self.theme = self.rng.randrange(len(art.THEMES))
+        self.theme = next_theme_index()
         self.strips = [build_strip(self.theme, r) for r in range(N_REELS)]
         self.reels = [Reel() for _ in range(N_REELS)]
         for r in range(N_REELS):
@@ -147,7 +165,7 @@ class Controller:
         self.spins = 0
         self.spins_until_theme = self.rng.randint(4, 8)
         self.next_theme = self.theme
-        self.dream = 0.0            # 0 scharf, 1 verschwommen (steigt beim Drehen langsam an)
+        self.blur = [0.0, 0.0, 0.0]   # je Walze: 0 scharf, 1 verschwommen; folgt der Drehzahl
         self.respin_pending = False
         self.respin_reel = -1
         self.planned_win = WIN_NONE
@@ -308,21 +326,15 @@ class Controller:
         self.last = now
         for reel in self.reels:
             reel.update(now, dt)
-        # Traumfaktor: steigt beim Drehen über etwa zwei Sekunden, fällt nach dem Stillstand langsam ab
-        spinning = any(r.spinning for r in self.reels)
-        rate = dt / 2.0 if spinning else -dt / 2.6
-        self.dream = min(1.0, max(0.0, self.dream + rate))
+        # Unschärfe je Walze folgt ihrer Drehzahl: beim Anlaufen weich hinein, beim Stillstand schnell scharf
+        for i, reel in enumerate(self.reels):
+            target = min(1.0, reel.speed / 4.0)
+            tau = 1.2 if target > self.blur[i] else 0.35
+            self.blur[i] += (target - self.blur[i]) * min(1.0, dt / tau)
         st_t = now - self.state_t0
         if self.state == ST_IDLE:
             if st_t >= self.idle_len:
-                if self.spins >= self.spins_until_theme:
-                    self.spins = 0
-                    self.spins_until_theme = self.rng.randint(4, 8)
-                    choices = [i for i in range(len(art.THEMES)) if i != self.theme]
-                    self.next_theme = self.rng.choice(choices)
-                    self._set_state(ST_THEME)
-                else:
-                    self._spin()
+                self._spin()          # Thema bleibt für diese Sitzung, Pfeiltasten wechseln von Hand
         elif self.state == ST_SPIN:
             if not any(r.spinning for r in self.reels):
                 self._finish()
@@ -354,7 +366,7 @@ class Controller:
 
     def uniform_names(self):
         return ("uSpriteTex", "uAtlasSize", "uTheme", "uColA", "uColB", "uReel", "uSpeed", "uState", "uStateT",
-                "uWin", "uWinMask", "uDream", "uFade", "uStripRow")
+                "uWin", "uWinMask", "uBlur", "uFade", "uStripRow")
 
     def uniforms(self, t: float, f) -> dict:
         self._advance()
@@ -375,7 +387,7 @@ class Controller:
             "uStateT": st_t,
             "uWin": float(self.win),
             "uWinMask": float(self.win_mask),
-            "uDream": self.dream,
+            "uBlur": tuple(self.blur),
             "uFade": fade,
             "uStripRow": float(len(art.THEMES) * SYM),
         }
@@ -384,7 +396,7 @@ class Controller:
         th = art.THEMES[self.theme]
         now = time.monotonic()
         st_t = now - self.state_t0
-        dim = 1.0 - 0.5 * self.dream
+        dim = 1.0 - 0.4 * max(self.blur)
         out = [
             (th["title"], 0.026, 0.5, 0.962, GOLD, 0.85 * dim),
             (th["subtitle"], 0.016, 0.5, 0.93, (255, 240, 200), 0.6 * dim),

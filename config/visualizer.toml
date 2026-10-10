@@ -14,7 +14,7 @@ height = 0
 [scenes.psychedelic]
 shader = "navcomputer"     # Navigationscomputer; Alternativen: "hyperspace", klassisch "psychedelic"
 controller = "navcomputer"
-render_scale = 0.75
+render_scale = 0.55        # auf dem Pi lief 0.75 im Hyperraum nur mit 25 bis 29 fps
 launch_seconds = 3.5
 cruise_seconds = 14.0
 arrive_seconds = 4.0

@@ -11,8 +11,8 @@ uniform float uRms, uBass, uMid, uHigh, uBeat, uSilent;
 uniform sampler2D uAudioTex;
 uniform sampler2D uSpriteTex;
 uniform vec2 uAtlasSize;
-uniform float uTheme, uState, uStateT, uWin, uWinMask, uDream, uFade, uStripRow;
-uniform vec3 uColA, uColB, uReel, uSpeed;
+uniform float uTheme, uState, uStateT, uWin, uWinMask, uFade, uStripRow;
+uniform vec3 uColA, uColB, uReel, uSpeed, uBlur;
 
 const float STRIP = 32.0;
 const float CELL = 0.30;           // Symbolhöhe auf der abgerollten Trommel (Höheneinheiten)
@@ -23,6 +23,11 @@ float noise(vec2 p) {
     vec2 i = floor(p), f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash12(i), hash12(i + vec2(1, 0)), f.x), mix(hash12(i + vec2(0, 1)), hash12(i + vec2(1, 1)), f.x), f.y);
+}
+vec3 hueShift(vec3 c, float a) {
+    const vec3 k = vec3(0.57735);
+    float cs = cos(a), sn = sin(a);
+    return c * cs + cross(k, c) * sn + k * dot(k, c) * (1.0 - cs);
 }
 float stripSymbol(float reel, float k) {
     float kk = mod(k, STRIP);
@@ -51,20 +56,26 @@ vec3 drumPixel(float reel, vec2 q, float pos, float soft) {
     float k = floor(pos + yc / CELL + 0.5);
     float ly = (yc - (k - pos) * CELL) / CELL + 0.5;
     float lx = q.x + 0.5;
-    // Papier mit Korn, Druckfarbe, feine Trennlinie zwischen den Feldern
+    // Walzenband: tiefe, ruhige Farben des Themas, die langsam ineinanderfließen, mit feinem Korn
     float grain = noise(vec2(q.x * 420.0, yc * 420.0)) * 0.05 + noise(vec2(q.x * 90.0, yc * 90.0)) * 0.03;
-    vec3 paper = vec3(0.90, 0.89, 0.85) * (0.96 + grain);
-    paper = mix(paper, uColB * 0.9 + 0.1, 0.06);
+    float flow = noise(vec2(yc * 1.6 + iTime * 0.04, q.x * 1.2 + reel * 3.0));
+    vec3 toneA = hueShift(uColA, 0.4 * sin(iTime * 0.05 + reel)) * 0.30 + 0.05;
+    vec3 toneB = hueShift(uColB, 0.4 * sin(iTime * 0.04 + 2.0)) * 0.34 + 0.06;
+    vec3 band = mix(toneA, toneB, smoothstep(0.3, 0.7, flow)) * (0.94 + grain);
+    // je Symbol ein etwas helleres, abgerundetes Feld (gedrucktes Etikett)
+    vec2 cellP = vec2(lx, ly) - 0.5;
+    float label = smoothstep(0.0, 0.02, 0.40 - max(abs(cellP.x) * 1.15, abs(cellP.y)));
+    band = mix(band, band * 1.35 + 0.04, label * 0.8);
     float idx = stripSymbol(reel, k);
     vec2 l = (vec2(lx, ly) - vec2(0.17, 0.12)) / vec2(0.66, 0.76);
     vec4 s = sprite(idx, l, soft);
-    vec3 ink = s.rgb * 0.92 * (0.92 + grain);
-    vec3 col = mix(paper, ink, s.a * 0.96);
+    vec3 ink = mix(s.rgb, vec3(dot(s.rgb, vec3(0.33))), 0.12) * (0.95 + grain);   // leicht entsättigt
+    vec3 col = mix(band, ink, s.a * 0.97);
     float sep = smoothstep(0.03, 0.0, min(ly, 1.0 - ly));
-    col *= 1.0 - 0.18 * sep;
+    col *= 1.0 - 0.25 * sep;
     // Beleuchtung: Licht von schräg oben, Glanzband, Zylinderabschattung
-    float diffuse = 0.22 + 0.78 * pow(max(cos(ang), 0.0), 0.7);
-    float spec = 0.22 * pow(max(cos(ang - 0.32), 0.0), 30.0);
+    float diffuse = 0.30 + 0.70 * pow(max(cos(ang), 0.0), 0.7);
+    float spec = 0.14 * pow(max(cos(ang - 0.32), 0.0), 30.0);
     col = col * diffuse + spec;
     // Walzenenden dunkler (Zylinder läuft in den Steg)
     col *= 1.0 - 0.45 * smoothstep(0.36, 0.5, abs(q.x));
@@ -79,7 +90,6 @@ void main() {
     float live = 1.0 - uSilent;
     bool result = uState > 1.5 && uState < 2.5;
     float winPulse = result && uWin > 0.5 ? 0.5 + 0.5 * sin(t * 4.0) : 0.0;
-    float dream = clamp(uDream, 0.0, 1.0);
 
     float reelW = aspect * 0.30;
     float x0 = -aspect * 0.45;
@@ -90,12 +100,13 @@ void main() {
         vec2 q = vec2((p.x - cx) / reelW, p.y);
         float pos = ri < 0.5 ? uReel.x : (ri < 1.5 ? uReel.y : uReel.z);
         float sp = ri < 0.5 ? uSpeed.x : (ri < 1.5 ? uSpeed.y : uSpeed.z);
-        // Traum: weiche Unschärfe in der Fläche plus Bewegungsunschärfe entlang der Walze
-        float blurR = 0.016 * dream * (1.0 + 0.3 * sin(t * 0.7));
+        float dream = clamp(ri < 0.5 ? uBlur.x : (ri < 1.5 ? uBlur.y : uBlur.z), 0.0, 1.0);
+        // Nur in Bewegung: weiche Unschärfe in der Fläche plus Bewegungsunschärfe entlang der Walze
+        float blurR = 0.014 * dream * (1.0 + 0.3 * sin(t * 0.7));
         float mblur = sp * 0.018;
-        float soft = 0.08 + 0.3 * dream;
+        float soft = 0.08 + 0.25 * dream;
         vec3 acc = vec3(0.0);
-        if (dream < 0.02 && sp < 1.5) {
+        if (dream < 0.02 && sp < 0.5) {
             acc = drumPixel(ri, q, pos, soft);
         } else {
             for (int i = 0; i < 6; i++) {
@@ -143,9 +154,9 @@ void main() {
     // Glas: weicher Reflex und etwas Staub
     col += vec3(0.045) * smoothstep(0.0, 0.8, p.y * 0.8 - p.x * 0.25 + 0.3) * (1.0 - smoothstep(0.42, 0.49, abs(p.y)));
     col += vec3(0.02) * noise(p * 40.0 + 3.0);
-    // Traum: Farben werden weicher und heller, leichte Farbdrift
-    vec3 soft = col * vec3(1.03, 1.0, 1.06) + uColA * 0.04 + 0.03;
-    col = mix(col, soft, dream * 0.8);
+    // in Bewegung driften die Farben kaum merklich
+    float moving = max(uBlur.x, max(uBlur.y, uBlur.z));
+    col = mix(col, hueShift(col, 0.25 * sin(t * 0.6)), moving * 0.5);
     // Beat: kaum merkliches Atmen des Lichts
     col *= 1.0 + 0.04 * uBeat * live;
     // Themenwechsel: Abblenden

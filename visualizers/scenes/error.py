@@ -66,7 +66,7 @@ class Controller:
     def _new_cycle(self) -> None:
         self.cycle += 1
         self.seed = self.rng.uniform(1.0, 900.0)
-        self.code_var = 0 if self.cycle == 1 else self._pick(6, self.code_var)
+        self.code_var = self._pick(6, self.code_var)
         self.err_var = self._pick(6, self.err_var)
         self.glitch = self.rng.uniform(0.6, 1.4)
         self.code_len = self.rng.uniform(9.0, 18.0)
@@ -102,6 +102,12 @@ class Controller:
             plan = crash
             self.last_event = "crash"
         self.queue = [(CODE, self.code_len, {})] + plan
+        if self.cycle == 1:
+            # Zufälliger Einstieg: meist mitten in der Code-Phase, manchmal direkt im Ereignis
+            if self.rng.random() < 0.25:
+                self.queue.pop(0)
+            else:
+                self.queue[0] = (CODE, self.code_len * self.rng.uniform(0.2, 0.8), {})
         self._next()
 
     def _next(self) -> None:
