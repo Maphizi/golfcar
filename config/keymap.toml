@@ -37,7 +37,7 @@ action = "campfire"
 
 [[bindings]]
 key    = "BTN_7"
-action = "status"
+action = "error"      # Taste 8 (E-TALK): Systemfehler-Visualizer; "status" weiter über scripts/kittctl status
 
 [[bindings]]
 key    = "BTN_8"

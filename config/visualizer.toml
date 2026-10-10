@@ -35,6 +35,10 @@ render_scale = 1.0
 shader = "campfire"
 render_scale = 0.5
 
+[scenes.error]
+shader = "error"
+render_scale = 0.6
+
 [scenes.hyperspace]
 shader = "hyperspace"
 render_scale = 0.75

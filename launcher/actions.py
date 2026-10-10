@@ -18,6 +18,7 @@ class Action(str, Enum):
     QUIT = "quit"              # ESC (nur Entwicklung)
     STATUS = "status"          # Zustand ins Log schreiben
     PLANETEN = "planeten"      # Planeten-Flug
+    ERROR = "error"            # Systemfehler-Visualizer
 
 
 # Welche Action startet welchen Modus (Modus-Namen siehe config/modes.toml)
@@ -29,6 +30,7 @@ ACTION_TO_MODE = {
     Action.KITT: "kitt",
     Action.CAMPFIRE: "campfire",
     Action.PLANETEN: "planeten",
+    Action.ERROR: "error",
     Action.HOME: "home",
 }
 

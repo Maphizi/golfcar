@@ -67,16 +67,23 @@ Grundsätze:
 
 ## Tastatursteuerung
 
-| Taste | Action | Modus |
-|---|---|---|
-| F1 | `gaming` | Retro-Gaming (EmulationStation, ab Phase 3) |
-| F2 | `viz_psychedelic` | Psychedelic Visualizer |
-| F3 | `viz_crt` | CRT / Oscilloscope |
-| F4 | `viz_eye` | Digital Eye |
-| F5 | `kitt` | KITT Sprachassistent mit Oberfläche |
-| F6 | `home` | Home-Screen |
-| F7 | `campfire` | Lagerfeuer (Pixel-Art) |
-| ESC | `quit` | Launcher beenden (nur wenn `dev_emergency_exit = true`) |
+Gesteuert wird über das PXN-CB1-Buttonboard (BTN-Codes des Gamepad-Interfaces, siehe
+`CLAUDE.md` für D-Pad, Startknopf und Kippschalter). Die F-Tasten sind nicht mehr gebunden, weil das
+Board sie über sein Tastatur-Interface ungewollt mitsendet.
+
+| Taste | BTN-Code | Action | Modus |
+|---|---|---|---|
+| 1 HANDLE | `BTN_MISC` | `gaming` | Retro-Gaming (EmulationStation, ab Phase 3) |
+| 2 CRUISE | `BTN_1` | `viz_psychedelic` | Navigationscomputer / Hyperraum |
+| 3 FLASH | `BTN_2` | `viz_crt` | Zielcomputer |
+| 4 AUDIO | `BTN_3` | `viz_eye` | Taktik-Scanner |
+| 5 WIPERS | `BTN_4` | `kitt` | KITT Sprachassistent mit Oberfläche |
+| 6 MAP | `BTN_5` | `home` | Home-Screen |
+| 7 LIGHT | `BTN_6` | `campfire` | Lagerfeuer (Pixel-Art) |
+| 8 E-TALK | `BTN_7` | `error` | Systemfehler-Visualizer (grüner Code, der zusammenbricht) |
+| 9 | `BTN_8` | `quit` | Launcher beenden (nur wenn `dev_emergency_exit = true`) |
+| 10 | `BTN_9` | `planeten` | Planeten-Flug (pygame, Kippschalter = Warp) |
+| ESC | `KEY_ESC` | `quit` | Notausstieg an der Tastatur |
 
 Ohne Tastatur, z. B. per SSH: `scripts/kittctl viz_crt`, `scripts/kittctl home`,
 `scripts/kittctl state` (aktueller Modus), `scripts/kittctl status` (Werte ins Log).
@@ -261,6 +268,8 @@ Shader laufen und steht im Log.
   Sekunden an (Funke, dann wachsende Flamme), zwei gekreuzte Scheite mit Glut, aufsteigende Funken,
   flackernder Lichtschein auf dem Boden, Sternenhimmel. Braucht kein Mikrofon; mit Musik werden
   Flamme und Funken etwas lebhafter. Rendert mit `render_scale 0.5`, da das Pixelraster ohnehin grob ist.
+- `error` (Taste 8): grüner Code, der alle 24 Sekunden zusammenbricht. Beschreibung unter
+  „Systemfehler-Modus“ weiter unten.
 
 **Testen ohne Mikrofon:** `scripts/viz_test.sh crt --test-signal` spielt ein synthetisches
 Signal (Kick 120 BPM, Melodie, Hi-Hats, alle 24 s vier Sekunden Pause) ein und legt nach 12 s
@@ -452,6 +461,7 @@ Markennamen oder Figuren). Die klassischen Shader liegen zum Zurückschalten in
 | F4 | TAKTIK-SCANNER | `tactical`: grünes Gitter, weißes 3D-Drahtgitter eines Gleiters (dreht mit den Mitten, Triebwerk glüht mit Bass), Radar mit Blips aus dem Spektrum, Waveform, rote Pegelbalken |
 | F5 | BORDCOMPUTER | `shipcomputer`: gelbes Pixel-OLED mit Panels, Radar, Spektrum, Status-Symbolen (Kreis, Sanduhr, Dreieck), Thermometer und sechs Balken, Zustände EMPFANG, DROIDENKERN RECHNET, SENDE |
 | F7 | LAGERFEUER / AUSSENPOSTEN | `campfire`: Pixel-Feuer mit violettem Saum unter zwei Monden, Ringplanet, Nebel, Sternschnuppen, dazu Hintergrund-Ereignisse (siehe unten) |
+| 8 | SYSTEMFEHLER | `error`: grüner Code in sechs Varianten, Zusammenbruch, rotes Fehlerbild in sechs Varianten, Wiederherstellung, Neustart (siehe unten) |
 
 Die fremde Schrift in den Szenen ist ein eigenes Zufallsmuster aus 3×5-Pixelglyphen, keine
 lesbare oder fremde Schriftart. Home- und Boot-Screen sind gelb-monochrom mit Glyphenzeilen.
@@ -483,6 +493,29 @@ verdeckt das Feuer sie in der Bildmitte kurz. Zum Prüfen lässt sich ein Ereign
 `scripts/viz_test.sh campfire --test-signal --seconds 5 --uniform uEventForce=8` (Wert = Nummer + 1,
 1 Transporter … 14 Patrouille). `--uniform NAME=WERT` setzt allgemein ein Shader-Uniform fest und
 ist mehrfach erlaubt.
+
+**Systemfehler-Modus (Taste 8, `error`):** Ein Durchlauf dauert 24 Sekunden und hat fünf
+Phasen. Zuerst 12 bis 16 Sekunden grüner Code, pro Durchlauf eine von sechs Varianten: fallender
+Zeichenregen, scrollender Hexdump mit Adressen und Klartextspalte, Boot-Protokoll mit `[ OK ]`,
+`[WARN]`, `[FAIL]` und Ladebalken (gegen Ende häufen sich die FAIL-Zeilen), Bitraster aus kippenden
+Nullen und Einsen, eingerückter Quelltext mit Schlüsselwörtern, Strings und roten FEHLERCODE-Zeilen,
+oder ein Analysator, der das Spektrum als Zeichensäulen zeigt. Dann 2,5 Sekunden Zusammenbruch:
+Zeilen reißen, Blöcke springen, ein roter Geist des Codes schiebt sich daneben, Blöcke invertieren,
+Rauschen, alles kippt nach Rot, ERROR-Stempel tauchen auf. Dann 4,5 Sekunden Fehlerbild, wieder
+eine von sechs Varianten: riesiges zitterndes ERROR mit Fehlercode, rot blinkende Kachelfläche aus
+SYSTEMFEHLER mit Warnband, Kaskade aus ERROR-Zeilen, die das Bild füllt und dann bebt, Kernel-Panic-
+Protokoll mit roten Meldungen und blinkendem Kasten, Countdown von 9 mit KERN INSTABIL und Weißblitz
+bei 0, oder Bildrauschen mit ERROR als rotem Loch und SIGNAL VERLOREN. Danach ein stotternder
+WIEDERHERSTELLUNG-Balken und ein getipptes NEUSTART, und es geht mit neuem Code von vorn.
+
+Musik: Bass steuert Tempo, Helligkeit, Spurlänge und Zittern, Mitten lassen die Zeichen schneller
+wechseln, Höhen erzeugen Funken, der Beat lässt Spalten aufblitzen, verschiebt Zeilen und blitzt im
+Fehlerbild, das Spektrum färbt Spalten und Ringe. Jeder Durchlauf hat einen eigenen Hash-Seed, der
+Code wiederholt sich also nicht. Schrift ist ein eigener 5×6-Pixelfont im Shader, alle Texte sind
+Deutsch oder generisch (ERROR, FATAL, CORE DUMP). Shader: `visualizers/shaders/error/frag.glsl`,
+`render_scale 0.6`. Zum Prüfen einzelner Teile: `--uniform uPhaseForce=3` hält die Phase fest (1 Code,
+2 Zusammenbruch, 3 Fehler, 4 Wiederherstellung, 5 Neustart), `uCodeForce=1..6` und `uErrorForce=1..6`
+wählen die Variante, z. B. `scripts/viz_test.sh error --test-signal --seconds 8 --uniform uPhaseForce=3 --uniform uErrorForce=5`.
 
 **Roboterstimme:** `[tts].robot = true` legt Ringmodulation (`robot_freq`), einen kurzen Kammfilter
 (`robot_comb_ms`) und Bit-Reduktion (`robot_bits`) über die Piper-Stimme. `robot_mix` regelt den
