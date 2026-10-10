@@ -45,6 +45,14 @@ shader = "slots"
 controller = "slots"
 render_scale = 0.6
 
+[scenes.droid]
+shader = "droid"
+render_scale = 0.6
+
+[scenes.newsroom]
+shader = "newsroom"
+render_scale = 0.7
+
 [scenes.hyperspace]
 shader = "hyperspace"
 render_scale = 0.75

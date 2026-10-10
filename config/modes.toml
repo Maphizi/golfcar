@@ -69,3 +69,16 @@ label = "SPACE-SLOTS"
 command = ["{python}", "-m", "visualizers.engine", "slots"]
 cwd = "{root}"
 stop_timeout = 3
+
+[modes.news]
+label = "GALAKTISCHE NACHRICHTEN"
+command = ["{python}", "-m", "kitt.news"]
+cwd = "{root}"
+# llama-server läuft in derselben Prozessgruppe und stirbt mit
+stop_timeout = 8
+
+[modes.droid]
+label = "BORD-DROIDE BIBO"
+command = ["{python}", "-m", "kitt.droid"]
+cwd = "{root}"
+stop_timeout = 8

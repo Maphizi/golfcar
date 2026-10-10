@@ -17,11 +17,11 @@ action = "viz_psychedelic"
 
 [[bindings]]
 key    = "BTN_2"
-action = "viz_crt"
+action = "news"       # Taste 3 (FLASH): Galaktische Nachrichten; Zielcomputer weiter über scripts/kittctl viz_crt
 
 [[bindings]]
 key    = "BTN_3"
-action = "viz_eye"
+action = "droid"      # Taste 4 (AUDIO): Bord-Droide BIBO; Taktik-Scanner weiter über scripts/kittctl viz_eye
 
 [[bindings]]
 key    = "BTN_4"

@@ -75,8 +75,8 @@ Board sie über sein Tastatur-Interface ungewollt mitsendet.
 |---|---|---|---|
 | 1 HANDLE | `BTN_MISC` | `gaming` | Retro-Gaming (EmulationStation, ab Phase 3) |
 | 2 CRUISE | `BTN_1` | `viz_psychedelic` | Navigationscomputer / Hyperraum |
-| 3 FLASH | `BTN_2` | `viz_crt` | Zielcomputer |
-| 4 AUDIO | `BTN_3` | `viz_eye` | Taktik-Scanner |
+| 3 FLASH | `BTN_2` | `news` | Galaktische Nachrichten (Holo-Sender mit erfundenen Meldungen) |
+| 4 AUDIO | `BTN_3` | `droid` | Bord-Droide BIBO (redet Droidisch, hat Laune und Hunger) |
 | 5 WIPERS | `BTN_4` | `slots` | Space-Slotmaschine (siehe Space-Thema) |
 | 6 MAP | `BTN_5` | `home` | Home-Screen |
 | 7 LIGHT | `BTN_6` | `campfire` | Lagerfeuer (Pixel-Art) |
@@ -85,8 +85,10 @@ Board sie über sein Tastatur-Interface ungewollt mitsendet.
 | 10 | `BTN_9` | `kitt` | KITT Sprachassistent mit Oberfläche (Bordcomputer) |
 | ESC | `KEY_ESC` | `quit` | Notausstieg an der Tastatur |
 
-Der einfache Planeten-Flug (`planeten`, pygame) ist nicht mehr auf dem Board, bleibt aber als Modus
-über `scripts/kittctl planeten` erreichbar. Startknopf und Kippschalter des Boards kommen als
+Der einfache Planeten-Flug (`planeten`), der Zielcomputer (`viz_crt`) und der Taktik-Scanner
+(`viz_eye`) sind nicht mehr auf dem Board, bleiben aber als Modi über `scripts/kittctl <modus>`
+erreichbar. Das Tastaturlayout der ganzen KITT-Sitzung (auch RetroPie unter Xwayland) ist QWERTY,
+gesetzt in `scripts/session_kitt.sh` über `XKB_DEFAULT_LAYOUT`. Startknopf und Kippschalter des Boards kommen als
 ENTER bzw. Leertaste (AN) und Rücktaste (AUS) an, siehe `CLAUDE.md`.
 
 Ohne Tastatur, z. B. per SSH: `scripts/kittctl viz_crt`, `scripts/kittctl home`,
@@ -529,6 +531,33 @@ Technik: Symbole und Walzenstreifen liegen in einem Sprite-Atlas (`visualizers/s
 den der Controller (`visualizers/scenes/slots.py`) als Textur an den Shader
 (`visualizers/shaders/slots/frag.glsl`) gibt; die Engine lädt Controller-Bilder über `images()`
 hoch. Neue Themen: Eintrag in `THEMES` mit sieben ASCII-Sprites, Farben und Sprüchen.
+
+**Galaktische Nachrichten (Taste 3, `news`):** Holo-Studio des Senders GNN mit Lichtkegeln,
+drehendem Holo-Globus und einem Droiden-Sprecher, dessen Mundbalken zur Stimme schwingen. Das lokale
+Sprachmodell erfindet absurde Meldungen in strengem Nachrichtenton (Ressorts GALAXIS, GOLFPLATZ,
+SPORT, WIRTSCHAFT, PROMI, TECHNIK, VERKEHR; beim Golfplatz fließen Uhrzeit und gespielte Spiele aus
+dem Bordbuch ein), jeweils Schlagzeile plus ein bis zwei Sätze, vorgelesen von der Roboterstimme.
+Bauchbinde unten links, Laufband mit den letzten Schlagzeilen, jede fünfte Meldung EILMELDUNG mit
+rotem Balken, jede vierte Runde ein Wetterpanel für drei Planeten. Die nächste Meldung wird
+erzeugt, während die aktuelle vorgelesen wird. Start = nächste Meldung, LINKS/RECHTS = Ressort,
+Kippschalter = Pause. Ohne Sprachmodell oder im `--demo` laufen feste Meldungen. Prompt in
+`kitt/personality/news_prompt.txt`, Logik in `kitt/news/app.py`, Shader `newsroom`. Der Modus
+startet nur den llama-server, keine Spracherkennung.
+
+**Bord-Droide BIBO (Taste 4, `droid`):** Ein kleiner Pixel-Droide im Hangar, der zur Musik tanzt
+(Beat = Hüpfen, Mitten = Arme und Kopf), mit Auge, Antenne, Mundgitter und Ohrschüsseln, die beim
+Hören leuchten. Er hat Laune, Energie und Öl, die in `logs/droid_state.json` über Tage erhalten
+bleiben: Energie und Öl sinken mit der Zeit, bei wenig Öl rostet er sichtbar, bei wenig Energie
+hängen die Lider, die Laune färbt Auge und Mundwinkel (rot, blau, grün). Nach einem Tag Abwesenheit
+begrüßt er beleidigt. D-Pad OBEN ölt (Tropfen, Funkeln), UNTEN füttert (Batterie fliegt in den
+Bauch), LINKS/RECHTS schubst (er wackelt, wird sauer), Start lässt ihn sofort etwas fragen.
+Gespräch ohne Weckwort: BIBO hört auf alles, antwortet in Droidisch (verständliches Deutsch mit
+verdrehtem Satzbau, technischen Wörtern für Alltagsdinge, gelegentlichem Piepen, niedlich falscher
+Logik) und stellt alle 30 bis 80 Sekunden Stille von sich aus eine Frage, erzählt eine falsche
+Theorie oder gesteht etwas. Höhere, schnellere Roboterstimme als der Bordcomputer. Prompt in
+`kitt/personality/droid_prompt.txt`, Logik in `kitt/droid/app.py`, Shader `droid`. Beide Figuren
+nutzen die gemeinsame Oberfläche `kitt/ui/persona.py` und die Sprachpipeline mit Regieanweisungen
+(`handle_text(..., hidden=...)`).
 
 **Systemfehler-Modus (Taste 8, `error`):** Grüner Code, der zusammenbricht. Den Ablauf steuert
 `visualizers/scenes/error.py`, jeder Durchlauf fällt anders aus, und auch der Einstieg ist zufällig

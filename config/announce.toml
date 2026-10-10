@@ -32,6 +32,14 @@ campfire = [
   "Feuer an, zwei Monde oben. Marshmallows bringst du selbst mit.",
   "Ein Lagerfeuer auf einem fremden Planeten. Romantik, technisch gelöst.",
 ]
+news = [
+  "Galaktische Nachrichten. Alles erfunden, nichts davon falscher als die echten.",
+  "Sender wird aufgebaut. Die Redaktion ist ein Droide mit Fantasie.",
+]
+droid = [
+  "Bord-Droide wird geweckt. Ich übernehme keine Haftung für sein Niveau.",
+  "BIBO kommt. Er ist nicht klug, aber er meint es gut.",
+]
 slots = [
   "Slotmaschine. Die Bank gewinnt, der Automat schwebt, du staunst.",
   "Glücksspiel im Orbit. Einsatz zehn Credits, Hoffnung unbezahlbar.",

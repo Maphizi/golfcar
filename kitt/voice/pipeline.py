@@ -64,6 +64,7 @@ class VoicePipeline:
         self.cap = None
         self.busy = threading.Event()
         self.stats = {"turns": 0}
+        self.last_round_at = time.monotonic()
 
     # -- Lebenszyklus ----------------------------------------------------
     def _set(self, state: str) -> None:
@@ -75,7 +76,8 @@ class VoicePipeline:
     def start(self) -> None:
         self._set("loading")
         stt = self.stt_cfg
-        self.whisper = WhisperServer(kcfg.path(stt["whisper_dir"]), kcfg.path(stt["models_dir"]) / stt["model"],
+        stt_on = bool(stt.get("enabled", True)) and self.use_mic
+        self.whisper = None if not stt_on else WhisperServer(kcfg.path(stt["whisper_dir"]), kcfg.path(stt["models_dir"]) / stt["model"],
                                      int(stt["port"]), stt.get("language", "de"), int(stt.get("threads", 4)),
                                      int(stt.get("audio_ctx", 0)), int(stt.get("beam_size", 1)), int(stt.get("best_of", 1)),
                                      self.logs_dir / "whisper-server.log")
@@ -83,27 +85,32 @@ class VoicePipeline:
         self.llama = LlamaServer(kcfg.path(llm["llama_dir"]), kcfg.path(llm["models_dir"]) / llm["model"], int(llm["port"]),
                                  int(llm.get("threads", 4)), int(llm.get("ctx", 2048)), self.logs_dir / "llama-server.log")
         gate_model = kcfg.path(stt["models_dir"]) / stt.get("gate_model", "")
-        if self.vcfg.get("require_name", False) and stt.get("gate_model") and gate_model.exists():
+        if stt_on and self.vcfg.get("require_name", False) and stt.get("gate_model") and gate_model.exists():
             self.gate = WhisperServer(kcfg.path(stt["whisper_dir"]), gate_model, int(stt.get("gate_port", 8177)),
                                       stt.get("language", "de"), 2, 512, 1, 1, self.logs_dir / "whisper-gate.log")
         # Server parallel starten (alle laden nur, CPU-Last entsteht erst bei Anfragen)
-        t_w = threading.Thread(target=self.whisper.start, daemon=True)
+        t_w = threading.Thread(target=self.whisper.start, daemon=True) if self.whisper else None
         t_l = threading.Thread(target=self.llama.start, daemon=True)
         t_g = threading.Thread(target=self.gate.start, daemon=True) if self.gate else None
-        t_w.start(); t_l.start()
+        if t_w:
+            t_w.start()
+        t_l.start()
         if t_g:
             t_g.start()
         self.tts = PiperTTS(self.tts_cfg, kcfg.path(self.tts_cfg["voices_dir"]),
                             self.audio_cfg.get("output", {}).get("target", ""), self.tts_backend)
-        t_w.join(); t_l.join()
+        if t_w:
+            t_w.join()
+        t_l.join()
         if t_g:
             t_g.join()
             if not self.gate.proc:
                 log.warning("Anrede-Vorfilter nicht gestartet, prüfe Anrede mit dem Hauptmodell")
                 self.gate = None
-        if not (self.whisper.proc and self.llama.proc):
+        if not self.llama.proc or (self.whisper and not self.whisper.proc):
             raise RuntimeError("whisper-server oder llama-server nicht gestartet, siehe logs/")
         self.kitt = Kitt(self.llama.port, kcfg.path(llm["system_prompt"]).read_text().strip(), llm)
+        self.kitt.history_turns = int(llm.get("history_turns", 4))
         from kitt.context import context_block, mood_of_day
         mood = mood_of_day(self.vcfg)
         if mood:
@@ -135,7 +142,7 @@ class VoicePipeline:
             self.cap.subscribers.append(self.listener.feed)
             self.cap.start()
         self._set("idle")
-        log.info("Pipeline bereit: STT %s, LLM %s, TTS %s", stt["model"], llm["model"], self.tts.voice_name)
+        log.info("Pipeline bereit: STT %s, LLM %s, TTS %s", stt["model"] if self.whisper else "aus", llm["model"], self.tts.voice_name)
 
     def stop(self) -> None:
         if self.cap:
@@ -208,8 +215,10 @@ class VoicePipeline:
         finally:
             self._resume()
 
-    def handle_text(self, text: str, t_start: float | None = None) -> str:
-        """Textfrage -> Antwort sprechen. Gibt den Antworttext zurück."""
+    def handle_text(self, text: str, t_start: float | None = None, hidden: str | None = None) -> str:
+        """Textfrage -> Antwort sprechen. Gibt den Antworttext zurück.
+        hidden: Regieanweisung statt Nutzerfrage (z. B. "stell eine Frage"); in der Historie steht
+        danach dieser Platzhaltertext statt der Anweisung."""
         t_start = t_start or time.monotonic()
         self._set("thinking")
         splitter = SentenceSplitter()
@@ -245,6 +254,8 @@ class VoicePipeline:
             if res.stopped:
                 # Historie auf das Gesprochene kürzen, sonst "erinnert" KITT sich an ungesagte Sätze
                 self.kitt.history[-1]["content"] = " ".join(spoken)
+            if hidden is not None and len(self.kitt.history) >= 2:
+                self.kitt.history[-2]["content"] = hidden
             if not spoken:
                 log.warning("Leere Antwort")
         finally:
@@ -254,6 +265,7 @@ class VoicePipeline:
         log.info("Runde: LLM TTFT %.2fs, %.1f tok/s, erste Sprache nach %.2fs, gesamt %.2fs: %r",
                  res.ttft, res.tps, first, time.monotonic() - t_start, " ".join(spoken))
         self.stats["turns"] += 1
+        self.last_round_at = time.monotonic()
         self._set("idle")
         return " ".join(spoken)
 

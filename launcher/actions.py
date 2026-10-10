@@ -20,6 +20,8 @@ class Action(str, Enum):
     PLANETEN = "planeten"      # Planeten-Flug
     ERROR = "error"            # Systemfehler-Visualizer
     SLOTS = "slots"            # Space-Slotmaschine
+    NEWS = "news"              # Galaktische Nachrichten
+    DROID = "droid"            # Bord-Droide
 
 
 # Welche Action startet welchen Modus (Modus-Namen siehe config/modes.toml)
@@ -33,6 +35,8 @@ ACTION_TO_MODE = {
     Action.PLANETEN: "planeten",
     Action.ERROR: "error",
     Action.SLOTS: "slots",
+    Action.NEWS: "news",
+    Action.DROID: "droid",
     Action.HOME: "home",
 }
 

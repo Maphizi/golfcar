@@ -68,3 +68,31 @@ fx  = 66         # Fire 2012 – realistisches Feuer
 col = [255, 80, 0]
 sx  = 120
 ix  = 200
+
+[modes.news]
+bri = 120
+fx  = 2          # Breathe – Studiolicht in Blau
+col = [40, 120, 255]
+sx  = 60
+ix  = 128
+
+[modes.droid]
+bri = 180
+fx  = 59         # Multi Comet – verspielt
+col = [255, 150, 30]
+sx  = 150
+ix  = 160
+
+[modes.slots]
+bri = 150
+fx  = 162        # Pulser
+col = [255, 200, 80]
+sx  = 90
+ix  = 128
+
+[modes.error]
+bri = 200
+fx  = 0          # Solid Rot
+col = [255, 0, 0]
+sx  = 128
+ix  = 128

@@ -5,5 +5,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export XDG_CURRENT_DESKTOP=labwc
 export XDG_SESSION_TYPE=wayland
 export PYGAME_HIDE_SUPPORT_PROMPT=1
+# Tastaturlayout der ganzen Sitzung (labwc, Xwayland, RetroPie): QWERTY (US)
+export XKB_DEFAULT_LAYOUT=us
+export XKB_DEFAULT_MODEL=pc105
 mkdir -p "$ROOT/logs"
 exec labwc -C "$ROOT/config/labwc" -s "$ROOT/scripts/session_start.sh" >> "$ROOT/logs/session.log" 2>&1
