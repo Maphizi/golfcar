@@ -1,0 +1,10 @@
+slots
+2026-10-10 20:44:42 WARNING audio.capture: pipewire beendet nach 36s, starte neu
+2026-10-10 20:44:42 INFO  audio.capture: Audio-Capture gestartet: pipewire (pw-record --raw --rate 48000 --channels 1 --format s16 --latency 1024/48000 -)
+2026-10-10 20:44:42 WARNING audio.capture: pipewire endete nach 0.0s (0 Bytes): 
+campfire
+2026-10-10 20:45:13 INFO  audio.capture: Audio-Capture gestartet: pipewire (pw-record --raw --rate 48000 --channels 1 --format s16 --latency 1024/48000 -)
+2026-10-10 20:45:13 WARNING audio.capture: pipewire endete nach 0.0s (1024 Bytes): error: bad latency value 1024/48000 (bad unit)
+nav
+2026-10-10 20:45:46 INFO  audio.capture: Audio-Capture gestartet: pipewire (pw-record --raw --rate 48000 --channels 1 --format s16 --latency 1024/48000 -)
+2026-10-10 20:45:46 WARNING audio.capture: pipewire endete nach 0.0s (0 Bytes): error: bad latency value 1024/48000 (bad unit)
