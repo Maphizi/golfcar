@@ -77,7 +77,7 @@ class AudioCapture(threading.Thread):
         cmds = []
         if self.backend in ("auto", "pipewire") and shutil.which("pw-record"):
             c = ["pw-record", "--raw", "--rate", str(self.rate), "--channels", "1", "--format", "s16",
-                 "--latency", f"{self.block}/{self.rate}"]
+                 "--latency", f"{max(1, int(1000 * self.block / self.rate))}ms"]   # PipeWire 1.4 lehnt "1024/48000" ab
             if self.source == "playback":
                 c += ["-P", "{ stream.capture.sink = true }"]      # Monitor des Sinks statt Mikrofon
             if self.target:

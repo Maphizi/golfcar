@@ -44,16 +44,14 @@ class Controller:
     # -- Eingabe ---------------------------------------------------------
     def handle_event(self, ev) -> None:
         # Kippschalter (PXN-CB1, Code 267): dpad_remap.py schickt SPACE für AN und BACKSPACE für AUS,
-        # joystick.py schickt F13 als Umschalter. Startknopf: ENTER (dpad_remap) oder F14 (joystick).
-        # Ablauf: Kippschalter AN = scharf, Startknopf = losfliegen, Flug dauert bis Kippschalter AUS.
+        # Startknopf (266) kommt als ENTER. F13/F14 der älteren joystick.py werden bewusst ignoriert,
+        # sonst würde ein Druck doppelt gezählt. Ablauf: AN = scharf, Start = los, Flug bis AUS.
         if ev.type == pygame.KEYDOWN:
             if ev.key == pygame.K_SPACE:
                 self.set_armed(True)
             elif ev.key == pygame.K_BACKSPACE:
                 self.set_armed(False)
-            elif ev.key == pygame.K_F13:
-                self.set_armed(not self.armed)
-            elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_F14):
+            elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                 if self.armed:
                     self.fly()
             elif ev.key in (pygame.K_LEFT, pygame.K_a):
