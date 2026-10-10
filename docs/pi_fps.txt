@@ -1,10 +1,12 @@
-slots
-2026-10-10 20:44:42 WARNING audio.capture: pipewire beendet nach 36s, starte neu
-2026-10-10 20:44:42 INFO  audio.capture: Audio-Capture gestartet: pipewire (pw-record --raw --rate 48000 --channels 1 --format s16 --latency 1024/48000 -)
-2026-10-10 20:44:42 WARNING audio.capture: pipewire endete nach 0.0s (0 Bytes): 
-campfire
-2026-10-10 20:45:13 INFO  audio.capture: Audio-Capture gestartet: pipewire (pw-record --raw --rate 48000 --channels 1 --format s16 --latency 1024/48000 -)
-2026-10-10 20:45:13 WARNING audio.capture: pipewire endete nach 0.0s (1024 Bytes): error: bad latency value 1024/48000 (bad unit)
-nav
-2026-10-10 20:45:46 INFO  audio.capture: Audio-Capture gestartet: pipewire (pw-record --raw --rate 48000 --channels 1 --format s16 --latency 1024/48000 -)
-2026-10-10 20:45:46 WARNING audio.capture: pipewire endete nach 0.0s (0 Bytes): error: bad latency value 1024/48000 (bad unit)
+2026-10-10 21:09:39 WARNING audio.capture: pipewire endete nach 0.5s (40960 Bytes): error: bad latency value 1024/48000 (bad unit)
+2026-10-10 21:09:39 INFO  audio.capture: Audio-Capture gestartet: alsa (arecord -q -D default -f S16_LE -r 48000 -c 1 -t raw --buffer-size 4096 -)
+2026-10-10 21:18:56 INFO  audio.capture: Audio-Capture gestartet: pipewire (pw-record --raw --rate 48000 --channels 1 --format s16 --latency 1024/48000 -)
+2026-10-10 21:18:57 WARNING audio.capture: pipewire endete nach 1.4s (133120 Bytes): error: bad latency value 1024/48000 (bad unit)
+2026-10-10 21:18:57 INFO  audio.capture: Audio-Capture gestartet: alsa (arecord -q -D default -f S16_LE -r 48000 -c 1 -t raw --buffer-size 4096 -)
+2026-10-10 21:21:52 INFO  audio.capture: Audio-Capture gestartet: pipewire (pw-record --raw --rate 48000 --channels 1 --format s16 --latency 21ms -)
+2026-10-10 21:22:02 INFO  viz_psychedelic: fps 29.0  audio=pipewire level=0.0000 rms=0.00 bass=0.00 mid=0.00 high=0.00 beat=0.00  (Stille)
+2026-10-10 21:22:12 INFO  viz_psychedelic: fps 26.6  audio=pipewire level=0.0000 rms=0.00 bass=0.00 mid=0.00 high=0.00 beat=0.00  (Stille)
+2026-10-10 21:22:22 INFO  viz_psychedelic: fps 25.3  audio=pipewire level=0.0000 rms=0.00 bass=0.00 mid=0.00 high=0.00 beat=0.00  (Stille)
+2026-10-10 21:22:26 WARNING audio.capture: pipewire beendet nach 34s, starte neu
+2026-10-10 21:22:26 INFO  audio.capture: Audio-Capture gestartet: pipewire (pw-record --raw --rate 48000 --channels 1 --format s16 --latency 21ms -)
+2026-10-10 21:22:26 WARNING audio.capture: pipewire endete nach 0.0s (0 Bytes): 
