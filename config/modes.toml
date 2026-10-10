@@ -51,3 +51,9 @@ label = "LAGERFEUER / AUSSENPOSTEN"
 command = ["{python}", "-m", "visualizers.engine", "campfire"]
 cwd = "{root}"
 stop_timeout = 3
+
+[modes.planeten]
+label = "PLANETEN-FLUG"
+command = ["{python}", "-m", "visualizers.scenes.planets"]
+cwd = "{root}"
+stop_timeout = 3

@@ -18,6 +18,7 @@ from . import config, sysmon, wled
 from .joystick import JoystickBridge
 from .actions import ACTION_TO_MODE, Action
 from .input_evdev import EvdevInput
+from .dpad_remap import DPadRemap
 from .input_socket import SocketInput
 from .process_manager import ProcessManager
 
@@ -92,6 +93,12 @@ class Launcher:
         threading.Thread(target=run, name="prefetch", daemon=True).start()
 
     def start_inputs(self) -> None:
+        try:
+            dp = DPadRemap()
+            dp.start()
+            self.inputs.append(dp)
+        except Exception as exc:
+            log.warning("D-Pad Remapper nicht gestartet: %s", exc)
         try:
             ev = EvdevInput(config.load_keymap(), self.queue)
             ev.start()

@@ -17,6 +17,7 @@ class Action(str, Enum):
     HOME = "home"              # F6
     QUIT = "quit"              # ESC (nur Entwicklung)
     STATUS = "status"          # Zustand ins Log schreiben
+    PLANETEN = "planeten"      # Planeten-Flug
 
 
 # Welche Action startet welchen Modus (Modus-Namen siehe config/modes.toml)
@@ -27,6 +28,7 @@ ACTION_TO_MODE = {
     Action.VIZ_EYE: "viz_eye",
     Action.KITT: "kitt",
     Action.CAMPFIRE: "campfire",
+    Action.PLANETEN: "planeten",
     Action.HOME: "home",
 }
 

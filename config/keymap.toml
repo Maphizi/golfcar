@@ -1,86 +1,53 @@
-# Eingabe-Mapping: Taste (evdev-Keycode-Name) -> Action
-# Actions: gaming, viz_psychedelic, viz_crt, viz_eye, kitt, campfire, home, quit, status
-#
-# Später für die USB-HID-Buttonbox: Die Box erscheint als Tastatur-Gerät.
-# Entweder sendet sie dieselben F-Tasten (dann ist nichts zu ändern), oder
-# ihre Keycodes werden hier zusätzlich eingetragen. Keycode-Namen findet man mit:
-#   python3 -m evdev.evtest
+# Eingabe-Mapping: Taste -> Action
+# F-Tasten entfernt — PXN sendet F1/F5 über Keyboard-Interface und würde sonst
+# ungewollt Modi auslösen. Steuerung ausschließlich über BTN-Codes (Gamepad-Interface).
 
 [devices]
-# Nur Geräte mit passendem Namen werden gelesen (fnmatch-Muster).
 include = ["*"]
 exclude = []
 
+# ── PXN-CB1 Buttonboard — 8 Haupttasten (BTN-Codes von event7) ────────
 [[bindings]]
-key = "KEY_F1"
+key    = "BTN_MISC"
 action = "gaming"
 
 [[bindings]]
-key = "KEY_F2"
+key    = "BTN_1"
 action = "viz_psychedelic"
 
 [[bindings]]
-key = "KEY_F3"
+key    = "BTN_2"
 action = "viz_crt"
 
 [[bindings]]
-key = "KEY_F4"
+key    = "BTN_3"
 action = "viz_eye"
 
 [[bindings]]
-key = "KEY_F5"
+key    = "BTN_4"
 action = "kitt"
 
 [[bindings]]
-key = "KEY_F6"
+key    = "BTN_5"
 action = "home"
 
 [[bindings]]
-key = "KEY_F7"
+key    = "BTN_6"
 action = "campfire"
 
 [[bindings]]
-key = "KEY_ESC"
-action = "quit"
-
-# PXN-CB1 Buttonboard — 8 Haupttasten (BTN_0–BTN_7 = F1–F8)
-[[bindings]]
-key    = "BTN_MISC"   # BTN_0 / HANDLE
-action = "gaming"
-
-[[bindings]]
-key    = "BTN_1"      # CRUISE
-action = "viz_psychedelic"
-
-[[bindings]]
-key    = "BTN_2"      # FLASH
-action = "viz_crt"
-
-[[bindings]]
-key    = "BTN_3"      # AUDIO
-action = "viz_eye"
-
-[[bindings]]
-key    = "BTN_4"      # WIPERS
-action = "kitt"
-
-[[bindings]]
-key    = "BTN_5"      # MAP
-action = "home"
-
-[[bindings]]
-key    = "BTN_6"      # LIGHT
-action = "campfire"
-
-[[bindings]]
-key    = "BTN_7"      # E-TALK
+key    = "BTN_7"
 action = "status"
 
-# Joystick ESC/ENTER
 [[bindings]]
-key    = "BTN_8"      # ESC-Knopf am Joystick
+key    = "BTN_8"
 action = "quit"
 
 [[bindings]]
-key    = "BTN_9"      # weitere Joystick-Taste
-action = "home"
+key    = "BTN_9"
+action = "planeten"
+
+# ── Cherry-Tastatur ESC (Entwicklung/Notfall) ──────────────────────────
+[[bindings]]
+key    = "KEY_ESC"
+action = "quit"

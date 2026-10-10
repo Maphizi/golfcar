@@ -15,6 +15,7 @@ Restart=on-failure
 RestartSec=2
 # Beim Stop die ganze Gruppe inkl. Modus-Prozessen und Servern beenden
 KillMode=control-group
+ExecStopPost=/bin/bash -c 'pcmanfm --desktop &'
 TimeoutStopSec=15
 
 [Install]
