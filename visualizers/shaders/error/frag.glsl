@@ -8,11 +8,19 @@ uniform float iTime;
 uniform vec2 iResolution;
 uniform float uRms, uBass, uMid, uHigh, uBeat, uSilent;
 uniform sampler2D uAudioTex;
-uniform float uCodeForce;    // Test: >0 erzwingt Code-Variante (Wert-1, 0..5)
-uniform float uErrorForce;   // Test: >0 erzwingt Fehler-Variante (Wert-1, 0..5)
-uniform float uPhaseForce;   // Test: 1 Code, 2 Zusammenbruch, 3 Fehler, 4 Wiederherstellung, 5 Neustart
+// Ablauf kommt vom Controller (visualizers/scenes/error.py):
+uniform float uSeed;         // Zufall pro Start und Durchlauf
+uniform float uPhase;        // 1 Code, 2 Zusammenbruch, 3 Fehler, 4 Wiederherstellung, 5 Neustart,
+                             // 6 Eingabe, 7 Virus, 8 Schilde, 9 Stabil, 10 Alarm, 11 Eindringling
+uniform float uPhaseT, uPhaseLen;
+uniform float uCodeVar, uErrVar;   // Varianten 0..5
+uniform float uCodeT, uCodeProg;   // Zeit und Fortschritt der laufenden Code-Szene
+uniform float uPrompt;       // 1 oben, 2 unten, 3 links, 4 rechts, 5 Start
+uniform float uOutcome;      // 0 offen, 1 gut, 2 schlecht
+uniform float uGlitch;       // Stärke des Zusammenbruchs
+uniform float uPct;          // Prozentwert (Infektion, Schilde, Ortung)
+uniform float uWordA, uWordB;      // Wort-IDs für Banner
 
-const float CYCLE = 24.0;    // Sekunden pro Durchlauf
 const float ROWS = 40.0;     // Textzeilen im Code-Raster
 const vec3 GRN = vec3(0.25, 1.0, 0.35);
 const vec3 RED = vec3(1.0, 0.12, 0.08);
@@ -22,15 +30,20 @@ float gSeed = 0.0;           // pro Durchlauf anders, damit sich der Code nicht 
 // Zeichen: 0-25 A-Z, 26-35 0-9, 36 Leer, dann .:-[]#%/><_=+*!?{}();"~| und Backslash
 const int NGLYPH = 62;
 int FONT[62] = int[62](589284910, 521715247, 1007715390, 521717295, 1041284159, 34651199, 1025041470, 588840497, 1044517023, 211034396, 588553521, 1041269793, 588830577, 589092465, 488162862, 34651695, 748340782, 580042287, 520632382, 138547359, 488162865, 145278513, 599442993, 588583249, 138547537, 1041305887, 488232750, 474091716, 1042424366, 520632847, 277849420, 520633407, 488160302, 69345823, 488159790, 487094830, 0, 134217728, 4194432, 31744, 471926862, 478421262, 368389098, 866193779, 1118480, 1118273, 17043728, 1040187392, 1016800, 145536, 703136, 134353028, 134357550, 406980748, 205660294, 272765064, 71438466, 71303296, 330, 283712, 138547332, 17043521);
-int WORDS[319] = int[319](4, 17, 17, 14, 17, 18, 24, 18, 19, 4, 12, 5, 4, 7, 11, 4, 17, 10, 4, 17, 13, 4, 11, 36, 15, 0, 13, 8, 2, 25, 20, 6, 17, 8, 5, 5, 36, 21, 4, 17, 22, 4, 8, 6, 4, 17, 19, 5, 0, 19, 0, 11, 2, 14, 17, 4, 36, 3, 20, 12, 15, 13, 4, 20, 18, 19, 0, 17, 19, 18, 8, 6, 13, 0, 11, 36, 21, 4, 17, 11, 14, 17, 4, 13, 18, 15, 4, 8, 2, 7, 4, 17, 5, 4, 7, 11, 4, 17, 20, 13, 1, 4, 10, 0, 13, 13, 19, 4, 17, 36, 1, 4, 5, 4, 7, 11, 0, 1, 1, 17, 20, 2, 7, 10, 4, 17, 13, 36, 8, 13, 18, 19, 0, 1, 8, 11, 3, 0, 19, 4, 13, 36, 10, 14, 17, 17, 20, 15, 19, 22, 0, 17, 13, 20, 13, 6, 18, 2, 7, 8, 11, 3, 4, 36, 26, 43, 18, 19, 0, 2, 10, 36, 14, 21, 4, 17, 5, 11, 14, 22, 18, 4, 6, 12, 4, 13, 19, 0, 19, 8, 14, 13, 36, 5, 0, 20, 11, 19, 15, 17, 20, 4, 5, 18, 20, 12, 12, 4, 36, 5, 0, 11, 18, 2, 7, 1, 20, 18, 36, 4, 17, 17, 14, 17, 0, 2, 7, 19, 20, 13, 6, 5, 4, 7, 11, 4, 17, 2, 14, 3, 4, 15, 0, 13, 8, 2, 19, 14, 19, 0, 11, 0, 20, 18, 5, 0, 11, 11, 13, 8, 2, 7, 19, 36, 1, 4, 7, 4, 1, 1, 0, 17, 40, 36, 14, 10, 36, 41, 40, 22, 0, 17, 13, 41, 40, 5, 0, 8, 11, 41, 26, 23, 4, 17, 17, 36, 22, 8, 4, 3, 4, 17, 7, 4, 17, 18, 19, 4, 11, 11, 20, 13, 6, 18, 24, 18, 19, 4, 12);
-// Wörter: 0=ERROR, 1=SYSTEMFEHLER, 2=KERNEL PANIC, 3=ZUGRIFF VERWEIGERT, 4=FATAL, 5=CORE DUMP, 6=NEUSTART, 7=SIGNAL VERLOREN, 8=SPEICHERFEHLER, 9=UNBEKANNTER BEFEHL, 10=ABBRUCH, 11=KERN INSTABIL, 12=DATEN KORRUPT, 13=WARNUNG, 14=SCHILDE 0%, 15=STACK OVERFLOW, 16=SEGMENTATION FAULT, 17=PRUEFSUMME FALSCH, 18=BUS ERROR, 19=ACHTUNG, 20=FEHLERCODE, 21=PANIC, 22=TOTALAUSFALL, 23=NICHT BEHEBBAR, 24=[ OK ], 25=[WARN], 26=[FAIL], 27=0X, 28=ERR , 29=WIEDERHERSTELLUNG, 30=SYSTEM
-int WSTART[31] = int[31](0, 5, 17, 29, 47, 52, 61, 69, 84, 98, 116, 123, 136, 149, 156, 166, 180, 198, 215, 224, 231, 241, 246, 258, 272, 278, 284, 290, 292, 296, 313);
-int WLEN[31] = int[31](5, 12, 12, 18, 5, 9, 8, 15, 14, 18, 7, 13, 13, 7, 10, 14, 18, 17, 9, 7, 10, 5, 12, 14, 6, 6, 6, 2, 4, 17, 6);
+int WORDS[582] = int[582](4, 17, 17, 14, 17, 18, 24, 18, 19, 4, 12, 5, 4, 7, 11, 4, 17, 10, 4, 17, 13, 4, 11, 36, 15, 0, 13, 8, 2, 25, 20, 6, 17, 8, 5, 5, 36, 21, 4, 17, 22, 4, 8, 6, 4, 17, 19, 5, 0, 19, 0, 11, 2, 14, 17, 4, 36, 3, 20, 12, 15, 13, 4, 20, 18, 19, 0, 17, 19, 18, 8, 6, 13, 0, 11, 36, 21, 4, 17, 11, 14, 17, 4, 13, 18, 15, 4, 8, 2, 7, 4, 17, 5, 4, 7, 11, 4, 17, 20, 13, 1, 4, 10, 0, 13, 13, 19, 4, 17, 36, 1, 4, 5, 4, 7, 11, 0, 1, 1, 17, 20, 2, 7, 10, 4, 17, 13, 36, 8, 13, 18, 19, 0, 1, 8, 11, 3, 0, 19, 4, 13, 36, 10, 14, 17, 17, 20, 15, 19, 22, 0, 17, 13, 20, 13, 6, 18, 2, 7, 8, 11, 3, 4, 36, 26, 43, 18, 19, 0, 2, 10, 36, 14, 21, 4, 17, 5, 11, 14, 22, 18, 4, 6, 12, 4, 13, 19, 0, 19, 8, 14, 13, 36, 5, 0, 20, 11, 19, 15, 17, 20, 4, 5, 18, 20, 12, 12, 4, 36, 5, 0, 11, 18, 2, 7, 1, 20, 18, 36, 4, 17, 17, 14, 17, 0, 2, 7, 19, 20, 13, 6, 5, 4, 7, 11, 4, 17, 2, 14, 3, 4, 15, 0, 13, 8, 2, 19, 14, 19, 0, 11, 0, 20, 18, 5, 0, 11, 11, 13, 8, 2, 7, 19, 36, 1, 4, 7, 4, 1, 1, 0, 17, 40, 36, 14, 10, 36, 41, 40, 22, 0, 17, 13, 41, 40, 5, 0, 8, 11, 41, 26, 23, 4, 17, 17, 36, 22, 8, 4, 3, 4, 17, 7, 4, 17, 18, 19, 4, 11, 11, 20, 13, 6, 18, 24, 18, 19, 4, 12, 4, 8, 13, 6, 0, 1, 4, 36, 4, 17, 5, 14, 17, 3, 4, 17, 11, 8, 2, 7, 3, 17, 20, 4, 2, 10, 4, 14, 1, 4, 13, 20, 13, 19, 4, 13, 11, 8, 13, 10, 18, 17, 4, 2, 7, 19, 18, 18, 19, 0, 17, 19, 25, 20, 6, 17, 8, 5, 5, 36, 6, 4, 22, 0, 4, 7, 17, 19, 5, 0, 11, 18, 2, 7, 4, 36, 4, 8, 13, 6, 0, 1, 4, 10, 4, 8, 13, 4, 36, 0, 13, 19, 22, 14, 17, 19, 18, 24, 18, 19, 4, 12, 36, 20, 4, 1, 4, 17, 13, 8, 12, 12, 19, 21, 8, 17, 20, 18, 36, 4, 13, 19, 3, 4, 2, 10, 19, 16, 20, 0, 17, 0, 13, 19, 0, 4, 13, 4, 18, 2, 7, 8, 11, 3, 4, 36, 0, 20, 18, 6, 4, 18, 4, 19, 25, 19, 18, 2, 7, 8, 11, 3, 4, 36, 22, 8, 4, 3, 4, 17, 36, 14, 1, 4, 13, 4, 8, 13, 3, 17, 8, 13, 6, 11, 8, 13, 6, 36, 8, 12, 36, 18, 24, 18, 19, 4, 12, 14, 17, 19, 20, 13, 6, 8, 18, 14, 11, 8, 4, 17, 19, 18, 24, 18, 19, 4, 12, 36, 18, 19, 0, 1, 8, 11, 0, 11, 0, 17, 12, 18, 15, 4, 17, 17, 4, 36, 0, 10, 19, 8, 21, 5, 4, 7, 11, 0, 11, 0, 17, 12, 8, 13, 5, 8, 25, 8, 4, 17, 19, 25, 4, 8, 19);
+// Wörter: 0=ERROR, 1=SYSTEMFEHLER, 2=KERNEL PANIC, 3=ZUGRIFF VERWEIGERT, 4=FATAL, 5=CORE DUMP, 6=NEUSTART, 7=SIGNAL VERLOREN, 8=SPEICHERFEHLER, 9=UNBEKANNTER BEFEHL, 10=ABBRUCH, 11=KERN INSTABIL, 12=DATEN KORRUPT, 13=WARNUNG, 14=SCHILDE 0%, 15=STACK OVERFLOW, 16=SEGMENTATION FAULT, 17=PRUEFSUMME FALSCH, 18=BUS ERROR, 19=ACHTUNG, 20=FEHLERCODE, 21=PANIC, 22=TOTALAUSFALL, 23=NICHT BEHEBBAR, 24=[ OK ], 25=[WARN], 26=[FAIL], 27=0X, 28=ERR , 29=WIEDERHERSTELLUNG, 30=SYSTEM, 31=EINGABE ERFORDERLICH, 32=DRUECKE, 33=OBEN, 34=UNTEN, 35=LINKS, 36=RECHTS, 37=START, 38=ZUGRIFF GEWAEHRT, 39=FALSCHE EINGABE, 40=KEINE ANTWORT, 41=SYSTEM UEBERNIMMT, 42=VIRUS ENTDECKT, 43=QUARANTAENE, 44=SCHILDE AUSGESETZT, 45=SCHILDE WIEDER OBEN, 46=EINDRINGLING IM SYSTEM, 47=ORTUNG, 48=ISOLIERT, 49=SYSTEM STABIL, 50=ALARM, 51=SPERRE AKTIV, 52=FEHLALARM, 53=INFIZIERT, 54=ZEIT
+int WSTART[55] = int[55](0, 5, 17, 29, 47, 52, 61, 69, 84, 98, 116, 123, 136, 149, 156, 166, 180, 198, 215, 224, 231, 241, 246, 258, 272, 278, 284, 290, 292, 296, 313, 319, 339, 346, 350, 355, 360, 366, 371, 387, 402, 415, 432, 446, 457, 475, 494, 516, 522, 530, 543, 548, 560, 569, 578);
+int WLEN[55] = int[55](5, 12, 12, 18, 5, 9, 8, 15, 14, 18, 7, 13, 13, 7, 10, 14, 18, 17, 9, 7, 10, 5, 12, 14, 6, 6, 6, 2, 4, 17, 6, 20, 7, 4, 5, 5, 6, 5, 16, 15, 13, 17, 14, 11, 18, 19, 22, 6, 8, 13, 5, 12, 9, 9, 4);
 
 // ---- Hashes ohne sin(): auf jeder GPU gleich
 float hash1(float n) { n = fract((n + gSeed) * 0.1031); n *= n + 33.33; n *= n + n; return fract(n); }
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx + gSeed) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 float hash13(vec3 p) { p = fract((p + gSeed) * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yxz + 33.33); return fract((p.x + p.y) * p.z); }
+float vnoise(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash12(i), hash12(i + vec2(1, 0)), f.x), mix(hash12(i + vec2(0, 1)), hash12(i + vec2(1, 1)), f.x), f.y);
+}
 float spec(float x) { return texture(uAudioTex, vec2(clamp(x, 0.0, 1.0), 0.25)).r; }
 float wave(float x) { return texture(uAudioTex, vec2(clamp(x, 0.0, 1.0), 0.75)).r * 2.0 - 1.0; }
 
@@ -491,51 +504,237 @@ vec3 reboot(vec2 fc, float tb, float r) {
     return col + GRN * cur;
 }
 
+
+// ---- Zahl mit führenden Nullen
+float number(vec2 fc, vec2 org, float cs, int value, int digits) {
+    float cw = cs * 0.75;
+    vec2 q = (fc - org) / vec2(cw, cs);
+    if (q.y < 0.0 || q.y >= 1.0 || q.x < 0.0) return 0.0;
+    int i = int(q.x);
+    if (i >= digits) return 0.0;
+    int div = 1;
+    for (int k = 0; k < 6; k++) if (k < digits - 1 - i) div *= 10;
+    int d = (value / div) - ((value / div) / 10) * 10;
+    return glyphBit(26 + d, vec2(fract(q.x), q.y));
+}
+// Pfeil in Richtung dir (1 oben, 2 unten, 3 links, 4 rechts), Mitte c, Größe sz
+float arrow(vec2 fc, vec2 c, float sz, int dir) {
+    vec2 d = (fc - c) / sz;
+    if (dir == 2) d.y = -d.y;
+    if (dir == 3) d = vec2(d.y, -d.x);
+    if (dir == 4) d = vec2(-d.y, d.x);
+    float shaft = step(abs(d.x), 0.16) * step(-0.9, d.y) * step(d.y, 0.1);
+    float head = step(0.0, d.y) * step(d.y, 0.9) * step(abs(d.x), (0.9 - d.y) * 0.75);
+    return max(shaft, head);
+}
+vec3 promptScene(vec2 fc, vec3 code, float pt, float len, int dir) {
+    vec2 res = iResolution;
+    vec2 uv = fc / res;
+    vec3 col = code * 0.3;
+    vec2 pc = res * 0.5;
+    vec2 hsz = vec2(res.x * 0.28, res.y * 0.24);
+    float box = rect(fc, pc - hsz, pc + hsz);
+    float border = box - rect(fc, pc - hsz + 4.0, pc + hsz - 4.0);
+    float urgency = smoothstep(0.5, 1.0, pt / len);
+    vec3 frame = mix(AMB, RED, urgency) * (0.7 + 0.3 * sin(pt * (6.0 + 10.0 * urgency)));
+    col = mix(col, vec3(0.02, 0.02, 0.03), box);
+    col += frame * border;
+    col += AMB * wordAll(31, fc, vec2(pc.x, pc.y + hsz.y - res.y * 0.075), res.y * 0.035, 1.0);
+    // Pfeil oder START-Kreis
+    vec2 ac = vec2(pc.x, pc.y + res.y * 0.02);
+    if (dir <= 4) col += vec3(1.0) * arrow(fc, ac, res.y * 0.09, dir) * (0.85 + 0.15 * sin(pt * 8.0));
+    else {
+        float ring = smoothstep(0.0, 2.0, abs(length(fc - ac) - res.y * 0.075) - 3.0);
+        col += vec3(1.0) * (1.0 - ring) * (0.85 + 0.15 * sin(pt * 8.0));
+        col += vec3(1.0) * wordAll(37, fc, ac - vec2(0.0, res.y * 0.02), res.y * 0.04, 1.0);
+    }
+    float cs = res.y * 0.05;
+    vec2 org = vec2(pc.x - (7.0 + 1.0 + float(WLEN[32 + dir])) * cs * 0.75 * 0.5, pc.y - res.y * 0.14);
+    col += vec3(1.0, 0.9, 0.6) * wordAll(32, fc, org, cs, 0.0);
+    col += vec3(1.0) * wordAll(32 + dir, fc, org + vec2(8.0 * cs * 0.75, 0.0), cs, 0.0);
+    // Restzeit-Balken
+    float remain = 1.0 - pt / len;
+    float bar = rect(fc, vec2(pc.x - hsz.x + 12.0, pc.y - hsz.y + 10.0), vec2(pc.x - hsz.x + 12.0 + (hsz.x * 2.0 - 24.0) * remain, pc.y - hsz.y + 18.0));
+    col += frame * bar;
+    // Sekundentakt
+    col += vec3(1.0, 0.8, 0.5) * 0.06 * step(0.92, fract(pt)) * box;
+    return col;
+}
+vec3 bannerScene(vec2 fc, vec3 code, float pt, float len, int wa, int wb, vec3 tint, float alarm) {
+    vec2 res = iResolution;
+    vec2 uv = fc / res;
+    vec3 col = mix(code, vec3(dot(code, vec3(0.33))) * tint * 1.6, alarm * 0.8);
+    if (alarm < 0.5) col = code * 1.1 + tint * 0.03;
+    float strobe = step(0.5, fract(pt * 3.0)) * alarm;
+    float edge = 1.0 - rect(uv, vec2(0.03, 0.05), vec2(0.97, 0.95));
+    col += tint * edge * strobe * 0.8;
+    float stripe = step(0.5, fract((fc.x - fc.y) / 50.0 + pt * 1.5));
+    float bars = step(0.93, uv.y) + step(uv.y, 0.07);
+    col = mix(col, mix(vec3(0.05), tint, stripe), bars * alarm);
+    float k = floor(pt * 25.0);
+    vec2 j = (vec2(hash1(k + 0.3 + uSeed), hash1(k + 0.7 + uSeed)) - 0.5) * res.y * 0.015 * alarm;
+    float fadeIn = smoothstep(0.0, 0.3, pt);
+    vec2 pc = res * 0.5;
+    float bw = float(WLEN[wa]) * res.y * 0.07 * 0.75 + res.y * 0.08;
+    float panel = rect(fc, pc - vec2(bw * 0.5, res.y * 0.11), pc + vec2(bw * 0.5, res.y * 0.11));
+    col = mix(col, vec3(0.02), panel * 0.85 * fadeIn);
+    col += tint * (panel - rect(fc, pc - vec2(bw * 0.5 - 4.0, res.y * 0.11 - 4.0), pc + vec2(bw * 0.5 - 4.0, res.y * 0.11 - 4.0))) * fadeIn;
+    col += tint * wordAll(wa, fc + j, vec2(pc.x, pc.y + res.y * 0.005), res.y * 0.07, 1.0) * fadeIn * (0.8 + 0.2 * sin(pt * 6.0));
+    if (wb >= 0) col += vec3(0.9) * wordAll(wb, fc + j, vec2(pc.x, pc.y - res.y * 0.075), res.y * 0.032, 1.0) * fadeIn;
+    if (alarm < 0.5) {   // Funken bei gutem Ausgang
+        float spark = step(0.995, hash13(vec3(floor(fc / 6.0), floor(pt * 12.0))));
+        col += GRN * spark;
+    }
+    return col;
+}
+vec3 virusScene(vec2 fc, vec3 code, float pt, float len, float pct, float outcome) {
+    vec2 res = iResolution;
+    vec2 uv = fc / res;
+    float cs = res.y / ROWS, cw = cs * 0.75;
+    vec2 cell = floor(fc / vec2(cw, cs));
+    vec2 center = vec2(0.25 + 0.5 * hash1(uSeed + 0.5), 0.3 + 0.4 * hash1(uSeed + 0.9));
+    float d = length((uv - center) * vec2(res.x / res.y, 1.0));
+    float edgeN = vnoise(cell * 0.35 + uSeed) * 0.25;
+    float infected = step(d + edgeN, pct * 1.3);
+    vec3 col = code;
+    float g = step(0.5, hash12(cell + floor(pt * 4.0)));
+    vec3 sick = mix(RED * 0.5, vec3(1.0, 0.3, 0.2), g) * (0.4 + 0.6 * dot(code, vec3(1.0)));
+    sick += RED * 0.25 * glyphBit(42, fract(fc / vec2(cw, cs))) * g;         // '#'-Zellen
+    col = mix(col, sick, infected);
+    col += RED * 0.3 * smoothstep(0.06, 0.0, abs(d + edgeN - pct * 1.3));     // Infektionsfront
+    // Scanzeile
+    float sy = 1.0 - fract(pt * 0.45);
+    col += vec3(0.4, 1.0, 0.5) * smoothstep(0.03, 0.0, abs(uv.y - sy)) * 0.5 * (1.0 - outcome);
+    // Kopfzeile
+    float blink = step(0.5, fract(pt * 2.5));
+    float top = rect(uv, vec2(0.0, 0.9), vec2(1.0, 1.0));
+    col = mix(col, vec3(0.08, 0.0, 0.0), top * 0.85);
+    if (outcome < 0.5) {
+        col += RED * wordAll(42, fc, vec2(res.x * 0.5, res.y * 0.93), res.y * 0.05, 1.0) * (0.6 + 0.4 * blink);
+        float cs2 = res.y * 0.03;
+        vec2 org = vec2(res.x * 0.5 - 7.0 * cs2 * 0.75, res.y * 0.015);
+        col += vec3(1.0, 0.6, 0.5) * wordAll(53, fc, org, cs2, 0.0);
+        col += vec3(1.0, 0.6, 0.5) * number(fc, org + vec2(10.0 * cs2 * 0.75, 0.0), cs2, int(pct * 100.0), 3);
+        col += vec3(1.0, 0.6, 0.5) * glyphBit(43, (fc - org - vec2(13.0 * cs2 * 0.75, 0.0)) / vec2(cs2 * 0.75, cs2));
+        col += vec3(0.8) * wordAll(37, fc, vec2(res.x * 0.5 - 10.0 * cs2 * 0.75, res.y * 0.055), cs2 * 0.9, 0.0) * 0.6;
+        col += vec3(0.8) * glyphBit(48, (fc - vec2(res.x * 0.5 - 4.0 * cs2 * 0.75, res.y * 0.055)) / vec2(cs2 * 0.75 * 0.9, cs2 * 0.9)) * 0.6;
+        col += vec3(0.8) * wordAll(43, fc, vec2(res.x * 0.5 - 2.0 * cs2 * 0.75, res.y * 0.055), cs2 * 0.9, 0.0) * 0.6;
+    } else {
+        col = mix(col, col * vec3(0.6, 1.0, 0.7), 0.5);
+        col += GRN * wordAll(43, fc, vec2(res.x * 0.5, res.y * 0.93), res.y * 0.05, 1.0);
+        float ring = smoothstep(4.0, 0.0, abs(d - pct * 1.3) * res.y - 2.0);
+        col += GRN * ring * 0.8;
+    }
+    return col;
+}
+vec3 shieldScene(vec2 fc, vec3 code, float pt, float len, float pct, float outcome) {
+    vec2 res = iResolution;
+    vec2 uv = fc / res;
+    float flick = mix(1.0, step(0.3, hash1(floor(pt * 20.0) + uSeed)), (1.0 - pct) * 0.6 * (1.0 - outcome));
+    vec3 col = code * 0.5 * flick;
+    // Sechseck-Schild in der Mitte
+    vec2 p = (fc - res * 0.5) / res.y;
+    float a = atan(p.y, p.x);
+    float r6 = length(p) * cos(mod(a + 0.5235988, 1.0471976) - 0.5235988);
+    float R = 0.26;
+    float outline = smoothstep(0.006, 0.0, abs(r6 - R));
+    float fill = step(r6, R);
+    vec3 sc = outcome > 0.5 ? GRN : mix(RED, vec3(0.3, 0.8, 1.0), pct);
+    float segs = step(0.5, fract((a / (2.0 * 3.1415927) + 0.5) * 12.0 + 0.5));
+    float alive = step(fract((a / (2.0 * 3.1415927) + 0.5)), pct);        // Segmente fallen aus
+    col += sc * outline * mix(0.3, 1.0, max(alive, outcome)) * flick;
+    col += sc * fill * 0.08 * max(alive, outcome) * (0.7 + 0.3 * segs);
+    // Prozent in der Mitte
+    float cs = res.y * 0.09;
+    col += sc * number(fc, vec2(res.x * 0.5 - 1.5 * cs * 0.75, res.y * 0.5 - cs * 0.5), cs, int(pct * 100.0), 3);
+    col += sc * glyphBit(43, (fc - vec2(res.x * 0.5 + 1.6 * cs * 0.75, res.y * 0.5 - cs * 0.5)) / vec2(cs * 0.75, cs));
+    float blink = step(0.5, fract(pt * 2.0));
+    if (outcome < 0.5) col += AMB * wordAll(44, fc, vec2(res.x * 0.5, res.y * 0.9), res.y * 0.05, 1.0) * (0.6 + 0.4 * blink);
+    else col += GRN * wordAll(45, fc, vec2(res.x * 0.5, res.y * 0.9), res.y * 0.05, 1.0);
+    // Einschläge: kurze helle Treffer auf dem Schild
+    float hit = step(0.9, hash1(floor(pt * 3.0) + uSeed + 7.0)) * step(0.5, fract(pt * 3.0) * 2.0) * (1.0 - outcome);
+    vec2 hp = vec2(hash1(floor(pt * 3.0) + 1.0 + uSeed), hash1(floor(pt * 3.0) + 2.0 + uSeed)) - 0.5;
+    col += vec3(1.0) * hit * smoothstep(0.08, 0.0, length(p - hp * 0.4)) * fill;
+    col += vec3(1.0) * hit * 0.08;
+    return col;
+}
+vec3 intruderScene(vec2 fc, vec3 code, float pt, float len, float pct, float outcome) {
+    vec2 res = iResolution;
+    vec2 uv = fc / res;
+    float cs = res.y / ROWS, cw = cs * 0.75;
+    vec2 cell = floor(fc / vec2(cw, cs));
+    float cols = floor(res.x / cw);
+    vec3 col = code * 0.8;
+    // Cursor wandert in Sprüngen (Zufallspfad), Spur bleibt kurz sichtbar
+    float stepT = 6.0;
+    float n = floor(pt * stepT);
+    vec2 cur = vec2(cols * 0.5, ROWS * 0.5);
+    for (int i = 0; i < 48; i++) {
+        float fi = float(i);
+        if (fi > n) break;
+        float h = hash1(fi * 3.1 + uSeed + 11.0);
+        vec2 stp = h < 0.25 ? vec2(1, 0) : (h < 0.5 ? vec2(-1, 0) : (h < 0.75 ? vec2(0, 1) : vec2(0, -1)));
+        cur = clamp(cur + stp * (2.0 + floor(hash1(fi + uSeed + 5.0) * 4.0)), vec2(2.0), vec2(cols - 3.0, ROWS - 3.0));
+        float age = n - fi;
+        if (all(equal(cell, cur))) col += vec3(1.0, 0.3, 0.2) * exp(-age * 0.25) * 1.2;
+    }
+    if (outcome < 0.5 && all(equal(cell, cur))) col = vec3(1.0, 0.9, 0.8) * (0.6 + 0.4 * sin(pt * 20.0));
+    if (outcome > 0.5) {
+        // isoliert: grüner Rahmen um den Cursor
+        vec2 cc = (cur + 0.5) * vec2(cw, cs);
+        float box = rect(fc, cc - vec2(cw, cs) * 2.5, cc + vec2(cw, cs) * 2.5) - rect(fc, cc - vec2(cw, cs) * 2.2, cc + vec2(cw, cs) * 2.2);
+        col += GRN * box;
+        col += GRN * wordAll(48, fc, vec2(res.x * 0.5, res.y * 0.9), res.y * 0.05, 1.0);
+    } else {
+        float blink = step(0.5, fract(pt * 2.0));
+        col += RED * wordAll(46, fc, vec2(res.x * 0.5, res.y * 0.9), res.y * 0.045, 1.0) * (0.6 + 0.4 * blink);
+    }
+    // Ortungsbalken unten
+    float cs2 = res.y * 0.03;
+    vec2 org = vec2(res.x * 0.5 - 12.0 * cs2 * 0.75, res.y * 0.03);
+    col += AMB * wordAll(47, fc, org, cs2, 0.0);
+    col += AMB * number(fc, org + vec2(7.0 * cs2 * 0.75, 0.0), cs2, int(pct * 100.0), 3);
+    col += AMB * glyphBit(43, (fc - org - vec2(10.0 * cs2 * 0.75, 0.0)) / vec2(cs2 * 0.75, cs2));
+    float bar = rect(uv, vec2(0.6, 0.032), vec2(0.6 + 0.3 * pct, 0.052));
+    float frameB = rect(uv, vec2(0.598, 0.03), vec2(0.902, 0.054)) - rect(uv, vec2(0.6, 0.032), vec2(0.9, 0.052));
+    col += AMB * (bar + frameB * 0.6);
+    return col;
+}
+
 void main() {
     vec2 res = iResolution;
     vec2 fc = vUv * res;
     float t = iTime;
-    float c = floor(t / CYCLE);
-    float tc = t - c * CYCLE;
-    gSeed = c * 37.0;
-    float codeLen = 12.0 + 4.0 * hash1(0.11);
-    float breakLen = 2.5, errLen = 4.5, bootLen = 0.8;
-    float recLen = CYCLE - codeLen - breakLen - errLen - bootLen;
-    int vc = c < 0.5 ? 0 : int(hash1(7.3) * 6.0);
-    int ve = int(hash1(19.1) * 6.0);
-    if (uCodeForce > 0.5) vc = int(uCodeForce) - 1;
-    if (uErrorForce > 0.5) ve = int(uErrorForce) - 1;
-    vec3 col;
-    int phase; float pt; float pp;
-    if (uPhaseForce > 0.5) {
-        phase = int(uPhaseForce);
-        float len = phase == 1 ? 14.0 : (phase == 2 ? breakLen : (phase == 3 ? errLen : (phase == 4 ? 3.0 : bootLen)));
-        pt = mod(t, len); pp = pt / len;
-    } else if (tc < codeLen) { phase = 1; pt = tc; pp = tc / codeLen; }
-    else if (tc < codeLen + breakLen) { phase = 2; pt = tc - codeLen; pp = pt / breakLen; }
-    else if (tc < codeLen + breakLen + errLen) { phase = 3; pt = tc - codeLen - breakLen; pp = pt / errLen; }
-    else if (tc < CYCLE - bootLen) { phase = 4; pt = tc - codeLen - breakLen - errLen; pp = pt / recLen; }
-    else { phase = 5; pt = tc - (CYCLE - bootLen); pp = pt / bootLen; }
-
+    gSeed = uSeed;
+    int phase = int(uPhase + 0.5);
+    float pt = uPhaseT, len = max(uPhaseLen, 0.001), pp = clamp(pt / len, 0.0, 1.0);
+    int vc = int(uCodeVar + 0.5), ve = int(uErrVar + 0.5);
+    vec3 code = codeScene(fc, vc, uCodeT, uCodeProg);
+    vec3 col = code;
     if (phase == 1) {
-        col = codeScene(fc, vc, pt, pp);
         // kleine Beat-Glitches schon in der Code-Phase: kurz verschobene Streifen
-        float g = uBeat * step(0.75, pp * 0.5 + hash1(floor(t * 10.0)));
+        float g = uBeat * step(0.75, uCodeProg * 0.5 + hash1(floor(t * 10.0)));
         if (g > 0.3) {
             float band = floor(fc.y / (res.y / 16.0));
             float sh = (hash12(vec2(band, floor(t * 10.0))) - 0.5) * res.x * 0.05 * step(0.6, hash12(vec2(band, 1.0 + floor(t * 10.0))));
-            col = mix(col, codeScene(vec2(mod(fc.x + sh, res.x), fc.y), vc, pt, pp), step(0.001, abs(sh)));
+            col = mix(col, codeScene(vec2(mod(fc.x + sh, res.x), fc.y), vc, uCodeT, uCodeProg), step(0.001, abs(sh)));
             col += RED * 0.08 * g;
         }
-    } else if (phase == 2) col = breakdown(fc, pp, vc, codeLen + pt, 1.0);
+    } else if (phase == 2) col = breakdown(fc, clamp(pp * uGlitch, 0.0, 1.0), vc, uCodeT, uCodeProg);
     else if (phase == 3) {
         col = errorScene(fc, ve, pt, pp);
-        // am Anfang kurzer Weißblitz, zum Ende Rauschen
         col += vec3(1.0, 0.6, 0.5) * exp(-pt * 10.0);
         float fade = smoothstep(0.85, 1.0, pp);
         col = mix(col, vec3(hash13(vec3(floor(fc / 2.0), floor(t * 30.0)))) * 0.5, fade * step(0.5, hash1(floor(t * 20.0))));
-    } else if (phase == 4) col = recovery(fc, pt, pp);
-    else col = reboot(fc, pt, pp);
+    }
+    else if (phase == 4) col = recovery(fc, pt, pp);
+    else if (phase == 5) col = reboot(fc, pt, pp);
+    else if (phase == 6) col = promptScene(fc, code, pt, len, int(uPrompt + 0.5));
+    else if (phase == 7) col = virusScene(fc, code, pt, len, uPct, uOutcome);
+    else if (phase == 8) col = shieldScene(fc, code, pt, len, uPct, uOutcome);
+    else if (phase == 9) col = bannerScene(fc, code, pt, len, int(uWordA + 0.5), int(uWordB + 0.5), GRN, 0.0);
+    else if (phase == 10) col = bannerScene(fc, code, pt, len, int(uWordA + 0.5), int(uWordB + 0.5), RED, 1.0);
+    else if (phase == 11) col = intruderScene(fc, code, pt, len, uPct, uOutcome);
 
     // Monitor-Look: Scanlines, Vignette
     vec2 uv = fc / res;

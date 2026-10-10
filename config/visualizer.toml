@@ -37,6 +37,7 @@ render_scale = 0.6      # Pixelraster 128 Zeilen; bei unter 45 fps auf dem Pi wi
 
 [scenes.error]
 shader = "error"
+controller = "error"
 render_scale = 0.6
 
 [scenes.slots]

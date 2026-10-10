@@ -504,9 +504,11 @@ Startknopf startet den Flug, und der Hyperraumflug dauert so lange, bis der Kipp
 steht; dann kommt die Ankunft. Ohne Kippschalter (Maus-Mitteltaste, Demo) gilt weiter die feste
 Flugdauer aus `config/visualizer.toml`. Logik in `visualizers/scenes/navcomputer.py`, `set_armed`.
 
-**Space-Slotmaschine (Taste 5, `slots`):** Ein Automat schwebt vor einem Kaleidoskop-Nebel, atmet
-mit dem Bass und dreht sich leicht, Lauflichter laufen im Takt der Mitten, der Beat lässt die Sterne
-funkeln. Sechs übergeordnete Themen, zufällig gewählt und alle vier bis acht Runden gewechselt
+**Space-Slotmaschine (Taste 5, `slots`):** Nahaufnahme von drei Walzen, die das ganze Bild füllen:
+gedruckte Symbole auf gewölbten Trommeln mit Papierkorn, Licht von oben, dunkle Trennstege, Glasreflex.
+Die Maschine steht still; beim Drehen verschwimmt das Bild langsam wie im Traum (weiche Unschärfe,
+Bewegungsunschärfe, wanderndes Doppelbild, hellere Farben) und wird nach dem Stillstand wieder
+scharf. Die Walzen laufen gemächlich, das Einrasten hat einen kleinen Rückprall. Sechs übergeordnete Themen, zufällig gewählt und alle vier bis acht Runden gewechselt
 (Weißblitz, Pfeiltasten wechseln sofort): KANTINE, IMPERIUM, SCHROTTPLATZ, ORBIT-GOLF,
 SCHMUGGLERKASINO, RAUMFAHRT-RETRO. Jedes Thema bringt sieben eigene 16×16-Pixel-Symbole (das
 letzte ist das Jackpot-Symbol: Kuss, Totenkopf, Schädel, Pokal, Geldsack, Astronaut), zwei
@@ -516,36 +518,50 @@ Walzen bleiben in wechselnden Mustern stehen: nacheinander, zwei zugleich, alle 
 und die anderen drehen lange weiter, die letzte zögert; nach einer Niete dreht gelegentlich eine
 Walze noch einmal nach. Quoten: 62 % Verlust (davon fast die Hälfte knapp daneben, das passende
 Symbol steht dann direkt über oder unter der Linie), 22 % zwei gleiche, 12 % drei gleiche, 4 %
-Jackpot. Gewinn: Münzregen, pulsierende Gewinnlinie, Lauflichter blinken; beim Jackpot
-Regenbogenlichter und rotierende Strahlen; bei Verlust dunkelt das Fenster kurz ab. Guthaben
+Jackpot. Gewinn: sanftes Leuchten und ein Lichtstreifen über den Gewinnsymbolen, Gold beim Jackpot; bei
+Verlust dunkeln die Walzen kurz ab. Guthaben
 startet bei 1337 Credits, Einsatz 10, Gewinne 25 / 150 / 1000.
 Technik: Symbole und Walzenstreifen liegen in einem Sprite-Atlas (`visualizers/scenes/slots_art.py`),
 den der Controller (`visualizers/scenes/slots.py`) als Textur an den Shader
 (`visualizers/shaders/slots/frag.glsl`) gibt; die Engine lädt Controller-Bilder über `images()`
 hoch. Neue Themen: Eintrag in `THEMES` mit sieben ASCII-Sprites, Farben und Sprüchen.
 
-**Systemfehler-Modus (Taste 8, `error`):** Ein Durchlauf dauert 24 Sekunden und hat fünf
-Phasen. Zuerst 12 bis 16 Sekunden grüner Code, pro Durchlauf eine von sechs Varianten: fallender
-Zeichenregen, scrollender Hexdump mit Adressen und Klartextspalte, Boot-Protokoll mit `[ OK ]`,
-`[WARN]`, `[FAIL]` und Ladebalken (gegen Ende häufen sich die FAIL-Zeilen), Bitraster aus kippenden
-Nullen und Einsen, eingerückter Quelltext mit Schlüsselwörtern, Strings und roten FEHLERCODE-Zeilen,
-oder ein Analysator, der das Spektrum als Zeichensäulen zeigt. Dann 2,5 Sekunden Zusammenbruch:
-Zeilen reißen, Blöcke springen, ein roter Geist des Codes schiebt sich daneben, Blöcke invertieren,
-Rauschen, alles kippt nach Rot, ERROR-Stempel tauchen auf. Dann 4,5 Sekunden Fehlerbild, wieder
-eine von sechs Varianten: riesiges zitterndes ERROR mit Fehlercode, rot blinkende Kachelfläche aus
-SYSTEMFEHLER mit Warnband, Kaskade aus ERROR-Zeilen, die das Bild füllt und dann bebt, Kernel-Panic-
-Protokoll mit roten Meldungen und blinkendem Kasten, Countdown von 9 mit KERN INSTABIL und Weißblitz
-bei 0, oder Bildrauschen mit ERROR als rotem Loch und SIGNAL VERLOREN. Danach ein stotternder
-WIEDERHERSTELLUNG-Balken und ein getipptes NEUSTART, und es geht mit neuem Code von vorn.
+**Systemfehler-Modus (Taste 8, `error`):** Grüner Code, der zusammenbricht. Den Ablauf steuert
+`visualizers/scenes/error.py`, jeder Durchlauf fällt anders aus: 9 bis 18 Sekunden Code in einer
+von sechs Varianten (Zeichenregen, Hexdump, Boot-Protokoll mit `[ OK ]`/`[WARN]`/`[FAIL]`, Bitraster,
+Quelltext mit roten FEHLERCODE-Zeilen, Spektrum als Zeichensäulen; nie zweimal dieselbe
+hintereinander), dann würfelt der Controller, was passiert:
+
+- **Absturz (gut die Hälfte):** Zusammenbruch mit zufälliger Stärke (Zeilen reißen, Blöcke springen,
+  roter Geist des Codes, Rauschen, ERROR-Stempel), dann eines von sechs Fehlerbildern (riesiges
+  zitterndes ERROR mit Fehlercode, rot blinkende SYSTEMFEHLER-Kacheln mit Warnband, ERROR-Kaskade,
+  Kernel-Panic-Protokoll, Countdown mit KERN INSTABIL und Weißblitz, Bildrauschen mit SIGNAL
+  VERLOREN), danach WIEDERHERSTELLUNG-Balken und getipptes NEUSTART.
+- **Eingabe erforderlich (selten, etwa jeder achte Durchlauf, nie zweimal nacheinander):** ein
+  Kasten mit Pfeil und DRUECKE OBEN / UNTEN / LINKS / RECHTS oder START samt Restzeit-Balken.
+  Richtig gedrückt: ZUGRIFF GEWAEHRT, SYSTEM STABIL, der Code läuft sauber weiter. Falsch: ALARM mit
+  FALSCHE EINGABE, SPERRE AKTIV, dann harter Absturz. Keine Antwort: KEINE ANTWORT, SYSTEM
+  UEBERNIMMT, direkt ins Fehlerbild. D-Pad und Startknopf des Boards kommen als Pfeiltasten und
+  ENTER an.
+- **Virus entdeckt:** eine rote Infektion frisst sich durch den Code, Scanzeile, Prozentanzeige.
+  Startknopf = QUARANTAENE, die Infektion zieht sich zurück; sonst manchmal von selbst, manchmal
+  Absturz.
+- **Schilde ausgesetzt:** Sechseck-Schild, Prozent fallen, Segmente fallen aus, das Bild flackert,
+  Einschläge; mal SCHILDE WIEDER OBEN, mal Absturz.
+- **Eindringling im System:** ein Cursor springt durch den Code, ORTUNG läuft hoch; mal ISOLIERT,
+  mal ALARM und Fehlerbild.
+- **Fehlalarm:** kurzer Riss, FEHLALARM, weiter geht es.
 
 Musik: Bass steuert Tempo, Helligkeit, Spurlänge und Zittern, Mitten lassen die Zeichen schneller
 wechseln, Höhen erzeugen Funken, der Beat lässt Spalten aufblitzen, verschiebt Zeilen und blitzt im
-Fehlerbild, das Spektrum färbt Spalten und Ringe. Jeder Durchlauf hat einen eigenen Hash-Seed, der
-Code wiederholt sich also nicht. Schrift ist ein eigener 5×6-Pixelfont im Shader, alle Texte sind
-Deutsch oder generisch (ERROR, FATAL, CORE DUMP). Shader: `visualizers/shaders/error/frag.glsl`,
-`render_scale 0.6`. Zum Prüfen einzelner Teile: `--uniform uPhaseForce=3` hält die Phase fest (1 Code,
-2 Zusammenbruch, 3 Fehler, 4 Wiederherstellung, 5 Neustart), `uCodeForce=1..6` und `uErrorForce=1..6`
-wählen die Variante, z. B. `scripts/viz_test.sh error --test-signal --seconds 8 --uniform uPhaseForce=3 --uniform uErrorForce=5`.
+Fehlerbild, das Spektrum färbt Spalten und Ringe. Jeder Durchlauf hat einen eigenen Zufalls-Seed,
+auch über Neustarts hinweg. Schrift ist ein eigener 5×6-Pixelfont im Shader, alle Texte sind
+Deutsch oder generisch. Shader: `visualizers/shaders/error/frag.glsl`, `render_scale 0.6`. Zum
+Prüfen einzelner Teile überstimmt `--uniform` den Controller, z. B.
+`scripts/viz_test.sh error --test-signal --seconds 5 --uniform uPhase=6 --uniform uPrompt=2`
+(Phasen: 1 Code, 2 Zusammenbruch, 3 Fehler, 4 Wiederherstellung, 5 Neustart, 6 Eingabe, 7 Virus,
+8 Schilde, 9 Stabil, 10 Alarm, 11 Eindringling; dazu `uCodeVar`/`uErrVar` 0..5, `uPct`, `uOutcome`).
+`--demo` beantwortet Aufforderungen von selbst.
 
 **Roboterstimme:** `[tts].robot = true` legt Ringmodulation (`robot_freq`), einen kurzen Kammfilter
 (`robot_comb_ms`) und Bit-Reduktion (`robot_bits`) über die Piper-Stimme. `robot_mix` regelt den

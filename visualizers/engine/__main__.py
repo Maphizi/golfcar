@@ -118,7 +118,7 @@ def main() -> int:
             scene.maybe_reload(now)
             renderer.upload_audio(f.spectrum, f.wave)
             sync_images()
-            renderer.draw(t, f, {**fixed, **(ctrl.uniforms(t, f) if ctrl else {})})
+            renderer.draw(t, f, {**(ctrl.uniforms(t, f) if ctrl else {}), **fixed})   # --uniform überstimmt den Controller
             if ctrl:
                 for text, size_frac, x_frac, y_frac, color, alpha in ctrl.overlays(t):
                     ov = overlay(size_frac)

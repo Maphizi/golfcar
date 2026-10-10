@@ -70,7 +70,7 @@ def build_strip(theme: int, reel: int) -> list[int]:
     return pool
 
 
-def ease_back(u: float, s: float = 1.4) -> float:
+def ease_back(u: float, s: float = 0.9) -> float:
     """Ease-out mit Überschwingen (die Walze rastet mit kleinem Rückprall ein)."""
     u = min(max(u, 0.0), 1.0) - 1.0
     return 1.0 + u * u * ((s + 1.0) * u + s)
@@ -102,7 +102,8 @@ class Reel:
             self.speed = 0.0
             return
         if self.stopping_since < 0.0:
-            ramp = min(1.0, (now - self.start_t) / 0.35)
+            ramp = min(1.0, (now - self.start_t) / 0.9)
+            ramp = ramp * ramp * (3.0 - 2.0 * ramp)
             self.speed = self.max_speed * ramp
             self.pos += self.speed * dt
             if now >= self.stop_at:
@@ -111,7 +112,7 @@ class Reel:
                 # Restweg bis zum Ziel plus ein bis zwei ganze Umdrehungen
                 frac = (self.target - self.pos) % STRIP_LEN
                 self.dist = frac + STRIP_LEN * random.choice((0, 1))
-                self.decel = max(0.9, self.dist / self.max_speed * 1.3)
+                self.decel = max(1.4, self.dist / self.max_speed * 1.7)
         else:
             u = (now - self.stopping_since) / self.decel
             self.pos = self.start_pos + self.dist * ease_back(u)
@@ -146,7 +147,7 @@ class Controller:
         self.spins = 0
         self.spins_until_theme = self.rng.randint(4, 8)
         self.next_theme = self.theme
-        self.lever_t0 = -10.0
+        self.dream = 0.0            # 0 scharf, 1 verschwommen (steigt beim Drehen langsam an)
         self.respin_pending = False
         self.respin_reel = -1
         self.planned_win = WIN_NONE
@@ -227,12 +228,12 @@ class Controller:
     def _stop_pattern(self) -> list[float]:
         j = lambda: self.rng.uniform(-0.2, 0.2)
         patterns = [
-            [1.2 + j(), 2.2 + j(), 3.2 + j()],            # nacheinander
-            [1.6 + j(), 1.6, 3.6 + j()],                  # zwei zugleich, dann eine
-            [2.2 + j(), 2.2, 2.2],                        # alle zugleich
-            [1.0 + j(), 3.8 + j(), 4.6 + j()],            # eine früh, die anderen drehen lange weiter
-            [1.4 + j(), 2.4 + j(), 5.8 + j()],            # die letzte zögert
-            [2.8 + j(), 1.2 + j(), 2.0 + j()],            # Mitte zuerst
+            [2.0 + j(), 3.2 + j(), 4.4 + j()],            # nacheinander
+            [2.4 + j(), 2.4, 4.8 + j()],                  # zwei zugleich, dann eine
+            [3.0 + j(), 3.0, 3.0],                        # alle zugleich
+            [1.6 + j(), 5.0 + j(), 6.0 + j()],            # eine früh, die anderen drehen lange weiter
+            [2.2 + j(), 3.4 + j(), 7.5 + j()],            # die letzte zögert
+            [3.8 + j(), 1.8 + j(), 2.8 + j()],            # Mitte zuerst
         ]
         return self.rng.choice(patterns)
 
@@ -243,9 +244,8 @@ class Controller:
             times = self._stop_pattern()
             self.credits -= BET
             self.spins += 1
-            self.lever_t0 = now
             for r in range(N_REELS):
-                self.reels[r].start(now, now + times[r], targets[r], self.rng.uniform(9.0, 14.0))
+                self.reels[r].start(now, now + times[r], targets[r], self.rng.uniform(5.5, 8.0))
         else:
             # Nachdrehen einer Walze: mit halber Chance wird daraus ein Gewinn
             r = only_reel
@@ -260,7 +260,7 @@ class Controller:
             else:
                 target = self.rng.randrange(STRIP_LEN)
                 self.planned_win, self.win_mask_planned = WIN_NONE, 0
-            self.reels[r].start(now, now + self.rng.uniform(1.2, 2.2), target, 7.0)
+            self.reels[r].start(now, now + self.rng.uniform(1.8, 3.0), target, 5.0)
         self.message = ""
         self.win = WIN_NONE
         self.win_mask = 0
@@ -308,6 +308,10 @@ class Controller:
         self.last = now
         for reel in self.reels:
             reel.update(now, dt)
+        # Traumfaktor: steigt beim Drehen über etwa zwei Sekunden, fällt nach dem Stillstand langsam ab
+        spinning = any(r.spinning for r in self.reels)
+        rate = dt / 2.0 if spinning else -dt / 2.6
+        self.dream = min(1.0, max(0.0, self.dream + rate))
         st_t = now - self.state_t0
         if self.state == ST_IDLE:
             if st_t >= self.idle_len:
@@ -350,7 +354,7 @@ class Controller:
 
     def uniform_names(self):
         return ("uSpriteTex", "uAtlasSize", "uTheme", "uColA", "uColB", "uReel", "uSpeed", "uState", "uStateT",
-                "uWin", "uWinMask", "uLever", "uFade", "uStripRow")
+                "uWin", "uWinMask", "uDream", "uFade", "uStripRow")
 
     def uniforms(self, t: float, f) -> dict:
         self._advance()
@@ -360,7 +364,6 @@ class Controller:
         fade = 0.0
         if self.state == ST_THEME:
             fade = math.sin(min(1.0, st_t / 1.8) * math.pi)
-        lever = max(0.0, 1.0 - (now - self.lever_t0) / 0.7)
         return {
             "uAtlasSize": (float(ATLAS_W), float(ATLAS_H)),
             "uTheme": float(self.theme),
@@ -372,7 +375,7 @@ class Controller:
             "uStateT": st_t,
             "uWin": float(self.win),
             "uWinMask": float(self.win_mask),
-            "uLever": math.sin(lever * math.pi),
+            "uDream": self.dream,
             "uFade": fade,
             "uStripRow": float(len(art.THEMES) * SYM),
         }
@@ -381,19 +384,19 @@ class Controller:
         th = art.THEMES[self.theme]
         now = time.monotonic()
         st_t = now - self.state_t0
+        dim = 1.0 - 0.5 * self.dream
         out = [
-            (th["title"], 0.032, 0.5, 0.862, GOLD, 0.95),
-            (th["subtitle"], 0.018, 0.5, 0.822, (255, 240, 200), 0.75),
-            (f"GUTHABEN  {self.credits} CR      EINSATZ  {BET} CR", 0.019, 0.5, 0.148, (200, 200, 210), 0.8),
-            ("START  DREHEN        <  >  THEMA", 0.017, 0.5, 0.035, (120, 120, 130), 0.55 + 0.25 * math.sin(t * 2.0)),
+            (th["title"], 0.026, 0.5, 0.962, GOLD, 0.85 * dim),
+            (th["subtitle"], 0.016, 0.5, 0.93, (255, 240, 200), 0.6 * dim),
+            (f"GUTHABEN  {self.credits} CR      EINSATZ  {BET} CR", 0.017, 0.5, 0.028, (190, 190, 200), 0.7 * dim),
         ]
         if self.state == ST_RESULT and self.message:
-            blink = 1.0 if self.win == WIN_NONE else 0.7 + 0.3 * math.sin(t * 9.0)
-            out.append((self.message, 0.024, 0.5, 0.205, self.message_color, min(1.0, st_t * 3.0) * blink))
+            pulse = 1.0 if self.win == WIN_NONE else 0.8 + 0.2 * math.sin(t * 3.0)
+            out.append((self.message, 0.024, 0.5, 0.07, self.message_color, min(1.0, st_t * 2.0) * pulse))
             if self.win == WIN_JACKPOT:
-                out.append(("J A C K P O T", 0.08, 0.5, 0.74, GOLD, 0.6 + 0.4 * math.sin(t * 12.0)))
+                out.append(("J A C K P O T", 0.07, 0.5, 0.5, GOLD, 0.5 + 0.3 * math.sin(t * 4.0)))
             elif self.win == WIN_BIG:
-                out.append(("G E W I N N", 0.06, 0.5, 0.74, GOLD, 0.6 + 0.4 * math.sin(t * 8.0)))
+                out.append(("G E W I N N", 0.055, 0.5, 0.5, GOLD, 0.5 + 0.3 * math.sin(t * 3.0)))
         if self.state == ST_THEME and st_t >= 0.9:
-            out.append(("NEUES THEMA", 0.03, 0.5, 0.74, WHITE, 1.0 - (st_t - 0.9) / 0.9))
+            out.append(("NEUES THEMA", 0.03, 0.5, 0.5, WHITE, 1.0 - (st_t - 0.9) / 0.9))
         return out
