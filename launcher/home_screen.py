@@ -63,8 +63,8 @@ def main() -> int:
     # Tastenbezeichnungen des PXN-CB1-Buttonboards (siehe config/keymap.toml und CLAUDE.md)
     menu = [
         ("1 HANDLE", "gaming"), ("2 CRUISE", "viz_psychedelic"), ("3 FLASH", "viz_crt"),
-        ("4 AUDIO", "viz_eye"), ("5 WIPERS", "kitt"), ("7 LIGHT", "campfire"),
-        ("8 E-TALK", "error"), ("10", "planeten"),
+        ("4 AUDIO", "viz_eye"), ("5 WIPERS", "slots"), ("7 LIGHT", "campfire"),
+        ("8 E-TALK", "error"), ("10", "kitt"),
     ]
     t0 = time.monotonic()
     last_sys = 0.0

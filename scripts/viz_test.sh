@@ -5,7 +5,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
-scene="${1:?Szene: psychedelic | crt | eye | campfire | error}"; shift || true
+scene="${1:?Szene: psychedelic | crt | eye | campfire | error | slots}"; shift || true
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 if [ -z "${WAYLAND_DISPLAY:-}" ]; then
   sock=$(ls "$XDG_RUNTIME_DIR"/wayland-[0-9]* 2>/dev/null | grep -v '\.lock$' | head -1 || true)

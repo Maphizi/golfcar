@@ -77,13 +77,17 @@ Board sie über sein Tastatur-Interface ungewollt mitsendet.
 | 2 CRUISE | `BTN_1` | `viz_psychedelic` | Navigationscomputer / Hyperraum |
 | 3 FLASH | `BTN_2` | `viz_crt` | Zielcomputer |
 | 4 AUDIO | `BTN_3` | `viz_eye` | Taktik-Scanner |
-| 5 WIPERS | `BTN_4` | `kitt` | KITT Sprachassistent mit Oberfläche |
+| 5 WIPERS | `BTN_4` | `slots` | Space-Slotmaschine (siehe Space-Thema) |
 | 6 MAP | `BTN_5` | `home` | Home-Screen |
 | 7 LIGHT | `BTN_6` | `campfire` | Lagerfeuer (Pixel-Art) |
 | 8 E-TALK | `BTN_7` | `error` | Systemfehler-Visualizer (grüner Code, der zusammenbricht) |
 | 9 | `BTN_8` | `quit` | Launcher beenden (nur wenn `dev_emergency_exit = true`) |
-| 10 | `BTN_9` | `planeten` | Planeten-Flug (pygame, Kippschalter = Warp) |
+| 10 | `BTN_9` | `kitt` | KITT Sprachassistent mit Oberfläche (Bordcomputer) |
 | ESC | `KEY_ESC` | `quit` | Notausstieg an der Tastatur |
+
+Der einfache Planeten-Flug (`planeten`, pygame) ist nicht mehr auf dem Board, bleibt aber als Modus
+über `scripts/kittctl planeten` erreichbar. Startknopf und Kippschalter des Boards kommen als
+ENTER bzw. Leertaste (AN) und Rücktaste (AUS) an, siehe `CLAUDE.md`.
 
 Ohne Tastatur, z. B. per SSH: `scripts/kittctl viz_crt`, `scripts/kittctl home`,
 `scripts/kittctl state` (aktueller Modus), `scripts/kittctl status` (Werte ins Log).
@@ -267,7 +271,7 @@ Shader laufen und steht im Log.
 - `campfire` (F7): Pixel-Art-Lagerfeuer auf 90 Zeilen Raster. Zündet nach dem Start in etwa fünf
   Sekunden an (Funke, dann wachsende Flamme), zwei gekreuzte Scheite mit Glut, aufsteigende Funken,
   flackernder Lichtschein auf dem Boden, Sternenhimmel. Braucht kein Mikrofon; mit Musik werden
-  Flamme und Funken etwas lebhafter. Rendert mit `render_scale 0.5`, da das Pixelraster ohnehin grob ist.
+  Flamme und Funken etwas lebhafter. Pixelraster 128 Zeilen, `render_scale 0.6`.
 - `error` (Taste 8): grüner Code, der alle 24 Sekunden zusammenbricht. Beschreibung unter
   „Systemfehler-Modus“ weiter unten.
 
@@ -461,6 +465,7 @@ Markennamen oder Figuren). Die klassischen Shader liegen zum Zurückschalten in
 | F4 | TAKTIK-SCANNER | `tactical`: grünes Gitter, weißes 3D-Drahtgitter eines Gleiters (dreht mit den Mitten, Triebwerk glüht mit Bass), Radar mit Blips aus dem Spektrum, Waveform, rote Pegelbalken |
 | F5 | BORDCOMPUTER | `shipcomputer`: gelbes Pixel-OLED mit Panels, Radar, Spektrum, Status-Symbolen (Kreis, Sanduhr, Dreieck), Thermometer und sechs Balken, Zustände EMPFANG, DROIDENKERN RECHNET, SENDE |
 | F7 | LAGERFEUER / AUSSENPOSTEN | `campfire`: Pixel-Feuer mit violettem Saum unter zwei Monden, Ringplanet, Nebel, Sternschnuppen, dazu Hintergrund-Ereignisse (siehe unten) |
+| 5 | SPACE-SLOTS | `slots`: schwebende Slotmaschine mit drei Walzen, sechs Themen mit eigenen Pixel-Symbolen und Sprüchen, spielt von selbst (siehe unten) |
 | 8 | SYSTEMFEHLER | `error`: grüner Code in sechs Varianten, Zusammenbruch, rotes Fehlerbild in sechs Varianten, Wiederherstellung, Neustart (siehe unten) |
 
 Die fremde Schrift in den Szenen ist ein eigenes Zufallsmuster aus 3×5-Pixelglyphen, keine
@@ -493,6 +498,31 @@ verdeckt das Feuer sie in der Bildmitte kurz. Zum Prüfen lässt sich ein Ereign
 `scripts/viz_test.sh campfire --test-signal --seconds 5 --uniform uEventForce=8` (Wert = Nummer + 1,
 1 Transporter … 14 Patrouille). `--uniform NAME=WERT` setzt allgemein ein Shader-Uniform fest und
 ist mehrfach erlaubt.
+
+**Kippschalter im Navigationscomputer:** Kippschalter AN schaltet scharf (Anzeige SCHARF), der
+Startknopf startet den Flug, und der Hyperraumflug dauert so lange, bis der Kippschalter wieder AUS
+steht; dann kommt die Ankunft. Ohne Kippschalter (Maus-Mitteltaste, Demo) gilt weiter die feste
+Flugdauer aus `config/visualizer.toml`. Logik in `visualizers/scenes/navcomputer.py`, `set_armed`.
+
+**Space-Slotmaschine (Taste 5, `slots`):** Ein Automat schwebt vor einem Kaleidoskop-Nebel, atmet
+mit dem Bass und dreht sich leicht, Lauflichter laufen im Takt der Mitten, der Beat lässt die Sterne
+funkeln. Sechs übergeordnete Themen, zufällig gewählt und alle vier bis acht Runden gewechselt
+(Weißblitz, Pfeiltasten wechseln sofort): KANTINE, IMPERIUM, SCHROTTPLATZ, ORBIT-GOLF,
+SCHMUGGLERKASINO, RAUMFAHRT-RETRO. Jedes Thema bringt sieben eigene 16×16-Pixel-Symbole (das
+letzte ist das Jackpot-Symbol: Kuss, Totenkopf, Schädel, Pokal, Geldsack, Astronaut), zwei
+Farben für Rahmen und Nebel, einen Titel und Sprüche für Verlust, Beinahe-Treffer, kleinen Gewinn,
+großen Gewinn und Jackpot. Das Spiel läuft von selbst, der Startknopf (ENTER) dreht sofort. Die
+Walzen bleiben in wechselnden Mustern stehen: nacheinander, zwei zugleich, alle zugleich, eine früh
+und die anderen drehen lange weiter, die letzte zögert; nach einer Niete dreht gelegentlich eine
+Walze noch einmal nach. Quoten: 62 % Verlust (davon fast die Hälfte knapp daneben, das passende
+Symbol steht dann direkt über oder unter der Linie), 22 % zwei gleiche, 12 % drei gleiche, 4 %
+Jackpot. Gewinn: Münzregen, pulsierende Gewinnlinie, Lauflichter blinken; beim Jackpot
+Regenbogenlichter und rotierende Strahlen; bei Verlust dunkelt das Fenster kurz ab. Guthaben
+startet bei 1337 Credits, Einsatz 10, Gewinne 25 / 150 / 1000.
+Technik: Symbole und Walzenstreifen liegen in einem Sprite-Atlas (`visualizers/scenes/slots_art.py`),
+den der Controller (`visualizers/scenes/slots.py`) als Textur an den Shader
+(`visualizers/shaders/slots/frag.glsl`) gibt; die Engine lädt Controller-Bilder über `images()`
+hoch. Neue Themen: Eintrag in `THEMES` mit sieben ASCII-Sprites, Farben und Sprüchen.
 
 **Systemfehler-Modus (Taste 8, `error`):** Ein Durchlauf dauert 24 Sekunden und hat fünf
 Phasen. Zuerst 12 bis 16 Sekunden grüner Code, pro Durchlauf eine von sechs Varianten: fallender

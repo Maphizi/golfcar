@@ -25,7 +25,7 @@ action = "viz_eye"
 
 [[bindings]]
 key    = "BTN_4"
-action = "kitt"
+action = "slots"      # Taste 5 (WIPERS): Space-Slotmaschine
 
 [[bindings]]
 key    = "BTN_5"
@@ -45,7 +45,7 @@ action = "quit"
 
 [[bindings]]
 key    = "BTN_9"
-action = "planeten"
+action = "kitt"       # Taste 10: Bordcomputer (Sprachassistent); "planeten" weiter über scripts/kittctl planeten
 
 # ── Cherry-Tastatur ESC (Entwicklung/Notfall) ──────────────────────────
 [[bindings]]

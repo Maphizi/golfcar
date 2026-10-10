@@ -19,6 +19,7 @@ class Action(str, Enum):
     STATUS = "status"          # Zustand ins Log schreiben
     PLANETEN = "planeten"      # Planeten-Flug
     ERROR = "error"            # Systemfehler-Visualizer
+    SLOTS = "slots"            # Space-Slotmaschine
 
 
 # Welche Action startet welchen Modus (Modus-Namen siehe config/modes.toml)
@@ -31,6 +32,7 @@ ACTION_TO_MODE = {
     Action.CAMPFIRE: "campfire",
     Action.PLANETEN: "planeten",
     Action.ERROR: "error",
+    Action.SLOTS: "slots",
     Action.HOME: "home",
 }
 

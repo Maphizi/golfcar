@@ -171,6 +171,27 @@ class Renderer:
             GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
         log.info("Render %dx%d auf Display %dx%d", self.rw, self.rh, self.w, self.h)
 
+    def upload_image(self, name: str, img: np.ndarray, unit: int = 1) -> None:
+        """RGBA8-Bild (H x W x 4, uint8) als Textur für Sampler `name` (Pixel-Look, kein Filtern)."""
+        if not hasattr(self, "images"):
+            self.images: dict[str, tuple[int, int]] = {}
+        if name in self.images:
+            tex, unit = self.images[name]
+        else:
+            tex = GL.glGenTextures(1)
+            self.images[name] = (tex, unit)
+        GL.glActiveTexture(GL.GL_TEXTURE0 + unit)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE)
+        GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT, 1)
+        h, w = img.shape[:2]
+        GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA8, w, h, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE,
+                        np.ascontiguousarray(img, dtype=np.uint8))
+        GL.glActiveTexture(GL.GL_TEXTURE0)
+
     def upload_audio(self, spectrum: np.ndarray, wave: np.ndarray) -> None:
         # Spektrum (64 Bins) auf 512 Pixel strecken, Waveform (512) direkt
         xs = np.linspace(0, len(spectrum) - 1, TEX_W)
@@ -208,6 +229,12 @@ class Renderer:
                     GL.glUniform4f(loc, *[float(v) for v in val])
             else:
                 GL.glUniform1f(loc, float(val))
+        for name, (tex, unit) in getattr(self, "images", {}).items():
+            loc = u.get(name, -1)
+            if loc >= 0:
+                GL.glActiveTexture(GL.GL_TEXTURE0 + unit)
+                GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
+                GL.glUniform1i(loc, unit)
         GL.glActiveTexture(GL.GL_TEXTURE0)
         GL.glBindTexture(GL.GL_TEXTURE_2D, self.tex)
         GL.glUniform1i(u["uAudioTex"], 0)

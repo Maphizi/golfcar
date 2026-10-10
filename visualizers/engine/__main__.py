@@ -23,7 +23,7 @@ from visualizers.engine.audio_capture import AudioCapture  # noqa: E402
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("scene", choices=["psychedelic", "crt", "eye", "campfire", "kitt", "hyperspace", "target", "tactical", "navcomputer", "error"])
+    ap.add_argument("scene", choices=["psychedelic", "crt", "eye", "campfire", "kitt", "hyperspace", "target", "tactical", "navcomputer", "error", "slots"])
     ap.add_argument("--test-signal", action="store_true")
     ap.add_argument("--seconds", type=float, default=0.0)
     ap.add_argument("--screenshot", default="")
@@ -73,6 +73,16 @@ def main() -> int:
         return 2
     renderer = eng.Renderer(scene, w, h)
     overlays: dict[int, eng.TextOverlay] = {}
+    image_versions: dict[str, int] = {}
+
+    def sync_images() -> None:
+        # Controller können Bilder liefern (z. B. Sprite-Atlas); hochgeladen wird nur bei neuer Version
+        if not ctrl or not hasattr(ctrl, "images"):
+            return
+        for name, (img, version) in ctrl.images().items():
+            if image_versions.get(name) != version:
+                renderer.upload_image(name, img, 1 + list(ctrl.images().keys()).index(name))
+                image_versions[name] = version
 
     def overlay(size_frac: float) -> eng.TextOverlay:
         px = max(10, int(h * size_frac))
@@ -107,6 +117,7 @@ def main() -> int:
             f = analyzer.update(cap.latest(analyzer.n), now)
             scene.maybe_reload(now)
             renderer.upload_audio(f.spectrum, f.wave)
+            sync_images()
             renderer.draw(t, f, {**fixed, **(ctrl.uniforms(t, f) if ctrl else {})})
             if ctrl:
                 for text, size_frac, x_frac, y_frac, color, alpha in ctrl.overlays(t):

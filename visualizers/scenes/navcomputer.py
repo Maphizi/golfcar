@@ -38,28 +38,28 @@ class Controller:
         self.demo = demo
         self.demo_next = time.monotonic() + 3.0
         self.rng = random.Random()
-        self.armed = False  # Kippschalter-Zustand
+        self.armed = False          # Kippschalter-Zustand
+        self.end_after_launch = False
 
     # -- Eingabe ---------------------------------------------------------
     def handle_event(self, ev) -> None:
+        # Kippschalter (PXN-CB1, Code 267): dpad_remap.py schickt SPACE für AN und BACKSPACE für AUS,
+        # joystick.py schickt F13 als Umschalter. Startknopf: ENTER (dpad_remap) oder F14 (joystick).
+        # Ablauf: Kippschalter AN = scharf, Startknopf = losfliegen, Flug dauert bis Kippschalter AUS.
         if ev.type == pygame.KEYDOWN:
-            if ev.key == pygame.K_F13:  # Kippschalter
-                if self.phase in (PHASE_LAUNCH, PHASE_CRUISE, PHASE_ARRIVE):
-                    self._set_phase(PHASE_BROWSE)  # Cruise abbrechen
-                    self.armed = False
-                else:
-                    self.armed = not self.armed
-                return
-            if ev.key == pygame.K_F14:  # Startknopf
+            if ev.key == pygame.K_SPACE:
+                self.set_armed(True)
+            elif ev.key == pygame.K_BACKSPACE:
+                self.set_armed(False)
+            elif ev.key == pygame.K_F13:
+                self.set_armed(not self.armed)
+            elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_F14):
                 if self.armed:
                     self.fly()
-                return
-            if ev.key in (pygame.K_LEFT, pygame.K_a):
+            elif ev.key in (pygame.K_LEFT, pygame.K_a):
                 self.select(-1)
             elif ev.key in (pygame.K_RIGHT, pygame.K_d):
                 self.select(+1)
-            elif ev.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_KP_ENTER):
-                self.fly()
         elif ev.type == pygame.MOUSEBUTTONDOWN:
             if ev.button == 1:
                 self.select(-1)
@@ -83,6 +83,18 @@ class Controller:
         self.target = self.idx
         self._set_phase(PHASE_LAUNCH)
 
+    def set_armed(self, on: bool) -> None:
+        """Kippschalter. AUS während des Flugs leitet die Ankunft ein (im Hyperraum sofort, beim Start
+        nach dem Start). Die Maus-Mitteltaste fliegt weiter ohne Kippschalter, mit fester Flugdauer."""
+        if on == self.armed:
+            return
+        self.armed = on
+        if not on:
+            if self.phase == PHASE_CRUISE:
+                self._set_phase(PHASE_ARRIVE)
+            elif self.phase == PHASE_LAUNCH:
+                self.end_after_launch = True
+
     def _set_phase(self, ph: int) -> None:
         self.phase = ph
         self.phase_t0 = time.monotonic()
@@ -93,8 +105,11 @@ class Controller:
         pt = now - self.phase_t0
         if self.phase == PHASE_LAUNCH and pt >= self.launch_s:
             self._set_phase(PHASE_CRUISE)
-        elif self.phase == PHASE_CRUISE and pt >= self.cruise_s:
-            self._set_phase(PHASE_ARRIVE)
+            if self.end_after_launch:
+                self.end_after_launch = False
+                self._set_phase(PHASE_ARRIVE)
+        elif self.phase == PHASE_CRUISE and not self.armed and pt >= self.cruise_s:
+            self._set_phase(PHASE_ARRIVE)      # ohne Kippschalter (Maus/Demo): feste Flugdauer
         elif self.phase == PHASE_ARRIVE and pt >= self.arrive_s:
             self._set_phase(PHASE_BROWSE)
         if self.demo and self.phase == PHASE_BROWSE and now >= self.demo_next:
@@ -149,7 +164,7 @@ class Controller:
                 (kind + ("   ·   " + "  ·  ".join(extra) if extra else ""), 0.026, 0.28, 0.535, (255, 236, 120), 0.85 * fade),
                 (p.get("subtitle", ""), 0.026, 0.28, 0.485, (200, 185, 110), 0.85 * fade),
                 ("<  WÄHLEN  >     KIPPSCHALTER + START  KURS SETZEN", 0.024, 0.5, 0.05, DIM, 0.7 + 0.3 * math.sin(t * 2.0)),
-                ("[ ARMED  —  START DRÜCKEN ]" if self.armed else "[ GESICHERT ]",
+                ("[ SCHARF  —  START DRÜCKEN ]" if self.armed else "[ GESICHERT  —  KIPPSCHALTER ]",
                  0.026, 0.72, 0.13,
                  (255, 60, 60) if self.armed else (70, 70, 70), 0.9),
             ]
@@ -157,5 +172,7 @@ class Controller:
             return [(f"KURS: {p['name'].upper()}", 0.05, 0.5, 0.88, YEL, 0.9), ("HYPERANTRIEB LÄDT", 0.028, 0.5, 0.83, (255, 236, 120), 0.5 + 0.5 * math.sin(t * 8.0))]
         if self.phase == PHASE_CRUISE:
             eta = max(0.0, self.cruise_s - pt)
+            if self.armed:
+                return [(f"HYPERRAUM   ZIEL {p['name'].upper()}   FLUGZEIT {pt:05.1f}   KIPPSCHALTER AUS = ANKUNFT", 0.028, 0.5, 0.05, DIM, 0.8)]
             return [(f"HYPERRAUM   ZIEL {p['name'].upper()}   ANKUNFT IN {eta:04.1f}", 0.028, 0.5, 0.05, DIM, 0.8)]
         return [(f"ANKUNFT   {p['name'].upper()}", 0.05, 0.5, 0.88, YEL, min(1.0, pt / 1.5))]

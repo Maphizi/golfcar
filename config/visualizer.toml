@@ -33,10 +33,15 @@ render_scale = 1.0
 
 [scenes.campfire]
 shader = "campfire"
-render_scale = 0.5
+render_scale = 0.6      # Pixelraster 128 Zeilen; bei unter 45 fps auf dem Pi wieder 0.5
 
 [scenes.error]
 shader = "error"
+render_scale = 0.6
+
+[scenes.slots]
+shader = "slots"
+controller = "slots"
 render_scale = 0.6
 
 [scenes.hyperspace]

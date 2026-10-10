@@ -9,7 +9,7 @@ uniform float uRms, uBass, uMid, uHigh, uBeat, uSilent;
 uniform sampler2D uAudioTex;
 uniform float uEventForce;   // Test: >0 erzwingt Ereignis (Wert-1), 0 = zufällig
 
-const float CELLS_Y = 90.0;      // Pixelraster: 90 Zeilen, Breite nach Seitenverhältnis
+const float CELLS_Y = 128.0;     // Pixelraster: 128 Zeilen, Breite nach Seitenverhältnis
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 // Ganzzahl-Hash ohne sin(): auf jeder GPU gleich (die sin-Variante driftet bei großen Argumenten je nach Treiber)
 float hash1(float n) { n = fract(n * 0.1031); n *= n + 33.33; n *= n + n; return fract(n); }
@@ -333,7 +333,7 @@ void main() {
         float n = fbm(vec2(p.x * 5.0 + sin(t * 0.7) * 0.3, uv.y * 6.0 - t * 2.4));
         float n2 = noise(vec2(p.x * 12.0 + 3.0, uv.y * 16.0 - t * 4.5));
         float wobble = (n - 0.5) * 0.12 * (0.3 + fy);
-        float width = 0.26 * flameH * (1.0 - fy * 0.8) + wobble;
+        float width = 0.30 * flameH * (1.0 - fy * 0.8) + wobble;   // etwas breiter
         float shape = 1.0 - clamp(abs(p.x + (n2 - 0.5) * 0.06 * fy) / max(width, 0.001), 0.0, 1.0);
         float v = shape * (0.35 + 1.1 * n + 0.3 * n2) - fy * 0.75;
         v += 0.1 * uMid * (1.0 - uSilent);

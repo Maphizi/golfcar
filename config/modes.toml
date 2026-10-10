@@ -63,3 +63,9 @@ label = "SYSTEMFEHLER"
 command = ["{python}", "-m", "visualizers.engine", "error"]
 cwd = "{root}"
 stop_timeout = 3
+
+[modes.slots]
+label = "SPACE-SLOTS"
+command = ["{python}", "-m", "visualizers.engine", "slots"]
+cwd = "{root}"
+stop_timeout = 3

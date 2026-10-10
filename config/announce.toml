@@ -32,6 +32,11 @@ campfire = [
   "Feuer an, zwei Monde oben. Marshmallows bringst du selbst mit.",
   "Ein Lagerfeuer auf einem fremden Planeten. Romantik, technisch gelöst.",
 ]
+slots = [
+  "Slotmaschine. Die Bank gewinnt, der Automat schwebt, du staunst.",
+  "Glücksspiel im Orbit. Einsatz zehn Credits, Hoffnung unbezahlbar.",
+  "Walzen laufen. Ich habe die Quoten gesehen. Du nicht.",
+]
 error = [
   "Systemfehler. Keine Sorge, der ist Absicht. Glaube ich.",
   "Kernbruch simuliert. Alles rot, nichts kaputt. Vermutlich.",
