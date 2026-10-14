@@ -96,3 +96,10 @@ fx  = 0          # Solid Rot
 col = [255, 0, 0]
 sx  = 128
 ix  = 128
+
+[modes.blackhole]
+bri = 160
+fx  = 76         # Meteor – langsam kreisend
+col = [255, 120, 20]
+sx  = 40
+ix  = 180

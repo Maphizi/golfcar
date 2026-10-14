@@ -137,7 +137,14 @@ def chat(port: int, messages: list[dict], max_tokens: int = 80, temperature: flo
         raise RuntimeError(f"llama-server HTTP {resp.status}: {data[:300]!r}")
     buf = b""
     while True:
-        chunk = resp.read1(4096) if hasattr(resp, "read1") else resp.read(4096)
+        try:
+            chunk = resp.read1(4096) if hasattr(resp, "read1") else resp.read(4096)
+        except http.client.IncompleteRead as exc:
+            # Server hat die Verbindung geschlossen (z. B. Neustart): behalten, was schon da ist
+            chunk = exc.partial or b""
+            if not chunk:
+                log.warning("llama-server hat die Antwort abgebrochen (%d Tokens erhalten)", res.tokens)
+                break
         if not chunk:
             break
         buf += chunk
@@ -207,7 +214,8 @@ class Kitt:
                 system = system + "\n\n" + self.context_provider()
             except Exception:
                 pass
-        msgs = [{"role": "system", "content": system}] + self.history[-2 * self.history_turns:] + \
+        recent = self.history[-2 * self.history_turns:] if self.history_turns > 0 else []
+        msgs = [{"role": "system", "content": system}] + recent + \
                [{"role": "user", "content": user_text}]
         res = chat(self.port, msgs, self.max_tokens, self.temperature, self.top_p, self.repeat_penalty, on_token)
         self.history += [{"role": "user", "content": user_text}, {"role": "assistant", "content": res.text}]

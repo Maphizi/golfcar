@@ -21,6 +21,7 @@ class Action(str, Enum):
     ERROR = "error"            # Systemfehler-Visualizer
     SLOTS = "slots"            # Space-Slotmaschine
     NEWS = "news"              # Galaktische Nachrichten
+    BLACKHOLE = "blackhole"    # Schwarzes Loch
     DROID = "droid"            # Bord-Droide
 
 
@@ -36,6 +37,7 @@ ACTION_TO_MODE = {
     Action.ERROR: "error",
     Action.SLOTS: "slots",
     Action.NEWS: "news",
+    Action.BLACKHOLE: "blackhole",
     Action.DROID: "droid",
     Action.HOME: "home",
 }

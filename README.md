@@ -75,7 +75,7 @@ Board sie über sein Tastatur-Interface ungewollt mitsendet.
 |---|---|---|---|
 | 1 HANDLE | `BTN_MISC` | `gaming` | Retro-Gaming (EmulationStation, ab Phase 3) |
 | 2 CRUISE | `BTN_1` | `viz_psychedelic` | Navigationscomputer / Hyperraum |
-| 3 FLASH | `BTN_2` | `news` | Galaktische Nachrichten (Holo-Sender mit erfundenen Meldungen) |
+| 3 FLASH | `BTN_2` | `blackhole` | Schwarzes Loch (Strahlverfolgung mit Lichtkrümmung, reagiert auf Musik) |
 | 4 AUDIO | `BTN_3` | `droid` | Bord-Droide BIBO (redet Droidisch, hat Laune und Hunger) |
 | 5 WIPERS | `BTN_4` | `slots` | Space-Slotmaschine (siehe Space-Thema) |
 | 6 MAP | `BTN_5` | `home` | Startbildschirm Space-Taxi (siehe unten) |
@@ -85,8 +85,8 @@ Board sie über sein Tastatur-Interface ungewollt mitsendet.
 | 10 | `BTN_9` | `kitt` | KITT Sprachassistent mit Oberfläche (Bordcomputer) |
 | ESC | `KEY_ESC` | `quit` | Notausstieg an der Tastatur |
 
-Der einfache Planeten-Flug (`planeten`), der Zielcomputer (`viz_crt`) und der Taktik-Scanner
-(`viz_eye`) sind nicht mehr auf dem Board, bleiben aber als Modi über `scripts/kittctl <modus>`
+Der einfache Planeten-Flug (`planeten`), der Zielcomputer (`viz_crt`), der Taktik-Scanner
+(`viz_eye`) und die Galaktischen Nachrichten (`news`) sind nicht mehr auf dem Board, bleiben aber als Modi über `scripts/kittctl <modus>`
 erreichbar. Das Tastaturlayout der ganzen KITT-Sitzung (auch RetroPie unter Xwayland) ist QWERTY,
 gesetzt in `scripts/session_kitt.sh` über `XKB_DEFAULT_LAYOUT`. Startknopf und Kippschalter des Boards kommen als
 ENTER bzw. Leertaste (AN) und Rücktaste (AUS) an, siehe `CLAUDE.md`.
@@ -545,7 +545,22 @@ Bass, Fenster blinken zum Spektrum, Neon und Hologramm reißen beim Beat. Szene 
 (`visualizers/scenes/taxi.py`, Shader `visualizers/shaders/taxi/frag.glsl`). Das alte Menü bleibt
 als Modus `menu` über `scripts/kittctl menu` erreichbar.
 
-**Galaktische Nachrichten (Taste 3, `news`):** Holo-Studio des Senders GNN mit Lichtkegeln,
+**Schwarzes Loch (Taste 3, `blackhole`):** Echte Strahlverfolgung mit Lichtkrümmung im Shader
+(64 Schritte pro Pixel, Newton-Näherung der Ablenkung): Die Akkretionsscheibe aus glühendem Gas
+wölbt sich über und unter das Loch, der ferne Teil der Scheibe erscheint als Bogen oben und als
+dünner Ring unten, der Photonenring entsteht aus Strahlen, die dem Horizont knapp entkommen sind,
+Sterne und Nebel im Hintergrund werden mitgezogen. Doppler-Helligkeit: die Seite, die auf uns
+zukommt, ist heller und heißer. Das Gas rotiert keplersch (innen schnell), mit Wirbeln und zwei
+Spiralarmen. Musik: das Spektrum liegt als Ringe auf der Scheibe (innen Bass, außen Höhen), der
+Bass pulst Scheibe, Dunst und Linsenstärke, Mitten färben das Gas blauweiß, Höhen lassen es funkeln,
+jeder kräftige Beat zündet einen Jet aus den Polen (klingt über drei Sekunden ab) und einen kurzen
+Flare. Pro Start zufällig: eine von drei Gaspaletten (orange/weiß, blau/violett, gold/rot),
+Neigung, Orbitrichtung und Tempo der langsam kreisenden Kamera. D-Pad LINKS/RECHTS ändert das
+Kreisen, OBEN/UNTEN die Neigung, Start zündet den Jet, Kippschalter AN fährt näher heran.
+`visualizers/scenes/blackhole.py` (Hüllkurven, Kamera), Shader `visualizers/shaders/blackhole/frag.glsl`,
+`render_scale 0.5`; bei unter 40 fps auf dem Pi auf 0.4 senken.
+
+**Galaktische Nachrichten (`news`, über `scripts/kittctl news`):** Holo-Studio des Senders GNN mit Lichtkegeln,
 drehendem Holo-Globus und einem Droiden-Sprecher, dessen Mundbalken zur Stimme schwingen. Das lokale
 Sprachmodell erfindet absurde Meldungen in strengem Nachrichtenton (Ressorts GALAXIS, GOLFPLATZ,
 SPORT, WIRTSCHAFT, PROMI, TECHNIK, VERKEHR; beim Golfplatz fließen Uhrzeit und gespielte Spiele aus

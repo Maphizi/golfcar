@@ -45,6 +45,11 @@ shader = "slots"
 controller = "slots"
 render_scale = 0.6
 
+[scenes.blackhole]
+shader = "blackhole"
+controller = "blackhole"
+render_scale = 0.5        # Strahlverfolgung, teuer; auf dem Pi ggf. 0.4
+
 [scenes.taxi]
 shader = "taxi"
 controller = "taxi"

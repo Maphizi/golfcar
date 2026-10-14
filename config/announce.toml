@@ -32,6 +32,11 @@ campfire = [
   "Feuer an, zwei Monde oben. Marshmallows bringst du selbst mit.",
   "Ein Lagerfeuer auf einem fremden Planeten. Romantik, technisch gelöst.",
 ]
+blackhole = [
+  "Schwarzes Loch voraus. Ich halte Abstand. Du hoffentlich auch.",
+  "Ereignishorizont in Sicht. Dahinter kein Empfang, auch kein Golf.",
+  "Singularität. Alles fällt rein, sogar deine Handicaps.",
+]
 news = [
   "Galaktische Nachrichten. Alles erfunden, nichts davon falscher als die echten.",
   "Sender wird aufgebaut. Die Redaktion ist ein Droide mit Fantasie.",

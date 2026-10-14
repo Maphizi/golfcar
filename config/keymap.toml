@@ -17,7 +17,7 @@ action = "viz_psychedelic"
 
 [[bindings]]
 key    = "BTN_2"
-action = "news"       # Taste 3 (FLASH): Galaktische Nachrichten; Zielcomputer weiter über scripts/kittctl viz_crt
+action = "blackhole"  # Taste 3 (FLASH): Schwarzes Loch; Nachrichten und Zielcomputer weiter über scripts/kittctl news / viz_crt
 
 [[bindings]]
 key    = "BTN_3"

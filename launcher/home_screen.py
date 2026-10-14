@@ -62,7 +62,7 @@ def main() -> int:
     f_small = display.font(int(h * 0.028))
     # Tastenbezeichnungen des PXN-CB1-Buttonboards (siehe config/keymap.toml und CLAUDE.md)
     menu = [
-        ("1 HANDLE", "gaming"), ("2 CRUISE", "viz_psychedelic"), ("3 FLASH", "news"),
+        ("1 HANDLE", "gaming"), ("2 CRUISE", "viz_psychedelic"), ("3 FLASH", "blackhole"),
         ("4 AUDIO", "droid"), ("5 WIPERS", "slots"), ("7 LIGHT", "campfire"),
         ("8 E-TALK", "error"), ("10", "kitt"),
     ]

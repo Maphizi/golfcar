@@ -88,3 +88,9 @@ label = "BORD-DROIDE BIBO"
 command = ["{python}", "-m", "kitt.droid"]
 cwd = "{root}"
 stop_timeout = 8
+
+[modes.blackhole]
+label = "SCHWARZES LOCH"
+command = ["{python}", "-m", "visualizers.engine", "blackhole"]
+cwd = "{root}"
+stop_timeout = 3
