@@ -9,7 +9,13 @@ cwd = "{root}"
 stop_timeout = 1
 
 [modes.home]
-label = "HAUPTMENÜ"
+label = "TAXISTAND"
+command = ["{python}", "-m", "visualizers.engine", "taxi"]
+cwd = "{root}"
+stop_timeout = 2
+
+[modes.menu]
+label = "HAUPTMENÜ (ALT)"
 command = ["{python}", "-m", "launcher.home_screen"]
 cwd = "{root}"
 stop_timeout = 2

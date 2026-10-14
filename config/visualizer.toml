@@ -45,6 +45,11 @@ shader = "slots"
 controller = "slots"
 render_scale = 0.6
 
+[scenes.taxi]
+shader = "taxi"
+controller = "taxi"
+render_scale = 0.6
+
 [scenes.droid]
 shader = "droid"
 render_scale = 0.6

@@ -78,7 +78,7 @@ Board sie über sein Tastatur-Interface ungewollt mitsendet.
 | 3 FLASH | `BTN_2` | `news` | Galaktische Nachrichten (Holo-Sender mit erfundenen Meldungen) |
 | 4 AUDIO | `BTN_3` | `droid` | Bord-Droide BIBO (redet Droidisch, hat Laune und Hunger) |
 | 5 WIPERS | `BTN_4` | `slots` | Space-Slotmaschine (siehe Space-Thema) |
-| 6 MAP | `BTN_5` | `home` | Home-Screen |
+| 6 MAP | `BTN_5` | `home` | Startbildschirm Space-Taxi (siehe unten) |
 | 7 LIGHT | `BTN_6` | `campfire` | Lagerfeuer (Pixel-Art) |
 | 8 E-TALK | `BTN_7` | `error` | Systemfehler-Visualizer (grüner Code, der zusammenbricht) |
 | 9 | `BTN_8` | `quit` | Launcher beenden (nur wenn `dev_emergency_exit = true`) |
@@ -531,6 +531,19 @@ Technik: Symbole und Walzenstreifen liegen in einem Sprite-Atlas (`visualizers/s
 den der Controller (`visualizers/scenes/slots.py`) als Textur an den Shader
 (`visualizers/shaders/slots/frag.glsl`) gibt; die Engine lädt Controller-Bilder über `images()`
 hoch. Neue Themen: Eintrag in `THEMES` mit sieben ASCII-Sprites, Farben und Sprüchen.
+
+**Startbildschirm Space-Taxi (`home`, Taste 6):** Kein Menü mehr. Der Pilot erscheint als
+Hologramm über einem Projektor auf seiner Taxilizenz (Foto `assets/pilot.png`, freigestellt mit
+`scripts/pilot_cutout.py`, Name aus `[launcher].pilot_name` in `config/settings.toml`), daneben
+Neon-TAXI-Kasten mit Taxinummer, FREI/BESETZT-Lampe, Taxameter, der weiterläuft, Statistik
+(Fahrten, Beschwerden, Bewertung, Trinkgeld, letzter Fahrgast), Spruch und wechselnde Funksprüche,
+Schachbrettband. Jeder Start würfelt neu: einer von drei Hintergründen (Raumstation-Skyline mit
+Flugverkehr und blinkenden Fenstern, Asteroiden-Parkplatz mit Diner, Nebel-Highway in Perspektive),
+Hologrammfarbe (blau, bernstein, grün), Accessoire (nichts, Sonnenbrille, Taximütze, beides),
+Lizenznummer, Taxinummer, Spruch und Zahlen. Mit Musik: Verkehr, Leitlinien und Band laufen mit dem
+Bass, Fenster blinken zum Spektrum, Neon und Hologramm reißen beim Beat. Szene `taxi`
+(`visualizers/scenes/taxi.py`, Shader `visualizers/shaders/taxi/frag.glsl`). Das alte Menü bleibt
+als Modus `menu` über `scripts/kittctl menu` erreichbar.
 
 **Galaktische Nachrichten (Taste 3, `news`):** Holo-Studio des Senders GNN mit Lichtkegeln,
 drehendem Holo-Globus und einem Droiden-Sprecher, dessen Mundbalken zur Stimme schwingen. Das lokale

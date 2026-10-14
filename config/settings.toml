@@ -12,6 +12,8 @@ status_interval = 60
 # Nach dem Start die KITT-Modelle (Whisper, Qwen, VAD, Piper) im Hintergrund in den RAM-Cache lesen.
 # Kostet einmalig ca. 2 GB Cache, F5 ist dann in ~20 s statt ~90 s bereit.
 prefetch_models = true
+# Name des Piloten für Startbildschirm und Figuren (Foto: assets/pilot.png, siehe scripts/pilot_cutout.py)
+pilot_name = "MARC"
 
 [display]
 # 0 = native Auflösung des Displays (1920x1080 am Ninja V)
