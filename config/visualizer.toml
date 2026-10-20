@@ -33,10 +33,15 @@ render_scale = 1.0
 
 [scenes.campfire]
 shader = "campfire"
-controller = "campfire"   # Beduinen-Abend: Lauf des Abends, Wind, Karawane, Musikhüllkurven
-render_scale = 0.7        # weiche Zeichnung; bei unter 45 fps auf dem Pi 0.55
-cycle_minutes = 22        # ein Abend (Dämmerung, Nacht, Morgengrauen) in Minuten
-start_phase = 0.0         # 0 = Start in der Abenddämmerung, 0.3 = mitten in der Nacht
+controller = "campfire"   # Cinemagraph: Foto der Szene + echte Flammen aus dem Spritesheet
+render_scale = 0.85       # Foto soll scharf bleiben; bei unter 45 fps auf dem Pi 0.7
+plate = "scene.png"       # assets/campfire/: Szene (vom Piloten erzeugt)
+flames = "flames.png"     # assets/campfire/: Flammen-Spritesheet, Zellen Spalten x Zeilen
+flame_frames = [8, 5]
+flame_fps = 12
+fire = [0.44, 0.23, 0.30, 0.36]   # Feuerstelle im Bild: x, y des Flammenfußes (von unten), Breite, Höhe (Anteile)
+cycle_minutes = 22        # Lauf des Abends als Farbstimmung in Minuten
+start_phase = 0.3         # 0 = Abendrot, 0.3 = Nacht (das Foto ist eine Nachtszene), 0.9 = Morgengrauen
 
 [scenes.error]
 shader = "error"

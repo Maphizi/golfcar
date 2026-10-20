@@ -67,8 +67,9 @@ ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-S
 Nicht auf dem Board, über `scripts/kittctl <modus>`: droid (BIBO), news, viz_crt, viz_eye, planeten, menu, status.
 
 ## Lagerfeuer (`visualizers/scenes/campfire.py`)
-Beduinen-Abend: uDay 0..1 = Dämmerung, Nacht, Morgengrauen über `cycle_minutes`; uWind Böen, uCaravan Karawane,
-uBassS/uEnergy/uSpark Musik. Keine Tasten. Test: `python -m visualizers.engine campfire --test-signal --demo`.
+Cinemagraph: Foto `assets/campfire/scene.png` + Flammen-Spritesheet `assets/campfire/flames.png` (8x5). Feuerstelle
+`[scenes.campfire] fire = [x, y, w, h]`; uDay Farbstimmung über `cycle_minutes`, uWind, uSpark, uBassS. Neue Bilder:
+`scripts/campfire_assets.py`. Test: `python -m visualizers.engine campfire --test-signal --demo`.
 
 ## Themen (`launcher/theme.py`, `config/themes.toml`)
 Standard: Thema mit `default = true` (SPACE TAXI, gelbes Taxischild, `cover_style = 4`). `theme.content()` liefert

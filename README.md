@@ -78,7 +78,7 @@ Board sie über sein Tastatur-Interface ungewollt mitsendet.
 | 3 FLASH | `BTN_2` | `blackhole` | Schwarzes Loch (Strahlverfolgung mit Lichtkrümmung, reagiert auf Musik) |
 | 4 AUDIO | `BTN_3` | `hal` | HAL 3000: ruhiger Bordrechner mit rotem Auge, spricht mit dem Sprachmodell |
 | 5 WIPERS | `BTN_4` | `slots` | Space-Slotmaschine (siehe Space-Thema) |
-| 6 MAP | `BTN_5` | `campfire` | Lagerfeuer: Beduinen-Abend in der Wüste |
+| 6 MAP | `BTN_5` | `campfire` | Lagerfeuer: Foto-Szene mit echten Flammen |
 | 7 LIGHT | `BTN_6` | `error` | Systemfehler-Visualizer (grüner Code, der zusammenbricht) |
 | 8 E-TALK | `BTN_7` | `gaming` | Retro-Gaming (EmulationStation, RetroPie) |
 | 9 | `BTN_8` | `quit` | Launcher beenden (nur wenn `dev_emergency_exit = true`) |
@@ -270,8 +270,8 @@ Shader laufen und steht im Log.
   das ganze Auge, Mitten drehen die Iris, Höhen verschieben Zeilen, der Beat sendet einen Ring
   nach außen. Pixelraster und Scanlines.
 
-- `campfire` (Taste 6): Beduinen-Abend in der Wüste (siehe Abschnitt Lagerfeuer): Feuer, Zelt, Dünen,
-  Mond, Karawane, Lauf des Abends.
+- `campfire` (Taste 6): Lagerfeuer als Cinemagraph aus einem Foto mit echten Flammen (siehe Abschnitt
+  Lagerfeuer).
 - `error` (Taste 7): grüner Code, der alle 24 Sekunden zusammenbricht. Beschreibung unter
   „Systemfehler-Modus“ weiter unten.
 
@@ -486,22 +486,21 @@ der Mitte. Zeiten in `config/visualizer.toml` unter `[scenes.psychedelic]`. Die 
 `visualizers/scenes/navcomputer.py` (Szenen-Controller der Engine: Eingabe, Phasen, Text-Overlays),
 weitere Welten einfach an die TOML anhängen.
 
-**Lagerfeuer (Taste 6, `campfire`):** Beduinen-Abend in der Wüste, komplett neu gezeichnet, zum
-Sitzen am Feuer bei ruhiger Gitarrenmusik. Vorn das Lagerfeuer mit Scheiten, Glutbett, Flammen aus
-Rauschen, Funken und Rauch; Teppiche mit Rauten- und Streifenmuster, Kissen und ein Teetablett mit
-Kanne und Gläsern im Feuerschein. Links ein Beduinenzelt mit Dachkanten, Spannseilen und warm
-leuchtendem Eingang, in dem eine Gestalt sitzt; das Tuch flattert im Wind. Dahinter drei Ebenen
-Dünen mit Sandrippeln, Hangschattierung und Parallaxe, die sich ganz langsam bewegen (die Kämme
-wandern, bei Windböen weht Sand über die Kuppen). Am Himmel der Lauf des Abends über
-`cycle_minutes` (Standard 22 Minuten, `config/visualizer.toml`): Abendrot in Orange und Violett,
-dann tiefe Nacht mit funkelnden Sternen, Milchstraße und einem großen Mond, der aufsteigt und
-wandert, dann kühles Morgengrauen, danach wieder Dämmerung. Alle zwei bis fünf Minuten zieht eine
-Kamelkarawane mit Reitern als Silhouette über die ferne Düne. Musik: das Feuer atmet ruhig mit, Bass
-pulst die Glut, Anschläge schicken Funken hoch, leise Stellen lassen das Feuer kleiner werden,
-laute lassen es wachsen; bei Stille brennt es ruhig weiter. Windböen alle 15 bis 45 Sekunden legen
-Flammen und Rauch zur Seite. Controller `visualizers/scenes/campfire.py` (Abend, Wind, Karawane,
-Hüllkurven), Shader `visualizers/shaders/campfire/frag.glsl`. `--demo` lässt den Abend 40-mal
-schneller laufen. Die früheren Außenposten-Ereignisse (Transporter, Jäger, Läufer) sind entfallen.
+**Lagerfeuer (Taste 6, `campfire`):** Cinemagraph aus echtem Bildmaterial statt gezeichneter Szene.
+Grundlage ist ein Foto der Lagerstelle (`assets/campfire/scene.png`, vom Piloten erzeugt: Feuer
+vor Felsen, Ringplanet, Milchstraße), das der Shader lebendig macht: An der Feuerstelle brennen
+echte Flammen aus einem Spritesheet (`assets/campfire/flames.png`, 8×5 Einzelbilder, Schleife mit
+Überblendung zwischen den Bildern, nur die Feuerfarben werden übernommen), die Flammen des Fotos
+werden darunter zur Glut abgedunkelt. Dazu Funken, die aus der Glut steigen, Rauch, Hitzeflimmern
+über dem Feuer, flackerndes Feuerlicht auf dem ganzen Bild, ein ganz langsamer Kameraschwenk,
+Sternschnuppen alle ein bis zwei Minuten und der Lauf des Abends als Farbstimmung
+(`cycle_minutes`, `start_phase`: Abendrot, Nacht, Morgengrauen). Musik: Bass macht das Feuer größer
+und heller, Anschläge schicken Funken hoch, leise Stellen lassen es ruhig brennen; Windböen legen
+Flammen und Rauch zur Seite. Lage und Größe der Feuerstelle im Bild stehen in
+`config/visualizer.toml` `[scenes.campfire] fire = [x, y, Breite, Höhe]`. Neues Bildmaterial:
+`scripts/campfire_assets.py SZENE.png COLLAGE.png` (schneidet das Flammen-Sheet aus einer Collage,
+entfernt Gitterlinien). Controller `visualizers/scenes/campfire.py`, Shader
+`visualizers/shaders/campfire/frag.glsl`.
 
 **Katalog des Navigationscomputers:** `config/planets.toml` enthält jetzt 56 Objekte in drei
 Gruppen, die als Beschriftung erscheinen: ECHTER HIMMEL (Sonne, Erde, Mond, Mars, Venus, Jupiter,
