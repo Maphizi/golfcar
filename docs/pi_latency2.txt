@@ -1,0 +1,18 @@
+  Fahrer: Kannst du mir die Regeln von Golf erklären?
+  KITT: <think>
+  KITT: Aber als ich den ersten Schlag gesehen habe, war der Golf ein unsichtbarer Gegner.
+  KITT: Ich habe ihn dann als unbestimmte Variable abgewehrt.
+2026-10-20 19:44:28 INFO  voice: Runde: LLM TTFT 12.19s, 3.3 tok/s, erste Sprache nach 17.74s, gesamt 31.29s: '<think>\n\n</think>\n\nIch habe das Problem nicht gelöst, weil ich keine Regelbücher im Sektor kannte. Aber als ich den ersten Schlag gesehen habe, war der Golf ein unsichtbarer Gegner. Ich habe ihn dann als unbestimmte Variable abgewehrt.'
+2026-10-20 19:44:28 INFO  voice: STATE IDLE
+  [19:44:28] STATE IDLE
+  Fahrer: KITT, aktiviere den Hyperantrieb.
+  KITT: <think>
+  KITT: Ich werde die Tarnung auf Null setzen, um einen Blick von der Landeplattform zu haben.
+  KITT: Ich habe das Gefühl, wir sind bereits in einem Sektor, der nicht mehr von uns kontrolliert wird.
+2026-10-20 19:45:01 INFO  voice: Runde: LLM TTFT 12.25s, 3.4 tok/s, erste Sprache nach 14.34s, gesamt 32.13s: '<think>\n\n</think>\n\nHyperantrieb aktiviert. Ich werde die Tarnung auf Null setzen, um einen Blick von der Landeplattform zu haben. Ich habe das Gefühl, wir sind bereits in einem Sektor, der nicht mehr von uns kontrolliert wird.'
+2026-10-20 19:45:01 INFO  voice: STATE IDLE
+  [19:45:01] STATE IDLE
+DONE
+2026-10-20 19:04:26 INFO  voice: Runde: LLM TTFT 53.18s, 2.7 tok/s, erste Sprache nach 62.70s, gesamt 88.89s: '<think>\n\n</think>\n\nIch habe keine Peinlichkeit gemacht, nur meine eigene Logik überfordert! Die Energiezufuhr war zu schwach für ein mathematisches Problem, Fleischwesen.'
+2026-10-20 19:06:21 INFO  voice: Runde: LLM TTFT 52.43s, 3.5 tok/s, erste Sprache nach 56.42s, gesamt 68.73s: '<think>\n\n</think>\n\nNein, das ist keine Peinlichkeit, Fleischwesen! Ich habe nur meine eigene Logik überfordert, denn das Spiel war zu schwierig für mich mit meinen falschen Theorien.'
+2026-10-20 19:07:01 INFO  voice: Runde: LLM TTFT 0.00s, 0.0 tok/s, erste Sprache nach 0.00s, gesamt 34.31s: ''
