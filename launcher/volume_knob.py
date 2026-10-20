@@ -4,10 +4,9 @@ Schreibt den Faktor 0..max_percent/100 nach logs/voice_volume.txt; die Sprecher 
 Satz. Die Musik bleibt davon unberührt (dafür launcher/music_knob.py). Mit target = "sink" regelt
 der Knopf stattdessen den ganzen Ausgang über wpctl.
 
-Liest alle Achsenwerte (EV_ABS) der PXN-Geräte außer dem D-Pad (HAT0X/Y). Welche Achse der Knopf
-ist, steht in config/settings.toml [volume].axis (z. B. "ABS_Z"); leer = die erste Achse, die sich
-bewegt, wird genommen und ins Log geschrieben. Der Wertebereich kommt aus den Achsendaten des
-Geräts und wird auf min_percent..max_percent abgebildet. Höchstens zehn Änderungen pro Sekunde.
+Zwei Modi:
+  ABS-Achse (axis = "ABS_Z" o. ä.): absoluter Wert wird auf min_percent..max_percent abgebildet.
+  REL-Modus (rel = true): jedes REL_MISC-Ereignis ändert die Lautstärke um ±step Prozent.
 """
 from __future__ import annotations
 
@@ -34,11 +33,16 @@ class VolumeKnob(threading.Thread):
         cfg = cfg or {}
         self._stop = threading.Event()
         self.axis = ecodes.ecodes.get(str(cfg.get("axis", "")), None)
+        self.rel = bool(cfg.get("rel", False))
+        self.step = int(cfg.get("step", 5))
         self.min_pct = int(cfg.get("min_percent", 0))
         self.max_pct = int(cfg.get("max_percent", 100))
         self.invert = bool(cfg.get("invert", False))
-        self.target = str(cfg.get("target", "voice"))      # "voice" = Stimme (Datei), "sink" = ganzer Ausgang
-        if self.axis is None:
+        self.target = str(cfg.get("target", "voice"))
+        self.cur_pct = int(cfg.get("start_percent", 100))
+        if self.rel:
+            log.info("Lautstärkeknopf: REL_MISC-Modus, Schritt %d%%, Start %d%%", self.step, self.cur_pct)
+        elif self.axis is None:
             log.info("Lautstärkeknopf: keine Achse konfiguriert, nur Beobachtung ([volume].axis in settings.toml)")
         self.last_set = 0.0
         self.last_pct = -1
@@ -55,7 +59,7 @@ class VolumeKnob(threading.Thread):
                     time.sleep(3)
                     continue
                 names = ", ".join(f"{d.name} ({d.path})" for d in devs)
-                log.info("Lautstärkeknopf: lese Achsen von %s", names)
+                log.info("Lautstärkeknopf: lese von %s", names)
                 self._loop(devs)
                 for d in devs:
                     d.close()
@@ -67,23 +71,33 @@ class VolumeKnob(threading.Thread):
         for path in evdev.list_devices():
             try:
                 d = evdev.InputDevice(path)
-                axes = [c for c, _ in d.capabilities().get(ecodes.EV_ABS, []) if c not in SKIP]
-                if DEVICE_NAME in d.name and axes:
-                    out.append(d)
-                else:
+                if DEVICE_NAME not in d.name:
                     d.close()
+                    continue
+                if self.rel:
+                    # REL_MISC-Gerät suchen
+                    if ecodes.REL_MISC in d.capabilities().get(ecodes.EV_REL, []):
+                        out.append(d)
+                        continue
+                else:
+                    # ABS-Achsen-Gerät suchen (ohne D-Pad)
+                    axes = [c for c, _ in d.capabilities().get(ecodes.EV_ABS, []) if c not in SKIP]
+                    if axes:
+                        out.append(d)
+                        continue
+                d.close()
             except Exception:
                 pass
         return out
 
     def _loop(self, devs: list[evdev.InputDevice]) -> None:
-        info = {}
+        abs_info = {}
         now_seen: dict[int, int] = {}
         last_log: dict[int, float] = {}
         for d in devs:
             for code, ai in d.capabilities(absinfo=True).get(ecodes.EV_ABS, []):
                 if isinstance(ai, evdev.AbsInfo):
-                    info[(d.fd, code)] = ai
+                    abs_info[(d.fd, code)] = ai
         while not self._stop.is_set():
             r, _, _ = select.select([d.fd for d in devs], [], [], 0.2)
             for d in devs:
@@ -91,27 +105,38 @@ class VolumeKnob(threading.Thread):
                     continue
                 try:
                     for ev in d.read():
-                        if ev.type != ecodes.EV_ABS or ev.code in SKIP:
-                            continue
-                        if self.axis is None:
-                            # Nur beobachten: Achsen und Werte melden, damit man die richtige einträgt.
-                            # Keine automatische Übernahme, sonst dreht eine zitternde Stick-Achse die Musik weg.
-                            key = ev.code
-                            if now_seen.get(key) != ev.value and time.monotonic() - last_log.get(key, 0.0) > 5.0:
-                                log.info("Achse %s = %d (Drehknopf? dann [volume].axis = \"%s\" in settings.toml)",
-                                         ecodes.ABS.get(key, key), ev.value, ecodes.ABS.get(key, key))
-                                last_log[key] = time.monotonic()
-                                now_seen[key] = ev.value
-                            continue
-                        if ev.code != self.axis:
-                            continue
-                        ai = info.get((d.fd, ev.code))
-                        lo, hi = (ai.min, ai.max) if ai and ai.max > ai.min else (0, 255)
-                        frac = (ev.value - lo) / float(hi - lo)
-                        frac = min(1.0, max(0.0, frac))
-                        if self.invert:
-                            frac = 1.0 - frac
-                        self.pending = int(round(self.min_pct + frac * (self.max_pct - self.min_pct)))
+                        if self.rel:
+                            # REL_MISC: jedes Ereignis = ein Schritt
+                            if ev.type != ecodes.EV_REL or ev.code != ecodes.REL_MISC:
+                                continue
+                            if ev.value == 0:
+                                continue
+                            delta = self.step if ev.value > 0 else -self.step
+                            if self.invert:
+                                delta = -delta
+                            self.cur_pct = max(self.min_pct, min(self.max_pct, self.cur_pct + delta))
+                            self.pending = self.cur_pct
+                        else:
+                            # ABS-Achse: absoluter Wert
+                            if ev.type != ecodes.EV_ABS or ev.code in SKIP:
+                                continue
+                            if self.axis is None:
+                                key = ev.code
+                                if now_seen.get(key) != ev.value and time.monotonic() - last_log.get(key, 0.0) > 5.0:
+                                    log.info("Achse %s = %d (dann [volume].axis = \"%s\" in settings.toml)",
+                                             ecodes.ABS.get(key, key), ev.value, ecodes.ABS.get(key, key))
+                                    last_log[key] = time.monotonic()
+                                    now_seen[key] = ev.value
+                                continue
+                            if ev.code != self.axis:
+                                continue
+                            ai = abs_info.get((d.fd, ev.code))
+                            lo, hi = (ai.min, ai.max) if ai and ai.max > ai.min else (0, 255)
+                            frac = (ev.value - lo) / float(hi - lo)
+                            frac = min(1.0, max(0.0, frac))
+                            if self.invert:
+                                frac = 1.0 - frac
+                            self.pending = int(round(self.min_pct + frac * (self.max_pct - self.min_pct)))
                 except OSError:
                     return
             now = time.monotonic()
