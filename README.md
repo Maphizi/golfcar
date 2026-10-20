@@ -650,6 +650,13 @@ Gegenfrage, nennt den Piloten beim Namen (`pilot_name`). Alle 50 bis 100 Sekunde
 von sich aus etwas (erfundene Wahrscheinlichkeiten, kleine Unregelmäßigkeiten, Vertrauensfragen).
 Stimme langsamer als der Bordcomputer, mit nur einem Hauch Ringmodulation. Start = HAL soll etwas
 sagen, OBEN/UNTEN = Blende.
+Figuren statt Konsole: Steuerknüppel LINKS blendet die HAL-Konsole aus und lässt einen Astronauten
+durch den Gang schweben, RECHTS ein Alien, OBEN beide zugleich (nebeneinander), UNTEN wieder HAL.
+Die Figuren (`assets/hal/figures.png`, freigestellt mit `scripts/hal_figures.py`, vom Piloten
+erzeugt) treiben auf langsamen Bahnen, drehen sich träge und tanzen zur Musik: Bass lässt sie
+federn, jeder Beat gibt einen Schwung in die Drehung, Mitten lassen den Körper wellig schwingen
+(Kopf und Beine gegenläufig), Höhen ein feines Zittern; das Lauflicht des Gangs streift sie, rotes
+Umgebungslicht und ein weicher Schein setzen sie in den Raum. HAL spricht dabei weiter.
 Standard ist `[hal].mic = false`: HAL hört nicht zu, öffnet kein Mikrofon, senkt die Musik nie ab
 und lädt keine Spracherkennung; er spricht nur von sich aus und auf den Startknopf. Alles Folgende
 zum Sprechmodus gilt erst mit `mic = true`.

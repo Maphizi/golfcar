@@ -77,6 +77,8 @@ Korridor bewegt sich nur über `uDrift` (langsam, Richtung ±1, Wechsel beim Dro
 `uVariant` 0–4 Zellenmuster, `uAccent` hüpfende Einzelzelle, `uWash` Farbwelle, Beat-Zähler `uStep` 0–3 /
 `uStepPhase` mit Lauflicht-Muster `uPattern` 0–5 (wechseln bei Drops und alle 25–45 s). Test:
 `KITT_HAL_VARIANT=n python -m kitt.hal --demo` (Demo nutzt das Testsignal als Musik).
+Figuren (`kitt/hal/figures.py`, Atlas `assets/hal/figures.png`): D-Pad LINKS Astronaut, RECHTS Alien, OBEN beide,
+UNTEN HAL-Konsole; Test `KITT_HAL_FIGURE=1..3`. PersonaUI liefert Bilder über `images()` an den Renderer.
 
 ## Planeten-Visualizer (`visualizers/scenes/planets.py`)
 Sternenhimmel mit Warp-Flug-Modus.

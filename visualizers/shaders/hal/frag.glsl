@@ -35,6 +35,11 @@ float sdBox(vec2 p, vec2 b, float r) { vec2 d = abs(p) - b + r; return length(ma
 
 uniform float uDrift, uDir, uEnergy, uBassS, uDrop, uVariant;
 uniform float uStep, uStepPhase, uStepCount, uPattern, uHigh2;   // Beat-Zähler 0..3, Phase seit dem Schritt, Lauflicht-Muster
+uniform sampler2D uFigTex;                 // Figuren-Atlas 1024x512: Zelle 0 Astronaut, 1 Alien
+uniform float uFigMode, uFigMix;           // 0 HAL, 1 Astronaut, 2 Alien, 3 beide; Überblendung Konsole -> Figuren
+uniform vec4 uFigA, uFigB;                 // x, y, Winkel, Größe (in Bildhöhen)
+uniform vec2 uFigWave;                     // Körperwelle: Phase, Stärke
+const vec2 FIG_ATLAS = vec2(1024.0, 512.0);
 uniform vec4 uAccent;   // Akzentzelle: Zellenindex entlang des Gangs, Farbe, Reihe, Seite (alles 0 = aus)
 uniform vec4 uWash;     // Farbwelle: Fortschritt 0..1 (Tiefe hinten -> vorn), Farbe, Stärke
 // uDrift: Position im Gang (vom Controller sehr langsam bewegt, Richtung kann beim Drop wechseln),
@@ -66,6 +71,39 @@ float stepHit(float depth, vec2 cell, float side, float along, vec2 wq) {
     if (pat == 4) return step(abs(mod(cell.x, 4.0) - st), 0.5);                            // jede vierte Spalte
     float ring = 1.0 - uStepPhase;                                                        // Ring läuft im Beat von hinten nach vorn
     return smoothstep(0.12, 0.0, abs(depth - ring));
+}
+// Figur aus dem Atlas, bilinear (Atlas liegt mit GL_NEAREST vor), mit Körperwelle; p in Bildkoordinaten
+vec4 figure(vec2 p, vec4 fp, float cell) {
+    if (fp.w < 0.01) return vec4(0.0);
+    vec2 q = p - fp.xy;
+    float c = cos(fp.z), s = sin(fp.z);
+    q = vec2(c * q.x + s * q.y, -s * q.x + c * q.y) / fp.w;          // -0.5..0.5 über die Zelle
+    // Körperwelle: seitliches Schwingen, Kopf und Beine gegenläufig, dazu leichtes Atmen in der Höhe
+    q.x += uFigWave.y * sin(q.y * 7.0 + uFigWave.x) * (0.6 + 0.8 * abs(q.y));
+    q.y += uFigWave.y * 0.4 * sin(q.x * 6.0 - uFigWave.x * 0.7);
+    if (abs(q.x) >= 0.5 || abs(q.y) >= 0.5) return vec4(0.0);
+    vec2 px = vec2((cell + q.x + 0.5) * 512.0, (q.y + 0.5) * 512.0) - 0.5;
+    vec2 i = floor(px), f = fract(px);
+    vec2 lo = vec2(cell * 512.0, 0.0), hi = lo + 511.0;
+    vec2 a = clamp(i, lo, hi), b = clamp(i + 1.0, lo, hi);
+    vec4 s00 = texture(uFigTex, (vec2(a.x, a.y) + 0.5) / FIG_ATLAS);
+    vec4 s10 = texture(uFigTex, (vec2(b.x, a.y) + 0.5) / FIG_ATLAS);
+    vec4 s01 = texture(uFigTex, (vec2(a.x, b.y) + 0.5) / FIG_ATLAS);
+    vec4 s11 = texture(uFigTex, (vec2(b.x, b.y) + 0.5) / FIG_ATLAS);
+    return mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
+}
+// Figur in den roten Raum setzen: rotes Umgebungslicht, Lauflicht-Farbe als Streiflicht, weicher Schein dahinter
+vec3 placeFigure(vec3 col, vec2 p, vec4 fp, float cell, float live) {
+    if (fp.w < 0.01) return col;
+    vec4 fg = figure(p, fp, cell);
+    vec3 red = vec3(1.0, 0.25, 0.15);
+    float glow = exp(-length((p - fp.xy) / fp.w) * 5.0) * 0.1 * (0.6 + 0.6 * uBassS);
+    col += red * glow * (1.0 - fg.a);
+    vec3 lit = fg.rgb * (0.55 + 0.35 * uEnergy);
+    lit = mix(lit, lit * red * 1.6, 0.35);                                   // im roten Licht des Gangs
+    lit += stepColor(uStep) * fg.rgb * 0.35 * (1.0 - uStepPhase) * live;    // Lauflicht streift die Figur
+    lit += fg.rgb * 0.25 * uBassS;                                           // Bass: aufhellen
+    return mix(col, lit, fg.a);
 }
 // Speicherbank-Zellen auf einer Wandfläche: wq.x = Koordinate entlang des Korridors (Tiefe, mit Drift),
 // wq.y = Höhe/Breite, depth 0 nah .. 1 fern. Alles bewegt sich nur mit uDrift, nichts zuckt mit der Zeit.
@@ -174,6 +212,7 @@ void main() {
     // ---- Rückwand (dunkel), Konsole in der Mitte
     float back = 1.0 - inCorr;
     col = mix(col, vec3(0.03, 0.0, 0.0), back);
+    vec3 corr = col;                                                      // Gang ohne Konsole (für die Figuren)
     vec2 cq = p / 0.28;                                                   // -1..1 über die Rückwand
     float panel = step(sdBox(p, vec2(0.14, 0.27), 0.015), 0.0);
     vec3 pcol = vec3(0.02, 0.02, 0.025);
@@ -234,6 +273,13 @@ void main() {
     col += vec3(0.9, 0.9, 1.0) * uTalkMode * smoothstep(0.006, 0.0, abs(r - R * 1.42)) * (0.3 + 0.7 * uLevel);
     // Schein des Auges auf Konsole und Korridor
     col += vec3(1.0, 0.25, 0.08) * exp(-r * 12.0) * (0.15 + 0.45 * talk + 0.2 * listening * uLevel) * (1.0 - step(r, R));
+    // Figuren statt Konsole: Astronaut / Alien schweben im Gang (Überblendung uFigMix)
+    if (uFigMix > 0.001) {
+        vec3 withFig = corr;
+        withFig = placeFigure(withFig, p, uFigA, 0.0, live);
+        withFig = placeFigure(withFig, p, uFigB, 1.0, live);
+        col = mix(col, withFig, smoothstep(0.0, 1.0, uFigMix));
+    }
     // Laden: Scanlinie
     col = mix(col, col * 0.5 + vec3(0.3, 0.05, 0.02) * step(abs(vUv.y - fract(t * 0.5)), 0.01), loading);
     col *= uBright;

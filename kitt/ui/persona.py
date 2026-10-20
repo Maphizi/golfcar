@@ -128,6 +128,10 @@ class PersonaUI:
     def use_mic(self) -> bool:
         return True
 
+    def images(self) -> dict:
+        """Bilder für den Shader: {Uniform-Name: (RGBA-Array HxWx4, Version)}; hochgeladen bei neuer Version."""
+        return {}
+
     def music_source(self) -> str | None:
         """Eigene Musikquelle für die Szene ("playback" oder "mic"); None = Mikrofon/TTS wie bisher.
         Mit Musikquelle liefert uRms/uBass/... die Musik und uVoice den Pegel der eigenen Stimme."""
@@ -216,6 +220,7 @@ class PersonaUI:
                           tuple(self.uniform_names))
         scene.load()
         renderer = eng.Renderer(scene, w, h)
+        image_versions: dict[str, int] = {}
         analyzer = Analyzer(self.rate, self.audio_cfg)
         voice_analyzer = Analyzer(self.rate, self.audio_cfg)
         self.music_cap = None
@@ -270,6 +275,10 @@ class PersonaUI:
                 self.last_f = f
                 scene.maybe_reload(now)
                 renderer.upload_audio(f.spectrum, f.wave)
+                for i, (name, (img, version)) in enumerate(self.images().items()):
+                    if image_versions.get(name) != version:
+                        renderer.upload_image(name, img, 1 + i)
+                        image_versions[name] = version
                 uniforms = {"uState": STATES.get(state, 0), "uStateT": now - since, "uLevel": self.level}
                 uniforms.update(self.extra_uniforms(now, state, since))
                 renderer.draw(t, f, uniforms)

@@ -18,6 +18,8 @@ import time
 
 import pygame
 
+from kitt.hal import figures as figures_mod
+from kitt.hal.figures import Figures
 from kitt.hal.motion import CorridorMotion
 from kitt.ui.persona import PersonaUI
 from launcher import config as lcfg
@@ -38,15 +40,18 @@ PROMPTS = [
 
 class HalUI(PersonaUI):
     scene_name = "hal"
-    uniform_names = ("uState", "uStateT", "uLevel", "uTalk", "uBright", "uVoice", "uTalkMode") + CorridorMotion.uniform_names
+    uniform_names = ("uState", "uStateT", "uLevel", "uTalk", "uBright", "uVoice", "uTalkMode") + CorridorMotion.uniform_names + Figures.uniform_names
     window_title = "HAL 3000"
 
     def __init__(self, *a, **kw):
         self.rng = random.Random()
         self.bright = 1.0
         self.motion = CorridorMotion(self.rng)
+        self.figures = Figures(self.rng)
         if os.environ.get("KITT_HAL_VARIANT"):                  # Tests: Zellenmuster vorgeben
             self.motion.variant = int(os.environ["KITT_HAL_VARIANT"]) % 5
+        if os.environ.get("KITT_HAL_FIGURE"):                   # Tests: Figur vorgeben (0 HAL, 1, 2, 3 beide)
+            self.figures.set_mode(int(os.environ["KITT_HAL_FIGURE"]) % 4)
         self.next_prompt_at = time.monotonic() + 40.0
         self._turns_seen = 0
         self.talk_mode = False          # Sprechmodus: Musik leise, Mikrofon an
@@ -172,10 +177,14 @@ class HalUI(PersonaUI):
             self.set_talk_mode(True)
         elif key == pygame.K_BACKSPACE and self.kipp_talk:
             self.set_talk_mode(False)
-        elif key == pygame.K_UP:
-            self.bright = min(1.4, self.bright + 0.1)
-        elif key == pygame.K_DOWN:
-            self.bright = max(0.4, self.bright - 0.1)
+        elif key in (pygame.K_LEFT, pygame.K_a):
+            self.figures.set_mode(figures_mod.MODE_ASTRO)
+        elif key in (pygame.K_RIGHT, pygame.K_d):
+            self.figures.set_mode(figures_mod.MODE_ALIEN)
+        elif key in (pygame.K_UP, pygame.K_w):
+            self.figures.set_mode(figures_mod.MODE_BOTH)
+        elif key in (pygame.K_DOWN, pygame.K_s):
+            self.figures.set_mode(figures_mod.MODE_HAL)
 
     def tick(self, now: float) -> None:
         if self.demo or not self.pipe:
@@ -204,15 +213,20 @@ class HalUI(PersonaUI):
             self.ask_hidden(self.rng.choice(PROMPTS))
             self.next_prompt_at = now + self.rng.uniform(50.0, 100.0)
 
+    def images(self) -> dict:
+        return self.figures.images()
+
     def extra_uniforms(self, now: float, state: str, since: float) -> dict:
         out = self.motion.update(now, self.last_f)
+        out.update(self.figures.update(now, self.last_f))
         out.update({"uTalk": 1.0 if state == "speaking" else 0.0, "uBright": self.bright,
                     "uVoice": self.voice_rms, "uTalkMode": 1.0 if self.talk_mode else 0.0})
         return out
 
     def draw_overlays(self, now: float, state: str, lu: str, lk: str) -> None:
-        self.text("HAL", 0.032, 0.479, 0.713, (40, 160, 255), 1.0)
-        self.text("3000", 0.032, 0.526, 0.713, (240, 240, 245), 1.0)
+        if self.figures.mix < 0.5:
+            self.text("HAL", 0.032, 0.479, 0.713, (40, 160, 255), 1.0 - 2.0 * self.figures.mix)
+            self.text("3000", 0.032, 0.526, 0.713, (240, 240, 245), 1.0 - 2.0 * self.figures.mix)
         label = {"idle": "SPRICH, PILOT" if self.talk_mode else "BEREIT", "listening": "ICH HÖRE", "thinking": "ICH DENKE NACH", "speaking": "",
                  "loading": "SYSTEME WERDEN GELADEN", "init": "SYSTEME WERDEN GELADEN", "stopped": "ABGESCHALTET"}.get(state, "")
         if label:
@@ -228,7 +242,7 @@ class HalUI(PersonaUI):
             talk = "OHNE MIKROFON"
         elif self.kipp_talk:
             talk = "KIPPSCHALTER  SPRECHEN (MUSIK LEISE)"
-        self.text(f"{talk}      START  HAL FRAGEN      OBEN/UNTEN  LICHT", 0.015, 0.5, 0.03, (110, 60, 60), 0.5 + 0.2 * math.sin(now * 2.0))
+        self.text(f"{talk}      START  HAL FRAGEN      KNÜPPEL  LINKS ASTRONAUT  RECHTS ALIEN  OBEN BEIDE  UNTEN HAL", 0.015, 0.5, 0.03, (110, 60, 60), 0.5 + 0.2 * math.sin(now * 2.0))
         # kleine Musikanzeige unten rechts: Quelle und Pegel, damit man ohne Log sieht, ob Musik ankommt
         f = self.last_f
         cap = self.music_cap
