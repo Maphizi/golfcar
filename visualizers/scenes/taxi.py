@@ -234,31 +234,27 @@ class Controller:
         col_a = tuple(int(c * 255) for c in th.get("color_a", [0.95, 0.8, 0.25]))
         chosen = self.idx == self.chosen
         out = [
-            # Plakat links: Titel und Zeile unter dem Bild
-            (th.get("title", "").upper(), 0.042, 0.175, 0.16, col_a, 1.0),
-            (th.get("tagline", "").upper(), 0.017, 0.175, 0.115, WHITE, 0.85),
-            (f"THEMA  {self.idx + 1} / {n}" + ("     AKTIV" if chosen else "     START = WÄHLEN"), 0.017, 0.175, 0.082,
-             col_a if chosen else GREY, 0.9 if chosen else 0.6 + 0.3 * abs(((now * 1.5) % 2.0) - 1.0)),
-            # Fahrerplakat rechts
-            ("SPACE TAXI DRIVER", 0.022, 0.80, 0.898, col_a, 1.0),
-            (self.name, 0.042, 0.845, 0.375, WHITE, 1.0),
-            (f"TAXI NR. {self.taxi_no}   LIZENZ {self.license}", 0.016, 0.845, 0.32, WHITE, 0.85),
-            (f"FAHRTEN {self.rides}   BESCHWERDEN {self.complaints}", 0.012, 0.845, 0.285, DIM, 0.85),
-            (f"TAXAMETER {self.meter:07.2f} CR", 0.012, 0.845, 0.255, DIM, 0.85),
-            (f"LETZTER FAHRGAST: {self.last_passenger}", 0.011, 0.845, 0.225, DIM, 0.75),
+            # Unter dem Logo: Mission und Thema
+            ("MISSION", 0.022, 0.315, 0.235, col_a, 0.9),
+            (self.mission_line, 0.017 if len(self.mission_line) <= 34 else 0.014, 0.315, 0.195, WHITE, 0.85),
+            (self.radio, 0.013, 0.315, 0.158, DIM, 0.7),
+            (f"THEMA  {self.idx + 1} / {n}   {th.get('title', '').upper()}   {th.get('tagline', '').upper()}" + ("     AKTIV" if chosen else "     START = WÄHLEN"),
+             0.014, 0.315, 0.095, col_a if chosen else GREY, 0.9 if chosen else 0.6 + 0.3 * abs(((now * 1.5) % 2.0) - 1.0)),
+            # Taxischein rechts (schwarze Schrift auf dem gelben Schild)
+            ("SPACE TAXI DRIVER", 0.018, 0.79, 0.738, (20, 20, 20), 0.95),
+            (self.name, 0.038, 0.805, 0.305, (15, 15, 15), 1.0),
+            (f"TAXI NR. {self.taxi_no}   LIZENZ {self.license}", 0.015, 0.805, 0.264, (25, 25, 25), 0.95),
+            (f"FAHRTEN {self.rides}   BESCHWERDEN {self.complaints}   TAXAMETER {self.meter:07.2f} CR", 0.011, 0.805, 0.233, (35, 30, 20), 0.9),
+            (f"LETZTER FAHRGAST: {self.last_passenger}", 0.011, 0.805, 0.207, (35, 30, 20), 0.85),
             # Fußzeile
-            (self.slogan, 0.018, 0.33, 0.018, col_a, 0.9),
-            ("<  THEMA  >      START  WÄHLEN", 0.015, 0.845, 0.018, GREY, 0.5 + 0.2 * abs(((now * 1.5) % 2.0) - 1.0)),
+            (self.slogan, 0.018, 0.315, 0.018, col_a, 0.9),
+            ("<  THEMA  >      START  WÄHLEN", 0.015, 0.805, 0.018, GREY, 0.5 + 0.2 * abs(((now * 1.5) % 2.0) - 1.0)),
         ]
         if self.photo is None and self.driver is None:
-            out.append(("KEIN FOTO: assets/taxi/driver.png", 0.016, 0.845, 0.64, (255, 90, 70), 0.9))
+            out.append(("KEIN FOTO: assets/taxi/driver.png", 0.014, 0.805, 0.55, (255, 90, 70), 0.9))
         if self.driver is not None:
-            out.append(("● LIVE", 0.014, 0.945, 0.898, (255, 60, 50), 0.5 + 0.5 * abs(((now * 2.0) % 2.0) - 1.0)))
-            out.append(("DIGITALE LIZENZ  ·  GÜLTIG IN ALLEN SEKTOREN", 0.011, 0.845, 0.195, (200, 200, 210), 0.7))
-        # Mission in der Mitte: Überschrift und Auftrag unter dem Logo
-        out.append(("MISSION", 0.022, 0.51, 0.48, col_a, 0.9))
-        out.append((self.mission_line, 0.016 if len(self.mission_line) <= 34 else 0.013, 0.51, 0.44, WHITE, 0.85))
-        out.append((self.radio, 0.012, 0.51, 0.39, DIM, 0.7))
+            out.append(("● LIVE", 0.012, 0.935, 0.738, (200, 30, 20), 0.5 + 0.5 * abs(((now * 2.0) % 2.0) - 1.0)))
+            out.append(("DIGITALE LIZENZ  ·  GÜLTIG IN ALLEN SEKTOREN", 0.010, 0.805, 0.18, (30, 30, 30), 0.8))
         if now - self.confirm_t0 < 1.5:
             out.append((f"THEMA {th.get('title', '').upper()} AKTIV", 0.04, 0.5, 0.5, WHITE, 1.0 - (now - self.confirm_t0) / 1.5))
         return out

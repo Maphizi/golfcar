@@ -72,10 +72,9 @@ Cinemagraph: Foto `assets/campfire/scene.png` + Flammen-Spritesheet `assets/camp
 `scripts/campfire_assets.py`. Test: `python -m visualizers.engine campfire --test-signal --demo`.
 
 ## Taxistand (`visualizers/scenes/taxi.py`)
-Drei Spalten: Plakat (Hochformat 2:3) | MISSION (`assets/taxi/mission.png`, Figuren `assets/taxi/sprites.png` 8x3 à 96 px,
-`scripts/taxi_sprites.py`) | Lizenz.
-Rechts digitale Lizenz aus `assets/taxi/driver.png`: Beat-Zoom auf die Augen (uBeatZoom), Spiralen in den Augen
-(`[scenes.taxi] eyes`, `eye_r`), Glitch, Hologramm. Ohne driver.png altes Duotone-Porträt (`assets/pilot.png`).
+Zwei Elemente: links Missionslogo (`assets/taxi/mission.png`) mit schwebenden Figuren (`assets/taxi/sprites.png` 8x3 à 96 px,
+`scripts/taxi_sprites.py`), rechts der gelbe Taxischein (Themenfarbe) mit dem Fahrerfoto `assets/taxi/driver.png` als
+digitale Lizenz: Beat-Zoom (uBeatZoom), Kreisel in den Augen (`[scenes.taxi] eyes`, `eye_r`), Glitch, Hologramm.
 
 ## Themen (`launcher/theme.py`, `config/themes.toml`)
 Standard: Thema mit `default = true` (SPACE TAXI, gelbes Taxischild, `cover_style = 4`). `theme.content()` liefert
