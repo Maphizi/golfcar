@@ -14,6 +14,8 @@ import subprocess
 import threading
 import time
 
+import json
+
 import numpy as np
 
 log = logging.getLogger("audio.capture")
@@ -32,6 +34,43 @@ def _default_sink_name() -> str:
             return head.split(",")[0].split()[1]
     except Exception:
         pass
+    return ""
+
+
+def _default_source_name() -> str:
+    """node.name der Standardquelle (Mikrofon) laut WirePlumber, "" wenn unbekannt."""
+    try:
+        out = subprocess.run(["wpctl", "inspect", "@DEFAULT_AUDIO_SOURCE@"], capture_output=True, text=True, timeout=2).stdout
+        for line in out.splitlines():
+            if "node.name" in line and "=" in line:
+                return line.split("=", 1)[1].strip().strip('"')
+    except Exception:
+        pass
+    return ""
+
+
+def _pick_mic_name(avoid_bluetooth: bool) -> str:
+    """Mikrofon wählen. Bluetooth-Mikrofone (bluez_*) meiden: ein offener Mikrofonstream schaltet ein
+    Bluetooth-Headset von A2DP (Musik in Stereo) auf das Headset-Profil HFP um, dann klingt die Musik
+    leise und blechern. Liefert "" (= Standardquelle) oder den node.name einer anderen Quelle."""
+    default = _default_source_name()
+    if not avoid_bluetooth or not default.startswith("bluez_"):
+        return ""
+    try:
+        dump = json.loads(subprocess.run(["pw-dump"], capture_output=True, text=True, timeout=4).stdout or "[]")
+    except Exception as exc:
+        log.warning("pw-dump nicht lesbar (%s), nehme Standardquelle %s", exc, default)
+        return ""
+    others = []
+    for obj in dump:
+        props = (obj.get("info") or {}).get("props") or {}
+        if props.get("media.class") == "Audio/Source" and not str(props.get("node.name", "")).startswith("bluez_"):
+            others.append(str(props.get("node.name")))
+    if others:
+        log.info("Standardquelle %s ist Bluetooth, nehme stattdessen Mikrofon %s", default, others[0])
+        return others[0]
+    log.warning("Nur das Bluetooth-Mikrofon %s vorhanden: solange es offen ist, läuft die Musik im Headset-Profil "
+                "(leise, mono). Für Musik und Sprache gleichzeitig ein USB-Mikrofon anschließen.", default)
     return ""
 
 
@@ -54,6 +93,8 @@ class AudioCapture(threading.Thread):
         self.blocks = 0
         self.subscribers: list = []     # Callbacks, die jeden Block (float32, 48 kHz) bekommen
         self._stop_event = threading.Event()
+        self._suspended = threading.Event()
+        self.avoid_bt_mic = bool(cap.get("avoid_bluetooth_mic", True))
 
     # -- Öffentlich ------------------------------------------------------
     def latest(self, n: int) -> np.ndarray:
@@ -68,7 +109,26 @@ class AudioCapture(threading.Thread):
 
     def stop(self) -> None:
         self._stop_event.set()
+        self._suspended.clear()
         self._kill()
+
+    def suspend(self) -> None:
+        """Aufnahme wirklich beenden (Mikrofonstream schließen), bis resume(). Ein offener Stream hält
+        z. B. ein Bluetooth-Headset im Headset-Profil, auch wenn niemand mithört."""
+        if not self._suspended.is_set():
+            self._suspended.set()
+            self._kill()
+            self.active_backend = "none"
+            log.info("Audio-Capture ausgesetzt (%s)", self.source)
+
+    def resume(self) -> None:
+        if self._suspended.is_set():
+            self._suspended.clear()
+            log.info("Audio-Capture wieder aktiv (%s)", self.source)
+
+    @property
+    def suspended(self) -> bool:
+        return self._suspended.is_set()
 
     # -- Intern ----------------------------------------------------------
     def _push(self, samples: np.ndarray) -> None:
@@ -105,8 +165,9 @@ class AudioCapture(threading.Thread):
                     log.warning("Standard-Sink nicht ermittelbar, Monitor-Aufnahme ohne Ziel (kann das Mikrofon treffen)")
                 cmds.append(("pipewire", c + ["-"]))
             else:
-                if self.target:
-                    c += ["--target", self.target]
+                target = self.target or _pick_mic_name(self.avoid_bt_mic)
+                if target:
+                    c += ["--target", target]
                 cmds.append(("pipewire", c + ["-"]))
         if self.backend in ("auto", "alsa") and shutil.which("arecord") and self.source != "playback":
             dev = self.target if (self.backend == "alsa" and self.target) else "default"
@@ -132,14 +193,20 @@ class AudioCapture(threading.Thread):
             return
         backoff = 1.0
         while not self._stop_event.is_set():
+            if self._suspended.is_set():
+                self._stop_event.wait(0.2)
+                continue
             ok = False
             for name, cmd in self._commands():
-                if self._stop_event.is_set():
-                    return
+                if self._stop_event.is_set() or self._suspended.is_set():
+                    break
                 ok = self._run_process(name, cmd)
                 if ok:
                     backoff = 1.0
                     break
+            if self._suspended.is_set():
+                backoff = 1.0
+                continue
             if not ok:
                 log.warning("Keine Audioquelle verfügbar, neuer Versuch in %.0fs", backoff)
                 self._stop_event.wait(backoff)
@@ -158,7 +225,7 @@ class AudioCapture(threading.Thread):
         started = time.monotonic()
         got = 0
         try:
-            while not self._stop_event.is_set():
+            while not self._stop_event.is_set() and not self._suspended.is_set():
                 buf = self.proc.stdout.read(nbytes)
                 if not buf:
                     break
@@ -173,6 +240,8 @@ class AudioCapture(threading.Thread):
                 pass
             self._kill()
         ran = time.monotonic() - started
+        if self._suspended.is_set() or self._stop_event.is_set():
+            return True
         if ran < 2.0 or got < nbytes * 10:
             log.warning("%s endete nach %.1fs (%d Bytes): %s", name, ran, got, err.decode(errors="ignore").strip()[-300:])
             self.active_backend = "none"

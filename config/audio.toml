@@ -13,6 +13,9 @@ backend = "auto"
 # PipeWire: Node-Name oder -ID (wpctl status), ALSA: Gerät wie "default" oder "hw:1,0".
 # Leer = Standardquelle von PipeWire/ALSA.
 target = ""
+# Mikrofon: Bluetooth-Mikrofone (bluez_*) meiden, wenn es ein anderes gibt. Ein offener Bluetooth-
+# Mikrofonstream schaltet das Headset von A2DP (Stereo-Musik) auf HFP (leise, mono) um.
+avoid_bluetooth_mic = true
 sample_rate = 48000
 # Samples pro Block (1024 bei 48 kHz = 21 ms). Kleiner = reaktiver, mehr CPU.
 block_size = 1024

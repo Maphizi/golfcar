@@ -98,6 +98,7 @@ class VolumeKnob(threading.Thread):
             for code, ai in d.capabilities(absinfo=True).get(ecodes.EV_ABS, []):
                 if isinstance(ai, evdev.AbsInfo):
                     abs_info[(d.fd, code)] = ai
+        rel_seen: set[int] = set()
         while not self._stop.is_set():
             r, _, _ = select.select([d.fd for d in devs], [], [], 0.2)
             for d in devs:
@@ -111,7 +112,11 @@ class VolumeKnob(threading.Thread):
                                 continue
                             if ev.value == 0:
                                 continue
-                            delta = self.step if ev.value > 0 else -self.step
+                            val = ev.value - 256 if 128 <= ev.value < 256 else ev.value   # 224 = -32 bei 8-Bit-Drehern
+                            if ev.value not in rel_seen:
+                                rel_seen.add(ev.value)
+                                log.info("REL_MISC Rohwert %d -> %+d (Richtung %s)", ev.value, val, "hoch" if val > 0 else "runter")
+                            delta = self.step if val > 0 else -self.step
                             if self.invert:
                                 delta = -delta
                             self.cur_pct = max(self.min_pct, min(self.max_pct, self.cur_pct + delta))

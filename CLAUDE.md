@@ -32,7 +32,9 @@ Statusbehaftet – jeder Druck wechselt den Zustand:
 Beliebige Board-Taste in `config/keymap.toml` auf `action = "talk"` (`code = N`, Code steht im Launcher-Log als
 "Taste ohne Belegung"). Launcher injiziert dann `KEY_F15`; HAL 3000 schaltet damit den Sprechmodus um
 (Musik auf `duck_percent`, Mikrofon an; nochmal = zurück; nach `[hal].talk_timeout` s ohne Gespräch von selbst aus).
-Test: `scripts/kittctl talk`.
+Test: `scripts/kittctl talk`. Ohne Sprechmodus ist der Mikrofonstream geschlossen (`AudioCapture.suspend()`),
+sonst zwingt ein Bluetooth-Headset die Musik ins HFP-Profil (leise, mono). `[capture].avoid_bluetooth_mic` nimmt
+ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-Sperre: `scripts/bt_a2dp_lock.sh`.
 
 ### Drehknöpfe
 - Stimme: `launcher/volume_knob.py`, ABS-Achse aus `config/settings.toml` `[volume].axis` (leer = nur

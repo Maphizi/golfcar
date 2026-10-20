@@ -129,6 +129,8 @@ class HalUI(PersonaUI):
         self.talk_mode = on
         self.talk_last_activity = time.monotonic()
         log.info("Sprechmodus %s (Musik %s, Mikrofon %s)", "AN" if on else "AUS", "leise" if on else "normal", "an" if on else "aus")
+        if self.pipe and self.pipe.cap:
+            (self.pipe.cap.resume if on else self.pipe.cap.suspend)()
         if self.pipe and self.pipe.listener:
             (self.pipe.listener.resume if on else self.pipe.listener.pause)()
         threading.Thread(target=self._update_duck, args=(self.state == "speaking",), daemon=True).start()
@@ -139,9 +141,12 @@ class HalUI(PersonaUI):
             threading.Thread(target=self._update_duck, args=(s == "speaking",), daemon=True).start()
 
     def on_pipeline_ready(self) -> None:
-        # Mikrofon bleibt aus, bis der Kippschalter unten steht
-        if self.pipe.listener and not self.talk_mode:
-            self.pipe.listener.pause()
+        # Mikrofon bleibt aus (Stream geschlossen), bis die Sprechtaste gedrückt wird
+        if not self.talk_mode:
+            if self.pipe.listener:
+                self.pipe.listener.pause()
+            if self.pipe.cap:
+                self.pipe.cap.suspend()
         line = self.rng.choice(GREETINGS)
         self.pipe.say(line)
         self.on_text("kitt", line)
@@ -167,9 +172,13 @@ class HalUI(PersonaUI):
                 self._demo_kicked = True
                 self.motion.demo_kick()
             return
-        # Die Pipeline gibt das Mikrofon nach jeder Runde wieder frei; ohne Sprechmodus wieder schließen
-        if not self.talk_mode and self.pipe.listener and self.pipe.listener.enabled and not self.pipe.busy.is_set():
-            self.pipe.listener.pause()
+        # Die Pipeline gibt das Mikrofon nach jeder Runde wieder frei; ohne Sprechmodus wieder schließen,
+        # und zwar den Stream selbst (ein offenes Bluetooth-Mikrofon würde die Musik ins Headset-Profil zwingen)
+        if not self.talk_mode and not self.pipe.busy.is_set():
+            if self.pipe.listener and self.pipe.listener.enabled:
+                self.pipe.listener.pause()
+            if self.pipe.cap and not self.pipe.cap.suspended:
+                self.pipe.cap.suspend()
         if self.pipe.stats.get("turns", 0) != self._turns_seen:
             self._turns_seen = self.pipe.stats["turns"]
             self.next_prompt_at = now + self.rng.uniform(45.0, 90.0)

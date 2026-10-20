@@ -652,9 +652,20 @@ des Boards, die in `config/keymap.toml` auf `action = "talk"` liegt (`code = N`,
 Launcher im Log als "Taste ohne Belegung: code = N"); der Launcher schickt dann F15 an den
 laufenden HAL-Modus, in anderen Modi passiert nichts. Test ohne Taste: `scripts/kittctl talk`.
 Mit `[hal].kipp_talk = true` schaltet zusätzlich wie früher der Kippschalter (unten = an, oben = aus).
-Ohne Sprechmodus hört HAL nicht zu, die Musik läuft normal. Nach `[hal].talk_timeout` Sekunden
+Ohne Sprechmodus hört HAL nicht zu und der Mikrofonstream ist wirklich geschlossen
+(`AudioCapture.suspend()`), die Musik läuft normal. Nach `[hal].talk_timeout` Sekunden
 ohne Gespräch (Standard 150) endet der Sprechmodus von selbst, damit die Musik nicht versehentlich
-leise bleibt. Allgemein: Persona-Szenen können über
+leise bleibt. Bluetooth-Headset als Lautsprecher (z. B. Bose QC35 II): Ein Bluetooth-Headset kann Musik in
+Stereo (A2DP) oder Mikrofon plus Mono-Ton (HFP) liefern, nie beides. Sobald irgendein Programm das
+Headset-Mikrofon öffnet, schaltet WirePlumber auf HFP um, die Musik wird leise und blechern. Darum
+hält HAL das Mikrofon nur im Sprechmodus offen, und `config/audio.toml`
+`[capture].avoid_bluetooth_mic = true` lässt die Spracherkennung ein anderes Mikrofon (USB) nehmen,
+wenn eines da ist. Gibt es nur das Headset-Mikrofon, bleibt Sprechen mit HAL nur im HFP-Profil
+möglich (Musik solange mono); für Musik und Gespräch gleichzeitig ein USB-Mikrofon anschließen.
+`scripts/bt_a2dp_lock.sh` verbietet WirePlumber das Umschalten ganz (Headset bleibt immer bei A2DP,
+`--undo` hebt es auf). `scripts/hal_audio_check.sh` zeigt in einer Ausgabe Standardgeräte,
+Bluetooth-Profil, ob Musik-Monitor und Mikrofon Daten liefern und die letzten Audio-Logzeilen.
+Allgemein: Persona-Szenen können über
 `music_source()` eine eigene Musikquelle wählen und bekommen dann `uVoice` als Stimmpegel. Prompt `kitt/personality/hal_prompt.txt`, Logik `kitt/hal/app.py`,
 Shader `visualizers/shaders/hal/frag.glsl`. Eigene Gestaltung, keine Fremdgrafik.
 
