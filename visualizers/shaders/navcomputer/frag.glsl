@@ -8,6 +8,12 @@ uniform vec2 iResolution;
 uniform float uRms, uBass, uMid, uHigh, uBeat, uSilent;
 uniform sampler2D uAudioTex;
 uniform float uPhase, uPhaseT, uSlide, uPlanetType, uPlanetSize, uRings, uMoons, uLaunchS, uCruiseS, uArriveS;
+// Vorbeiflug im Hyperraum (Controller): uFly 0..1 Fortschritt (0 = keiner), Typ, Farben, Größe, Ringe, Seite
+uniform float uFly, uFlyType, uFlySize, uFlyRings, uFlySide;
+uniform vec3 uFlyColA, uFlyColB;
+uniform sampler2D uSponsorTex;
+uniform float uSponsorOK;
+vec3 gA, gB;      // Farben des gerade gezeichneten Objekts (Hauptplanet oder Vorbeiflug)
 uniform vec3 uColA, uColB;
 
 const float PI = 3.14159265;
@@ -41,7 +47,7 @@ vec3 pal(float t) { return 0.5 + 0.5 * cos(2.0 * PI * (vec3(1.0, 0.9, 0.7) * t +
 vec3 surface(int type, vec3 sp, float lat, float t) {
     float n = vfbm3(sp * 3.0);
     float n2 = vfbm3(sp * 9.0 + 7.0);
-    vec3 a = uColA, b = uColB;
+    vec3 a = gA, b = gB;
     if (type == 0 || type == 8 || type == 2) {              // Wüste, Gras, Wald: Flecken und Bänder
         float band = 0.5 + 0.5 * sin(lat * 8.0 + n * 4.0);
         vec3 c = mix(a, b, smoothstep(0.35, 0.65, n * 0.7 + band * 0.3));
@@ -76,6 +82,26 @@ vec3 surface(int type, vec3 sp, float lat, float t) {
         vec3 c = mix(a, b, n);
         return mix(c, vec3(0.6, 0.65, 0.55), smoothstep(0.6, 0.8, n2) * 0.4);
     }
+    if (type == 11) {                                        // Stern: kochende Granulation, dunkle Flecken, pulst mit dem Bass
+        float gran = vfbm3(sp * 7.0 + vec3(0.0, 0.0, t * 0.25));
+        float spots = smoothstep(0.62, 0.7, vfbm3(sp * 2.5 + 3.0));
+        vec3 c = mix(a, b, smoothstep(0.3, 0.7, gran));
+        c = mix(c, a * 0.25, spots * 0.8);
+        return c * (1.3 + 0.6 * uBass * (1.0 - uSilent));
+    }
+    if (type == 12) {                                        // Komet: dunkler Kern mit hellen Flecken (Eis)
+        return mix(a, b, smoothstep(0.4, 0.75, n2)) * (0.6 + 0.5 * step(0.72, n2));
+    }
+    if (type == 13) {                                        // Kampfstation: Panelraster, Äquatorgraben, Schüssel
+        vec3 c = mix(a, b, 0.5 + 0.5 * step(0.5, fract(sp.x * 24.0 + floor(sp.y * 12.0) * 0.5)) * step(0.5, fract(sp.y * 12.0)));
+        c *= 0.85 + 0.15 * step(0.93, fract(sp.x * 48.0)) + 0.15 * step(0.93, fract(sp.y * 24.0));
+        c *= 1.0 - 0.75 * smoothstep(0.03, 0.015, abs(lat - 0.02));                            // Graben
+        float dish = length(sp - normalize(vec3(-0.35, 0.45, 0.82)));
+        c = mix(c, b * 0.6, smoothstep(0.34, 0.3, dish));                                       // Schüssel
+        c = mix(c, a * 1.4, smoothstep(0.32, 0.3, dish) * smoothstep(0.26, 0.3, dish));          // Rand
+        c += vec3(0.4, 1.0, 0.5) * smoothstep(0.04, 0.0, dish) * (0.5 + 0.5 * sin(t * 3.0));   // Fokus
+        return c;
+    }
     return mix(a, b, smoothstep(0.3, 0.7, n) + step(0.7, n2) * 0.2);      // Fels: Krater
 }
 
@@ -94,17 +120,35 @@ vec4 planet(vec2 p, vec2 c, float R, int type, float rot, float t) {
         vec3 L = normalize(vec3(-0.6, 0.4, 0.7));
         float diff = clamp(dot(nrm, L), 0.0, 1.0);
         float light = 0.12 + 0.95 * pow(diff, 0.8);
+        if (type == 11) light = 1.0;                                                            // Stern leuchtet selbst
         col *= light;
         if (type == 4) col += vec3(1.0, 0.8, 0.45) * (1.0 - smoothstep(0.0, 0.25, diff)) * step(0.85, fract(sp.x * 40.0)) * 0.6;  // Stadtlichter nachts
-        if (type == 5) col += uColB * (1.0 - smoothstep(0.0, 0.3, diff)) * smoothstep(0.5, 0.52, 1.0 - abs(vfbm3(sp * 9.0 + 7.0) - 0.5) * 2.0) * 0.6;
+        if (type == 5) col += gB * (1.0 - smoothstep(0.0, 0.3, diff)) * smoothstep(0.5, 0.52, 1.0 - abs(vfbm3(sp * 9.0 + 7.0) - 0.5) * 2.0) * 0.6;
         // Terminator weich, Rim-Licht der Atmosphäre
-        col += mix(uColB, vec3(0.6, 0.8, 1.0), 0.5) * pow(1.0 - z, 3.0) * 0.6 * light;
+        col += mix(gB, vec3(0.6, 0.8, 1.0), 0.5) * pow(1.0 - z, 3.0) * 0.6 * light;
         res = vec4(col, 1.0);
     }
     // Atmosphärenglühen außen
     float glow = smoothstep(1.35, 1.0, r) * (1.0 - step(r, 1.0));
-    res.rgb += mix(uColA, vec3(0.5, 0.7, 1.0), 0.5) * glow * 0.35;
+    res.rgb += mix(gA, vec3(0.5, 0.7, 1.0), 0.5) * glow * 0.35;
     res.a = max(res.a, glow * 0.6);
+    if (type == 11) {                                        // Korona und Protuberanzen
+        float an = atan(d.y, d.x);
+        float flare = vfbm3(vec3(an * 2.0, r * 3.0 - t * 0.3, 1.0));
+        float corona = smoothstep(2.4, 1.0, r) * (1.0 - step(r, 1.0)) * (0.35 + 0.65 * flare) * (1.0 + 0.8 * uBass * (1.0 - uSilent));
+        res.rgb += gA * corona * 0.8;
+        res.a = max(res.a, corona);
+    }
+    if (type == 12) {                                        // Koma und Schweif, weg von der Sonne (links oben)
+        vec2 dirT = normalize(vec2(0.65, -0.35));
+        float along = dot(d, dirT), across = abs(dot(d, vec2(-dirT.y, dirT.x)));
+        float tail = smoothstep(0.0, 1.5, along) * smoothstep(0.6 + along * 0.35, 0.0, across) * smoothstep(9.0, 1.0, along);
+        tail *= 0.5 + 0.5 * vfbm3(vec3(along * 1.5 - t * 1.5, across * 3.0, 2.0));
+        vec3 tcol = mix(vec3(0.6, 0.8, 1.0), vec3(1.0, 0.95, 0.8), smoothstep(0.0, 0.5, across));
+        float coma = smoothstep(2.2, 0.9, r) * (1.0 - step(r, 1.0));
+        res.rgb += tcol * tail * 0.7 + vec3(0.8, 0.9, 1.0) * coma * 0.4;
+        res.a = max(res.a, max(tail * 0.8, coma * 0.6));
+    }
     return res;
 }
 
@@ -181,6 +225,27 @@ void main() {
     }
 
     // ---- Planet (browse: mittig, beim Wechsel seitlich hereingleitend)
+    // ---- Vorbeiflug: ein anderes Objekt zieht im Hyperraum seitlich vorbei (wächst, driftet, verschwindet)
+    if (uFly > 0.001 && phase == 2) {
+        gA = uFlyColA; gB = uFlyColB;
+        float k = uFly;
+        float grow = k * k;
+        float Rf = (0.03 + 1.1 * grow) * uFlySize;
+        vec2 cf = vec2(uFlySide * (0.15 + 2.2 * grow), -0.05 + 0.5 * grow * uFlySide * 0.3);
+        float fa = smoothstep(0.0, 0.15, k) * smoothstep(1.0, 0.85, k);
+        int ft = int(uFlyType + 0.5);
+        if (uFlyRings > 0.5) {
+            vec2 q = (uv - cf) / Rf;
+            float rr = length(vec2(q.x, q.y * 3.2));
+            float ring = smoothstep(1.3, 1.35, rr) * smoothstep(2.2, 2.1, rr);
+            col = mix(col, gA * 0.7, ring * fa * 0.9);
+        }
+        vec4 fp = planet(uv, cf, Rf, ft, iTime * 0.3, iTime);
+        col = mix(col, fp.rgb, fp.a * fa);
+        // Bewegungsunschärfe-Schein in Flugrichtung
+        col += gA * 0.15 * fa * smoothstep(Rf * 2.5, Rf * 0.8, length((uv - cf) * vec2(0.5, 1.0)));
+    }
+    gA = uColA; gB = uColB;
     if (palpha > 0.0) {
         float R = 0.40 * uPlanetSize * pscale;
         // Browse: Planet rechts, Text links; beim Anflug/Ankunft in die Mitte
@@ -224,5 +289,15 @@ void main() {
         col += mix(uColA, vec3(1.0), 0.5) * smoothstep(0.15, 0.0, abs(length(uv - c) - R * 1.05)) * uRms * live * 0.25 * palpha;
     }
     col *= 1.0 - 0.35 * smoothstep(1.0, 1.9, length(uv));
+    if (uSponsorOK > 0.5) {
+        // Logo klein unten rechts, Seitenverhältnis 3:1, mit leichter Transparenz
+        vec2 lq = (vUv - vec2(0.86, 0.035)) / vec2(0.115, 0.04) + 0.5;
+        if (lq.x > 0.0 && lq.x < 1.0 && lq.y > 0.0 && lq.y < 1.0) {
+            vec4 lg = texture(uSponsorTex, lq);
+            float lum = dot(lg.rgb, vec3(0.33));
+            float a = lg.a * (1.0 - smoothstep(0.85, 0.98, lum));     // weißer Hintergrund wird durchsichtig
+            col = mix(col, vec3(0.75, 0.8, 0.9), a * 0.85);
+        }
+    }
     fragColor = vec4(col, 1.0);
 }

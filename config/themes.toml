@@ -1,0 +1,47 @@
+# Themen des ganzen Programms. Ausgewählt wird am Taxistand (Taste 1, D-Pad links/rechts, Start).
+# Die Wahl steht in logs/theme.txt und geht als KITT_THEME an jeden Modus (launcher/theme.py).
+#
+# cover: eigenes Bild (PNG/JPG, Hochformat, ca. 2:3) unter assets/themes/. Fehlt es, zeichnet der
+# Shader ein eigenes Plakat (cover_style). Nur Bilder verwenden, an denen du die Rechte hast;
+# assets/themes/ steht in .gitignore, die Bilder bleiben auf dem Pi.
+# color_a / color_b: Themenfarben (0..1), tint: Duotone-Farbe für das Pilotenporträt.
+
+[[themes]]
+name = "spacetaxi"
+title = "SPACE TAXI"
+tagline = "DER NEUE WETTLAUF ZUM LOCH 19"
+cover = "assets/themes/spacetaxi.png"
+cover_style = 0        # Rakete vor dem Mond
+color_a = [0.95, 0.80, 0.25]
+color_b = [0.15, 0.45, 0.85]
+tint = [0.95, 0.75, 0.25]
+
+[[themes]]
+name = "imperium"
+title = "IMPERIUM"
+tagline = "ORDNUNG. DISZIPLIN. ABSCHLAG."
+cover = "assets/themes/imperium.png"
+cover_style = 1        # Festungsplanet unter roter Sonne
+color_a = [0.95, 0.15, 0.12]
+color_b = [0.25, 0.25, 0.35]
+tint = [0.95, 0.25, 0.2]
+
+[[themes]]
+name = "kantine"
+title = "KANTINE"
+tagline = "WIR BEDIENEN KEINE DROIDEN"
+cover = "assets/themes/kantine.png"
+cover_style = 2        # Neon-Diner auf einem Asteroiden
+color_a = [0.3, 0.95, 0.5]
+color_b = [0.95, 0.4, 0.1]
+tint = [0.35, 0.95, 0.55]
+
+[[themes]]
+name = "retro"
+title = "RAUMFAHRT RETRO"
+tagline = "SEIT 1957 IN BETRIEB. UNGEFAEHR."
+cover = "assets/themes/retro.png"
+cover_style = 3        # Retro-Rakete, Ringplanet
+color_a = [0.35, 0.85, 1.0]
+color_b = [0.95, 0.35, 0.6]
+tint = [0.4, 0.85, 1.0]

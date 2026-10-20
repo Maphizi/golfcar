@@ -1,9 +1,12 @@
-# Navigationscomputer (F2): bekannte Welten der Saga. Die Beschreibungen sind eigene Kurzfassungen.
-# type: desert | ice | forest | ocean | city | volcanic | gas | swamp | grass | rock | crystal
+# Navigationscomputer (Taste 2): Himmelsobjekte aus dem echten Himmel, der fernen Galaxis und anderen
+# erdachten Welten. Die Beschreibungen sind eigene Kurzfassungen.
+# type: desert | ice | forest | ocean | city | volcanic | gas | swamp | grass | rock | crystal | star | comet | station
+# origin: real | saga | fiction (Beschriftung)
 # color_a/color_b: Hauptfarben der Oberfläche (0..1), rings: Ringsystem, moons: Anzahl sichtbarer Monde,
 # size: relative Größe 0.6..1.3, suns: Anzahl Sonnen (nur Beschriftung)
 
 [[planets]]
+origin = "saga"
 name = "Tatooine"
 type = "desert"
 subtitle = "Wüstenwelt im Äußeren Rand, zwei Sonnen"
@@ -14,6 +17,7 @@ moons = 2
 suns = 2
 
 [[planets]]
+origin = "saga"
 name = "Coruscant"
 type = "city"
 subtitle = "Stadtplanet, Sitz der Galaktischen Regierung"
@@ -23,6 +27,7 @@ size = 1.1
 moons = 1
 
 [[planets]]
+origin = "saga"
 name = "Naboo"
 type = "grass"
 subtitle = "Grüne Welt mit Seen und unterirdischen Ozeanen"
@@ -32,6 +37,7 @@ size = 1.0
 moons = 3
 
 [[planets]]
+origin = "saga"
 name = "Hoth"
 type = "ice"
 subtitle = "Eiswelt, dauerhaft unter dem Gefrierpunkt"
@@ -41,6 +47,7 @@ size = 0.85
 moons = 3
 
 [[planets]]
+origin = "saga"
 name = "Endor"
 type = "forest"
 subtitle = "Waldmond, Heimat kleiner pelziger Bewohner"
@@ -50,6 +57,7 @@ size = 0.8
 moons = 0
 
 [[planets]]
+origin = "saga"
 name = "Dagobah"
 type = "swamp"
 subtitle = "Sumpfwelt, dichter Nebel, starke Präsenz"
@@ -59,6 +67,7 @@ size = 0.85
 moons = 1
 
 [[planets]]
+origin = "saga"
 name = "Bespin"
 type = "gas"
 subtitle = "Gasriese mit schwebender Wolkenstadt"
@@ -69,6 +78,7 @@ rings = false
 moons = 2
 
 [[planets]]
+origin = "saga"
 name = "Kamino"
 type = "ocean"
 subtitle = "Ozeanwelt, ewiger Regen, Klonlabore"
@@ -78,6 +88,7 @@ size = 1.0
 moons = 1
 
 [[planets]]
+origin = "saga"
 name = "Geonosis"
 type = "rock"
 subtitle = "Felswelt mit Ringen, Droidenfabriken"
@@ -88,6 +99,7 @@ rings = true
 moons = 2
 
 [[planets]]
+origin = "saga"
 name = "Mustafar"
 type = "volcanic"
 subtitle = "Vulkanwelt, Lavaströme, ungünstiger Landeplatz"
@@ -97,6 +109,7 @@ size = 0.85
 moons = 0
 
 [[planets]]
+origin = "saga"
 name = "Alderaan"
 type = "grass"
 subtitle = "Friedliche Welt mit Bergen und Gras, Status unklar"
@@ -106,6 +119,7 @@ size = 1.0
 moons = 1
 
 [[planets]]
+origin = "saga"
 name = "Yavin 4"
 type = "forest"
 subtitle = "Dschungelmond mit alten Tempeln"
@@ -115,6 +129,7 @@ size = 0.8
 moons = 0
 
 [[planets]]
+origin = "saga"
 name = "Kashyyyk"
 type = "forest"
 subtitle = "Waldwelt mit riesigen Bäumen"
@@ -124,6 +139,7 @@ size = 1.05
 moons = 3
 
 [[planets]]
+origin = "saga"
 name = "Jakku"
 type = "desert"
 subtitle = "Wüstenwelt voller Schiffswracks"
@@ -133,6 +149,7 @@ size = 0.9
 moons = 1
 
 [[planets]]
+origin = "saga"
 name = "Scarif"
 type = "ocean"
 subtitle = "Tropische Welt, Archive, Schild"
@@ -142,6 +159,7 @@ size = 0.95
 moons = 1
 
 [[planets]]
+origin = "saga"
 name = "Jedha"
 type = "desert"
 subtitle = "Kalter Wüstenmond, heilige Stadt"
@@ -151,6 +169,7 @@ size = 0.75
 moons = 0
 
 [[planets]]
+origin = "saga"
 name = "Crait"
 type = "ice"
 subtitle = "Salzwelt, weiß mit rotem Grund"
@@ -160,6 +179,7 @@ size = 0.85
 moons = 0
 
 [[planets]]
+origin = "saga"
 name = "Mandalore"
 type = "rock"
 subtitle = "Verwüstete Welt mit Kuppelstädten"
@@ -169,6 +189,7 @@ size = 0.95
 moons = 2
 
 [[planets]]
+origin = "saga"
 name = "Ahch-To"
 type = "ocean"
 subtitle = "Ozeanwelt mit kleinen Inseln, alte Tempel"
@@ -178,6 +199,7 @@ size = 0.9
 moons = 1
 
 [[planets]]
+origin = "saga"
 name = "Corellia"
 type = "city"
 subtitle = "Industriewelt, Werften"
@@ -187,6 +209,7 @@ size = 1.0
 moons = 2
 
 [[planets]]
+origin = "saga"
 name = "Kessel"
 type = "rock"
 subtitle = "Minenwelt, berüchtigte Route"
@@ -197,6 +220,7 @@ rings = true
 moons = 0
 
 [[planets]]
+origin = "saga"
 name = "Ilum"
 type = "crystal"
 subtitle = "Kristallwelt unter Eis"
@@ -206,6 +230,7 @@ size = 0.85
 moons = 0
 
 [[planets]]
+origin = "saga"
 name = "Dathomir"
 type = "volcanic"
 subtitle = "Rote Welt, Nebel, dunkle Magie"
@@ -215,6 +240,7 @@ size = 0.9
 moons = 1
 
 [[planets]]
+origin = "saga"
 name = "Felucia"
 type = "swamp"
 subtitle = "Pilzwelt in leuchtenden Farben"
@@ -224,6 +250,7 @@ size = 0.9
 moons = 1
 
 [[planets]]
+origin = "saga"
 name = "Sullust"
 type = "volcanic"
 subtitle = "Vulkanwelt, Städte unter der Oberfläche"
@@ -233,6 +260,7 @@ size = 0.85
 moons = 1
 
 [[planets]]
+origin = "saga"
 name = "Ryloth"
 type = "desert"
 subtitle = "Gebundene Rotation, eine Seite Tag, eine Nacht"
@@ -242,6 +270,7 @@ size = 0.9
 moons = 0
 
 [[planets]]
+origin = "saga"
 name = "Mon Cala"
 type = "ocean"
 subtitle = "Wasserwelt, Werften unter Wasser"
@@ -251,6 +280,7 @@ size = 1.0
 moons = 2
 
 [[planets]]
+origin = "saga"
 name = "Lothal"
 type = "grass"
 subtitle = "Graswelt, Kapitol unter Besatzung"
@@ -260,6 +290,7 @@ size = 0.9
 moons = 2
 
 [[planets]]
+origin = "saga"
 name = "Nevarro"
 type = "volcanic"
 subtitle = "Vulkanwelt mit Lavaflüssen und Kopfgeldbüro"
@@ -269,6 +300,7 @@ size = 0.8
 moons = 0
 
 [[planets]]
+origin = "saga"
 name = "Exegol"
 type = "rock"
 subtitle = "Verborgene Welt, Dauergewitter"
@@ -278,6 +310,7 @@ size = 0.95
 moons = 0
 
 [[planets]]
+origin = "saga"
 name = "Batuu"
 type = "forest"
 subtitle = "Außenposten am Rand, Spitzfelsen"
@@ -287,10 +320,240 @@ size = 0.9
 moons = 1
 
 [[planets]]
+origin = "saga"
 name = "Dantooine"
 type = "grass"
 subtitle = "Steppenwelt, verlassene Basis"
 color_a = [0.65, 0.65, 0.4]
 color_b = [0.35, 0.5, 0.65]
 size = 0.9
+moons = 2
+
+# ---- Echter Himmel ---------------------------------------------------------------------
+[[planets]]
+origin = "real"
+name = "Sonne"
+type = "star"
+subtitle = "Unser Stern, Klasse G2, 150 Millionen Kilometer entfernt"
+color_a = [1.0, 0.85, 0.35]
+color_b = [1.0, 0.55, 0.1]
+size = 1.25
+
+[[planets]]
+origin = "real"
+name = "Erde"
+type = "ocean"
+subtitle = "Blauer Planet, Heimat des Golfsports und aller Fahrgäste"
+color_a = [0.25, 0.55, 0.25]
+color_b = [0.1, 0.3, 0.75]
+size = 1.0
+moons = 1
+
+[[planets]]
+origin = "real"
+name = "Mond"
+type = "rock"
+subtitle = "Erdtrabant, Krater, kein Grün, keine Bunker"
+color_a = [0.72, 0.7, 0.66]
+color_b = [0.4, 0.38, 0.36]
+size = 0.7
+
+[[planets]]
+origin = "real"
+name = "Mars"
+type = "desert"
+subtitle = "Roter Planet, Staubstürme, zwei winzige Monde"
+color_a = [0.85, 0.45, 0.25]
+color_b = [0.55, 0.25, 0.15]
+size = 0.8
+moons = 2
+
+[[planets]]
+origin = "real"
+name = "Venus"
+type = "gas"
+subtitle = "Wolkenverhangener Höllenplanet, 460 Grad unter dem Deckel"
+color_a = [0.95, 0.85, 0.6]
+color_b = [0.8, 0.65, 0.4]
+size = 0.95
+
+[[planets]]
+origin = "real"
+name = "Jupiter"
+type = "gas"
+subtitle = "Größter Planet des Sonnensystems, roter Sturm seit Jahrhunderten"
+color_a = [0.85, 0.7, 0.5]
+color_b = [0.6, 0.4, 0.3]
+size = 1.3
+moons = 3
+
+[[planets]]
+origin = "real"
+name = "Saturn"
+type = "gas"
+subtitle = "Ringplanet, Ringe aus Eis und Staub, Dichte geringer als Wasser"
+color_a = [0.9, 0.8, 0.6]
+color_b = [0.7, 0.6, 0.4]
+size = 1.2
+rings = true
+moons = 3
+
+[[planets]]
+origin = "real"
+name = "Neptun"
+type = "gas"
+subtitle = "Eisriese am Rand, schnellste Winde des Sonnensystems"
+color_a = [0.3, 0.45, 0.95]
+color_b = [0.15, 0.25, 0.7]
+size = 1.05
+moons = 1
+
+[[planets]]
+origin = "real"
+name = "Pluto"
+type = "ice"
+subtitle = "Zwergplanet mit Herz aus Stickstoffeis"
+color_a = [0.85, 0.78, 0.7]
+color_b = [0.5, 0.4, 0.4]
+size = 0.65
+moons = 1
+
+[[planets]]
+origin = "real"
+name = "Europa"
+type = "ice"
+subtitle = "Jupitermond, Eispanzer über einem Ozean"
+color_a = [0.9, 0.88, 0.82]
+color_b = [0.6, 0.45, 0.35]
+size = 0.7
+
+[[planets]]
+origin = "real"
+name = "Titan"
+type = "swamp"
+subtitle = "Saturnmond, orangefarbener Dunst, Seen aus Methan"
+color_a = [0.9, 0.6, 0.25]
+color_b = [0.6, 0.4, 0.2]
+size = 0.8
+
+[[planets]]
+origin = "real"
+name = "Beteigeuze"
+type = "star"
+subtitle = "Roter Überriese im Orion, wird irgendwann als Supernova vergehen"
+color_a = [1.0, 0.45, 0.15]
+color_b = [0.8, 0.2, 0.05]
+size = 1.3
+
+[[planets]]
+origin = "real"
+name = "Sirius"
+type = "star"
+subtitle = "Hellster Stern am Nachthimmel, blauweiß, mit weißem Zwerg als Begleiter"
+color_a = [0.85, 0.92, 1.0]
+color_b = [0.6, 0.75, 1.0]
+size = 1.0
+
+[[planets]]
+origin = "real"
+name = "Hale-Bopp"
+type = "comet"
+subtitle = "Großer Komet von 1997, kommt in etwa 2400 Jahren wieder"
+color_a = [0.75, 0.75, 0.7]
+color_b = [0.4, 0.4, 0.42]
+size = 0.45
+
+[[planets]]
+origin = "real"
+name = "Halley"
+type = "comet"
+subtitle = "Der bekannteste Komet, alle 76 Jahre zu Besuch"
+color_a = [0.7, 0.7, 0.68]
+color_b = [0.35, 0.35, 0.38]
+size = 0.4
+
+[[planets]]
+origin = "real"
+name = "Proxima b"
+type = "rock"
+subtitle = "Nächster bekannter Exoplanet, 4,2 Lichtjahre, roter Zwergstern"
+color_a = [0.6, 0.45, 0.4]
+color_b = [0.35, 0.25, 0.25]
+size = 0.9
+
+# ---- Ferne Galaxis, Sonderobjekte -------------------------------------------------------
+[[planets]]
+origin = "saga"
+name = "Todesstern"
+type = "station"
+subtitle = "Kampfstation von Mondgröße, Superlaser, ein bekannter Konstruktionsfehler"
+color_a = [0.6, 0.62, 0.66]
+color_b = [0.3, 0.31, 0.35]
+size = 0.95
+
+# ---- Andere erdachte Welten ----------------------------------------------------------------
+[[planets]]
+origin = "fiction"
+name = "Arrakis"
+type = "desert"
+subtitle = "Wüstenplanet, Sandwürmer, das Gewürz, Wasser als Währung"
+color_a = [0.9, 0.75, 0.45]
+color_b = [0.65, 0.45, 0.25]
+size = 1.0
+moons = 2
+
+[[planets]]
+origin = "fiction"
+name = "Pandora"
+type = "forest"
+subtitle = "Mond mit leuchtendem Dschungel und schwebenden Bergen"
+color_a = [0.2, 0.55, 0.35]
+color_b = [0.15, 0.3, 0.6]
+size = 0.95
+moons = 1
+
+[[planets]]
+origin = "fiction"
+name = "Vulkan"
+type = "volcanic"
+subtitle = "Heiße Wüstenwelt eines sehr logischen Volkes"
+color_a = [0.75, 0.4, 0.2]
+color_b = [0.9, 0.5, 0.1]
+size = 0.95
+
+[[planets]]
+origin = "fiction"
+name = "LV-426"
+type = "rock"
+subtitle = "Sturmgepeitschter Mond, Landung nicht empfohlen"
+color_a = [0.35, 0.35, 0.4]
+color_b = [0.18, 0.18, 0.22]
+size = 0.75
+
+[[planets]]
+origin = "fiction"
+name = "Krypton"
+type = "crystal"
+subtitle = "Kristallwelt unter rotem Stern, nicht mehr lange"
+color_a = [0.8, 0.85, 1.0]
+color_b = [0.9, 0.3, 0.2]
+size = 1.1
+
+[[planets]]
+origin = "fiction"
+name = "Magrathea"
+type = "rock"
+subtitle = "Heimat der Planetenbauer, derzeit geschlossen"
+color_a = [0.55, 0.5, 0.6]
+color_b = [0.3, 0.28, 0.35]
+size = 0.9
+
+[[planets]]
+origin = "fiction"
+name = "Gallifrey"
+type = "desert"
+subtitle = "Orangefarbener Himmel, silberne Bäume, viel Zeit"
+color_a = [0.95, 0.6, 0.25]
+color_b = [0.6, 0.35, 0.2]
+size = 1.0
 moons = 2

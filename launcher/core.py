@@ -14,7 +14,7 @@ import signal
 import time
 from queue import Empty, Queue
 
-from . import config, sysmon, wled
+from . import config, sysmon, theme, wled
 from .joystick import JoystickBridge
 from .actions import ACTION_TO_MODE, Action
 from .input_evdev import EvdevInput
@@ -138,7 +138,7 @@ class Launcher:
             return
         if self.pm.is_running():
             self.pm.stop()
-        ok = self.pm.start(mode)
+        ok = self.pm.start(mode, {"KITT_THEME": theme.current_name()})
         if not ok and mode != HOME:
             log.warning("Fallback auf Home")
             self.pm.start(HOME)

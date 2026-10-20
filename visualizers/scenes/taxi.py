@@ -1,9 +1,12 @@
-"""Startbildschirm "Space-Taxi": der Pilot als Hologramm auf seiner Taxilizenz, Neon-TAXI-Schild,
-Taxameter, Funksprüche, Sprüche und Statistik. Jeder Start würfelt neu: Hintergrund, Hologrammfarbe,
-Accessoire (Sonnenbrille, Taximütze), Lizenznummer, Sprüche, Zahlen. Keine Modusliste.
+"""Taxistand (Taste 1): Startbildschirm und Themenwahl für das ganze Programm.
 
-Foto: assets/pilot.png (RGBA, freigestellt, siehe scripts/pilot_cutout.py). Fehlt es, bleibt die
-Lizenz ohne Bild. Name aus config/settings.toml [launcher].pilot_name.
+Links groß das Plakat des Themas (eigenes Bild aus assets/themes/<name>.png, sonst ein vom Shader
+gezeichnetes Plakat), rechts daneben der Pilot als "Space Taxi Driver"-Plakat im gleichen
+Duotone-Stil, darunter Titel, Zeile und Taxilizenz. D-Pad LINKS/RECHTS blättert durch die Themen,
+Start (ENTER) bestätigt. Die Wahl steht in logs/theme.txt und geht als KITT_THEME an alle Modi.
+
+Jeder Start würfelt neu: Accessoire (Sonnenbrille, Taximütze), Lizenznummer, Taxinummer, Sprüche,
+Zahlen. Reagiert auf Musik: Sterne, Schachbrettband und Neon laufen mit Bass und Beat.
 """
 from __future__ import annotations
 
@@ -12,50 +15,57 @@ import random
 import time
 
 import numpy as np
+import pygame
 
-from launcher import config as lcfg
+from launcher import config as lcfg, theme as ltheme
 
 log = logging.getLogger("taxi")
 PHOTO = lcfg.ROOT / "assets" / "pilot.png"
 
 GOLD = (255, 214, 10)
-NEON = (255, 240, 120)
 DIM = (150, 140, 90)
 WHITE = (240, 240, 245)
+GREY = (120, 120, 130)
 
 SLOGANS = [
-    "WIR FAHREN ÜBERALL HIN. AUSSER ZURÜCK.",
-    "KEIN TRINKGELD, KEIN NACHBRENNER.",
-    "SCHNELLER ALS DEIN CADDIE. MEISTENS.",
-    "TARIF 3: HYPERRAUM, OHNE GEWÄHR.",
-    "EINSTEIGEN, ANSCHNALLEN, NICHT FRAGEN.",
-    "DER FAHRER HAT IMMER RECHT. DER TAXAMETER AUCH.",
-    "WIR KENNEN JEDE ABKÜRZUNG. AUCH DIE SCHLECHTEN.",
-    "LOCH 19 IST UNSER ZWEITES ZUHAUSE.",
-    "DIE FAHRT ENDET, WENN DER FAHRER ES SAGT.",
-    "ERSTE KLASSE GIBT ES NICHT. NUR VORNE UND HINTEN.",
-    "BITTE NICHT MIT DEM FAHRER DISKUTIEREN. ER GEWINNT.",
-    "ÜBERLICHT NUR GEGEN AUFPREIS UND GUTE LAUNE.",
+    "WIR FAHREN ÜBERALL HIN. AUSSER ZURÜCK.", "KEIN TRINKGELD, KEIN NACHBRENNER.",
+    "SCHNELLER ALS DEIN CADDIE. MEISTENS.", "TARIF 3: HYPERRAUM, OHNE GEWÄHR.",
+    "EINSTEIGEN, ANSCHNALLEN, NICHT FRAGEN.", "DER FAHRER HAT IMMER RECHT. DER TAXAMETER AUCH.",
+    "WIR KENNEN JEDE ABKÜRZUNG. AUCH DIE SCHLECHTEN.", "LOCH 19 IST UNSER ZWEITES ZUHAUSE.",
+    "DIE FAHRT ENDET, WENN DER FAHRER ES SAGT.", "ÜBERLICHT NUR GEGEN AUFPREIS UND GUTE LAUNE.",
 ]
 RADIO = [
     "FUNK: FAHRGAST AN LOCH 4 WARTET SEIT DREI LICHTJAHREN.",
     "FUNK: ZENTRALE SUCHT TAXI MIT FUNKTIONIERENDER KLIMAANLAGE. NIEMAND MELDET SICH.",
     "FUNK: STAU AUF DER HYPERSPUR NORD. FAHRER EMPFIEHLT DEN BUNKER.",
-    "FUNK: BITTE KEINE FAHRGÄSTE MIT FELL AUF DEM BEIFAHRERSITZ.",
     "FUNK: TAXI 1337, DEIN FAHRGAST HAT DIE RECHNUNG NICHT BEZAHLT. WIEDER.",
     "FUNK: WETTER IM SEKTOR: EGAL, WIR HABEN EIN DACH.",
     "FUNK: NEUE VORSCHRIFT: BLINKEN AUCH IM WELTRAUM.",
     "FUNK: DER CLUBHAUS-PARKPLATZ IST VOLL. LANDE AUF DEM GRÜN.",
     "FUNK: BORDCOMPUTER MELDET: FAHRER WIRKT MÜDE. FAHRER WIDERSPRICHT.",
-    "FUNK: PREISERHÖHUNG AB SOFORT. BEGRÜNDUNG: WEIL.",
 ]
 PASSENGERS = ["FAHRGAST MIT FELL", "ZWEI DROIDEN, EINER KAPUTT", "EIN SCHMUGGLER, SEHR EILIG", "VIER GOLFER, EIN BALL",
-              "EINE PRINZESSIN, INKOGNITO", "NIEMAND, ABER DER TAXAMETER LIEF", "EIN ALIEN MIT KOFFER", "DER BORDCOMPUTER PERSÖNLICH"]
-ACCESSORIES = ["", "SONNENBRILLE", "TAXIMÜTZE", "MÜTZE UND BRILLE"]
+              "EINE PRINZESSIN, INKOGNITO", "NIEMAND, ABER DER TAXAMETER LIEF", "EIN ALIEN MIT KOFFER"]
 
 
 def _license(rng: random.Random) -> str:
     return f"{rng.choice('ABCDEFGHKLMNPRSTUVWXYZ')}{rng.choice('ABCDEFGHKLMNPRSTUVWXYZ')}-{rng.randint(100, 999)}-{rng.randint(10, 99)}"
+
+
+def _load_rgba(path) -> np.ndarray | None:
+    """Bild als RGBA (Zeile 0 unten, für GL). None wenn nicht ladbar."""
+    try:
+        surf = pygame.image.load(str(path))
+        w, h = surf.get_size()
+        rgb = pygame.surfarray.array3d(surf).transpose(1, 0, 2)
+        try:
+            alpha = pygame.surfarray.array_alpha(surf).T
+        except ValueError:
+            alpha = np.full((h, w), 255, dtype=np.uint8)
+        return np.ascontiguousarray(np.dstack((rgb, alpha)).astype(np.uint8)[::-1])
+    except Exception as exc:
+        log.warning("Bild %s nicht ladbar: %s", path, exc)
+        return None
 
 
 class Controller:
@@ -63,60 +73,73 @@ class Controller:
         self.rng = random.Random()
         self.settings = lcfg.load_settings()
         self.name = str(self.settings.get("launcher", {}).get("pilot_name", "PILOT")).upper()
-        self.bg = self.rng.randrange(3)
+        self.themes = ltheme.themes() or [ltheme.current()]
+        cur = ltheme.current().get("name")
+        self.idx = next((i for i, t in enumerate(self.themes) if t.get("name") == cur), 0)
+        self.chosen = self.idx
+        self.slide = 0.0
+        self.slide_t0 = 0.0
+        self.confirm_t0 = -10.0
         self.accessory = self.rng.choice([0, 1, 2, 3, 0, 1, 2])
-        self.holo = self.rng.randrange(3)             # 0 blau, 1 bernstein, 2 grün
-        self.seed = self.rng.uniform(1.0, 500.0)
-        self.taxi_no = self.rng.choice([1337, 42, 7, 1138, 404, 666, 2187, 9000])
+        self.taxi_no = self.rng.choice([1337, 42, 7, 1138, 404, 2187, 9000])
         self.license = _license(self.rng)
         self.slogan = self.rng.choice(SLOGANS)
         self.rides = self.rng.randint(0, 23)
         self.complaints = self.rides + self.rng.randint(1, 9)
-        self.rating = self.rng.choice(["1,5", "2,0", "2,5", "3,0", "4,9"])
-        self.tip = self.rng.choice([0, 0, 0, 3, 12, 1])
         self.last_passenger = self.rng.choice(PASSENGERS)
         self.meter = self.rng.uniform(80.0, 900.0)
         self.radio = self.rng.choice(RADIO)
         self.radio_at = time.monotonic() + self.rng.uniform(10.0, 20.0)
-        self.free = True
-        self.free_at = time.monotonic() + self.rng.uniform(8.0, 25.0)
         self.t_last = time.monotonic()
-        self.image = None
-        self.photo_ok = 0.0
-        self._load_photo()
-        log.info("Taxistand: Hintergrund %d, Hologramm %d, Accessoire %s, Lizenz %s", self.bg, self.holo,
-                 ACCESSORIES[self.accessory] or "keins", self.license)
+        self.blank = np.zeros((4, 4, 4), dtype=np.uint8)
+        self.photo = _load_rgba(PHOTO) if PHOTO.exists() else None
+        if self.photo is None:
+            log.warning("Kein Pilotenfoto unter %s", PHOTO)
+        self.covers: dict[int, np.ndarray] = {}
+        for i, t in enumerate(self.themes):
+            p = lcfg.ROOT / str(t.get("cover", "")) if t.get("cover") else None
+            if p and p.exists():
+                img = _load_rgba(p)
+                if img is not None:
+                    self.covers[i] = img
+        self.cover_version = 0
+        self.demo = demo
+        self.demo_next = time.monotonic() + 4.0
+        log.info("Taxistand: Thema %s, %d Themen, %d eigene Plakate, Accessoire %d",
+                 self.themes[self.idx].get("name"), len(self.themes), len(self.covers), self.accessory)
 
-    def _load_photo(self) -> None:
-        if not PHOTO.exists():
-            log.warning("Kein Pilotenfoto unter %s, Lizenz bleibt ohne Bild", PHOTO)
-            self.image = np.zeros((4, 4, 4), dtype=np.uint8)
+    # -- Eingabe -------------------------------------------------------------
+    def handle_event(self, ev) -> None:
+        if ev.type != pygame.KEYDOWN:
             return
-        try:
-            import pygame
-            surf = pygame.image.load(str(PHOTO))
-            w, h = surf.get_size()
-            rgb = pygame.surfarray.array3d(surf).transpose(1, 0, 2)
-            try:
-                alpha = pygame.surfarray.array_alpha(surf).T
-            except ValueError:
-                alpha = np.full((h, w), 255, dtype=np.uint8)
-            img = np.dstack((rgb, alpha)).astype(np.uint8)
-            self.image = np.ascontiguousarray(img[::-1])        # Zeile 0 = unten (GL)
-            self.photo_ok = 1.0
-        except Exception as exc:
-            log.warning("Pilotenfoto nicht ladbar: %s", exc)
-            self.image = np.zeros((4, 4, 4), dtype=np.uint8)
+        if ev.key in (pygame.K_RIGHT, pygame.K_d):
+            self.select(+1)
+        elif ev.key in (pygame.K_LEFT, pygame.K_a):
+            self.select(-1)
+        elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE):
+            self.confirm()
+
+    def select(self, d: int) -> None:
+        self.idx = (self.idx + d) % len(self.themes)
+        self.slide = float(d)
+        self.slide_t0 = time.monotonic()
+        self.cover_version += 1
+
+    def confirm(self) -> None:
+        self.chosen = self.idx
+        ltheme.set_current(self.themes[self.idx].get("name", ""))
+        self.confirm_t0 = time.monotonic()
+        log.info("Thema gewählt: %s", self.themes[self.idx].get("name"))
 
     # -- Schnittstelle zur Engine --------------------------------------------
-    def handle_event(self, ev) -> None:
-        pass
-
     def images(self) -> dict:
-        return {"uPhotoTex": (self.image, 1)}
+        cover = self.covers.get(self.idx, self.blank)
+        return {"uPhotoTex": (self.photo if self.photo is not None else self.blank, 1),
+                "uCoverTex": (cover, self.cover_version)}
 
     def uniform_names(self):
-        return ("uPhotoTex", "uPhotoOK", "uBg", "uAccessory", "uHolo", "uSeed", "uFree")
+        return ("uPhotoTex", "uCoverTex", "uPhotoOK", "uCoverOK", "uCoverStyle", "uAccessory", "uColA", "uColB",
+                "uTint", "uSlide", "uConfirm", "uChosen", "uSeed")
 
     def uniforms(self, t: float, f) -> dict:
         now = time.monotonic()
@@ -126,33 +149,49 @@ class Controller:
         if now >= self.radio_at:
             self.radio = self.rng.choice([r for r in RADIO if r != self.radio])
             self.radio_at = now + self.rng.uniform(12.0, 25.0)
-        if now >= self.free_at:
-            self.free = not self.free
-            self.free_at = now + self.rng.uniform(6.0, 30.0)
-        return {"uPhotoOK": self.photo_ok, "uBg": float(self.bg), "uAccessory": float(self.accessory),
-                "uHolo": float(self.holo), "uSeed": self.seed, "uFree": 1.0 if self.free else 0.0}
+        if self.demo and now >= self.demo_next:
+            self.select(+1) if self.rng.random() < 0.7 else self.confirm()
+            self.demo_next = now + 3.0
+        th = self.themes[self.idx]
+        slide = self.slide * max(0.0, 1.0 - (now - self.slide_t0) / 0.5)
+        return {
+            "uPhotoOK": 1.0 if self.photo is not None else 0.0,
+            "uCoverOK": 1.0 if self.idx in self.covers else 0.0,
+            "uCoverStyle": float(th.get("cover_style", 0)),
+            "uAccessory": float(self.accessory),
+            "uColA": tuple(th.get("color_a", [0.95, 0.8, 0.25])),
+            "uColB": tuple(th.get("color_b", [0.15, 0.45, 0.85])),
+            "uTint": tuple(th.get("tint", [0.95, 0.75, 0.25])),
+            "uSlide": slide,
+            "uConfirm": max(0.0, 1.0 - (now - self.confirm_t0) / 1.2),
+            "uChosen": 1.0 if self.idx == self.chosen else 0.0,
+            "uSeed": float(self.idx) * 7.0 + 3.0,
+        }
 
     def overlays(self, t: float):
         now = time.monotonic()
-        blink = 0.6 + 0.4 * (1.0 if int(now * 2) % 2 == 0 else 0.3)
+        th = self.themes[self.idx]
+        n = len(self.themes)
+        col_a = tuple(int(c * 255) for c in th.get("color_a", [0.95, 0.8, 0.25]))
+        chosen = self.idx == self.chosen
         out = [
-            (f"SPACE-TAXI  NR. {self.taxi_no}", 0.04, 0.5, 0.925, GOLD, 0.95),
-            ("FREI" if self.free else "BESETZT", 0.03, 0.885, 0.925, (90, 255, 120) if self.free else (255, 90, 70), blink),
-            # Lizenz links unter dem Hologramm
-            ("TAXILIZENZ", 0.02, 0.245, 0.24, DIM, 0.85),
-            (self.name, 0.046, 0.245, 0.19, NEON, 1.0),
-            (f"NR. {self.license}   KLASSE: ALLES MIT ANTRIEB", 0.019, 0.245, 0.148, WHITE, 0.85),
-            ("GÜLTIG BIS: STERNTOD   PUNKTE IN FLENSBURG-7: ALLE", 0.019, 0.245, 0.12, WHITE, 0.75),
-            # Taxameter und Statistik rechts
-            ("TAXAMETER", 0.02, 0.73, 0.70, DIM, 0.85),
-            (f"{self.meter:09.2f} CR", 0.052, 0.73, 0.645, (255, 80, 60), 1.0),
-            (f"FAHRTEN HEUTE {self.rides:2d}      BESCHWERDEN {self.complaints:2d}", 0.02, 0.73, 0.56, WHITE, 0.85),
-            (f"BEWERTUNG {self.rating} / 5      TRINKGELD {self.tip} CR", 0.02, 0.73, 0.525, WHITE, 0.85),
-            (f"LETZTER FAHRGAST: {self.last_passenger}", 0.019, 0.73, 0.49, DIM, 0.85),
-            # Spruch und Funk
-            (self.slogan, 0.03, 0.5, 0.06, NEON, 0.95),
-            (self.radio, 0.018, 0.5, 0.022, (160, 200, 255), 0.5 + 0.4 * abs(((now * 0.7) % 2.0) - 1.0)),
+            # Plakat links: Titel und Zeile unter dem Bild
+            (th.get("title", "").upper(), 0.05, 0.30, 0.16, col_a, 1.0),
+            (th.get("tagline", "").upper(), 0.02, 0.30, 0.115, WHITE, 0.85),
+            (f"THEMA  {self.idx + 1} / {n}" + ("     AKTIV" if chosen else "     START = WÄHLEN"), 0.019, 0.30, 0.082,
+             col_a if chosen else GREY, 0.9 if chosen else 0.6 + 0.3 * abs(((now * 1.5) % 2.0) - 1.0)),
+            # Fahrerplakat rechts
+            ("SPACE TAXI DRIVER", 0.034, 0.775, 0.24, col_a, 1.0),
+            (self.name, 0.044, 0.775, 0.188, WHITE, 1.0),
+            (f"TAXI NR. {self.taxi_no}   LIZENZ {self.license}", 0.018, 0.775, 0.143, WHITE, 0.8),
+            (f"FAHRTEN {self.rides}   BESCHWERDEN {self.complaints}   TAXAMETER {self.meter:07.2f} CR", 0.017, 0.775, 0.112, DIM, 0.85),
+            (f"LETZTER FAHRGAST: {self.last_passenger}", 0.016, 0.775, 0.083, DIM, 0.75),
+            # Fußzeile
+            (self.slogan, 0.02, 0.30, 0.018, col_a, 0.9),
+            ("<  THEMA  >      START  WÄHLEN", 0.016, 0.775, 0.018, GREY, 0.5 + 0.2 * abs(((now * 1.5) % 2.0) - 1.0)),
         ]
-        if self.photo_ok < 0.5:
-            out.append(("KEIN FOTO: assets/pilot.png", 0.02, 0.245, 0.55, (255, 90, 70), 0.9))
+        if self.photo is None:
+            out.append(("KEIN FOTO: assets/pilot.png", 0.02, 0.775, 0.55, (255, 90, 70), 0.9))
+        if now - self.confirm_t0 < 1.5:
+            out.append((f"THEMA {th.get('title', '').upper()} AKTIV", 0.04, 0.5, 0.5, WHITE, 1.0 - (now - self.confirm_t0) / 1.5))
         return out

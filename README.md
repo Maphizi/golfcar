@@ -505,6 +505,18 @@ verdeckt das Feuer sie in der Bildmitte kurz. Zum Prüfen lässt sich ein Ereign
 1 Transporter … 14 Patrouille). `--uniform NAME=WERT` setzt allgemein ein Shader-Uniform fest und
 ist mehrfach erlaubt.
 
+**Katalog des Navigationscomputers:** `config/planets.toml` enthält jetzt 56 Objekte in drei
+Gruppen, die als Beschriftung erscheinen: ECHTER HIMMEL (Sonne, Erde, Mond, Mars, Venus, Jupiter,
+Saturn mit Ringen, Neptun, Pluto, Europa, Titan, Beteigeuze, Sirius, Hale-Bopp, Halley, Proxima b),
+FERNE GALAXIS (die Welten der Saga und der Todesstern) und ERDACHTE WELT (Arrakis, Pandora, Vulkan,
+LV-426, Krypton, Magrathea, Gallifrey). Neue Objekttypen im Shader: `star` (kochende Granulation,
+Flecken, Korona mit Protuberanzen, pulst mit dem Bass), `comet` (Kern mit Koma und Schweif) und
+`station` (Panelraster, Äquatorgraben, Superlaser-Schüssel mit grünem Fokus). Im Hyperraum zieht
+etwa alle 25 Sekunden eines der anderen Objekte seitlich vorbei (wächst, driftet, verschwindet, mit
+„PASSIERE …“ oben). Unten rechts steht „SPONSORED BY SPACEX“; liegt ein Logo als
+`assets/sponsor.png` auf dem Pi (3:1, weißer Hintergrund wird durchsichtig), zeichnet der Shader es
+daneben. Die Datei ist nicht im Repo (Markenrechte), lege sie selbst ab.
+
 **Kippschalter im Navigationscomputer:** Kippschalter AN schaltet scharf (Anzeige SCHARF), der
 Startknopf startet den Flug, und der Hyperraumflug dauert so lange, bis der Kippschalter wieder AUS
 steht; dann kommt die Ankunft. Ohne Kippschalter (Maus-Mitteltaste, Demo) gilt weiter die feste
@@ -534,16 +546,20 @@ den der Controller (`visualizers/scenes/slots.py`) als Textur an den Shader
 (`visualizers/shaders/slots/frag.glsl`) gibt; die Engine lädt Controller-Bilder über `images()`
 hoch. Neue Themen: Eintrag in `THEMES` mit sieben ASCII-Sprites, Farben und Sprüchen.
 
-**Startbildschirm Space-Taxi (`home`, Taste 1):** Kein Menü mehr. Der Pilot erscheint als
-Hologramm über einem Projektor auf seiner Taxilizenz (Foto `assets/pilot.png`, freigestellt mit
-`scripts/pilot_cutout.py`, Name aus `[launcher].pilot_name` in `config/settings.toml`), daneben
-Neon-TAXI-Kasten mit Taxinummer, FREI/BESETZT-Lampe, Taxameter, der weiterläuft, Statistik
-(Fahrten, Beschwerden, Bewertung, Trinkgeld, letzter Fahrgast), Spruch und wechselnde Funksprüche,
-Schachbrettband. Jeder Start würfelt neu: einer von drei Hintergründen (Raumstation-Skyline mit
-Flugverkehr und blinkenden Fenstern, Asteroiden-Parkplatz mit Diner, Nebel-Highway in Perspektive),
-Hologrammfarbe (blau, bernstein, grün), Accessoire (nichts, Sonnenbrille, Taximütze, beides),
-Lizenznummer, Taxinummer, Spruch und Zahlen. Mit Musik: Verkehr, Leitlinien und Band laufen mit dem
-Bass, Fenster blinken zum Spektrum, Neon und Hologramm reißen beim Beat. Szene `taxi`
+**Taxistand und Themenwahl (`home`, Taste 1):** Kein Menü. Links ein großes Plakat des
+gewählten Themas, rechts daneben das Fahrerplakat: der Pilot als Duotone-Druck in der Themenfarbe
+(Foto `assets/pilot.png`, freigestellt mit `scripts/pilot_cutout.py`, Name aus
+`[launcher].pilot_name`), mit zufälligem Accessoire (Sonnenbrille, Taximütze), darunter
+„SPACE TAXI DRIVER“, Taxinummer, Lizenz, Fahrten, Beschwerden, Taxameter und letzter Fahrgast.
+D-Pad LINKS/RECHTS blättert durch die Themen aus `config/themes.toml`, Start bestätigt (Rahmen
+leuchtet, Blitz in Themenfarbe). Die Wahl steht in `logs/theme.txt`, der Launcher gibt sie als
+`KITT_THEME` an jeden Modus weiter, `launcher/theme.py` liefert das aktuelle Thema mit Farben.
+Vier Themen: SPACE TAXI (Rakete vor dem Mond), IMPERIUM (Festung unter roter Sonne), KANTINE
+(Neon-Diner auf einem Asteroiden), RAUMFAHRT RETRO (Retro-Rakete, Ringplanet); die Plakate zeichnet
+der Shader. Eigene Plakate: ein Bild (Hochformat 2:3) unter `assets/themes/<name>.png` ersetzt das
+gezeichnete; der Ordner ist in `.gitignore`, die Bilder bleiben auf dem Pi. Nur Bilder verwenden,
+an denen du die Rechte hast. Jeder Start würfelt Accessoire, Nummern und Sprüche neu, mit Musik
+funkeln die Sterne zum Beat und das Schachbrettband läuft mit dem Bass. Szene `taxi`
 (`visualizers/scenes/taxi.py`, Shader `visualizers/shaders/taxi/frag.glsl`). Das alte Menü bleibt
 als Modus `menu` über `scripts/kittctl menu` erreichbar.
 

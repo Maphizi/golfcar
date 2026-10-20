@@ -13,3 +13,6 @@ models/
 # ROMs gehören nicht ins Repo
 roms/
 vendor/
+# eigene Themenplakate bleiben auf dem Pi (Rechte!)
+assets/themes/
+assets/sponsor.png
