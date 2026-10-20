@@ -463,14 +463,16 @@ Markennamen oder Figuren). Die klassischen Shader liegen zum Zurückschalten in
 
 | Taste | Modus | Szene |
 |---|---|---|
-| F1 | HOLO-ARCADE | RetroPie, unverändert |
-| F2 | HYPERRAUM | `navcomputer`: Navigationscomputer mit Planetenkatalog und Anflug (siehe unten). Alternative ohne Steuerung: `hyperspace` |
-| F3 | ZIELCOMPUTER | `target`: gelber Drahtgitter-Graben in Perspektive (Tempo nach Bass, jede vierte Strebe rot), Zähler, Statusfelder nach Bändern, unten Zielkreis mit Sweep und Waveform, fremde Schrift |
-| F4 | TAKTIK-SCANNER | `tactical`: grünes Gitter, weißes 3D-Drahtgitter eines Gleiters (dreht mit den Mitten, Triebwerk glüht mit Bass), Radar mit Blips aus dem Spektrum, Waveform, rote Pegelbalken |
-| F5 | BORDCOMPUTER | `shipcomputer`: gelbes Pixel-OLED mit Panels, Radar, Spektrum, Status-Symbolen (Kreis, Sanduhr, Dreieck), Thermometer und sechs Balken, Zustände EMPFANG, DROIDENKERN RECHNET, SENDE |
+| 8 | HOLO-ARCADE | RetroPie, unverändert |
+| 2 | HYPERRAUM | `navcomputer`: Navigationscomputer mit Planetenkatalog und Anflug (siehe unten). Alternative ohne Steuerung: `hyperspace` |
+| 3 | SCHWARZES LOCH | `blackhole`: Strahlverfolgung mit Lichtkrümmung (siehe unten) |
+| 4 | BORD-DROIDE | `droid`: BIBO im Hangar (siehe unten) |
+| 5 | SPACE-SLOTS | `slots`: Walzen-Nahaufnahme, sechs Themen (siehe unten) |
 | 6 | LAGERFEUER / AUSSENPOSTEN | `campfire`: Pixel-Feuer mit violettem Saum unter zwei Monden, Ringplanet, Nebel, Sternschnuppen, dazu Hintergrund-Ereignisse (siehe unten) |
-| 5 | SPACE-SLOTS | `slots`: schwebende Slotmaschine mit drei Walzen, sechs Themen mit eigenen Pixel-Symbolen und Sprüchen, spielt von selbst (siehe unten) |
-| 8 | SYSTEMFEHLER | `error`: grüner Code in sechs Varianten, Zusammenbruch, rotes Fehlerbild in sechs Varianten, Wiederherstellung, Neustart (siehe unten) |
+| 7 | SYSTEMFEHLER | `error`: grüner Code in sechs Varianten, Zusammenbruch, rotes Fehlerbild in sechs Varianten, Wiederherstellung, Neustart (siehe unten) |
+| 10 | BORDCOMPUTER | `shipcomputer`: gelbes Pixel-OLED mit Panels, Radar, Spektrum, Status-Symbolen, Zustände EMPFANG, DROIDENKERN RECHNET, SENDE |
+| kittctl | ZIELCOMPUTER | `target`: gelber Drahtgitter-Graben in Perspektive, Zähler, Statusfelder, Zielkreis mit Sweep und Waveform (`viz_crt`) |
+| kittctl | TAKTIK-SCANNER | `tactical`: grünes Gitter, 3D-Drahtgitter eines Gleiters, Radar mit Blips, Pegelbalken (`viz_eye`) |
 
 Die fremde Schrift in den Szenen ist ein eigenes Zufallsmuster aus 3×5-Pixelglyphen, keine
 lesbare oder fremde Schriftart. Home- und Boot-Screen sind gelb-monochrom mit Glyphenzeilen.
