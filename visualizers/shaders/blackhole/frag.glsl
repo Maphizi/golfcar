@@ -5,13 +5,21 @@
 // Musik: Bass pulst Scheibe und Linse, das Spektrum liegt als Ringe auf der Scheibe (innen Bass,
 // außen Höhen), Mitten färben das Gas heißer, der Beat zündet Jet und Flare (vom Controller geglättet),
 // Höhen lassen die Scheibe funkeln. uZoom = Nahaufnahme.
+// Geworfene Planeten (uThrow0/1): werden in Bildkoordinaten als Band gezeichnet, das sich spiralig ins
+// Loch zieht, dabei immer länger und dünner wird (Spaghettisierung), schlangenförmig zur Musik wogt,
+// die Farben langsam durchwandert und am Horizont rot verglüht.
 in vec2 vUv;
 out vec4 fragColor;
 uniform float iTime;
 uniform vec2 iResolution;
 uniform float uRms, uBass, uMid, uHigh, uBeat, uSilent;
 uniform sampler2D uAudioTex;
-uniform float uSeed, uTilt, uAngle, uPalette, uJet, uFlare, uZoom, uBassS;
+uniform float uSeed, uTilt, uAngle, uPalette, uJet, uFlare, uZoom, uBassS, uMidS, uSnakeT;
+uniform float uThrow0, uThrow1;                      // Fortschritt 0..1 (0 = kein Planet)
+uniform vec2 uThrowPos0, uThrowPos1;                 // Startpunkt (Bildkoordinaten, Mitte 0/0)
+uniform vec3 uThrowColA0, uThrowColB0, uThrowColA1, uThrowColB1;
+uniform vec4 uThrowPar0, uThrowPar1;                 // Größe, Typ, Seed, Spirale (±Stärke)
+uniform vec4 uThrowPar20, uThrowPar21;               // Ringe, frei
 
 const int STEPS = 36;      // Pi 5: 64 Schritte bei 0.5 = 9 fps, 36 bei 0.35 ≈ 40 fps
 const float R_H = 1.0;       // Horizont
@@ -76,6 +84,95 @@ vec3 background(vec3 d, float t) {
     vec3 col = vec3(star) * (0.6 + 0.6 * hash12(cell + 2.0));
     float neb = fbm(s * vec2(2.0, 3.0) + uSeed);
     col += mix(vec3(0.25, 0.05, 0.35), vec3(0.05, 0.15, 0.4), noise(s * 3.0)) * smoothstep(0.5, 0.85, neb) * 0.35;
+    return col;
+}
+
+// ---- Geworfener Planet als Spaghetti-Band
+vec3 hueShift(vec3 c, float a) {
+    const vec3 k = vec3(0.57735);
+    float cs = cos(a), sn = sin(a);
+    return c * cs + cross(k, c) * sn + k * dot(k, c) * (1.0 - cs);
+}
+// Punkt auf der Bahn: s 0 = Startpunkt, 1 = Loch. Spirale, die sich zum Loch hin enger zieht, dazu
+// Schlangenwellen quer zur Bahn, deren Stärke und Tempo von der Musik kommen (uBassS, uMidS, uSnakeT).
+vec2 pathPoint(vec2 p0, float s, float swirl, float seed, float wob) {
+    float rad = pow(1.0 - s, 1.15);
+    vec2 q = rot(swirl * pow(s, 2.4) * 2.4) * p0 * rad;            // nahe am Loch wickelt sich die Bahn herum
+    vec2 dir = q / max(length(q), 1e-4);
+    vec2 nrm = vec2(-dir.y, dir.x);
+    float w = 0.6 * sin(s * 9.0 - uSnakeT * 1.3 + seed) + 0.4 * sin(s * 17.0 + uSnakeT * 0.7 + seed * 2.0);
+    return q + nrm * w * wob * (1.0 - s) * length(p0) * 0.22;
+}
+float segDist(vec2 p, vec2 a, vec2 b, out float h) {
+    vec2 ab = b - a, ap = p - a;
+    h = clamp(dot(ap, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);
+    return length(ap - ab * h);
+}
+vec3 ribbon(vec3 col, vec2 uv, float P, vec2 p0, vec3 cA, vec3 cB, vec4 par, vec4 par2, float live) {
+    float size = par.x, kind = par.y, seed = par.z, swirl = par.w;
+    float wob = 0.35 + 0.9 * uBassS * live + 0.5 * uMidS * live;
+    float sH = pow(P, 1.5);                             // Kopf: erst langsam, dann schneller zum Loch
+    float sT = pow(P, 3.4) * 0.9;                       // Schwanz hinkt nach: erst Kugel, dann immer längeres Band
+    const int N = 22;
+    float dmin = 1e9, sAt = 0.0, sideAt = 0.0;
+    vec2 qAt = vec2(0.0);
+    vec2 prev = pathPoint(p0, sT, swirl, seed, wob);
+    for (int j = 1; j <= N; j++) {
+        float s1 = mix(sT, sH, float(j) / float(N));
+        vec2 cur = pathPoint(p0, s1, swirl, seed, wob);
+        float h;
+        float d = segDist(uv, prev, cur, h);
+        if (d < dmin) {
+            dmin = d;
+            sAt = mix(mix(sT, sH, float(j - 1) / float(N)), s1, h);
+            vec2 e = cur - prev;
+            sideAt = sign(e.x * (uv.y - prev.y) - e.y * (uv.x - prev.x));
+            qAt = mix(prev, cur, h);
+        }
+        prev = cur;
+    }
+    // Breite: mit der Zeit dünner (die Enden sind durch den Abstand zur Linie von selbst rund),
+    // entlang des Bands leicht geknotet (Gezeitenkräfte)
+    float along = (sAt - sT) / max(sH - sT, 1e-4);
+    float w = size * mix(1.0, 0.22, smoothstep(0.1, 1.0, P)) * (0.9 + 0.1 * sin(along * 40.0 + seed) * smoothstep(0.2, 0.6, P));
+    float v = dmin / max(w, 1e-4);
+    float rq = length(qAt);
+    float rh = mix(0.15, 0.2, uZoom);                   // Schattenradius des Lochs im Bild
+    float vanish = smoothstep(rh * 0.95, rh * 1.35, rq); // am Horizont verschwinden
+    float heat = smoothstep(rh * 2.8, rh * 1.1, rq);    // Glut nahe am Loch
+    float alpha = smoothstep(1.0, 0.85, v) * vanish * smoothstep(1.0, 0.95, P) * smoothstep(0.0, 0.04, P);
+    if (alpha <= 0.0 && v > 3.0) return col;
+    // Oberfläche: Bänder entlang des Körpers, Farben des Planeten, langsam psychedelisch durchwandernd
+    float nz = sqrt(max(0.0, 1.0 - v * v));
+    float n = fbm(vec2(sAt * 28.0 + seed, sideAt * v * 2.5 + seed * 0.3) + uSnakeT * 0.05);
+    vec3 surf = mix(cA, cB, smoothstep(0.3, 0.7, n));
+    surf = hueShift(surf, (0.1 + 1.6 * P * P) * sin(along * 9.0 - uSnakeT * 0.3 + seed));          // Farben wandern langsam durch, je gestreckter desto bunter
+    if (kind > 5.5 && kind < 6.5) surf = mix(cA, cB, 0.5 + 0.5 * sin(sAt * 90.0 + n * 4.0));         // Gasplanet: Streifen
+    if (kind > 12.5) surf = mix(vec3(0.5, 0.52, 0.56), vec3(0.25), step(0.5, fract(sAt * 60.0)) * step(0.5, fract(v * 4.0)));  // Station
+    if (kind > 3.5 && kind < 4.5) surf += vec3(1.0, 0.85, 0.5) * step(0.93, hash12(floor(vec2(sAt * 120.0, sideAt * v * 6.0)) + seed)) * 0.8;  // Stadtlichter
+    // Licht: Kugelschattierung, die dem Loch (und der Scheibe) zugewandte Seite heller
+    vec2 toHole = -qAt / max(rq, 1e-4);
+    vec3 nrm3 = vec3((uv - qAt) / max(w, 1e-4), nz);
+    vec3 L = normalize(vec3(toHole * 0.8, 0.6));
+    float light = 0.28 + 0.8 * max(dot(normalize(nrm3), L), 0.0);
+    light += 0.25 * pow(max(dot(normalize(nrm3), normalize(L + vec3(0.0, 0.0, 1.0))), 0.0), 12.0);   // Glanz
+    vec3 body = surf * light;
+    if (kind > 10.5 && kind < 11.5) body = surf * (1.6 + 1.2 * nz) + vec3(1.0, 0.9, 0.7) * pow(nz, 3.0);   // Stern: leuchtet selbst
+    if (kind > 11.5 && kind < 12.5) body = mix(surf * light, vec3(0.8, 0.9, 1.0), pow(1.0 - nz, 2.0) * 0.5);  // Komet: Koma
+    // Nahe am Loch: rotverschoben, glühend, dann weg
+    vec3 glow = gasColor(0.8, 0.0);
+    body = mix(body, vec3(dot(body, vec3(0.5, 0.4, 0.1))) * vec3(1.0, 0.25, 0.08), heat * 0.8);
+    body += glow * heat * (1.4 + 0.8 * uBassS * live) * (0.4 + 0.6 * nz);
+    col = mix(col, body, alpha);
+    // Halo außen: Stern/Komet stärker, sonst zart; am Horizont ein roter Schweif
+    float halo = exp(-max(v - 1.0, 0.0) * mix(6.0, 2.0, heat)) * vanish * smoothstep(1.0, 0.9, P);
+    float haloK = (kind > 10.5 && kind < 12.5) ? 0.45 : 0.08;
+    col += mix(cA, glow, heat) * halo * (haloK + 0.6 * heat);
+    // Ringsystem (z. B. Saturn): zwei dünne Linien neben dem Körper, verschwinden mit der Streckung
+    if (par2.x > 0.5) {
+        float ring = smoothstep(0.12, 0.0, abs(v - 1.9)) + smoothstep(0.1, 0.0, abs(v - 2.4)) * 0.6;
+        col += mix(cA, vec3(0.9, 0.85, 0.75), 0.5) * ring * 0.5 * smoothstep(0.3, 0.08, P) * vanish * smoothstep(0.0, 0.04, P);
+    }
     return col;
 }
 
@@ -155,6 +252,9 @@ void main() {
     // Flare nach dem Beat: kurzer Lichtblitz um das Loch
     float screenR = length(uv) / fov;
     col += gasColor(0.7, 0.0) * exp(-screenR * 2.5) * uFlare * 0.9;
+    // Geworfene Planeten (vor der Kamera, deshalb über dem Bild)
+    if (uThrow0 > 0.0) col = ribbon(col, uv, uThrow0, uThrowPos0, uThrowColA0, uThrowColB0, uThrowPar0, uThrowPar20, live);
+    if (uThrow1 > 0.0) col = ribbon(col, uv, uThrow1, uThrowPos1, uThrowColA1, uThrowColB1, uThrowPar1, uThrowPar21, live);
     // Tonemapping und Vignette
     col = col / (1.0 + col * 0.45);
     col *= 1.0 - 0.45 * pow(length(vUv - 0.5) * 1.35, 2.5);

@@ -31,15 +31,16 @@ def main() -> int:
     ap.add_argument("--source", choices=["mic", "playback"], help="überschreibt [capture].source")
     ap.add_argument("--demo", action="store_true", help="Szenen-Controller läuft automatisch (Tests)")
     ap.add_argument("--uniform", action="append", default=[], metavar="NAME=WERT",
-                    help="setzt ein Shader-Uniform fest, z. B. uEventForce=3 (mehrfach möglich, Tests)")
+                    help="setzt ein Shader-Uniform fest, z. B. uEventForce=3 oder uPos=0.5,0.2 (mehrfach möglich, Tests)")
     args = ap.parse_args()
-    fixed: dict[str, float] = {}
+    fixed: dict[str, float | tuple] = {}
     for item in args.uniform:
         name, _, val = item.partition("=")
         try:
-            fixed[name.strip()] = float(val)
+            parts = tuple(float(v) for v in val.split(","))
+            fixed[name.strip()] = parts[0] if len(parts) == 1 else parts
         except ValueError:
-            ap.error(f"--uniform erwartet NAME=ZAHL, nicht {item!r}")
+            ap.error(f"--uniform erwartet NAME=ZAHL oder NAME=Z1,Z2[,Z3[,Z4]], nicht {item!r}")
     if args.windowed:
         os.environ["KITT_VIZ_WINDOWED"] = "1"
 
