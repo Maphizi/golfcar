@@ -1,0 +1,4 @@
+2026-10-20 18:23:47 INFO  viz_taxi: fps 53.9  audio=pipewire level=0.0000 rms=0.00 bass=0.00 mid=0.00 high=0.00 beat=0.00  (Stille)
+2026-10-20 18:23:57 INFO  viz_taxi: fps 52.7  audio=pipewire level=0.0000 rms=0.00 bass=0.00 mid=0.00 high=0.00 beat=0.00  (Stille)
+2026-10-20 18:24:07 INFO  viz_taxi: fps 52.7  audio=pipewire level=0.0000 rms=0.00 bass=0.00 mid=0.00 high=0.00 beat=0.00  (Stille)
+2026-10-20 18:24:17 INFO  viz_taxi: fps 52.7  audio=pipewire level=0.0000 rms=0.00 bass=0.00 mid=0.00 high=0.00 beat=0.00  (Stille)
