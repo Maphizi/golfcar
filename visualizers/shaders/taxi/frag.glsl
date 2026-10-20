@@ -8,7 +8,9 @@ uniform float iTime;
 uniform vec2 iResolution;
 uniform float uRms, uBass, uMid, uHigh, uBeat, uSilent;
 uniform sampler2D uAudioTex;
-uniform sampler2D uPhotoTex, uCoverTex, uDriverTex;
+uniform sampler2D uPhotoTex, uCoverTex, uDriverTex, uMissionTex, uSpriteTex;
+uniform float uMissionOK, uSpriteOK, uSprT;
+uniform vec2 uMissionSize, uSpriteSize;
 uniform float uPhotoOK, uCoverOK, uCoverStyle, uAccessory, uSlide, uConfirm, uChosen, uSeed;
 // Digitale Lizenz: Fahrerfoto mit Beat-Zoom auf die Augen (uBeatZoom), Bass (uBassS), Glitch, Spiralen (uSpinT)
 uniform float uDriverOK, uBeatZoom, uBassS, uEnergy, uGlitch, uSpinT, uEyeR;
@@ -80,6 +82,25 @@ vec3 digitalLicense(vec2 q, float t) {
     s += vec3(0.8, 0.9, 1.0) * uGlitch * 0.15 * step(0.8, hash12(vec2(floor(q.y * 90.0), floor(t * 40.0))));
     s *= 1.0 + 0.25 * uBeatZoom;
     return s;
+}
+vec4 bilin4(sampler2D tex, vec2 uv, vec2 size, vec2 lo, vec2 hi) {
+    vec2 px = uv - 0.5;
+    vec2 i = floor(px), f = fract(px);
+    vec2 a = clamp(i, lo, hi), b = clamp(i + 1.0, lo, hi);
+    vec4 s00 = texture(tex, (vec2(a.x, a.y) + 0.5) / size), s10 = texture(tex, (vec2(b.x, a.y) + 0.5) / size);
+    vec4 s01 = texture(tex, (vec2(a.x, b.y) + 0.5) / size), s11 = texture(tex, (vec2(b.x, b.y) + 0.5) / size);
+    return mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
+}
+// Schwebende Figur aus dem Atlas (8x3 Zellen à 96 px, Zeile 0 oben): c Mitte, sz halbe Größe (Höheneinheiten), ang Drehung
+vec4 floater(vec2 p, vec2 c, float sz, float ang, float idx) {
+    vec2 d = p - c;
+    float cs = cos(ang), sn = sin(ang);
+    d = vec2(cs * d.x + sn * d.y, -sn * d.x + cs * d.y) / sz;
+    if (abs(d.x) >= 1.0 || abs(d.y) >= 1.0) return vec4(0.0);
+    float ci = mod(idx, 8.0), ri = floor(idx / 8.0);
+    vec2 lo = vec2(ci * 96.0, (2.0 - ri) * 96.0);
+    vec2 px = lo + (d * 0.5 + 0.5) * 96.0;
+    return bilin4(uSpriteTex, px, uSpriteSize, lo, lo + 95.0);
 }
 float sdBox(vec2 p, vec2 b, float r) { vec2 d = abs(p) - b + r; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r; }
 float rect(vec2 uv, vec2 a, vec2 b) { vec2 s = step(a, uv) * step(uv, b); return s.x * s.y; }
@@ -301,10 +322,10 @@ void main() {
     }
 
     // ---- Großes Themenplakat links (Hochformat 2:3), gleitet beim Blättern
-    vec2 pc = vec2(0.30 + uSlide * 0.08, 0.615);
-    vec2 ps = vec2(0.255, 0.375);                       // halbe Größe in uv-Einheiten (x in Bildbreite)
+    vec2 pc = vec2(0.175 + uSlide * 0.05, 0.57);
+    vec2 ps = vec2(0.135, 0.36);                       // halbe Größe in uv-Einheiten (x in Bildbreite)
     vec2 cq = (uv - pc) / ps;                          // -1..1
-    cq.x *= aspect * ps.x / (ps.y * 1.5);              // auf 2:3 normieren
+    cq.x *= aspect * ps.x / (ps.y * 0.6667);           // auf 2:3 (Hochformat) normieren: halbe Breite = 0.375 * ps.y
     float inPoster = step(abs(cq.x), 1.0) * step(abs(cq.y), 1.0);
     float slideFade = 1.0 - abs(uSlide) * 0.8;
     if (inPoster > 0.5) {
@@ -333,9 +354,41 @@ void main() {
     col = mix(col, fcol, frame);
     col += uColA * 0.25 * smoothstep(0.25, 0.0, max(abs(cq.x) - 1.0, abs(cq.y) - 1.0)) * (1.0 - inPoster) * (0.6 + uChosen + 2.0 * uConfirm);
 
+    // ---- Mission in der Mitte: Logo (schwarzer Hintergrund, additiv über Sternen), pulst leicht mit dem Bass
+    {
+        vec2 mc = vec2(0.5, 0.74);
+        vec2 ms = vec2(0.165, 0.165 * aspect / 1.5);          // 3:2
+        float mscale = 1.0 + 0.025 * uBassS + 0.01 * sin(t * 0.7);
+        vec2 mq = (uv - mc) / (ms * mscale);
+        if (uMissionOK > 0.5 && abs(mq.x) < 1.0 && abs(mq.y) < 1.0) {
+            vec2 q = mq * 0.5 + 0.5;
+            vec3 logo = bilin(uMissionTex, q, uMissionSize);
+            float sheen = exp(-pow((q.x - q.y * 0.4 - fract(t * 0.07) * 1.9 + 0.5) * 6.0, 2.0));
+            logo *= 1.0 + 0.25 * sheen + 0.15 * uBassS;
+            float edge = smoothstep(1.0, 0.85, abs(mq.x)) * smoothstep(1.0, 0.85, abs(mq.y));
+            col += logo * edge;
+        }
+        // Figuren schweben über Logo und Missionstext: jede auf eigener Bahn, wippt leicht zur Musik
+        if (uSpriteOK > 0.5) {
+            vec2 pp = vec2(uv.x * aspect, uv.y);                 // Höheneinheiten
+            for (int i = 0; i < 11; i++) {
+                float fi = float(i);
+                float h1 = hash12(vec2(fi, 7.0)), h2 = hash12(vec2(fi, 13.0)), h3 = hash12(vec2(fi, 29.0)), h4 = hash12(vec2(fi, 41.0));
+                float dir = h1 < 0.5 ? 1.0 : -1.0;
+                float ph = fract(uSprT * (0.014 + 0.012 * h2) + h3);
+                float x = mix(0.33, 0.68, dir > 0.0 ? ph : 1.0 - ph);
+                float y = mix(0.36, 0.95, h4) + 0.018 * sin(uSprT * (0.5 + h2) + fi * 2.0) * (1.0 + 2.5 * uBassS);
+                float fade = smoothstep(0.33, 0.38, x) * smoothstep(0.68, 0.63, x);
+                float sz = (0.028 + 0.02 * h3) * (1.0 + 0.1 * uBassS);
+                float ang = 0.18 * sin(uSprT * 0.4 + fi) + dir * 0.08 + 0.05 * uBassS * sin(uSprT * 5.0 + fi);
+                vec4 sp = floater(pp, vec2(x * aspect, y), sz, ang, mod(fi * 7.0 + 3.0, 24.0));
+                col = mix(col, sp.rgb * (0.9 + 0.3 * uBassS), sp.a * fade * 0.95);
+            }
+        }
+    }
     // ---- Fahrerplakat rechts: Porträt als Duotone, darunter Textfeld (Overlay)
-    vec2 dc = vec2(0.775, 0.625);
-    vec2 ds = vec2(0.17, 0.33);
+    vec2 dc = vec2(0.83, 0.625);
+    vec2 ds = vec2(0.135, 0.24);
     vec2 dq = (uv - dc) / ds;
     dq.x *= aspect * ds.x / ds.y;                      // quadratisch
     float inDriver = step(abs(dq.x), 1.0) * step(abs(dq.y), 1.0);
@@ -387,8 +440,8 @@ void main() {
     col = mix(col, frameCol, dframe);
     col += frameCol * 0.25 * smoothstep(0.2, 0.0, max(abs(dq.x) - 1.0, abs(dq.y) - 1.0)) * (1.0 - inDriver) * uDriverOK * (0.4 + uBeatZoom);
     // Textfeld unter dem Fahrerplakat
-    col = mix(col, vec3(0.02, 0.02, 0.03), rect(uv, vec2(0.605, 0.065), vec2(0.945, 0.27)) * 0.8);
-    col += uColA * (rect(uv, vec2(0.605, 0.267), vec2(0.945, 0.27)) + rect(uv, vec2(0.605, 0.065), vec2(0.608, 0.27)));
+    col = mix(col, vec3(0.02, 0.02, 0.03), rect(uv, vec2(0.695, 0.065), vec2(0.965, 0.35)) * 0.8);
+    col += uColA * (rect(uv, vec2(0.695, 0.347), vec2(0.965, 0.35)) + rect(uv, vec2(0.695, 0.065), vec2(0.698, 0.35)));
     // Schachbrettband unten und Fußleiste
     float bandY = step(0.040, uv.y) * step(uv.y, 0.050);
     float ck = step(0.5, fract(uv.x * 40.0 - t * (0.3 + 1.5 * bass))) == step(0.5, fract(uv.y * 200.0)) ? 1.0 : 0.0;
