@@ -55,6 +55,10 @@ shader = "taxi"
 controller = "taxi"
 render_scale = 0.8
 
+[scenes.hal]
+shader = "hal"
+render_scale = 0.75
+
 [scenes.droid]
 shader = "droid"
 render_scale = 0.6

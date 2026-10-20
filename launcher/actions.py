@@ -23,6 +23,7 @@ class Action(str, Enum):
     NEWS = "news"              # Galaktische Nachrichten
     BLACKHOLE = "blackhole"    # Schwarzes Loch
     DROID = "droid"            # Bord-Droide
+    HAL = "hal"                # HAL 3000
 
 
 # Welche Action startet welchen Modus (Modus-Namen siehe config/modes.toml)
@@ -39,6 +40,7 @@ ACTION_TO_MODE = {
     Action.NEWS: "news",
     Action.BLACKHOLE: "blackhole",
     Action.DROID: "droid",
+    Action.HAL: "hal",
     Action.HOME: "home",
 }
 

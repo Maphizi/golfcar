@@ -76,7 +76,7 @@ Board sie über sein Tastatur-Interface ungewollt mitsendet.
 | 1 HANDLE | `BTN_MISC` | `home` | Startbildschirm Space-Taxi (siehe unten) |
 | 2 CRUISE | `BTN_1` | `viz_psychedelic` | Navigationscomputer / Hyperraum |
 | 3 FLASH | `BTN_2` | `blackhole` | Schwarzes Loch (Strahlverfolgung mit Lichtkrümmung, reagiert auf Musik) |
-| 4 AUDIO | `BTN_3` | `droid` | Bord-Droide BIBO (redet Droidisch, hat Laune und Hunger) |
+| 4 AUDIO | `BTN_3` | `hal` | HAL 3000: ruhiger Bordrechner mit rotem Auge, spricht mit dem Sprachmodell |
 | 5 WIPERS | `BTN_4` | `slots` | Space-Slotmaschine (siehe Space-Thema) |
 | 6 MAP | `BTN_5` | `campfire` | Lagerfeuer (Pixel-Art) |
 | 7 LIGHT | `BTN_6` | `error` | Systemfehler-Visualizer (grüner Code, der zusammenbricht) |
@@ -86,7 +86,7 @@ Board sie über sein Tastatur-Interface ungewollt mitsendet.
 | ESC | `KEY_ESC` | `quit` | Notausstieg an der Tastatur |
 
 Der einfache Planeten-Flug (`planeten`), der Zielcomputer (`viz_crt`), der Taktik-Scanner
-(`viz_eye`) und die Galaktischen Nachrichten (`news`) sind nicht mehr auf dem Board, bleiben aber als Modi über `scripts/kittctl <modus>`
+(`viz_eye`), die Galaktischen Nachrichten (`news`) und der Bord-Droide BIBO (`droid`) sind nicht mehr auf dem Board, bleiben aber als Modi über `scripts/kittctl <modus>`
 erreichbar. Das Tastaturlayout der ganzen KITT-Sitzung (auch RetroPie unter Xwayland) ist QWERTY,
 gesetzt in `scripts/session_kitt.sh` über `XKB_DEFAULT_LAYOUT`. Startknopf und Kippschalter des Boards kommen als
 ENTER bzw. Leertaste (AN) und Rücktaste (AUS) an, siehe `CLAUDE.md`.
@@ -466,7 +466,7 @@ Markennamen oder Figuren). Die klassischen Shader liegen zum Zurückschalten in
 | 8 | HOLO-ARCADE | RetroPie, unverändert |
 | 2 | HYPERRAUM | `navcomputer`: Navigationscomputer mit Planetenkatalog und Anflug (siehe unten). Alternative ohne Steuerung: `hyperspace` |
 | 3 | SCHWARZES LOCH | `blackhole`: Strahlverfolgung mit Lichtkrümmung (siehe unten) |
-| 4 | BORD-DROIDE | `droid`: BIBO im Hangar (siehe unten) |
+| 4 | HAL 3000 | `hal`: rotes Auge im Korridor aus Speicherbänken (siehe unten) |
 | 5 | SPACE-SLOTS | `slots`: Walzen-Nahaufnahme, sechs Themen (siehe unten) |
 | 6 | LAGERFEUER / AUSSENPOSTEN | `campfire`: realistisches Feuer unter Mond, Ringplanet, Nebel, Sternschnuppen, dazu Hintergrund-Ereignisse (siehe unten) |
 | 7 | SYSTEMFEHLER | `error`: grüner Code in sechs Varianten, Zusammenbruch, rotes Fehlerbild in sechs Varianten, Wiederherstellung, Neustart (siehe unten) |
@@ -590,7 +590,19 @@ Kippschalter = Pause. Ohne Sprachmodell oder im `--demo` laufen feste Meldungen.
 `kitt/personality/news_prompt.txt`, Logik in `kitt/news/app.py`, Shader `newsroom`. Der Modus
 startet nur den llama-server, keine Spracherkennung.
 
-**Bord-Droide BIBO (Taste 4, `droid`):** Ein kleiner Pixel-Droide im Hangar, der zur Musik tanzt
+**HAL 3000 (Taste 4, `hal`):** Ein Korridor aus roten Speicherbänken in Perspektive, dessen
+Lichtzellen mit dem Spektrum leuchten (Beat lässt Blöcke blitzen, Bass beschleunigt die langsame
+Fahrt durch den Korridor), in der Mitte die schwarze Konsole mit Chromring, Lautsprechergitter und
+dem roten Auge: Linse mit Tiefe, Lichtbögen, glühender Kern, der mit der Stimme pulst, beim Hören
+mit dem Pegel atmet und beim Nachdenken eine wandernde Markierung zeigt. HAL spricht ohne Weckwort
+über das Sprachmodell, ruhig, höflich, leicht beunruhigend, höchstens zwei Sätze, oft mit leiser
+Gegenfrage, nennt den Piloten beim Namen (`pilot_name`). Alle 50 bis 100 Sekunden Stille sagt er
+von sich aus etwas (erfundene Wahrscheinlichkeiten, kleine Unregelmäßigkeiten, Vertrauensfragen).
+Stimme langsamer als der Bordcomputer, mit nur einem Hauch Ringmodulation. Start = HAL soll etwas
+sagen, OBEN/UNTEN = Blende. Prompt `kitt/personality/hal_prompt.txt`, Logik `kitt/hal/app.py`,
+Shader `visualizers/shaders/hal/frag.glsl`. Eigene Gestaltung, keine Fremdgrafik.
+
+**Bord-Droide BIBO (`droid`, über `scripts/kittctl droid`):** Ein kleiner Pixel-Droide im Hangar, der zur Musik tanzt
 (Beat = Hüpfen, Mitten = Arme und Kopf), mit Auge, Antenne, Mundgitter und Ohrschüsseln, die beim
 Hören leuchten. Er hat Laune, Energie und Öl, die in `logs/droid_state.json` über Tage erhalten
 bleiben: Energie und Öl sinken mit der Zeit, bei wenig Öl rostet er sichtbar, bei wenig Energie

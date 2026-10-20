@@ -23,7 +23,7 @@ action = "blackhole"  # Taste 3 (FLASH): Schwarzes Loch
 
 [[bindings]]
 key    = "BTN_3"
-action = "droid"      # Taste 4 (AUDIO): Bord-Droide BIBO
+action = "hal"        # Taste 4 (AUDIO): HAL 3000; BIBO weiter über scripts/kittctl droid
 
 [[bindings]]
 key    = "BTN_4"

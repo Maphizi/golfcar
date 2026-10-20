@@ -103,3 +103,10 @@ fx  = 76         # Meteor – langsam kreisend
 col = [255, 120, 20]
 sx  = 40
 ix  = 180
+
+[modes.hal]
+bri = 180
+fx  = 2          # Breathe – rotes Atmen
+col = [255, 20, 10]
+sx  = 40
+ix  = 128

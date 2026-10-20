@@ -34,7 +34,7 @@ Statusbehaftet – jeder Druck wechselt den Zustand:
 | Taste 1 (HANDLE) | BTN_MISC | home – Startbildschirm Space-Taxi |
 | Taste 2 (CRUISE) | BTN_1 | viz_psychedelic – Navigationscomputer / Hyperraum |
 | Taste 3 (FLASH) | BTN_2 | blackhole – Schwarzes Loch |
-| Taste 4 (AUDIO) | BTN_3 | droid – Bord-Droide BIBO |
+| Taste 4 (AUDIO) | BTN_3 | hal – HAL 3000 |
 | Taste 5 (WIPERS) | BTN_4 | slots – Space-Slotmaschine |
 | Taste 6 (MAP) | BTN_5 | campfire – Lagerfeuer |
 | Taste 7 (LIGHT) | BTN_6 | error – Systemfehler |
@@ -42,7 +42,7 @@ Statusbehaftet – jeder Druck wechselt den Zustand:
 | Taste 9 | BTN_8 | quit – Beenden |
 | Taste 10 | BTN_9 | kitt – Bordcomputer |
 
-Nicht auf dem Board, über `scripts/kittctl <modus>`: news, viz_crt, viz_eye, planeten, menu, status.
+Nicht auf dem Board, über `scripts/kittctl <modus>`: droid (BIBO), news, viz_crt, viz_eye, planeten, menu, status.
 
 ## Planeten-Visualizer (`visualizers/scenes/planets.py`)
 Sternenhimmel mit Warp-Flug-Modus.

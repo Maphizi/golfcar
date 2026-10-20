@@ -41,6 +41,10 @@ news = [
   "Galaktische Nachrichten. Alles erfunden, nichts davon falscher als die echten.",
   "Sender wird aufgebaut. Die Redaktion ist ein Droide mit Fantasie.",
 ]
+hal = [
+  "HAL wird geweckt. Bitte nicht erschrecken, er meint es gut. Sagt er.",
+  "Zentralrechner online. Er sieht alles. Er beurteilt auch alles.",
+]
 droid = [
   "Bord-Droide wird geweckt. Ich übernehme keine Haftung für sein Niveau.",
   "BIBO kommt. Er ist nicht klug, aber er meint es gut.",

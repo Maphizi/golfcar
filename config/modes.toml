@@ -94,3 +94,9 @@ label = "SCHWARZES LOCH"
 command = ["{python}", "-m", "visualizers.engine", "blackhole"]
 cwd = "{root}"
 stop_timeout = 3
+
+[modes.hal]
+label = "HAL 3000"
+command = ["{python}", "-m", "kitt.hal"]
+cwd = "{root}"
+stop_timeout = 8
