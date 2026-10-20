@@ -240,24 +240,25 @@ class Controller:
             (f"THEMA  {self.idx + 1} / {n}" + ("     AKTIV" if chosen else "     START = WÄHLEN"), 0.017, 0.175, 0.082,
              col_a if chosen else GREY, 0.9 if chosen else 0.6 + 0.3 * abs(((now * 1.5) % 2.0) - 1.0)),
             # Fahrerplakat rechts
-            ("SPACE TAXI DRIVER", 0.03, 0.83, 0.315, col_a, 1.0),
-            (self.name, 0.04, 0.83, 0.265, WHITE, 1.0),
-            (f"TAXI NR. {self.taxi_no}   LIZENZ {self.license}", 0.017, 0.83, 0.215, WHITE, 0.8),
-            (f"FAHRTEN {self.rides}   BESCHWERDEN {self.complaints}   TAXAMETER {self.meter:07.2f} CR", 0.013, 0.83, 0.18, DIM, 0.85),
-            (f"LETZTER FAHRGAST: {self.last_passenger}", 0.012, 0.83, 0.145, DIM, 0.75),
+            ("SPACE TAXI DRIVER", 0.022, 0.80, 0.898, col_a, 1.0),
+            (self.name, 0.042, 0.845, 0.375, WHITE, 1.0),
+            (f"TAXI NR. {self.taxi_no}   LIZENZ {self.license}", 0.016, 0.845, 0.32, WHITE, 0.85),
+            (f"FAHRTEN {self.rides}   BESCHWERDEN {self.complaints}", 0.012, 0.845, 0.285, DIM, 0.85),
+            (f"TAXAMETER {self.meter:07.2f} CR", 0.012, 0.845, 0.255, DIM, 0.85),
+            (f"LETZTER FAHRGAST: {self.last_passenger}", 0.011, 0.845, 0.225, DIM, 0.75),
             # Fußzeile
             (self.slogan, 0.018, 0.33, 0.018, col_a, 0.9),
-            ("<  THEMA  >      START  WÄHLEN", 0.015, 0.83, 0.018, GREY, 0.5 + 0.2 * abs(((now * 1.5) % 2.0) - 1.0)),
+            ("<  THEMA  >      START  WÄHLEN", 0.015, 0.845, 0.018, GREY, 0.5 + 0.2 * abs(((now * 1.5) % 2.0) - 1.0)),
         ]
         if self.photo is None and self.driver is None:
-            out.append(("KEIN FOTO: assets/taxi/driver.png", 0.018, 0.83, 0.62, (255, 90, 70), 0.9))
+            out.append(("KEIN FOTO: assets/taxi/driver.png", 0.016, 0.845, 0.64, (255, 90, 70), 0.9))
         if self.driver is not None:
-            out.append(("● LIVE", 0.015, 0.94, 0.885, (255, 60, 50), 0.5 + 0.5 * abs(((now * 2.0) % 2.0) - 1.0)))
-            out.append(("DIGITALE LIZENZ", 0.013, 0.755, 0.885, (200, 200, 210), 0.7))
+            out.append(("● LIVE", 0.014, 0.945, 0.898, (255, 60, 50), 0.5 + 0.5 * abs(((now * 2.0) % 2.0) - 1.0)))
+            out.append(("DIGITALE LIZENZ  ·  GÜLTIG IN ALLEN SEKTOREN", 0.011, 0.845, 0.195, (200, 200, 210), 0.7))
         # Mission in der Mitte: Überschrift und Auftrag unter dem Logo
-        out.append(("MISSION", 0.022, 0.5, 0.49, col_a, 0.9))
-        out.append((self.mission_line, 0.016 if len(self.mission_line) <= 34 else 0.013, 0.5, 0.45, WHITE, 0.85))
-        out.append((self.radio, 0.012, 0.5, 0.40, DIM, 0.7))
+        out.append(("MISSION", 0.022, 0.51, 0.48, col_a, 0.9))
+        out.append((self.mission_line, 0.016 if len(self.mission_line) <= 34 else 0.013, 0.51, 0.44, WHITE, 0.85))
+        out.append((self.radio, 0.012, 0.51, 0.39, DIM, 0.7))
         if now - self.confirm_t0 < 1.5:
             out.append((f"THEMA {th.get('title', '').upper()} AKTIV", 0.04, 0.5, 0.5, WHITE, 1.0 - (now - self.confirm_t0) / 1.5))
         return out
