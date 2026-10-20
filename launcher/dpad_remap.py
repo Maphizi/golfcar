@@ -2,8 +2,7 @@
 
 - ABS_HAT0X/Y  (D-Pad)       -> KEY_LEFT/RIGHT/UP/DOWN
 - code 266     (Startknopf)  -> KEY_ENTER  (universell: Auswahl, Losfliegen)
-- code 267     (Kippschalter)-> KEY_SPACE  (AN = losfliegen)
-                                KEY_BACKSPACE (AUS = stoppen)
+- code 267     (Kippschalter)-> KEY_F15 (Sprechtaste: HAL Mikrofon an/aus)
 - Action "talk" (keymap.toml) -> KEY_F15 über inject_talk(): HAL schaltet Sprechmodus um
 """
 from __future__ import annotations
@@ -28,7 +27,7 @@ BTN_TO_KEY = {
     266: ecodes.KEY_ENTER,   # Startknopf
 }
 
-KIPPSCHALTER_CODE = 267
+KIPPSCHALTER_CODE = 269
 KIPP_KEY_AN  = ecodes.KEY_SPACE      # Kippschalter AN  -> Losfliegen
 KIPP_KEY_AUS = ecodes.KEY_BACKSPACE  # Kippschalter AUS -> Stoppen
 
@@ -108,13 +107,9 @@ class DPadRemap(threading.Thread):
                     # Buttons (EV_KEY, nur Press = value 1)
                     elif ev.type == ecodes.EV_KEY and ev.value == 1:
                         if ev.code == KIPPSCHALTER_CODE:
-                            # Toggle: AN -> SPACE, AUS -> BACKSPACE
-                            self._kipp_state = not self._kipp_state
-                            key = KIPP_KEY_AN if self._kipp_state else KIPP_KEY_AUS
-                            self._inject(ui, key)
-                            log.info("Kippschalter %s -> %s",
-                                     "AN" if self._kipp_state else "AUS",
-                                     ecodes.KEY.get(key))
+                            # Sprechtaste: HAL Mikrofon an/aus (KEY_F15)
+                            self._inject(ui, TALK_KEY)
+                            log.info("Kippschalter -> TALK (KEY_F15)")
                         else:
                             key = BTN_TO_KEY.get(ev.code)
                             if key:
