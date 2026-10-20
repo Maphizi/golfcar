@@ -32,13 +32,21 @@ vec3 posterRocket(vec2 q, float t, float bass) {
     vec2 mc = p - vec2(0.0, 0.35);
     float mr = length(mc);
     if (mr < 0.75) {
-        float z = sqrt(1.0 - mr * mr / 0.5625);
-        float crat = fbm(mc * 9.0 + uSeed) ;
-        vec3 moon = mix(vec3(0.55, 0.65, 0.78), vec3(0.85, 0.92, 1.0), smoothstep(0.35, 0.7, crat)) * (0.35 + 0.75 * z);
-        moon *= 0.8 + 0.2 * noise(mc * 40.0);
-        col = moon;
+        vec3 n = vec3(mc / 0.75, sqrt(max(0.0, 1.0 - mr * mr / 0.5625)));
+        vec2 mq = n.xy * 6.0 + uSeed;
+        float crat = fbm(mq);
+        float craters = smoothstep(0.5, 0.62, noise(mq * 2.3)) * 0.5 + smoothstep(0.55, 0.7, noise(mq * 5.0 + 3.0)) * 0.3;
+        // Kraterränder: Ableitung des Rauschens als Schattierung
+        float e = 0.02;
+        float slope = (noise(mq * 2.3 + vec2(e, 0.0)) - noise(mq * 2.3 - vec2(e, 0.0))) * 6.0;
+        float lit = 0.25 + 0.85 * clamp(dot(n, normalize(vec3(-0.35, 0.3, 0.85))), 0.0, 1.0);
+        vec3 moon = mix(vec3(0.62, 0.68, 0.78), vec3(0.88, 0.92, 0.98), smoothstep(0.35, 0.7, crat));
+        moon *= 1.0 - craters * 0.35 + slope * 0.25;
+        moon *= 0.9 + 0.1 * noise(mc * 60.0);
+        col = moon * lit;
+        col += uColB * 0.35 * pow(1.0 - n.z, 2.5);                                        // bläulicher Saum
     }
-    col += uColB * 0.6 * smoothstep(0.1, 0.0, abs(mr - 0.75)) * step(0.75, mr);   // Mondsaum
+    col += uColB * 0.5 * smoothstep(0.12, 0.0, abs(mr - 0.75)) * step(0.75, mr);         // Mondschein
     // Rakete: Zylinder mit Spitze und drei Flossen, Metall mit Lichtkante
     vec2 r = p - vec2(0.0, 0.1 + 0.01 * sin(t * 1.5));
     float body = step(abs(r.x), 0.13) * step(-0.75, r.y) * step(r.y, 0.55);
@@ -47,10 +55,16 @@ vec3 posterRocket(vec2 q, float t, float bass) {
     float finR = step(0.0, r.x - 0.13) * step(r.x - 0.13, 0.17 * smoothstep(-0.3, -0.8, r.y)) * step(-0.85, r.y) * step(r.y, -0.3);
     float finT = step(0.0, r.x - 0.13) * step(r.x - 0.13, 0.12 * smoothstep(0.75, 0.45, r.y)) * step(0.45, r.y) * step(r.y, 0.8);
     float rocket = max(max(body, nose), max(max(finL, finR), finT));
-    float shade = 0.45 + 0.7 * smoothstep(-0.13, 0.08, r.x) * smoothstep(0.13, 0.0, r.x);
-    vec3 metal = vec3(0.78, 0.82, 0.88) * shade;
-    metal *= 1.0 - 0.35 * step(0.5, fract(r.y * 9.0)) * step(0.1, r.y) * step(r.y, 0.55) * step(abs(r.x), 0.11);   // Rillen
-    metal = mix(metal, vec3(0.12), step(0.9, r.y) * step(0.5, fract((r.x + r.y) * 20.0)) * step(0.5, fract((r.x - r.y) * 20.0)));
+    float nx = clamp(r.x / 0.13, -1.0, 1.0);
+    float nz = sqrt(1.0 - nx * nx);
+    float shade = 0.25 + 0.75 * clamp(dot(vec2(nx, nz), normalize(vec2(-0.55, 0.85))), 0.0, 1.0);
+    float specular = pow(clamp(dot(vec2(nx, nz), normalize(vec2(-0.35, 0.95))), 0.0, 1.0), 24.0) * 0.6;
+    vec3 metal = vec3(0.72, 0.76, 0.82) * shade + specular;
+    metal += uColB * 0.25 * smoothstep(0.3, 1.0, nx);                                       // Mondlicht von rechts
+    float groove = smoothstep(0.35, 0.5, abs(fract(r.y * 9.0) - 0.5)) ;
+    metal *= 1.0 - 0.45 * (1.0 - groove) * step(0.1, r.y) * step(r.y, 0.55) * step(abs(r.x), 0.11);   // Rillen
+    metal *= 0.9 + 0.1 * noise(r * 40.0);
+    metal = mix(metal, vec3(0.1), step(0.9, r.y) * step(0.5, fract((r.x + r.y) * 20.0)) * step(0.5, fract((r.x - r.y) * 20.0)));
     col = mix(col, metal, rocket);
     // Triebwerksflamme
     float fl = smoothstep(0.12 + 0.08 * bass, 0.0, abs(r.x) / max(0.001, 1.0 + (r.y + 0.75) * 1.2)) * step(r.y, -0.75) * step(-1.45, r.y);
@@ -73,9 +87,12 @@ vec3 posterFortress(vec2 q, float t, float bass) {
         float w = 0.55 - fi * 0.1, h = -0.55 + fi * 0.28;
         float tower = step(abs(p.x - 0.1 * sin(fi * 2.0)), w) * step(-0.6, p.y) * step(p.y, h);
         col = mix(col, vec3(0.05, 0.05, 0.08), tower);
-        vec2 wc = floor(vec2(p.x * 18.0, p.y * 14.0));
-        float win = step(0.5, fract(p.x * 18.0 + 0.25)) * step(0.5, fract(p.y * 14.0 + 0.25)) * step(0.4, hash12(wc + uSeed + floor(t * 0.3 + hash12(wc) * 3.0) * 0.0));
-        col += uColA * win * tower * 0.5 * (0.5 + 0.5 * step(0.3, hash12(wc + floor(t * 0.5))));
+        vec2 wg = vec2(p.x * 30.0, p.y * 22.0);
+        vec2 wc = floor(wg);
+        vec2 wf = fract(wg) - 0.5;
+        float win = smoothstep(0.3, 0.2, abs(wf.x)) * smoothstep(0.32, 0.22, abs(wf.y)) * step(0.45, hash12(wc + uSeed));
+        float winGlow = smoothstep(0.6, 0.0, length(wf)) * step(0.45, hash12(wc + uSeed)) * 0.3;
+        col += uColA * (win + winGlow) * tower * 0.55 * (0.6 + 0.4 * step(0.3, hash12(wc + floor(t * 0.5))));
     }
     // Scheinwerfer
     float beam = smoothstep(0.06, 0.0, abs(p.x + 0.2 - (p.y - 0.4) * sin(t * 0.4) * 0.6)) * smoothstep(-0.4, 0.4, p.y) * smoothstep(1.5, 0.4, p.y);
@@ -147,9 +164,15 @@ void main() {
     vec3 col = vec3(0.01, 0.01, 0.02);
     float neb = fbm(p * 1.3 + uSeed * 0.1 + vec2(t * 0.01, 0.0));
     col += mix(uColB, uColA, noise(p * 2.0)) * 0.12 * smoothstep(0.45, 0.9, neb);
-    vec2 sc = floor(uv * vec2(220.0, 120.0));
-    float star = step(0.985, hash12(sc + uSeed)) * (0.4 + 0.6 * sin(t * 2.0 + hash12(sc + 1.0) * 6.28));
-    col += vec3(star) * smoothstep(0.6, 0.0, length(fract(uv * vec2(220.0, 120.0)) - 0.5) * 2.0) * (1.0 + beat);
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        vec2 sg = p * (60.0 + fi * 45.0) + fi * 11.0;
+        vec2 cell = floor(sg);
+        vec2 f = fract(sg) - 0.5 + (vec2(hash12(cell + 1.0), hash12(cell + 2.0)) - 0.5) * 0.6;
+        float h = hash12(cell + uSeed + fi);
+        float star = step(0.94, h) * smoothstep(0.09, 0.0, length(f)) * (0.5 + 0.5 * sin(t * (1.0 + h * 3.0) + h * 40.0));
+        col += mix(vec3(0.9, 0.95, 1.0), vec3(1.0, 0.85, 0.7), hash12(cell + 7.0)) * star * (0.8 + beat);
+    }
 
     // ---- Großes Themenplakat links (Hochformat 2:3), gleitet beim Blättern
     vec2 pc = vec2(0.30 + uSlide * 0.08, 0.615);
@@ -167,8 +190,10 @@ void main() {
             int st = int(uCoverStyle + 0.5);
             pcol = st == 0 ? posterRocket(q, t, bass) : (st == 1 ? posterFortress(q, t, bass) : (st == 2 ? posterDiner(q, t, bass) : posterRetro(q, t, bass)));
             // Sterne auch im gezeichneten Plakat
-            vec2 s2 = floor(q * vec2(60.0, 90.0));
-            pcol += vec3(0.9) * step(0.985, hash12(s2 + uSeed + 9.0)) * 0.7;
+            vec2 sg2 = q * vec2(40.0, 60.0);
+            vec2 c2 = floor(sg2);
+            vec2 f2 = fract(sg2) - 0.5 + (vec2(hash12(c2 + 1.0), hash12(c2 + 2.0)) - 0.5) * 0.6;
+            pcol += vec3(0.9) * step(0.95, hash12(c2 + uSeed + 9.0)) * smoothstep(0.1, 0.0, length(f2)) * 0.8;
         }
         // Papier: leichtes Korn, Vignette, Glanzstreifen
         pcol *= 0.92 + 0.08 * noise(q * 300.0);
@@ -191,8 +216,10 @@ void main() {
     if (inDriver > 0.5) {
         vec2 q = dq * 0.5 + 0.5;
         vec3 bg2 = mix(vec3(0.02, 0.02, 0.04), uColB * 0.25, smoothstep(0.0, 1.0, q.y));
-        vec2 s3 = floor(q * vec2(40.0, 40.0));
-        bg2 += vec3(0.8) * step(0.97, hash12(s3 + uSeed + 4.0)) * 0.6;
+        vec2 sg3 = q * 30.0;
+        vec2 c3 = floor(sg3);
+        vec2 f3 = fract(sg3) - 0.5 + (vec2(hash12(c3 + 1.0), hash12(c3 + 2.0)) - 0.5) * 0.6;
+        bg2 += vec3(0.8) * step(0.93, hash12(c3 + uSeed + 4.0)) * smoothstep(0.12, 0.0, length(f3)) * 0.7;
         vec3 dcol = bg2;
         if (uPhotoOK > 0.5) {
             vec2 tq = vec2(q.x, (q.y - 0.02) * 1.15);          // Büste etwas tiefer, Kopf oben

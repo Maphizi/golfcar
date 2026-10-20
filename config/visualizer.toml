@@ -33,7 +33,7 @@ render_scale = 1.0
 
 [scenes.campfire]
 shader = "campfire"
-render_scale = 0.6      # Pixelraster 128 Zeilen; bei unter 45 fps auf dem Pi wieder 0.5
+render_scale = 0.7      # weiche Flammen, kein Pixelraster mehr; bei unter 45 fps auf dem Pi 0.55
 
 [scenes.error]
 shader = "error"
@@ -53,7 +53,7 @@ render_scale = 0.35       # Strahlverfolgung, teuer: Pi 5 schafft 0.5 mit 64 Sch
 [scenes.taxi]
 shader = "taxi"
 controller = "taxi"
-render_scale = 0.6
+render_scale = 0.8
 
 [scenes.droid]
 shader = "droid"

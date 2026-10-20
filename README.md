@@ -270,12 +270,12 @@ Shader laufen und steht im Log.
   das ganze Auge, Mitten drehen die Iris, Höhen verschieben Zeilen, der Beat sendet einen Ring
   nach außen. Pixelraster und Scanlines.
 
-- `campfire` (Taste 6): Pixel-Art-Lagerfeuer auf 128 Zeilen Raster. Flamme mit seitlichen Zungen, die
+- `campfire` (Taste 6): realistisches Lagerfeuer ohne Pixelraster: weiche Flammen aus verformtem Rauschen mit Farbverlauf, seitliche Zungen, die
   abreißen, Fetzen über der Spitze, Rauch, der im Wind abdriftet, Hitzeflimmern über dem Feuer,
   glühende Risse in den Scheiten, 22 Funken in Wirbeln und alle paar Sekunden ein Funkenregen. Zündet nach dem Start in etwa fünf
   Sekunden an (Funke, dann wachsende Flamme), zwei gekreuzte Scheite mit Glut, aufsteigende Funken,
   flackernder Lichtschein auf dem Boden, Sternenhimmel. Braucht kein Mikrofon; mit Musik werden
-  Flamme und Funken etwas lebhafter. Pixelraster 128 Zeilen, `render_scale 0.6`.
+  Flamme und Funken etwas lebhafter. Zylindrisch schattierte, verkohlte Scheite mit glühenden Rissen, Funken mit Nachleuchten, Mond mit Kratern, `render_scale 0.7`. Die Hintergrund-Ereignisse sind Silhouetten mit Lichtern.
 - `error` (Taste 7): grüner Code, der alle 24 Sekunden zusammenbricht. Beschreibung unter
   „Systemfehler-Modus“ weiter unten.
 
@@ -468,7 +468,7 @@ Markennamen oder Figuren). Die klassischen Shader liegen zum Zurückschalten in
 | 3 | SCHWARZES LOCH | `blackhole`: Strahlverfolgung mit Lichtkrümmung (siehe unten) |
 | 4 | BORD-DROIDE | `droid`: BIBO im Hangar (siehe unten) |
 | 5 | SPACE-SLOTS | `slots`: Walzen-Nahaufnahme, sechs Themen (siehe unten) |
-| 6 | LAGERFEUER / AUSSENPOSTEN | `campfire`: Pixel-Feuer mit violettem Saum unter zwei Monden, Ringplanet, Nebel, Sternschnuppen, dazu Hintergrund-Ereignisse (siehe unten) |
+| 6 | LAGERFEUER / AUSSENPOSTEN | `campfire`: realistisches Feuer unter Mond, Ringplanet, Nebel, Sternschnuppen, dazu Hintergrund-Ereignisse (siehe unten) |
 | 7 | SYSTEMFEHLER | `error`: grüner Code in sechs Varianten, Zusammenbruch, rotes Fehlerbild in sechs Varianten, Wiederherstellung, Neustart (siehe unten) |
 | 10 | BORDCOMPUTER | `shipcomputer`: gelbes Pixel-OLED mit Panels, Radar, Spektrum, Status-Symbolen, Zustände EMPFANG, DROIDENKERN RECHNET, SENDE |
 | kittctl | ZIELCOMPUTER | `target`: gelber Drahtgitter-Graben in Perspektive, Zähler, Statusfelder, Zielkreis mit Sweep und Waveform (`viz_crt`) |
