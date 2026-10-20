@@ -15,7 +15,7 @@ import time
 
 import numpy as np
 
-from launcher import config as lcfg
+from launcher import config as lcfg, wled
 
 log = logging.getLogger("hal.figures")
 
@@ -94,6 +94,7 @@ class Figures:
         if mode != self.mode:
             self.mode = mode
             log.info("Figur: %s", NAMES.get(mode, mode))
+            wled.apply_mode_async({MODE_HAL: "hal", MODE_ASTRO: "hal_astronaut", MODE_ALIEN: "hal_alien", MODE_BOTH: "hal_both"}[mode])
 
     def images(self) -> dict:
         if self.atlas is None:

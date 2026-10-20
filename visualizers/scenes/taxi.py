@@ -17,7 +17,7 @@ import time
 import numpy as np
 import pygame
 
-from launcher import config as lcfg, theme as ltheme
+from launcher import config as lcfg, theme as ltheme, wled
 
 log = logging.getLogger("taxi")
 PHOTO = lcfg.ROOT / "assets" / "pilot.png"
@@ -130,6 +130,7 @@ class Controller:
         ltheme.set_current(self.themes[self.idx].get("name", ""))
         self.confirm_t0 = time.monotonic()
         log.info("Thema gewählt: %s", self.themes[self.idx].get("name"))
+        wled.apply_mode_async("home", [int(c * 255) for c in self.themes[self.idx].get("color_a", [0.95, 0.8, 0.25])])
 
     # -- Schnittstelle zur Engine --------------------------------------------
     def images(self) -> dict:

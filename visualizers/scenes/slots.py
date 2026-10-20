@@ -16,7 +16,7 @@ import time
 import numpy as np
 import pygame
 
-from launcher import config as lcfg
+from launcher import config as lcfg, wled
 import logging
 
 import pygame.image
@@ -341,6 +341,10 @@ class Controller:
             self.message_color = (200, 200, 210)
         else:
             self.credits += PAYOUT[self.win]
+            if self.win == WIN_JACKPOT:
+                wled.apply_mode_async("slots_jackpot")
+            elif self.win == WIN_BIG:
+                wled.apply_mode_async("slots_win")
             pool = {WIN_SMALL: th["small"], WIN_BIG: th["big"], WIN_JACKPOT: th["jackpot"]}[self.win]
             self.message_color = GOLD
         self.message = self.rng.choice(pool)
@@ -372,6 +376,8 @@ class Controller:
                 # Nieten kurz, Gewinne dürfen wirken
                 hold = {WIN_NONE: 1.1, WIN_SMALL: 3.0, WIN_BIG: 5.0, WIN_JACKPOT: 8.0}[self.win]
                 if st_t >= hold:
+                    if self.win >= WIN_BIG:
+                        wled.apply_mode_async("slots")          # Board zurück auf Casinolicht
                     self.idle_len = self.rng.uniform(0.3, 1.0) if self.win == WIN_NONE else self.rng.uniform(0.8, 1.6)
                     self._set_state(ST_IDLE)
         elif self.state == ST_THEME:

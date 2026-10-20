@@ -22,7 +22,7 @@ import time
 
 import pygame
 
-from launcher import config as lcfg
+from launcher import config as lcfg, wled
 
 log = logging.getLogger("blackhole")
 
@@ -108,6 +108,7 @@ class Controller:
         self.aspect = 16.0 / 9.0
         self.throws: list[Throw | None] = [None] * SLOTS
         self.swarm: Swarm | None = None
+        self.led_back_at: float | None = None
         self.eject_t0: float | None = None          # Umkehrung läuft (8 s)
         self.eject_burst_done = False
         self.disk_t = 0.0                           # Scheibenzeit: vorwärts, bei Umkehrung rückwärts
@@ -139,6 +140,7 @@ class Controller:
         self.last_names.append(planet.get("name"))
         self.throws[slot] = Throw(self.rng, planet, side, now, self.aspect)
         log.info("Planet geworfen: %s von %s (%.0f s)", self.throws[slot].name, side, self.throws[slot].dur)
+        self._led_event("blackhole_throw", now + 3.0)
 
     def throw_swarm(self) -> None:
         now = time.monotonic()
@@ -146,6 +148,7 @@ class Controller:
             return
         self.swarm = Swarm(self.rng, now, self.aspect)
         log.info("Asteroidenschwarm geworfen: %d Brocken (%.0f s)", self.swarm.count, self.swarm.dur)
+        self._led_event("blackhole_throw", now + 3.0)
 
     def eject(self) -> None:
         now = time.monotonic()
@@ -154,6 +157,12 @@ class Controller:
         self.eject_t0 = now
         self.eject_burst_done = False
         log.info("Umkehrung: das Loch spuckt aus")
+        self._led_event("blackhole_eject", now + EJECT_SECONDS)
+
+    def _led_event(self, profile: str, back_at: float) -> None:
+        """Board kurz auf ein Ereignis-Profil, danach zurück auf das Modusprofil."""
+        wled.apply_mode_async(profile)
+        self.led_back_at = back_at
 
     def handle_event(self, ev) -> None:
         if ev.type != pygame.KEYDOWN:
@@ -221,6 +230,9 @@ class Controller:
                         self.swarm.reverse(now)
                 if eject_t >= EJECT_BURST_AT and eject_t < EJECT_BURST_AT + 4.0:
                     dir_target = -2.5
+        if self.led_back_at is not None and now >= self.led_back_at:
+            self.led_back_at = None
+            wled.apply_mode_async("blackhole")
         self.disk_dir += (dir_target - self.disk_dir) * min(1.0, dt / 0.6)
         self.disk_t = (self.disk_t + dt * self.disk_dir) % 1000.0
         if self.demo and now >= self.demo_next:

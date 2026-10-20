@@ -856,6 +856,25 @@ RAM-Cache vorgelesen; whisper mit greedy decoding und `audio_ctx 512`; LLM-Antwo
 und 3 Sätze begrenzt mit Abbruch der Generierung; Prompt-Cache im llama-server; Szenen mit
 `render_scale`; Logs rotiert; genau ein Modus-Prozess zur Zeit, KITT und RetroPie nie parallel.
 
+## LED-Buttonboard (WLED)
+
+Das beleuchtete Buttonboard hängt an einem WLED-Controller (`config/wled.toml` `[controller]`, Host
+192.168.2.150). Beim Moduswechsel schickt der Launcher das Profil `[modes.<modus>]` per HTTP-API
+(`launcher/wled.py`): Helligkeit, Effekt, Haupt-, Zweit- und Drittfarbe, Geschwindigkeit, Intensität,
+optional Palette. Jeder Modus hat sein eigenes Licht: Taxistand gelb atmend (und in der Farbe des
+gewählten Themas, sobald eines bestätigt ist), Navigationscomputer blau-cyane Kometen, Schwarzes
+Loch oranger Meteor, HAL tiefrotes Atmen, Slotmaschine goldenes Pulsieren, Lagerfeuer Feuer,
+Systemfehler rot blinkend, Arcade Regenbogen, Bordcomputer KITT-Scanner, Planeten weißblaues
+Funkeln, Nachrichten Studioblau, BIBO orange, CRT grün, Auge violett.
+Ereignisse innerhalb eines Modus schicken eigene Profile und fallen danach zurück: bei HAL
+Astronaut (weiß), Alien (grün), beide (weiß und grün als Kometen); Slotmaschine großer Gewinn (Gold
+funkelt, 5 s) und Jackpot (Feuerwerk, 8 s); Schwarzes Loch Wurf (heller Meteor, 3 s) und
+Umkehrung (weißblaues Stroboskop, 8 s). Alles asynchron mit zwei Sekunden Timeout, die LEDs
+blockieren nie etwas.
+Ausprobieren ohne Eintrag: `scripts/wledctl.py set --col 0,255,0 --fx 2 --bri 200` (dazu `--col2`,
+`--col3`, `--sx`, `--ix`, `--pal`), ein Profil senden: `scripts/wledctl.py mode hal`, alle zeigen:
+`scripts/wledctl.py list`. Gefällt eine Kombination, die Werte in `config/wled.toml` eintragen.
+
 ## Noch offen (Hardware und Inhalte, kein Code)
 
 - **USB-Soundkarte oder USB-Mikrofon plus Lautsprecher** am Pi. Ohne Mikrofon hört KITT nichts und

@@ -164,7 +164,10 @@ class Launcher:
             self.pm.start(HOME)
         self._write_state()
         try:
-            wled.apply_mode(mode)
+            col = None
+            if mode == HOME:                       # Taxistand leuchtet in der Farbe des gewählten Themas
+                col = [int(c * 255) for c in theme.current().get("color_a", [1.0, 0.75, 0.0])]
+            wled.apply_mode_async(mode, col)
         except Exception as exc:
             log.debug("WLED-Fehler: %s", exc)
 
