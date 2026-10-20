@@ -18,6 +18,10 @@ uniform vec4 uShip0, uShip1, uShip2, uShipP0, uShipP1, uShipP2;
 uniform vec2 uCross, uLaserTo;
 uniform float uLaser, uBoomKind, uShoot;
 uniform vec4 uBoom;             // (x, y, Alter in s, Größe)
+// Ereignisse unterwegs: uEvent 0 keins, 1 Asteroidenfeld, 2 Farbnebel, 3 Sonne, 4 Wurmloch (5/6 laufen über den Verkehr)
+uniform float uEvent, uEventT, uEventLen, uEventWarn, uEventSeed, uShield;
+uniform vec4 uImpact;           // Einschlag: x, y, Alter in s
+uniform vec4 uFlash;            // Blitz im Nebel: Winkel, Alter in s
 
 vec3 gA, gB;      // Farben des gerade gezeichneten Objekts (Hauptplanet oder Vorbeiflug)
 uniform vec3 uColA, uColB;
@@ -258,10 +262,122 @@ vec4 planet(vec2 p, vec2 c, float R, int type, float rot, float t) {
     return res;
 }
 
+// ---- Ereignisse unterwegs ---------------------------------------------------------------------
+// Asteroidenfeld: Brocken strömen aus der Tiefe radial nach außen (vorn groß), unregelmäßig, vom Tunnel beleuchtet
+vec3 asteroidField(vec3 col, vec2 uv, float k, float t) {
+    float env = smoothstep(0.0, 0.15, k) * smoothstep(1.0, 0.85, k);
+    for (int i = 0; i < 26; i++) {
+        float fi = float(i);
+        float h1 = hash(vec2(fi, uEventSeed * 50.0)), h2 = hash(vec2(fi * 2.0 + 1.0, uEventSeed * 50.0)), h3 = hash(vec2(fi * 3.0 + 2.0, uEventSeed * 50.0));
+        float ang = h1 * 6.2832;
+        float ph = fract(t * (0.06 + 0.12 * h2) + h3);           // 0 fern .. 1 nah
+        float rad = 0.03 + ph * ph * 2.2;
+        vec2 c = vec2(cos(ang), sin(ang)) * rad;
+        float size = (0.01 + 0.05 * h2) * (0.2 + ph * ph * 2.5);
+        vec2 d = uv - c;
+        if (abs(d.x) > size * 1.4 || abs(d.y) > size * 1.4) continue;
+        float aa = atan(d.y, d.x);
+        float rr = size * (0.85 + 0.2 * sin(aa * 3.0 + h1 * 9.0 + t * (h3 - 0.5) * 2.0) + 0.1 * sin(aa * 7.0 + h2 * 5.0));
+        float v = length(d) / rr;
+        if (v > 1.3) continue;
+        float nz = sqrt(max(0.0, 1.0 - v * v));
+        vec3 N = normalize(vec3(d / rr, nz));
+        vec3 L = normalize(vec3(-c, 0.7));                          // Licht aus dem Tunnelzentrum
+        float light = 0.15 + 0.85 * max(dot(N, L), 0.0);
+        vec3 rock = mix(vec3(0.22, 0.2, 0.18), vec3(0.45, 0.4, 0.35), hash(vec2(fi, 7.0))) * light;
+        rock += pal(h1) * 0.15 * nz;                                 // Tunnelfarben schimmern auf dem Gestein
+        float a = smoothstep(1.0, 0.85, v) * env * smoothstep(0.0, 0.1, ph);
+        col = mix(col, rock, a);
+    }
+    return col;
+}
+// Einschlag auf den Schild: Blitz am Einschlagpunkt, Wabenschimmer, Rand färbt sich
+vec3 impactFx(vec3 col, vec2 uv) {
+    float age = uImpact.z;
+    if (age > 0.9 || age < 0.0) return col;
+    float e = exp(-age * 4.0);
+    vec2 d = uv - uImpact.xy;
+    col += vec3(1.0, 0.9, 0.7) * exp(-length(d) * 6.0) * e * 1.5;
+    vec2 hp = uv * 12.0;
+    float hex = smoothstep(0.06, 0.0, abs(length(fract(hp) - 0.5) - 0.42));
+    col += vec3(0.4, 0.8, 1.0) * hex * exp(-length(d) * 5.0) * e * 1.2;
+    col += vec3(0.3, 0.6, 1.0) * smoothstep(1.2, 1.9, length(uv)) * e * 0.4;
+    return col;
+}
+// Farbnebel: dichte, langsam treibende Schwaden in wandernden Farben, dazwischen gezackte Blitze
+vec3 nebulaFx(vec3 col, vec2 uv, float k, float t) {
+    float env = smoothstep(0.0, 0.2, k) * smoothstep(1.0, 0.8, k);
+    float n = fbm(uv * 1.5 + vec2(t * 0.15, -t * 0.1) + uEventSeed * 9.0);
+    float n2 = fbm(uv * 3.0 - vec2(t * 0.2, t * 0.05) + n);
+    vec3 neb = pal(n * 0.8 + t * 0.05 + uEventSeed) * (0.5 + 0.5 * n2);
+    float dens = smoothstep(0.25, 0.8, n * 0.7 + n2 * 0.5) * (0.6 + 0.4 * uRms);
+    col = mix(col, col * 0.4 + neb * 0.9, dens * env * 0.85);
+    float age = uFlash.y;
+    if (age >= 0.0 && age < 0.5) {
+        float e = exp(-age * 7.0);
+        vec2 p0 = vec2(cos(uFlash.x), sin(uFlash.x)) * 2.0;
+        float dmin = 10.0;
+        vec2 prev = p0;
+        for (int s = 1; s <= 6; s++) {
+            float fs = float(s) / 6.0;
+            vec2 pn = p0 * (1.0 - fs) + vec2(hash(vec2(fs, uFlash.x)) - 0.5, hash(vec2(fs, uFlash.x + 3.0)) - 0.5) * 0.4 * (1.0 - fs);
+            dmin = min(dmin, sdSeg(uv, prev, pn));
+            prev = pn;
+        }
+        col += vec3(0.8, 0.85, 1.0) * (smoothstep(0.012, 0.0, dmin) + 0.3 * exp(-dmin * 8.0)) * e * 2.0 * env;
+        col += vec3(0.6, 0.7, 1.0) * e * 0.15 * env;
+    }
+    return col;
+}
+// Sonne: zieht groß am Bildrand vorbei, Granulation, Korona, Protuberanzen, Lens-Flare, Hitze im Bild
+vec3 sunFx(vec3 col, vec2 uv, float k, float t) {
+    float env = smoothstep(0.0, 0.1, k) * smoothstep(1.0, 0.9, k);
+    float side = uEventSeed > 0.5 ? 1.0 : -1.0;
+    vec2 c = vec2(side * (2.7 - 1.9 * sin(k * PI)), 0.2 - 0.4 * k);
+    float R = 0.8;
+    vec2 d = uv - c;
+    float rr = length(d) / R;
+    if (rr > 4.0) { return col + vec3(1.0, 0.6, 0.3) * exp(-length(d) * 1.2) * 0.25 * env; }
+    float ang = atan(d.y, d.x);
+    float gran = fbm(d * 6.0 + t * 0.3);
+    vec3 disc = mix(vec3(1.0, 0.45, 0.05), vec3(1.0, 0.95, 0.7), gran) * (1.25 - 0.3 * rr);
+    float prot = fbm(vec2(ang * 3.0 + uEventSeed * 9.0, t * 0.4));
+    float corona = exp(-(rr - 1.0) * (3.0 + 4.0 * prot)) * step(1.0, rr);
+    col = mix(col, disc, smoothstep(1.02, 0.98, rr) * env);
+    col += vec3(1.0, 0.5, 0.1) * corona * env * (0.8 + 0.5 * uBass);
+    float arc = smoothstep(0.06, 0.0, abs(rr - (1.15 + 0.25 * prot))) * smoothstep(0.3, 0.7, fbm(vec2(ang * 5.0, t * 0.5 + uEventSeed)));
+    col += vec3(1.0, 0.35, 0.05) * arc * env * 1.2;
+    for (int i = 1; i <= 4; i++) {
+        float fi = float(i) * 0.35;
+        vec2 gpos = c * (1.0 - fi * 1.4);
+        float gs = 0.05 + 0.08 * fi;
+        col += pal(fi + 0.2) * smoothstep(gs, gs * 0.6, length(uv - gpos)) * 0.25 * env;
+    }
+    col += vec3(1.0, 0.6, 0.3) * exp(-length(d) * 1.2) * 0.25 * env;
+    return col;
+}
+// Wurmloch: rasende Ringe mit Spiralverdrehung, Farben kippen, am Ende Durchbruch mit Weißblitz
+vec3 wormholeFx(vec3 col, vec2 uv, float k, float t, float r, float a) {
+    float env = smoothstep(0.0, 0.25, k) * smoothstep(1.0, 0.75, k);
+    float depth = 1.0 / (r + 0.12);
+    float rings = 0.5 + 0.5 * sin(depth * 6.0 - t * 9.0 + a * 3.0 * env);
+    rings = pow(rings, 4.0);
+    vec3 rc = pal(depth * 0.15 - t * 0.5 + uEventSeed);
+    col = mix(col, col * 0.5 + rc * rings * 1.3, env * (0.6 + 0.4 * uBass));
+    col += vec3(0.7, 0.8, 1.0) * exp(-r * 4.0) * env * (0.5 + 0.5 * sin(t * 6.0));
+    col += vec3(1.0) * exp(-abs(k - 0.85) * 25.0) * 1.2;
+    return col;
+}
+
 void main() {
     vec2 uv = vUv * 2.0 - 1.0;
     uv.x *= iResolution.x / iResolution.y;
     float live = 1.0 - uSilent;
+    // Einschlag: das ganze Bild ruckt kurz
+    if (uImpact.z >= 0.0 && uImpact.z < 0.6) {
+        float e = exp(-uImpact.z * 5.0);
+        uv += vec2(hash(vec2(floor(iTime * 40.0), 1.0)) - 0.5, hash(vec2(floor(iTime * 40.0), 2.0)) - 0.5) * 0.06 * e;
+    }
     int type = int(uPlanetType + 0.5);
     int phase = int(uPhase + 0.5);
     float pt = uPhaseT;
@@ -329,6 +445,19 @@ void main() {
         col = mix(col, col * 0.8 + tunnel * (0.45 + 0.45 * uRms + 0.1 * live), warp);
         col += vec3(1.0) * uBeat * 0.1 * warp * live;
     }
+
+    // ---- Ereignisse unterwegs (nur im Hyperraum)
+    int ev = int(uEvent + 0.5);
+    float ek = uEventLen > 0.0 ? clamp(uEventT / uEventLen, 0.0, 1.0) : 0.0;
+    if (phase == 2 && ev > 0) {
+        if (ev == 3) col = sunFx(col, uv, ek, iTime);
+        if (ev == 4) col = wormholeFx(col, uv, ek, iTime, r, a);
+        if (ev == 2) col = nebulaFx(col, uv, ek, iTime);
+        if (ev == 1) col = asteroidField(col, uv, ek, iTime);
+    }
+    if (phase == 2) col = impactFx(col, uv);
+    // Warnung: der Bildrand pulst rot, bevor ein Ereignis beginnt
+    col += vec3(1.0, 0.1, 0.05) * smoothstep(1.0, 1.9, length(uv)) * uEventWarn * (0.5 + 0.5 * sin(iTime * 12.0)) * 0.5;
 
     // ---- Planet (browse: mittig, beim Wechsel seitlich hereingleitend)
     // ---- Vorbeiflug: ein anderes Objekt zieht im Hyperraum seitlich vorbei (wächst, driftet, verschwindet)

@@ -542,10 +542,21 @@ wenn ein Objekt im Fadenkreuz liegt. Die Texte im Navigationscomputer verwackeln
 (wenige Pixel bei Bass und Beat). Schiffswinkel werden auf
 0 bis 2π reduziert, weil große Winkelwerte auf der GPU ungenaue Sinus-Werte liefern.
 
-**Kippschalter im Navigationscomputer:** Kippschalter AN schaltet scharf (Anzeige SCHARF), der
-Startknopf startet den Flug, und der Hyperraumflug dauert so lange, bis der Kippschalter wieder AUS
-steht; dann kommt die Ankunft. Ohne Kippschalter (Maus-Mitteltaste, Demo) gilt weiter die feste
-Flugdauer aus `config/visualizer.toml`. Logik in `visualizers/scenes/navcomputer.py`, `set_armed`.
+**Flug und Ankunft im Navigationscomputer:** Der Startknopf startet den Flug (Kippschalter AN
+zeigt vorher nur SCHARF an). Der Hyperraumflug endet nie von selbst: erst wenn der Pilot den
+Kippschalter umlegt (egal in welche Richtung), kommt die Ankunft. Nur im `--demo` gilt die feste
+Flugdauer aus `config/visualizer.toml`. Logik in `visualizers/scenes/navcomputer.py`, `end_flight`.
+
+**Ereignisse unterwegs:** Alle 30 bis 60 Sekunden passiert im Hyperraum zufällig etwas, drei
+Sekunden vorher blinkt "ACHTUNG ... VORAUS" und der Bildrand pulst rot. Asteroidenfeld: Brocken
+strömen aus der Tiefe vorbei, Einschläge lassen das Bild rucken, blitzen auf dem Schild mit
+Wabenschimmer, die Schildanzeige im HUD sinkt und erholt sich danach. Farbnebel: dichte, treibende
+Schwaden in wandernden Farben, gezackte Blitze vom Bildrand zur Mitte, "SENSOREN GESTÖRT". Sonne:
+zieht riesig am Bildrand vorbei, mit Granulation, Korona, Protuberanzen, Lens-Flare und Hitzeglühen,
+"HITZESCHILD AKTIV". Wurmloch: rasende Ringe mit Spiralverdrehung und kippenden Farben, am Ende
+Durchbruch mit Weißblitz. Raumstation: eine große Ringstation quert das Bild, "ANDOCKEN VERWEIGERT".
+Kometenschauer: ein Komet nach dem anderen, "FEUER FREI", abschießbar mit dem Startknopf. Tabelle
+`EVENTS` im Controller, Effekte im Shader (`asteroidField`, `nebulaFx`, `sunFx`, `wormholeFx`).
 
 **Space-Slotmaschine (Taste 5, `slots`):** Nahaufnahme von drei Walzen, die das ganze Bild füllen:
 gedruckte Symbole auf gewölbten Trommeln mit Papierkorn, Licht von oben, dunkle Trennstege, Glasreflex.

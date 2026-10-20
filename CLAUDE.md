@@ -66,6 +66,11 @@ ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-S
 
 Nicht auf dem Board, über `scripts/kittctl <modus>`: droid (BIBO), news, viz_crt, viz_eye, planeten, menu, status.
 
+## Navigationscomputer (`visualizers/scenes/navcomputer.py`)
+ENTER = Flug starten, Flug endet NUR per Kippschalter (SPACE oder BACKSPACE im Flug = Ankunft), nie von selbst
+(Demo: cruise_seconds). Ereignisse alle 30–60 s (`EVENTS`): Asteroidenfeld, Farbnebel, Sonne, Wurmloch,
+Raumstation, Kometenschauer; Shader-Uniforms uEvent/uEventT/uEventLen/uEventWarn/uImpact/uFlash/uShield.
+
 ## LED-Buttonboard (`launcher/wled.py`, `config/wled.toml`)
 Profil je Modus `[modes.<modus>]` (bri, fx, col, col2, col3, sx, ix, pal); Ereignis-Profile `hal_astronaut`,
 `hal_alien`, `hal_both`, `slots_win`, `slots_jackpot`, `blackhole_throw`, `blackhole_eject` schicken die Modi selbst

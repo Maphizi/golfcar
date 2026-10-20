@@ -4,6 +4,10 @@ Bedienung:  Maus links / Pfeil links = vorheriger Planet, Maus rechts / Pfeil re
             Maus Mitte, Enter oder Leertaste = Kurs setzen und anfliegen.
 Phasen:     0 browse (Planet steht, Sterne ruhen) -> 1 launch (Sterne ziehen sich zu Streifen)
             -> 2 cruise (psychedelischer Schweif, langsam) -> 3 arrive (Ziel wächst aus der Mitte) -> browse
+Der Flug endet nur, wenn der Pilot den Kippschalter umlegt (nie von selbst; im --demo nach cruise_seconds).
+Unterwegs passiert alle 30 bis 60 s zufällig ein Ereignis (EVENTS): Asteroidenfeld mit Einschlägen und
+Schildanzeige, Farbnebel mit Blitzen, Vorbeiflug an einer Sonne, Wurmloch, Raumstation, Kometenschauer.
+Drei Sekunden vorher blinkt die Warnung im HUD.
 """
 from __future__ import annotations
 
@@ -36,6 +40,17 @@ COMET_SCALE = 0.45
 TRAFFIC_NAMES = ["JÄGER", "SATELLIT", "KREUZER", "RINGSTATION", "KOMET", "STATION"]
 CROSS_STEP = 0.14
 PHASE_BROWSE, PHASE_LAUNCH, PHASE_CRUISE, PHASE_ARRIVE = 0, 1, 2, 3
+# Ereignisse unterwegs: (Name, Dauer in s, HUD-Zeile während des Ereignisses); Index + 1 = uEvent im Shader
+EVENTS = [
+    ("ASTEROIDENFELD", 17.0, "AUSWEICHEN   SCHILDE {shield:3.0f} %"),
+    ("FARBNEBEL", 18.0, "SENSOREN GESTÖRT   SICHT NULL"),
+    ("SONNE", 16.0, "HITZESCHILD AKTIV   ABSTAND HALTEN"),
+    ("WURMLOCH", 12.0, "RAUMZEIT INSTABIL   FESTHALTEN"),
+    ("RAUMSTATION", 10.0, "ANDOCKEN VERWEIGERT   WEITERFLUG"),
+    ("KOMETENSCHAUER", 12.0, "FEUER FREI   START = SCHUSS"),
+]
+EVENT_EVERY = (30.0, 60.0)
+EVENT_WARN = 3.0
 YEL = (255, 214, 10)
 DIM = (150, 130, 40)
 
@@ -87,6 +102,16 @@ class Controller:
         self.last_f = None
         self.armed = False          # Kippschalter-Zustand
         self.end_after_launch = False
+        # Ereignisse unterwegs
+        self.event: dict | None = None
+        self.next_event_at = 0.0
+        self.shield = 100.0
+        self.impact = (0.0, 0.0, -10.0)    # x, y, Zeitpunkt
+        self.next_impact_at = 0.0
+        self.flash = (0.0, -10.0)          # Winkel, Zeitpunkt
+        self.next_flash_at = 0.0
+        self.next_comet_at = 0.0
+        self.event_seed = 0.5
 
     # -- Eingabe ---------------------------------------------------------
     def handle_event(self, ev) -> None:
@@ -94,10 +119,13 @@ class Controller:
         # Startknopf (266) kommt als ENTER. F13/F14 der älteren joystick.py werden bewusst ignoriert,
         # sonst würde ein Druck doppelt gezählt. Ablauf: AN = scharf, Start = los, Flug bis AUS.
         if ev.type == pygame.KEYDOWN:
-            if ev.key == pygame.K_SPACE:
-                self.set_armed(True)
-            elif ev.key == pygame.K_BACKSPACE:
-                self.set_armed(False)
+            if ev.key in (pygame.K_SPACE, pygame.K_BACKSPACE):
+                # Kippschalter umgelegt: im Flug = Ankunft einleiten (egal in welche Richtung),
+                # sonst scharf (AN) / gesichert (AUS)
+                if self.phase in (PHASE_CRUISE, PHASE_LAUNCH):
+                    self.end_flight()
+                else:
+                    self.set_armed(ev.key == pygame.K_SPACE)
             elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                 if self.phase == PHASE_CRUISE:
                     self.shoot()
@@ -141,16 +169,15 @@ class Controller:
         self._set_phase(PHASE_LAUNCH)
 
     def set_armed(self, on: bool) -> None:
-        """Kippschalter. AUS während des Flugs leitet die Ankunft ein (im Hyperraum sofort, beim Start
-        nach dem Start). Die Maus-Mitteltaste fliegt weiter ohne Kippschalter, mit fester Flugdauer."""
-        if on == self.armed:
-            return
+        """Kippschalter außerhalb des Flugs: nur Anzeige scharf / gesichert."""
         self.armed = on
-        if not on:
-            if self.phase == PHASE_CRUISE:
-                self._set_phase(PHASE_ARRIVE)
-            elif self.phase == PHASE_LAUNCH:
-                self.end_after_launch = True
+
+    def end_flight(self) -> None:
+        """Ankunft einleiten: im Hyperraum sofort, während des Starts nach dem Start."""
+        if self.phase == PHASE_CRUISE:
+            self._set_phase(PHASE_ARRIVE)
+        elif self.phase == PHASE_LAUNCH:
+            self.end_after_launch = True
 
     def _set_phase(self, ph: int) -> None:
         self.phase = ph
@@ -158,8 +185,12 @@ class Controller:
         if ph == PHASE_CRUISE:
             self.fly_idx = -1
             self.next_fly_at = self.phase_t0 + self.rng.uniform(8.0, 14.0)
+            self.event = None
+            self.next_event_at = self.phase_t0 + self.rng.uniform(*EVENT_EVERY) * 0.6   # erstes Ereignis etwas früher
+            self.shield = 100.0
         elif ph != PHASE_CRUISE:
             self.fly_idx = -1
+            self.event = None
 
     # -- Verkehr und Schießen --------------------------------------------------
     def _traffic_pos(self, s: dict, now: float) -> tuple[float, float, float, float]:
@@ -235,12 +266,13 @@ class Controller:
             if self.end_after_launch:
                 self.end_after_launch = False
                 self._set_phase(PHASE_ARRIVE)
-        elif self.phase == PHASE_CRUISE and not self.armed and pt >= self.cruise_s:
-            self._set_phase(PHASE_ARRIVE)      # ohne Kippschalter (Maus/Demo): feste Flugdauer
+        elif self.phase == PHASE_CRUISE and self.demo and pt >= self.cruise_s:
+            self._set_phase(PHASE_ARRIVE)      # nur im Demo: feste Flugdauer. Sonst endet der Flug allein per Kippschalter
         elif self.phase == PHASE_ARRIVE and pt >= self.arrive_s:
             self._set_phase(PHASE_BROWSE)
         self._advance_flyby(now)
         self._advance_traffic(now)
+        self._advance_event(now)
         if self.demo and self.phase == PHASE_BROWSE and now >= self.demo_next:
             if self.rng.random() < 0.6:
                 self.select(self.rng.choice((-1, 1)))
@@ -249,10 +281,59 @@ class Controller:
                 self.fly()
                 self.demo_next = now + self.launch_s + self.cruise_s + self.arrive_s + 3.0
 
+    def _spawn_traffic(self, kind: int, now: float, scale: float, length: float, cross: bool = False) -> None:
+        self.traffic.append({
+            "kind": kind, "t0": now, "len": length, "ang": self.rng.uniform(0.0, 6.283), "dir": self.rng.choice((-1.0, 1.0)),
+            "spin": self.rng.uniform(-0.3, 0.3), "cross": cross, "y": self.rng.uniform(-0.4, 0.5), "scale": scale,
+        })
+
+    def _advance_event(self, now: float) -> None:
+        """Ereignisse im Hyperraum: Warnung, dann 10 bis 18 s Ereignis, dann 30 bis 60 s Ruhe."""
+        if self.phase != PHASE_CRUISE:
+            self.shield = min(100.0, self.shield + 0.05)
+            return
+        ev = self.event
+        if ev is None:
+            if now >= self.next_event_at:
+                kind = self.rng.randrange(len(EVENTS))
+                self.event = {"kind": kind, "warn_t0": now, "t0": now + EVENT_WARN, "len": EVENTS[kind][1], "started": False}
+                self.event_seed = self.rng.random()
+                log.info("Ereignis voraus: %s", EVENTS[kind][0])
+            else:
+                self.shield = min(100.0, self.shield + 0.03)
+            return
+        kind = ev["kind"]
+        if not ev["started"] and now >= ev["t0"]:
+            ev["started"] = True
+            if kind == 4:                                   # Raumstation zieht groß vorbei
+                self._spawn_traffic(3, now, 2.6, ev["len"], cross=True)
+            elif kind == 5:
+                self.next_comet_at = now
+            elif kind == 0:
+                self.next_impact_at = now + self.rng.uniform(1.0, 2.5)
+            elif kind == 1:
+                self.next_flash_at = now + self.rng.uniform(1.0, 3.0)
+        if ev["started"]:
+            if kind == 0 and now >= self.next_impact_at:   # Einschlag: Schild nimmt Schaden
+                self.impact = (self.rng.uniform(-1.2, 1.2), self.rng.uniform(-0.7, 0.7), now)
+                self.shield = max(5.0, self.shield - self.rng.uniform(4.0, 11.0))
+                self.next_impact_at = now + self.rng.uniform(1.5, 3.5)
+            elif kind == 1 and now >= self.next_flash_at:   # Blitz im Nebel
+                self.flash = (self.rng.uniform(0.0, 6.283), now)
+                self.next_flash_at = now + self.rng.uniform(1.5, 4.0)
+            elif kind == 5 and now >= self.next_comet_at and len(self.traffic) < 4:
+                self._spawn_traffic(4, now, self.rng.uniform(0.5, 0.9), self.rng.uniform(2.5, 4.0), cross=self.rng.random() < 0.5)
+                self.next_comet_at = now + self.rng.uniform(0.9, 1.6)
+            if now >= ev["t0"] + ev["len"]:
+                self.event = None
+                self.next_event_at = now + self.rng.uniform(*EVENT_EVERY)
+                log.info("Ereignis vorbei: %s", EVENTS[kind][0])
+
     def uniform_names(self):
         return ("uPhase", "uPhaseT", "uSlide", "uPlanetType", "uColA", "uColB", "uPlanetSize", "uRings", "uMoons", "uLaunchS", "uCruiseS", "uArriveS",
                 "uFly", "uFlyType", "uFlySize", "uFlyRings", "uFlySide", "uFlyColA", "uFlyColB", "uSponsorTex", "uSponsorOK",
-                "uShip0", "uShip1", "uShip2", "uShipP0", "uShipP1", "uShipP2", "uCross", "uLaser", "uLaserTo", "uBoom", "uBoomKind", "uShoot")
+                "uShip0", "uShip1", "uShip2", "uShipP0", "uShipP1", "uShipP2", "uCross", "uLaser", "uLaserTo", "uBoom", "uBoomKind", "uShoot",
+                "uEvent", "uEventT", "uEventLen", "uEventWarn", "uEventSeed", "uShield", "uImpact", "uFlash")
 
     def images(self) -> dict:
         if self.sponsor is None:
@@ -287,6 +368,18 @@ class Controller:
             "uBoom": (boom[0], boom[1], now - boom[2], boom[4]) if boom else (0.0, 0.0, 9.0, 0.0),
             "uBoomKind": float(boom[3]) if boom else 0.0,
             "uShoot": 1.0 if self.phase == PHASE_CRUISE else 0.0,
+        })
+        ev = self.event
+        started = bool(ev and ev["started"])
+        ships.update({
+            "uEvent": float(ev["kind"] + 1) if started else 0.0,
+            "uEventT": (now - ev["t0"]) if started else 0.0,
+            "uEventLen": ev["len"] if ev else 0.0,
+            "uEventWarn": min(1.0, (now - ev["warn_t0"]) / EVENT_WARN) if ev and not started else 0.0,
+            "uEventSeed": self.event_seed,
+            "uShield": self.shield / 100.0,
+            "uImpact": (self.impact[0], self.impact[1], now - self.impact[2], 0.0),
+            "uFlash": (self.flash[0], now - self.flash[1], 0.0, 0.0),
         })
         slide = self.slide * max(0.0, 1.0 - (now - self.slide_t0) / 0.6)
         return {
@@ -368,9 +461,16 @@ class Controller:
                 k = (now - self.fly_t0) / self.fly_len
                 fp = self.planets[self.fly_idx]
                 out.append((f"PASSIERE  {fp['name'].upper()}", 0.03, 0.5, 0.9, (255, 236, 120), min(1.0, k * 4.0) * min(1.0, (1.0 - k) * 4.0) * 0.9))
-            if self.armed:
-                out.append((f"HYPERRAUM   ZIEL {p['name'].upper()}   FLUGZEIT {pt:05.1f}   KIPPSCHALTER AUS = ANKUNFT", 0.028, 0.5, 0.06, DIM, 0.8))
-            else:
-                out.append((f"HYPERRAUM   ZIEL {p['name'].upper()}   ANKUNFT IN {eta:04.1f}", 0.028, 0.5, 0.06, DIM, 0.8))
+            out.append((f"HYPERRAUM   ZIEL {p['name'].upper()}   FLUGZEIT {pt:05.1f}   KIPPSCHALTER = ANKUNFT", 0.028, 0.5, 0.06, DIM, 0.8))
+            ev = self.event
+            if ev is not None:
+                name, _, line = EVENTS[ev["kind"]]
+                if not ev["started"]:
+                    out.append((f"ACHTUNG   {name} VORAUS", 0.036, 0.5, 0.8, (255, 70, 50), 0.4 + 0.6 * abs(math.sin(t * 6.0))))
+                else:
+                    k = (now - ev["t0"]) / ev["len"]
+                    a = min(1.0, k * 6.0) * min(1.0, (1.0 - k) * 6.0)
+                    out.append((name, 0.034, 0.5, 0.8, (255, 200, 90), 0.9 * a))
+                    out.append((line.format(shield=self.shield), 0.024, 0.5, 0.755, (255, 150, 90) if ev["kind"] == 0 and self.shield < 50 else (230, 200, 140), 0.85 * a))
             return out
         return [(f"ANKUNFT   {p['name'].upper()}", 0.05, 0.5, 0.88, YEL, min(1.0, pt / 1.5))]
