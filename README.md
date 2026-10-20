@@ -566,8 +566,12 @@ Walzen bleiben in wechselnden Mustern stehen: nacheinander, zwei zugleich, alle 
 und die anderen drehen lange weiter, die letzte zögert; nach einer Niete dreht gelegentlich eine
 Walze noch einmal nach. Quoten: 62 % Verlust (davon fast die Hälfte knapp daneben, das passende
 Symbol steht dann direkt über oder unter der Linie), 22 % zwei gleiche, 12 % drei gleiche, 4 %
-Jackpot. Gewinn: sanftes Leuchten und ein Lichtstreifen über den Gewinnsymbolen, Gold beim Jackpot; bei
-Verlust dunkeln die Walzen kurz ab. Guthaben
+Jackpot. Die Walzen laufen zügig (Anlauf unter einer halben Sekunde, Stopp nach ein bis zwei Sekunden),
+Nieten werden nur kurz gezeigt (gut eine Sekunde), Gewinne dürfen wirken (3, 5 bzw. 8 Sekunden).
+Gewinn-Effekte: Aufblitzen und kurzer Stoß der Maschine, pulsierende Gewinnsymbole, Lichtstreifen,
+aufsteigende Funken aus den Gewinnsymbolen, leuchtende Stege und Blende; bei großem Gewinn
+Lichtstrahlen aus der Gewinnlinie; beim Jackpot dazu Goldregen über das ganze Bild und laufende
+Farben. Bei Verlust dunkeln die Walzen kurz ab. Guthaben
 startet bei 1337 Credits, Einsatz 10, Gewinne 25 / 150 / 1000.
 Technik: Die Bildbögen werden beim Start zu einem Atlas zusammengesetzt (Zeile je Automat, neun
 Kacheln nebeneinander, darunter die Walzenstreifen), den der Controller (`visualizers/scenes/slots.py`)

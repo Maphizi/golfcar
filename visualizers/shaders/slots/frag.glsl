@@ -94,6 +94,12 @@ void main() {
     float live = 1.0 - uSilent;
     bool result = uState > 1.5 && uState < 2.5;
     float winPulse = result && uWin > 0.5 ? 0.5 + 0.5 * sin(t * 4.0) : 0.0;
+    float winK = (result && uWin > 0.5) ? smoothstep(0.0, 0.25, uStateT) : 0.0;     // Gewinn-Effekte
+    float big = uWin > 1.5 ? 1.0 : 0.0, jackpot = uWin > 2.5 ? 1.0 : 0.0;
+    vec3 winCol = jackpot > 0.5 ? vec3(1.0, 0.85, 0.4) : (big > 0.5 ? mix(uColA, vec3(1.0, 0.9, 0.6), 0.5) : uColA);
+    if (jackpot > 0.5) winCol = hueShift(winCol, t * 2.0) * 0.6 + vec3(0.5, 0.4, 0.2);   // Jackpot: Farben laufen
+    // Gewinn: kurzer Stoß nach innen (die Maschine "zuckt")
+    p *= 1.0 - 0.035 * exp(-uStateT * 6.0) * winK * (1.0 + big);
 
     float reelW = aspect * 0.30;
     float x0 = -aspect * 0.45;
@@ -131,10 +137,27 @@ void main() {
         float band = smoothstep(CELL * 0.62, CELL * 0.5, abs(p.y));
         float maskBit = mod(floor(uWinMask / pow(2.0, ri)), 2.0);
         if (result && maskBit > 0.5) {
-            vec3 glow = uWin > 2.5 ? vec3(1.0, 0.85, 0.4) : uColA;
-            col += glow * band * winPulse * 0.18;
-            float sweep = smoothstep(0.08, 0.0, abs(fract(uStateT * 0.35) * (aspect + 0.4) - aspect * 0.5 - 0.2 - p.x));
-            col += glow * band * sweep * 0.25;
+            vec3 glow = winCol;
+            col += glow * band * winPulse * (0.25 + 0.2 * big);
+            float sweep = smoothstep(0.08, 0.0, abs(fract(uStateT * 0.6) * (aspect + 0.4) - aspect * 0.5 - 0.2 - p.x));
+            col += glow * band * sweep * 0.45;
+            // Aufblitzen im Moment des Gewinns
+            col += vec3(1.0, 0.97, 0.9) * band * exp(-uStateT * 5.0) * (0.9 + 0.6 * big);
+            // Funken, die aus dem Gewinnsymbol aufsteigen
+            vec2 sp2 = vec2(q.x * 30.0, (p.y + 0.5) * 24.0 - uStateT * (3.0 + 2.0 * big));
+            vec2 sc = floor(sp2), sf = fract(sp2) - 0.5;
+            float sh = hash12(sc + ri * 7.0);
+            float spark = step(0.86 - 0.08 * big, sh) * smoothstep(0.22, 0.0, length(sf)) * (0.6 + 0.4 * sin(t * 9.0 + sh * 20.0));
+            col += glow * spark * winK * smoothstep(0.0, 0.3, band + 0.1) * 1.2;
+            // Symbol pulst heller
+            col *= 1.0 + 0.25 * band * winPulse * (1.0 + big);
+        }
+        // großer Gewinn / Jackpot: Lichtstrahlen aus der Gewinnlinie über die ganze Walze
+        if (result && big > 0.5) {
+            vec2 rp = vec2(q.x * 1.6, p.y);
+            float ang = atan(rp.y, rp.x);
+            float rays = pow(0.5 + 0.5 * sin(ang * 10.0 + t * 3.0 + ri), 6.0) * exp(-length(rp) * 2.2);
+            col += winCol * rays * winK * (0.28 + 0.22 * jackpot);
         }
         if (result && uWin < 0.5) col *= 0.82 + 0.18 * smoothstep(0.0, 1.2, uStateT);
         // Blendenschatten oben/unten
@@ -155,6 +178,17 @@ void main() {
         float m = smoothstep(0.012, 0.0, abs(p.x - ex)) * smoothstep(0.02, 0.0, abs(p.y));
         col += uColA * m * (0.6 + 0.3 * sin(t * 2.0) + winPulse);
     }
+    // Jackpot: Goldregen über das ganze Bild und pulsierender Rahmen
+    if (result && jackpot > 0.5) {
+        vec2 gp = vec2(p.x * 26.0, (p.y + 0.5) * 16.0 + uStateT * 2.5);
+        vec2 gc = floor(gp), gf = fract(gp) - 0.5;
+        float gh = hash12(gc + 11.0);
+        float drop = step(0.8, gh) * smoothstep(0.18, 0.0, length(gf * vec2(1.0, 0.5))) * (0.7 + 0.3 * sin(t * 6.0 + gh * 30.0));
+        col += vec3(1.0, 0.85, 0.35) * drop * winK * 0.9;
+        col += winCol * 0.12 * winPulse * smoothstep(0.36, 0.49, abs(p.y));
+    }
+    // Gewinn: die Blende und die Stege leuchten mit
+    col += winCol * winK * winPulse * (0.08 + 0.12 * big) * (1.0 - smoothstep(0.0, 0.46, abs(p.y)) * 0.5);
     // Glas: weicher Reflex und etwas Staub
     col += vec3(0.045) * smoothstep(0.0, 0.8, p.y * 0.8 - p.x * 0.25 + 0.3) * (1.0 - smoothstep(0.42, 0.49, abs(p.y)));
     col += vec3(0.02) * noise(p * 40.0 + 3.0);

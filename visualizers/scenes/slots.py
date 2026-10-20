@@ -146,7 +146,7 @@ class Reel:
             self.speed = 0.0
             return
         if self.stopping_since < 0.0:
-            ramp = min(1.0, (now - self.start_t) / 0.9)
+            ramp = min(1.0, (now - self.start_t) / 0.45)
             ramp = ramp * ramp * (3.0 - 2.0 * ramp)
             self.speed = self.max_speed * ramp
             self.pos += self.speed * dt
@@ -156,7 +156,7 @@ class Reel:
                 # Restweg bis zum Ziel plus ein bis zwei ganze Umdrehungen
                 frac = (self.target - self.pos) % STRIP_LEN
                 self.dist = frac + STRIP_LEN * random.choice((0, 1))
-                self.decel = max(1.4, self.dist / self.max_speed * 1.7)
+                self.decel = max(0.9, self.dist / self.max_speed * 1.5)
         else:
             u = (now - self.stopping_since) / self.decel
             self.pos = self.start_pos + self.dist * ease_back(u)
@@ -182,7 +182,7 @@ class Controller:
         self.state = ST_IDLE
         self.state_t0 = time.monotonic()
         self.last = self.state_t0
-        self.idle_len = 2.5
+        self.idle_len = 1.5
         self.win = WIN_NONE
         self.win_mask = 0
         self.message = ""
@@ -304,7 +304,7 @@ class Controller:
             else:
                 target = self.rng.randrange(STRIP_LEN)
                 self.planned_win, self.win_mask_planned = WIN_NONE, 0
-            self.reels[r].start(now, now + self.rng.uniform(1.8, 3.0), target, 5.0)
+            self.reels[r].start(now, now + self.rng.uniform(0.8, 1.7), target, 9.0)
         self.message = ""
         self.win = WIN_NONE
         self.win_mask = 0
@@ -354,7 +354,7 @@ class Controller:
             reel.update(now, dt)
         # Unschärfe je Walze folgt ihrer Drehzahl: beim Anlaufen weich hinein, beim Stillstand schnell scharf
         for i, reel in enumerate(self.reels):
-            target = min(1.0, reel.speed / 4.0)
+            target = min(1.0, reel.speed / 6.0)
             tau = 1.2 if target > self.blur[i] else 0.35
             self.blur[i] += (target - self.blur[i]) * min(1.0, dt / tau)
         st_t = now - self.state_t0
@@ -366,12 +366,13 @@ class Controller:
                 self._finish()
         elif self.state == ST_RESULT:
             if self.respin_pending:
-                if st_t >= 1.2:
+                if st_t >= 0.7:
                     self._spin(self.respin_reel)
             else:
-                hold = {WIN_NONE: 2.8, WIN_SMALL: 3.2, WIN_BIG: 4.5, WIN_JACKPOT: 7.0}[self.win]
+                # Nieten kurz, Gewinne dürfen wirken
+                hold = {WIN_NONE: 1.1, WIN_SMALL: 3.0, WIN_BIG: 5.0, WIN_JACKPOT: 8.0}[self.win]
                 if st_t >= hold:
-                    self.idle_len = self.rng.uniform(0.6, 2.0)
+                    self.idle_len = self.rng.uniform(0.3, 1.0) if self.win == WIN_NONE else self.rng.uniform(0.8, 1.6)
                     self._set_state(ST_IDLE)
         elif self.state == ST_THEME:
             if st_t >= 0.9 and self.theme != self.next_theme:
