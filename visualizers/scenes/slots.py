@@ -50,9 +50,9 @@ ATLAS_W = N_SYM * TW                    # 9 Symbole eines Automaten nebeneinande
 ATLAS_H = len(art.THEMES) * TH + 4      # Themenzeilen + Streifenzeilen (eine je Walze)
 
 ST_IDLE, ST_SPIN, ST_RESULT, ST_THEME = 0, 1, 2, 3
-WIN_NONE, WIN_SMALL, WIN_BIG, WIN_JACKPOT = 0, 1, 2, 3
+WIN_NONE, WIN_SMALL, WIN_BIG, WIN_JACKPOT, WIN_MEGA = 0, 1, 2, 3, 4
 BET = 10
-PAYOUT = {WIN_SMALL: 25, WIN_BIG: 150, WIN_JACKPOT: 1000}
+PAYOUT = {WIN_SMALL: 25, WIN_BIG: 150, WIN_JACKPOT: 1000, WIN_MEGA: 10000}
 
 WHITE = (245, 245, 250)
 GOLD = (255, 220, 80)
@@ -308,19 +308,44 @@ class Controller:
         self.message = ""
         self.win = WIN_NONE
         self.win_mask = 0
+        self.win_line = 0
         self._set_state(ST_SPIN)
+
+    def _sym_at(self, reel: int, row_offset: int) -> int:
+        """Symbol an Position reel[center + row_offset]."""""
+        return self.strips[reel][(self.reels[reel].target + row_offset) % STRIP_LEN]
 
     def _finish(self) -> None:
         th = art.THEMES[self.theme]
-        vals = [self.strips[r][self.reels[r].target] for r in range(N_REELS)]
+        vals  = [self._sym_at(r, 0) for r in range(N_REELS)]   # Mittellinie
+        diag1 = [self._sym_at(0, -1), self._sym_at(1, 0), self._sym_at(2, +1)]  # ↘
+        diag2 = [self._sym_at(0, +1), self._sym_at(1, 0), self._sym_at(2, -1)]  # ↗
+        all9  = [self._sym_at(r, d) for r in range(N_REELS) for d in (-1, 0, +1)]
         jackpot = len(th["symbols"]) - 1
+        self.win_line = 0  # 0=Mitte, 1=↘, 2=↗, 3=Mega
+
         # Gewinn aus den tatsächlichen Symbolen bestimmen (deckt auch das Nachdrehen ab)
-        if vals[0] == vals[1] == vals[2]:
+        if len(set(all9)) == 1:
+            # MEGA JACKPOT: alle 9 gleich
+            self.win = WIN_MEGA
+            self.win_mask = 7
+            self.win_line = 3
+        elif vals[0] == vals[1] == vals[2]:
             self.win = WIN_JACKPOT if vals[0] == jackpot else WIN_BIG
             self.win_mask = 7
+            self.win_line = 0
+        elif diag1[0] == diag1[1] == diag1[2]:
+            self.win = WIN_JACKPOT if diag1[0] == jackpot else WIN_BIG
+            self.win_mask = 7
+            self.win_line = 1
+        elif diag2[0] == diag2[1] == diag2[2]:
+            self.win = WIN_JACKPOT if diag2[0] == jackpot else WIN_BIG
+            self.win_mask = 7
+            self.win_line = 2
         elif vals[0] == vals[1] or vals[1] == vals[2] or vals[0] == vals[2]:
             self.win = WIN_SMALL
             self.win_mask = (3 if vals[0] == vals[1] else 6 if vals[1] == vals[2] else 5)
+            self.win_line = 0
         else:
             self.win = WIN_NONE
             self.win_mask = 0
@@ -341,11 +366,13 @@ class Controller:
             self.message_color = (200, 200, 210)
         else:
             self.credits += PAYOUT[self.win]
-            if self.win == WIN_JACKPOT:
+            if self.win in (WIN_JACKPOT, WIN_MEGA):
                 wled.apply_mode_async("slots_jackpot")
             elif self.win == WIN_BIG:
                 wled.apply_mode_async("slots_win")
-            pool = {WIN_SMALL: th["small"], WIN_BIG: th["big"], WIN_JACKPOT: th["jackpot"]}[self.win]
+            mega_msgs = ["MEGA JACKPOT!!!", "ALLE 9 GLEICH!", "UNMÖGLICH!", "DAS UNIVERSUM BEBT!", "WAHNSINN!!!"]
+            pool = {WIN_SMALL: th["small"], WIN_BIG: th["big"],
+                    WIN_JACKPOT: th["jackpot"], WIN_MEGA: mega_msgs}[self.win]
             self.message_color = GOLD
         self.message = self.rng.choice(pool)
         self._set_state(ST_RESULT)
@@ -415,6 +442,7 @@ class Controller:
             "uColA": th["colors"][0],
             "uColB": th["colors"][1],
             "uReel": tuple(r.pos for r in self.reels),
+            "uWinLine": float(getattr(self, "win_line", 0)),
             "uSpeed": tuple(r.speed for r in self.reels),
             "uState": float(self.state),
             "uStateT": st_t,
