@@ -62,9 +62,9 @@ def main() -> int:
     f_small = display.font(int(h * 0.028))
     # Tastenbezeichnungen des PXN-CB1-Buttonboards (siehe config/keymap.toml und CLAUDE.md)
     menu = [
-        ("1 HANDLE", "gaming"), ("2 CRUISE", "viz_psychedelic"), ("3 FLASH", "blackhole"),
-        ("4 AUDIO", "droid"), ("5 WIPERS", "slots"), ("7 LIGHT", "campfire"),
-        ("8 E-TALK", "error"), ("10", "kitt"),
+        ("1 HANDLE", "home"), ("2 CRUISE", "viz_psychedelic"), ("3 FLASH", "blackhole"),
+        ("4 AUDIO", "droid"), ("5 WIPERS", "slots"), ("6 MAP", "campfire"),
+        ("7 LIGHT", "error"), ("8 E-TALK", "gaming"), ("10", "kitt"),
     ]
     t0 = time.monotonic()
     last_sys = 0.0
@@ -94,7 +94,7 @@ def main() -> int:
             screen.blit(k, (int(w * 0.25), y))
             screen.blit(lab, (int(w * 0.34), y))
             y += int(h * 0.058)
-        foot = f_small.render("6 MAP  HAUPTMENÜ     9 EXIT", True, GREY)
+        foot = f_small.render("1 HANDLE  TAXISTAND     9 EXIT", True, GREY)
         screen.blit(foot, ((w - foot.get_width()) // 2, int(h * 0.80)))
         s = f_small.render(sys_line, True, GREY)
         screen.blit(s, ((w - s.get_width()) // 2, int(h * 0.88)))

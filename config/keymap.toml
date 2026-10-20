@@ -6,22 +6,24 @@
 include = ["*"]
 exclude = []
 
-# ── PXN-CB1 Buttonboard — 8 Haupttasten (BTN-Codes von event7) ────────
+# ── PXN-CB1 Buttonboard — 10 Tasten (BTN-Codes von event7) ───────────────
+# Nicht auf dem Board, aber über scripts/kittctl <modus> erreichbar: news, viz_crt, viz_eye,
+# planeten, menu (altes Hauptmenü), status.
 [[bindings]]
 key    = "BTN_MISC"
-action = "gaming"
+action = "home"       # Taste 1 (HANDLE): Startbildschirm Space-Taxi
 
 [[bindings]]
 key    = "BTN_1"
-action = "viz_psychedelic"
+action = "viz_psychedelic"   # Taste 2 (CRUISE): Navigationscomputer
 
 [[bindings]]
 key    = "BTN_2"
-action = "blackhole"  # Taste 3 (FLASH): Schwarzes Loch; Nachrichten und Zielcomputer weiter über scripts/kittctl news / viz_crt
+action = "blackhole"  # Taste 3 (FLASH): Schwarzes Loch
 
 [[bindings]]
 key    = "BTN_3"
-action = "droid"      # Taste 4 (AUDIO): Bord-Droide BIBO; Taktik-Scanner weiter über scripts/kittctl viz_eye
+action = "droid"      # Taste 4 (AUDIO): Bord-Droide BIBO
 
 [[bindings]]
 key    = "BTN_4"
@@ -29,23 +31,23 @@ action = "slots"      # Taste 5 (WIPERS): Space-Slotmaschine
 
 [[bindings]]
 key    = "BTN_5"
-action = "home"
+action = "campfire"   # Taste 6 (MAP): Lagerfeuer
 
 [[bindings]]
 key    = "BTN_6"
-action = "campfire"
+action = "error"      # Taste 7 (LIGHT): Systemfehler-Visualizer
 
 [[bindings]]
 key    = "BTN_7"
-action = "error"      # Taste 8 (E-TALK): Systemfehler-Visualizer; "status" weiter über scripts/kittctl status
+action = "gaming"     # Taste 8 (E-TALK): RetroPie / Holo-Arcade
 
 [[bindings]]
 key    = "BTN_8"
-action = "quit"
+action = "quit"       # Taste 9: Launcher beenden (nur mit dev_emergency_exit)
 
 [[bindings]]
 key    = "BTN_9"
-action = "kitt"       # Taste 10: Bordcomputer (Sprachassistent); "planeten" weiter über scripts/kittctl planeten
+action = "kitt"       # Taste 10: Bordcomputer (Sprachassistent)
 
 # ── Cherry-Tastatur ESC (Entwicklung/Notfall) ──────────────────────────
 [[bindings]]

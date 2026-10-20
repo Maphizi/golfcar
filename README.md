@@ -73,14 +73,14 @@ Board sie über sein Tastatur-Interface ungewollt mitsendet.
 
 | Taste | BTN-Code | Action | Modus |
 |---|---|---|---|
-| 1 HANDLE | `BTN_MISC` | `gaming` | Retro-Gaming (EmulationStation, ab Phase 3) |
+| 1 HANDLE | `BTN_MISC` | `home` | Startbildschirm Space-Taxi (siehe unten) |
 | 2 CRUISE | `BTN_1` | `viz_psychedelic` | Navigationscomputer / Hyperraum |
 | 3 FLASH | `BTN_2` | `blackhole` | Schwarzes Loch (Strahlverfolgung mit Lichtkrümmung, reagiert auf Musik) |
 | 4 AUDIO | `BTN_3` | `droid` | Bord-Droide BIBO (redet Droidisch, hat Laune und Hunger) |
 | 5 WIPERS | `BTN_4` | `slots` | Space-Slotmaschine (siehe Space-Thema) |
-| 6 MAP | `BTN_5` | `home` | Startbildschirm Space-Taxi (siehe unten) |
-| 7 LIGHT | `BTN_6` | `campfire` | Lagerfeuer (Pixel-Art) |
-| 8 E-TALK | `BTN_7` | `error` | Systemfehler-Visualizer (grüner Code, der zusammenbricht) |
+| 6 MAP | `BTN_5` | `campfire` | Lagerfeuer (Pixel-Art) |
+| 7 LIGHT | `BTN_6` | `error` | Systemfehler-Visualizer (grüner Code, der zusammenbricht) |
+| 8 E-TALK | `BTN_7` | `gaming` | Retro-Gaming (EmulationStation, RetroPie) |
 | 9 | `BTN_8` | `quit` | Launcher beenden (nur wenn `dev_emergency_exit = true`) |
 | 10 | `BTN_9` | `kitt` | KITT Sprachassistent mit Oberfläche (Bordcomputer) |
 | ESC | `KEY_ESC` | `quit` | Notausstieg an der Tastatur |
@@ -270,13 +270,13 @@ Shader laufen und steht im Log.
   das ganze Auge, Mitten drehen die Iris, Höhen verschieben Zeilen, der Beat sendet einen Ring
   nach außen. Pixelraster und Scanlines.
 
-- `campfire` (F7): Pixel-Art-Lagerfeuer auf 128 Zeilen Raster. Flamme mit seitlichen Zungen, die
+- `campfire` (Taste 6): Pixel-Art-Lagerfeuer auf 128 Zeilen Raster. Flamme mit seitlichen Zungen, die
   abreißen, Fetzen über der Spitze, Rauch, der im Wind abdriftet, Hitzeflimmern über dem Feuer,
   glühende Risse in den Scheiten, 22 Funken in Wirbeln und alle paar Sekunden ein Funkenregen. Zündet nach dem Start in etwa fünf
   Sekunden an (Funke, dann wachsende Flamme), zwei gekreuzte Scheite mit Glut, aufsteigende Funken,
   flackernder Lichtschein auf dem Boden, Sternenhimmel. Braucht kein Mikrofon; mit Musik werden
   Flamme und Funken etwas lebhafter. Pixelraster 128 Zeilen, `render_scale 0.6`.
-- `error` (Taste 8): grüner Code, der alle 24 Sekunden zusammenbricht. Beschreibung unter
+- `error` (Taste 7): grüner Code, der alle 24 Sekunden zusammenbricht. Beschreibung unter
   „Systemfehler-Modus“ weiter unten.
 
 **Testen ohne Mikrofon:** `scripts/viz_test.sh crt --test-signal` spielt ein synthetisches
@@ -468,7 +468,7 @@ Markennamen oder Figuren). Die klassischen Shader liegen zum Zurückschalten in
 | F3 | ZIELCOMPUTER | `target`: gelber Drahtgitter-Graben in Perspektive (Tempo nach Bass, jede vierte Strebe rot), Zähler, Statusfelder nach Bändern, unten Zielkreis mit Sweep und Waveform, fremde Schrift |
 | F4 | TAKTIK-SCANNER | `tactical`: grünes Gitter, weißes 3D-Drahtgitter eines Gleiters (dreht mit den Mitten, Triebwerk glüht mit Bass), Radar mit Blips aus dem Spektrum, Waveform, rote Pegelbalken |
 | F5 | BORDCOMPUTER | `shipcomputer`: gelbes Pixel-OLED mit Panels, Radar, Spektrum, Status-Symbolen (Kreis, Sanduhr, Dreieck), Thermometer und sechs Balken, Zustände EMPFANG, DROIDENKERN RECHNET, SENDE |
-| F7 | LAGERFEUER / AUSSENPOSTEN | `campfire`: Pixel-Feuer mit violettem Saum unter zwei Monden, Ringplanet, Nebel, Sternschnuppen, dazu Hintergrund-Ereignisse (siehe unten) |
+| 6 | LAGERFEUER / AUSSENPOSTEN | `campfire`: Pixel-Feuer mit violettem Saum unter zwei Monden, Ringplanet, Nebel, Sternschnuppen, dazu Hintergrund-Ereignisse (siehe unten) |
 | 5 | SPACE-SLOTS | `slots`: schwebende Slotmaschine mit drei Walzen, sechs Themen mit eigenen Pixel-Symbolen und Sprüchen, spielt von selbst (siehe unten) |
 | 8 | SYSTEMFEHLER | `error`: grüner Code in sechs Varianten, Zusammenbruch, rotes Fehlerbild in sechs Varianten, Wiederherstellung, Neustart (siehe unten) |
 
@@ -488,7 +488,7 @@ der Mitte. Zeiten in `config/visualizer.toml` unter `[scenes.psychedelic]`. Die 
 `visualizers/scenes/navcomputer.py` (Szenen-Controller der Engine: Eingabe, Phasen, Text-Overlays),
 weitere Welten einfach an die TOML anhängen.
 
-**Lagerfeuer-Ereignisse (F7):** Alle 16 Sekunden ein Zeitfenster, der Inhalt kommt aus einem
+**Lagerfeuer-Ereignisse (Taste 6):** Alle 16 Sekunden ein Zeitfenster, der Inhalt kommt aus einem
 Hash der Fensternummer (zwei von sechzehn Fenstern bleiben leer), 14 Ereignisse: Transporter mit
 Positionslichtern, zwei Jäger mit roten Schweifen, vierbeiniger Läufer am Horizont, Gleiter mit
 Staubfahne, Sonde mit rotem Scanstrahl, Großschiff weit oben, ferne Gefechtsblitze mit Leuchtspuren,
@@ -532,7 +532,7 @@ den der Controller (`visualizers/scenes/slots.py`) als Textur an den Shader
 (`visualizers/shaders/slots/frag.glsl`) gibt; die Engine lädt Controller-Bilder über `images()`
 hoch. Neue Themen: Eintrag in `THEMES` mit sieben ASCII-Sprites, Farben und Sprüchen.
 
-**Startbildschirm Space-Taxi (`home`, Taste 6):** Kein Menü mehr. Der Pilot erscheint als
+**Startbildschirm Space-Taxi (`home`, Taste 1):** Kein Menü mehr. Der Pilot erscheint als
 Hologramm über einem Projektor auf seiner Taxilizenz (Foto `assets/pilot.png`, freigestellt mit
 `scripts/pilot_cutout.py`, Name aus `[launcher].pilot_name` in `config/settings.toml`), daneben
 Neon-TAXI-Kasten mit Taxinummer, FREI/BESETZT-Lampe, Taxameter, der weiterläuft, Statistik
@@ -587,7 +587,7 @@ Theorie oder gesteht etwas. Höhere, schnellere Roboterstimme als der Bordcomput
 nutzen die gemeinsame Oberfläche `kitt/ui/persona.py` und die Sprachpipeline mit Regieanweisungen
 (`handle_text(..., hidden=...)`).
 
-**Systemfehler-Modus (Taste 8, `error`):** Grüner Code, der zusammenbricht. Den Ablauf steuert
+**Systemfehler-Modus (Taste 7, `error`):** Grüner Code, der zusammenbricht. Den Ablauf steuert
 `visualizers/scenes/error.py`, jeder Durchlauf fällt anders aus, und auch der Einstieg ist zufällig
 (meist mitten in einer Code-Phase, manchmal direkt in einem Ereignis): 9 bis 18 Sekunden Code in einer
 von sechs Varianten (Zeichenregen, Hexdump, Boot-Protokoll mit `[ OK ]`/`[WARN]`/`[FAIL]`, Bitraster,
