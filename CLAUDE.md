@@ -51,6 +51,15 @@ Statusbehaftet – jeder Druck wechselt den Zustand:
 
 Nicht auf dem Board, über `scripts/kittctl <modus>`: droid (BIBO), news, viz_crt, viz_eye, planeten, menu, status.
 
+## Schwarzes Loch (`visualizers/scenes/blackhole.py`)
+D-Pad LINKS/RECHTS/OBEN/UNTEN = Planet aus `config/planets.toml` von dieser Seite ins Loch werfen
+(wird über ~1 Minute zum Band gestreckt, wogt zur Musik). ENTER = Jet, SPACE = Nahaufnahme, BACKSPACE = zurück.
+
+## HAL 3000 Hintergrund (`kitt/hal/motion.py`)
+Korridor bewegt sich nur über `uDrift` (langsam, Richtung ±1, Wechsel beim Drop), nicht über die Zeit.
+`uVariant` 0–4 Zellenmuster pro Start, `uAccent` hüpfende Einzelzelle, `uWash` Farbwelle. Test:
+`KITT_HAL_VARIANT=n python -m kitt.hal --demo` (Demo nutzt das Testsignal als Musik).
+
 ## Planeten-Visualizer (`visualizers/scenes/planets.py`)
 Sternenhimmel mit Warp-Flug-Modus.
 

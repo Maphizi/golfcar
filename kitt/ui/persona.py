@@ -220,10 +220,13 @@ class PersonaUI:
         voice_analyzer = Analyzer(self.rate, self.audio_cfg)
         self.music_cap = None
         src = self.music_source()
-        if src and not self.demo:
+        if src:
             try:
                 from visualizers.engine.audio_capture import AudioCapture
-                self.music_cap = AudioCapture(self.audio_cfg, source=src)
+                cap_cfg = self.audio_cfg
+                if self.demo:                                   # Demo: Testsignal statt echter Aufnahme
+                    cap_cfg = {**self.audio_cfg, "capture": {**self.audio_cfg.get("capture", {}), "backend": "test"}}
+                self.music_cap = AudioCapture(cap_cfg, source=src)
                 self.music_cap.start()
             except Exception:
                 log.exception("Musikquelle nicht gestartet")

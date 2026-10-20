@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 import random
 import subprocess
 import threading
@@ -17,6 +18,7 @@ import time
 
 import pygame
 
+from kitt.hal.motion import CorridorMotion
 from kitt.ui.persona import PersonaUI
 from launcher import config as lcfg
 
@@ -36,12 +38,15 @@ PROMPTS = [
 
 class HalUI(PersonaUI):
     scene_name = "hal"
-    uniform_names = ("uState", "uStateT", "uLevel", "uTalk", "uBright", "uVoice", "uTalkMode")
+    uniform_names = ("uState", "uStateT", "uLevel", "uTalk", "uBright", "uVoice", "uTalkMode") + CorridorMotion.uniform_names
     window_title = "HAL 3000"
 
     def __init__(self, *a, **kw):
         self.rng = random.Random()
         self.bright = 1.0
+        self.motion = CorridorMotion(self.rng)
+        if os.environ.get("KITT_HAL_VARIANT"):                  # Tests: Zellenmuster vorgeben
+            self.motion.variant = int(os.environ["KITT_HAL_VARIANT"]) % 5
         self.next_prompt_at = time.monotonic() + 40.0
         self._turns_seen = 0
         self.talk_mode = False          # Kippschalter unten: Musik leise, Mikrofon an
@@ -151,6 +156,9 @@ class HalUI(PersonaUI):
 
     def tick(self, now: float) -> None:
         if self.demo or not self.pipe:
+            if self.demo and not getattr(self, "_demo_kicked", False):
+                self._demo_kicked = True
+                self.motion.demo_kick()
             return
         # Die Pipeline gibt das Mikrofon nach jeder Runde wieder frei; ohne Sprechmodus wieder schließen
         if not self.talk_mode and self.pipe.listener and self.pipe.listener.enabled and not self.pipe.busy.is_set():
@@ -163,8 +171,10 @@ class HalUI(PersonaUI):
             self.next_prompt_at = now + self.rng.uniform(50.0, 100.0)
 
     def extra_uniforms(self, now: float, state: str, since: float) -> dict:
-        return {"uTalk": 1.0 if state == "speaking" else 0.0, "uBright": self.bright,
-                "uVoice": self.voice_rms, "uTalkMode": 1.0 if self.talk_mode else 0.0}
+        out = self.motion.update(now, self.last_f)
+        out.update({"uTalk": 1.0 if state == "speaking" else 0.0, "uBright": self.bright,
+                    "uVoice": self.voice_rms, "uTalkMode": 1.0 if self.talk_mode else 0.0})
+        return out
 
     def draw_overlays(self, now: float, state: str, lu: str, lk: str) -> None:
         self.text("HAL", 0.032, 0.479, 0.713, (40, 160, 255), 1.0)

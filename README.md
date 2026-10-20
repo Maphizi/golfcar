@@ -598,10 +598,19 @@ Spiralarmen. Musik: das Spektrum liegt als Ringe auf der Scheibe (innen Bass, au
 Bass pulst Scheibe, Dunst und Linsenstärke, Mitten färben das Gas blauweiß, Höhen lassen es funkeln,
 jeder kräftige Beat zündet einen Jet aus den Polen (klingt über drei Sekunden ab) und einen kurzen
 Flare. Pro Start zufällig: eine von drei Gaspaletten (orange/weiß, blau/violett, gold/rot),
-Neigung, Orbitrichtung und Tempo der langsam kreisenden Kamera. D-Pad LINKS/RECHTS ändert das
-Kreisen, OBEN/UNTEN die Neigung, Start zündet den Jet, Kippschalter AN fährt näher heran.
-`visualizers/scenes/blackhole.py` (Hüllkurven, Kamera), Shader `visualizers/shaders/blackhole/frag.glsl`,
-`render_scale 0.35` mit 36 Schritten (auf dem Pi 5 liefen 64 Schritte bei 0.5 nur mit 9 fps).
+Neigung, Orbitrichtung und Tempo der langsam kreisenden Kamera. Start zündet den Jet,
+Kippschalter AN fährt näher heran.
+Planeten werfen: Steuerknüppel LINKS/RECHTS/OBEN/UNTEN wirft einen zufälligen Planeten aus dem
+Katalog (`config/planets.toml`, auch Sterne, Kometen, der Todesstern) von dieser Bildseite ins Loch.
+Er erscheint erst als Kugel (mit Ringen, Streifen, Stadtlichtern je nach Typ), wird über 50 bis 70
+Sekunden spiralig eingezogen und dabei zu einem immer längeren, dünneren Band gestreckt
+(Spaghettisierung), das sich schlangenförmig zur Musik windet (Bass und Mitten bestimmen Ausschlag
+und Tempo der Wellen, alles sehr langsam), dessen Farben mit zunehmender Streckung psychedelisch
+durchwandern, und das nahe am Horizont rot verglüht und verschwindet. Zwei Planeten können
+gleichzeitig unterwegs sein; ihr Name steht klein am oberen Rand. `visualizers/scenes/blackhole.py`
+(Hüllkurven, Kamera, Würfe), Shader `visualizers/shaders/blackhole/frag.glsl` (Band in
+Bildkoordinaten über dem Strahlverfolgungsbild), `render_scale 0.35` mit 36 Schritten (auf dem
+Pi 5 liefen 64 Schritte bei 0.5 nur mit 9 fps).
 
 **Galaktische Nachrichten (`news`, über `scripts/kittctl news`):** Holo-Studio des Senders GNN mit Lichtkegeln,
 drehendem Holo-Globus und einem Droiden-Sprecher, dessen Mundbalken zur Stimme schwingen. Das lokale
@@ -616,8 +625,7 @@ Kippschalter = Pause. Ohne Sprachmodell oder im `--demo` laufen feste Meldungen.
 startet nur den llama-server, keine Spracherkennung.
 
 **HAL 3000 (Taste 4, `hal`):** Ein Korridor aus roten Speicherbänken in Perspektive, dessen
-Lichtzellen mit dem Spektrum leuchten (Beat lässt Blöcke blitzen, Bass beschleunigt die langsame
-Fahrt durch den Korridor), in der Mitte die schwarze Konsole mit Chromring, Lautsprechergitter und
+Lichtzellen träge mit der Musik leuchten, in der Mitte die schwarze Konsole mit Chromring, Lautsprechergitter und
 dem roten Auge: Linse mit Tiefe, Lichtbögen, glühender Kern, der mit der Stimme pulst, beim Hören
 mit dem Pegel atmet und beim Nachdenken eine wandernde Markierung zeigt. HAL spricht ohne Weckwort
 über das Sprachmodell, ruhig, höflich, leicht beunruhigend, höchstens zwei Sätze, oft mit leiser
@@ -626,11 +634,17 @@ von sich aus etwas (erfundene Wahrscheinlichkeiten, kleine Unregelmäßigkeiten,
 Stimme langsamer als der Bordcomputer, mit nur einem Hauch Ringmodulation. Start = HAL soll etwas
 sagen, OBEN/UNTEN = Blende.
 Musik und Stimme getrennt: Der Korridor hört die Musik (Quelle `playback`, also alles, was über den
-Pi läuft) und reagiert psychedelisch darauf: Bass treibt die Fahrt, Mitten lassen Wellen durch die
-Wände laufen und die Wände atmen, der Beat lässt den Gang aufleuchten und schickt weiße
-Lichtstreifen nach vorn, Höhen färben das Rot kühler, die Farbe driftet langsam nach Orange und
-Magenta, in manchen Wandfenstern erscheinen weiße Schriftzeichen und verschwinden wieder. Das Auge
-reagiert nur auf HALs eigene Stimme (`uVoice`). Sprechmodus: Kippschalter unten (SPACE) senkt die
+Pi läuft) und reagiert bewusst langsam darauf (`kitt/hal/motion.py`): Der Gang treibt ganz langsam
+nach vorn oder hinten (Tempo aus der über Sekunden geglätteten Energie, nichts zuckt im Takt), ein
+Drop (Beat nach einer leisen Stelle) lässt den Gang anschwellen und kehrt meist die Fahrtrichtung
+um (der Gang bremst weich ab und fährt rückwärts an; ohne Drops alle ein bis zwei Minuten von
+selbst). Langsame Wellen laufen durch die Wände, das Rot driftet kaum merklich nach Orange und
+Magenta, in manchen Wandfenstern erscheinen weiße Schriftzeichen und verschwinden langsam wieder,
+selten gleitet ein weißer Lichtstreifen durch. Variationen: pro Start eines von fünf Zellenmustern
+(Speicherbänke, schmale Lamellen, große Tafeln, Punktraster, Rhythmus-Spalten); alle 15 bis 45
+Sekunden hüpft eine einzelne andersfarbige Zelle (cyan, grün, weiß, violett, gelb) im Takt durch
+eine Wand; alle ein bis zwei Minuten läuft eine breite Farbwelle langsam von hinten nach vorn durch
+den Gang. Das Auge reagiert nur auf HALs eigene Stimme (`uVoice`). Sprechmodus: Kippschalter unten (SPACE) senkt die
 Musik auf `[volume].duck_percent` der aktuellen Lautstärke und schaltet das Mikrofon ein, solange
 der Schalter unten steht; während HAL antwortet, geht die Lautstärke kurz auf normal, danach wieder
 leise. Kippschalter oben (BACKSPACE) stellt die Lautstärke wieder her und schaltet das Mikrofon ab.

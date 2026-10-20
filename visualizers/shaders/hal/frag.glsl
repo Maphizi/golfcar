@@ -33,36 +33,79 @@ float noise(vec2 p) {
 float spec(float x) { return texture(uAudioTex, vec2(clamp(x, 0.0, 1.0), 0.25)).r; }
 float sdBox(vec2 p, vec2 b, float r) { vec2 d = abs(p) - b + r; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r; }
 
-// Speicherbank-Zellen auf einer Wandfläche: w = Koordinate entlang des Korridors (Tiefe), h = Höhe/Breite
+uniform float uDrift, uDir, uEnergy, uBassS, uDrop, uVariant;
+uniform vec4 uAccent;   // Akzentzelle: Zellenindex entlang des Gangs, Farbe, Reihe, Seite (alles 0 = aus)
+uniform vec4 uWash;     // Farbwelle: Fortschritt 0..1 (Tiefe hinten -> vorn), Farbe, Stärke
+// uDrift: Position im Gang (vom Controller sehr langsam bewegt, Richtung kann beim Drop wechseln),
+// uEnergy: über Sekunden geglättete Lautstärke, uDrop: kurzes Anschwellen nach einem Drop,
+// uVariant: Zellenmuster pro Start.
+
+vec3 accentColor(float id) {
+    if (id < 0.5) return vec3(0.2, 0.9, 1.0);      // cyan
+    if (id < 1.5) return vec3(0.3, 1.0, 0.35);     // grün
+    if (id < 2.5) return vec3(1.0, 0.97, 0.9);     // weiß
+    if (id < 3.5) return vec3(0.75, 0.3, 1.0);     // violett
+    return vec3(1.0, 0.9, 0.25);                   // gelb
+}
+// Speicherbank-Zellen auf einer Wandfläche: wq.x = Koordinate entlang des Korridors (Tiefe, mit Drift),
+// wq.y = Höhe/Breite, depth 0 nah .. 1 fern. Alles bewegt sich nur mit uDrift, nichts zuckt mit der Zeit.
 vec3 bankCells(vec2 wq, float depth, float t, float live, float side) {
-    vec2 g = vec2(wq.x * 14.0, wq.y * 7.0);
+    int var = int(uVariant + 0.5);
+    vec2 scale = vec2(14.0, 7.0);
+    if (var == 1) scale = vec2(28.0, 3.0);         // lange schmale Lamellen
+    if (var == 2) scale = vec2(7.0, 4.0);          // große Tafeln
+    if (var == 3) scale = vec2(18.0, 9.0);         // feines Punktraster
+    vec2 g = wq * scale;
     vec2 cell = floor(g);
     vec2 f = fract(g) - 0.5;
-    float on = smoothstep(0.42, 0.36, abs(f.x)) * smoothstep(0.34, 0.26, abs(f.y));
-    // Spektrum: Position entlang der Tiefe = Frequenz, dazu Wellen, die mit der Musik durch die Wand laufen
+    float on;
+    if (var == 3) on = smoothstep(0.3, 0.18, length(f));
+    else if (var == 2) on = smoothstep(0.46, 0.42, abs(f.x)) * smoothstep(0.44, 0.38, abs(f.y)) * (0.55 + 0.45 * smoothstep(0.2, 0.3, max(abs(f.x), abs(f.y))));
+    else on = smoothstep(0.42, 0.36, abs(f.x)) * smoothstep(0.34, 0.26, abs(f.y));
+    if (var == 4) on *= 1.0 - 0.8 * step(2.5, mod(cell.x, 4.0));   // jede vierte Spalte dunkel: Rhythmus
+    // Grundleuchten: langsames Atmen je Zelle; mit Musik langsame Wellen durch die Wand und das Spektrum
+    // als Tiefenverteilung (nur schwach, damit nichts flackert)
     float band = spec(fract(cell.x * 0.07 + side * 0.3));
-    float wave = 0.5 + 0.5 * sin(wq.x * 1.5 - t * (1.5 + 3.0 * uBass * live) + wq.y * 0.8);
-    float slow = 0.55 + 0.45 * sin(t * 0.8 + hash12(cell) * 6.28);
-    float lit = mix(slow * 0.55, 0.25 + 1.3 * band + 0.5 * wave * uMid, live);
-    lit += uBeat * live * step(0.8, hash12(cell + floor(t * 6.0)));
+    float wave = 0.5 + 0.5 * sin(wq.x * 1.2 + wq.y * 0.5 - uDrift * 3.0);
+    float slow = 0.55 + 0.45 * sin(t * 0.25 + hash12(cell) * 6.28);
+    float lit = mix(slow * 0.5, 0.3 + 0.45 * wave * (0.4 + uEnergy) + 0.3 * band * uEnergy + 0.3 * uBassS, live);
+    lit *= 1.0 + 0.5 * uDrop;
     float dark = step(0.93, hash12(cell + 3.0));                       // einzelne tote Zellen
-    // Farbe: hauptsächlich rot, driftet langsam nach Orange und Magenta, Höhen färben kühler
-    vec3 red = hueShift(vec3(1.0, 0.08, 0.05), (0.08 + 0.22 * live) * sin(t * 0.13 + wq.x * 0.2) + 0.3 * uHigh * live);
+    // Farbe: hauptsächlich rot, driftet ganz langsam nach Orange und Magenta
+    vec3 red = hueShift(vec3(1.0, 0.08, 0.05), (0.06 + 0.12 * uEnergy) * sin(t * 0.05 + wq.x * 0.12 + side) + 0.12 * uDrop);
     vec3 c = red * on * lit * (1.0 - dark * 0.85);
     c += red * 0.18 * (1.0 - on) * lit * 0.5;                            // Schein zwischen den Zellen
-    // Fremde Zeichen: in manchen Fenstern der Wand erscheinen weiße Glyphen und verschwinden wieder
+    // Fremde Zeichen: in manchen Fenstern der Wand erscheinen weiße Glyphen und verschwinden langsam wieder
     vec2 win = floor(vec2(wq.x * 1.4, wq.y * 1.0));
-    float showT = floor(t * 0.5 + hash12(win) * 7.0);
-    float show = step(0.86, hash12(win + showT)) * smoothstep(0.0, 0.2, fract(t * 0.5 + hash12(win) * 7.0)) * smoothstep(1.0, 0.7, fract(t * 0.5 + hash12(win) * 7.0));
+    float ph = t * 0.12 + hash12(win) * 7.0;
+    float showT = floor(ph);
+    float show = step(0.84, hash12(win + showT)) * smoothstep(0.0, 0.3, fract(ph)) * smoothstep(1.0, 0.6, fract(ph));
     vec2 wl = fract(vec2(wq.x * 1.4, wq.y * 1.0));
     float gl = 0.0;
     for (int k = 0; k < 3; k++) {
         gl += glyph(hash12(win + float(k) * 11.0 + showT) * 99.0, (wl - vec2(0.1 + float(k) * 0.28, 0.25)) / vec2(0.2, 0.5));
     }
-    c += vec3(1.0, 0.95, 0.9) * gl * show * (0.7 + 0.6 * uMid * live);
-    // Weiße Lichter: Streifen, die beim Beat durch die Wand nach vorn schießen
-    float streak = smoothstep(0.03, 0.0, abs(fract(wq.x * 0.5 + t * 2.5 + hash12(vec2(cell.y, side))) - 0.5)) * step(0.7, hash12(vec2(cell.y, floor(t * 2.0) + side)));
-    c += vec3(1.0, 0.98, 0.95) * streak * (0.3 + 1.5 * uBeat) * live * on;
+    c += vec3(1.0, 0.95, 0.9) * gl * show * (0.5 + 0.5 * uEnergy);
+    // Weiße Lichter: seltene Streifen, die etwas schneller als die Wand durch den Gang gleiten
+    float lane = hash12(vec2(cell.y, side));
+    float streak = smoothstep(0.03, 0.0, abs(fract(wq.x * 0.35 + uDrift * 0.5 * uDir + lane) - 0.5)) * step(0.82, hash12(vec2(cell.y, floor(t * 0.2) + side)));
+    c += vec3(1.0, 0.98, 0.95) * streak * (0.25 + 0.6 * uEnergy) * live * on;
+    // Akzentzelle: eine einzelne Zelle in anderer Farbe hüpft durch die Wand, mit weichem Schein
+    if (uAccent.w != 0.0 && abs(side - uAccent.w) < 0.5) {
+        vec2 ac = vec2(floor(uAccent.x), uAccent.z);
+        vec2 dc = (cell - ac);
+        float hit = step(abs(dc.x) + abs(dc.y), 0.5);
+        float near = exp(-length((g - (ac + 0.5)) / vec2(scale.x / 14.0, scale.y / 7.0)) * 0.9);
+        vec3 acol = accentColor(uAccent.y);
+        c = mix(c, acol * (1.1 + 0.6 * uBassS) * on, hit);
+        c += acol * near * 0.35 * (1.0 - hit);
+    }
+    // Farbwelle: ein breiter Streifen in anderer Farbe läuft langsam von hinten nach vorn durch den Gang
+    if (uWash.z > 0.0) {
+        float wpos = 1.0 - clamp(uWash.x, 0.0, 1.0);
+        float wband = smoothstep(0.18, 0.0, abs(depth - wpos)) * smoothstep(0.0, 0.08, uWash.x) * smoothstep(1.0, 0.92, uWash.x);
+        c = mix(c, accentColor(uWash.y) * on * lit * (1.0 - dark * 0.85) * 1.1, wband * 0.85);
+    }
     return c * (0.35 + 0.65 * (1.0 - depth));                             // hinten dunkler
 }
 
@@ -82,12 +125,12 @@ void main() {
     float depthW = 1.0 - (0.28 / max(ax, 0.001));                         // Tiefe entlang der Wand (0 nah, 1 fern)
     float depthC = 1.0 - (0.28 / max(ay, 0.001));
     float depth = mix(depthC, depthW, wall);
-    float along = depth * 6.0 - t * (0.15 + 0.9 * uBass * live);          // Fahrt durch den Korridor, Bass treibt
-    // psychedelisch: die Wände atmen und drehen sich leicht mit der Musik
-    along += 0.4 * sin(depth * 4.0 - t * 1.3) * uMid * live;
+    float along = depth * 6.0 - uDrift;                                   // Fahrt durch den Korridor (Controller)
+    // psychedelisch, aber träge: die Wände wölben sich ganz langsam mit der Energie
+    along += 0.25 * sin(depth * 3.0 - uDrift * 0.7) * uEnergy;
     vec2 wq = wall > 0.5 ? vec2(along, p.y / ax * 1.6) : vec2(along, p.x / ay * 1.6 / aspect);
-    wq.y += 0.15 * sin(t * 0.4 + depth * 3.0) * uRms * live;
-    float side = wall > 0.5 ? sign(p.x) : sign(p.y) + 2.0;
+    wq.y += 0.08 * sin(uDrift * 0.9 + depth * 3.0) * uEnergy;
+    float side = wall > 0.5 ? sign(p.x) : sign(p.y) + 4.0;               // -1/1 Wände, 3/5 Boden/Decke
     float inCorr = step(0.28, max(ax, ay));
     col = bankCells(wq, clamp(depth, 0.0, 1.0), t, live, side) * inCorr;
     // Kanten der Flächen und Streben
@@ -95,9 +138,8 @@ void main() {
     col = mix(col, vec3(0.08, 0.02, 0.02), edge);
     float strut = step(0.9, fract(along * 0.5)) * inCorr;
     col = mix(col, vec3(0.03, 0.01, 0.01), strut);
-    // Rote Füllung der Luft, Tiefennebel; Beat lässt den ganzen Gang kurz aufleuchten
-    col += vec3(0.35, 0.03, 0.02) * (0.4 + 0.5 * uBass * live + 0.3 * uBeat * live) * smoothstep(0.0, 0.5, max(ax, ay)) * inCorr;
-    col += vec3(0.5, 0.45, 0.4) * uBeat * live * 0.08 * inCorr;
+    // Rote Füllung der Luft, Tiefennebel; nach einem Drop schwillt der ganze Gang langsam an und ab
+    col += vec3(0.35, 0.03, 0.02) * (0.4 + 0.4 * uEnergy + 0.3 * uDrop) * smoothstep(0.0, 0.5, max(ax, ay)) * inCorr;
     col = mix(col, vec3(0.08, 0.01, 0.01), smoothstep(0.6, 1.0, depth) * inCorr);
     // ---- Rückwand (dunkel), Konsole in der Mitte
     float back = 1.0 - inCorr;
