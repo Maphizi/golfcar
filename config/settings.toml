@@ -23,6 +23,9 @@ smart_model = ""
 # axis leer = nur beobachten: der Launcher meldet im Log, welche Achsen sich bewegen ("Achse ABS_Z = 128 ...");
 # die des Drehknopfs hier eintragen (z. B. "ABS_Z"). target = "sink" regelt stattdessen den ganzen Ausgang.
 enabled = true
+rel = true
+step = 5
+start_percent = 100
 axis = ""
 target = "voice"
 min_percent = 0
