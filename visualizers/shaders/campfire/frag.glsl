@@ -1,450 +1,304 @@
 #version 140
-// Lagerfeuer auf einem fremden Planeten, realistisch: weiche Flammen aus verformtem Rauschen mit
-// Farbverlauf von Dunkelrot bis Weißgelb, Hitzeflimmern, Rauch, glühende Scheite mit Rissen, Funken
-// mit Nachleuchten, Lichtschein auf dem Boden, Sternenhimmel mit Nebel und zwei Monden. Reagiert auf
-// Audio (Bass = Flammenhöhe, Beat = Funken, Mitten = Flackern). Hintergrund-Ereignisse (Fahrzeuge,
-// Läufer, Sonden) als Silhouetten mit Lichtern, alle 16 s ein Zeitfenster (uEventForce erzwingt).
+// Lagerfeuer: Beduinen-Abend in der Wüste. Himmel mit Lauf des Abends (uDay: Dämmerung, Nacht mit
+// Sternen, Milchstraße und großem Mond, Morgengrauen), Dünen in drei Ebenen, die sich leicht bewegen
+// (Kämme wandern, Sand weht bei Wind über die Kuppen), Beduinenzelt mit warmem Licht und flatterndem
+// Tuch, Teppiche, Kissen und Teetablett ums Feuer, ferne Kamelkarawane. Das Feuer atmet zur Musik:
+// Bass pulst die Glut, Anschläge schicken Funken hoch, leise Stellen lassen es kleiner werden.
+// Alles weich gezeichnet, kein Pixelraster. uWind legt Flammen und Rauch, uFireT ist die Feuerzeit.
 in vec2 vUv;
 out vec4 fragColor;
 uniform float iTime;
 uniform vec2 iResolution;
 uniform float uRms, uBass, uMid, uHigh, uBeat, uSilent;
 uniform sampler2D uAudioTex;
-uniform float uEventForce;   // Test: >0 erzwingt Ereignis (Wert-1), 0 = zufällig
+uniform float uSeed, uDay, uBassS, uEnergy, uSpark, uWind, uCaravan, uCaravanDir, uFireT;
 
-float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-float hash1(float n) { n = fract(n * 0.1031); n *= n + 33.33; n *= n + n; return fract(n); }
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 float noise(vec2 p) {
     vec2 i = floor(p), f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash12(i), hash12(i + vec2(1, 0)), f.x), mix(hash12(i + vec2(0, 1)), hash12(i + vec2(1, 1)), f.x), f.y);
 }
-float fbm(vec2 p) {
-    float v = 0.0, a = 0.5;
-    for (int i = 0; i < 5; i++) { v += a * noise(p); p = p * 2.03 + 11.0; a *= 0.5; }
-    return v;
-}
-// Feuerfarbe: 0 schwarz, 0.3 dunkelrot, 0.55 orange, 0.8 gelb, 1 weiß
-vec3 fireRamp(float v) {
-    v = clamp(v, 0.0, 1.0);
-    vec3 c = mix(vec3(0.0), vec3(0.55, 0.03, 0.0), smoothstep(0.0, 0.25, v));
-    c = mix(c, vec3(1.0, 0.35, 0.02), smoothstep(0.25, 0.55, v));
-    c = mix(c, vec3(1.0, 0.85, 0.3), smoothstep(0.55, 0.82, v));
-    c = mix(c, vec3(1.0, 0.98, 0.9), smoothstep(0.82, 1.0, v));
-    return c;
-}
-float segDist(vec2 p, vec2 a, vec2 b) {
-    vec2 pa = p - a, ba = b - a;
-    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-    return length(pa - ba * h);
-}
-// ---- Hintergrund-Ereignisse (alle 16 s ein Fenster, Typ per Hash; manche Fenster bleiben leer)
-float boxf(vec2 p, vec2 c, vec2 h) { vec2 d = abs(p - c) - h; return step(max(d.x, d.y), 0.0); }
-float tri(vec2 p, vec2 a, vec2 b, vec2 c) {   // Punkt im Dreieck
-    float s1 = sign((b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x));
-    float s2 = sign((c.x - b.x) * (p.y - b.y) - (c.y - b.y) * (p.x - b.x));
-    float s3 = sign((a.x - c.x) * (p.y - c.y) - (a.y - c.y) * (p.x - c.x));
-    return step(2.5, abs(s1 + s2 + s3));
-}
-// Transporter: breiter Rumpf, Flügel, blinkende Lichter, Triebwerksglühen. q relativ zur Mitte, Größe s
-vec3 transporter(vec2 q, float s, float t, vec3 col) {
-    q /= s;
-    float body = boxf(q, vec2(0.0, 0.0), vec2(0.5, 0.09)) + boxf(q, vec2(0.15, 0.12), vec2(0.18, 0.06));
-    float wing = tri(q, vec2(-0.2, 0.0), vec2(0.35, 0.0), vec2(0.0, -0.32)) + tri(q, vec2(-0.2, 0.0), vec2(0.35, 0.0), vec2(0.0, 0.3));
-    float hull = clamp(body + wing, 0.0, 1.0);
-    vec3 c = mix(col, vec3(0.22, 0.24, 0.28), hull);
-    c = mix(c, vec3(0.35, 0.38, 0.42), hull * step(0.5, fract(q.y * 12.0)));             // Panels
-    c += vec3(1.0, 0.3, 0.1) * step(0.5, fract(t * 2.0)) * boxf(q, vec2(0.48, 0.0), vec2(0.03, 0.03));
-    c += vec3(0.3, 0.6, 1.0) * boxf(q, vec2(-0.52, 0.0), vec2(0.06, 0.05)) * (0.7 + 0.3 * sin(t * 30.0));
-    return c;
-}
-// Jäger: kleiner Keil mit zwei Streben, roter Schweif
-vec3 fighter(vec2 q, float s, float t, vec3 col) {
-    q /= s;
-    float hull = tri(q, vec2(0.5, 0.0), vec2(-0.3, 0.18), vec2(-0.3, -0.18)) + boxf(q, vec2(-0.35, 0.0), vec2(0.08, 0.3));
-    vec3 c = mix(col, vec3(0.75, 0.75, 0.8), clamp(hull, 0.0, 1.0));
-    float trail = boxf(q, vec2(-0.9, 0.0), vec2(0.55, 0.05)) * smoothstep(-1.45, -0.4, q.x);
-    c += vec3(1.0, 0.25, 0.15) * trail * 0.9;
-    return c;
-}
-// Läufer: Kastenkopf, Rumpf, vier Beine (zwei Phasen), weit hinten am Horizont
-vec3 walker(vec2 q, float s, float t, vec3 col) {
-    q /= s;
-    float legA = 0.5 + 0.5 * sin(t * 2.5), legB = 0.5 - 0.5 * sin(t * 2.5);
-    float body = boxf(q, vec2(0.0, 0.55), vec2(0.45, 0.18)) + boxf(q, vec2(0.55, 0.5), vec2(0.18, 0.12)) + boxf(q, vec2(0.68, 0.42), vec2(0.06, 0.04));
-    float legs = boxf(q, vec2(-0.3 + legA * 0.1, 0.18), vec2(0.06, 0.2)) + boxf(q, vec2(0.3 + legB * 0.1, 0.18), vec2(0.06, 0.2))
-               + boxf(q, vec2(-0.3 - legA * 0.15, -0.1), vec2(0.07, 0.1)) + boxf(q, vec2(0.3 - legB * 0.15, -0.1), vec2(0.07, 0.1))
-               + boxf(q, vec2(-0.1 + legB * 0.1, 0.18), vec2(0.05, 0.2)) + boxf(q, vec2(0.12 + legA * 0.1, -0.1), vec2(0.06, 0.1));
-    vec3 c = mix(col, vec3(0.24, 0.25, 0.28), clamp(body + legs, 0.0, 1.0));
-    c += vec3(1.0, 0.2, 0.1) * step(0.7, fract(t * 1.5)) * boxf(q, vec2(0.6, 0.5), vec2(0.03, 0.02));
-    return c;
-}
-// Gleiter am Boden: flach, schnell, Staubfahne
-vec3 speeder(vec2 q, float s, float t, vec3 col) {
-    q /= s;
-    float hull = boxf(q, vec2(0.0, 0.05), vec2(0.5, 0.07)) + boxf(q, vec2(0.1, 0.17), vec2(0.15, 0.06)) + boxf(q, vec2(-0.45, 0.1), vec2(0.08, 0.1));
-    vec3 c = mix(col, vec3(0.5, 0.42, 0.3), clamp(hull, 0.0, 1.0));
-    float dust = step(0.6, hash(vec2(floor(q.x * 8.0), floor(t * 12.0)))) * boxf(q, vec2(-1.0, -0.05), vec2(0.6, 0.12));
-    c = mix(c, vec3(0.35, 0.3, 0.32), dust * 0.7);
-    c += vec3(0.4, 0.7, 1.0) * boxf(q, vec2(-0.52, 0.05), vec2(0.04, 0.04));
-    return c;
-}
-// Sonde: schwebende Kugel mit Armen, roter Scanstrahl nach unten
-vec3 probe(vec2 q, float s, float t, vec3 col) {
-    q /= s;
-    float head = step(length(q - vec2(0.0, 0.3)), 0.22);
-    float arms = boxf(q, vec2(0.0, 0.0), vec2(0.04, 0.3)) + boxf(q, vec2(-0.25, 0.05), vec2(0.03, 0.2)) + boxf(q, vec2(0.25, 0.05), vec2(0.03, 0.2));
-    vec3 c = mix(col, vec3(0.2, 0.2, 0.22), clamp(head + arms, 0.0, 1.0));
-    float beam = step(abs(q.x - sin(t * 3.0) * 0.4 * (-q.y + 0.3)), 0.04 + 0.05 * (0.3 - q.y)) * step(q.y, 0.1) * step(-2.5, q.y) * step(0.5, fract(t * 1.3));
-    c += vec3(1.0, 0.15, 0.1) * beam * 0.6;
-    c += vec3(1.0, 0.2, 0.1) * step(length(q - vec2(0.0, 0.3)), 0.06) * (0.5 + 0.5 * sin(t * 20.0));
-    return c;
-}
-// Großschiff: schmaler Keil hoch am Himmel, Positionslichter, sehr langsam
-vec3 capital(vec2 q, float s, float t, vec3 col) {
-    q /= s;
-    float hull = tri(q, vec2(0.7, 0.0), vec2(-0.7, 0.22), vec2(-0.7, -0.22)) + boxf(q, vec2(-0.3, 0.3), vec2(0.15, 0.1)) + boxf(q, vec2(-0.3, 0.42), vec2(0.03, 0.08));
-    vec3 c = mix(col, vec3(0.3, 0.3, 0.34), clamp(hull, 0.0, 1.0));
-    float lights = step(0.9, hash(vec2(floor(q.x * 30.0), floor(q.y * 30.0)))) * hull;
-    c += vec3(0.9, 0.95, 1.0) * lights * 0.6;
-    c += vec3(0.3, 0.6, 1.0) * boxf(q, vec2(-0.72, 0.0), vec2(0.04, 0.12));
-    return c;
-}
+float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * noise(p); p = p * 2.03 + 1.7; a *= 0.5; } return v; }
+float fbm3(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 3; i++) { v += a * noise(p); p = p * 2.1 + 0.3; a *= 0.5; } return v; }
+float sdSeg(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h); }
+float sdEll(vec2 p, vec2 c, vec2 r) { return length((p - c) / r) - 1.0; }
+float sdBox(vec2 p, vec2 b, float r) { vec2 d = abs(p) - b + r; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r; }
 
-
-// Shuttle: landet weit hinten, steht, startet wieder (Flügel klappen beim Landen ein)
-vec3 shuttle(vec2 q, float s, float t, float fold, vec3 col) {
-    q /= s;
-    float body = boxf(q, vec2(0.0, 0.15), vec2(0.14, 0.3)) + boxf(q, vec2(0.0, 0.5), vec2(0.06, 0.2));
-    float wingL = tri(q, vec2(-0.12, 0.0), vec2(-0.12, 0.45), vec2(-0.75 + fold * 0.5, -0.3 + fold * 0.6));
-    float wingR = tri(q, vec2(0.12, 0.0), vec2(0.12, 0.45), vec2(0.75 - fold * 0.5, -0.3 + fold * 0.6));
-    vec3 c = mix(col, vec3(0.55, 0.56, 0.6), clamp(body + wingL + wingR, 0.0, 1.0));
-    c += vec3(0.4, 0.7, 1.0) * boxf(q, vec2(0.0, -0.17), vec2(0.1, 0.03)) * (0.5 + 0.5 * sin(t * 25.0)) * (1.0 - fold);
-    c += vec3(1.0, 0.3, 0.1) * step(0.5, fract(t * 1.5)) * boxf(q, vec2(0.0, 0.72), vec2(0.02, 0.02));
-    return c;
+// ---- Lauf des Abends: 0 Abenddämmerung, ~0.12..0.85 Nacht, dann Morgengrauen, dann wieder Dämmerung
+float nightAmount(float d) { return smoothstep(0.02, 0.16, d) * smoothstep(0.98, 0.84, d); }
+vec3 skyColor(vec2 p, float d) {
+    float night = nightAmount(d);
+    float dusk = smoothstep(0.2, 0.0, d);                       // Abendrot
+    float dawn = smoothstep(0.82, 1.0, d);                      // kühler Morgen
+    float h = clamp(p.y, 0.0, 1.0);                             // 0 Horizont, 1 oben
+    vec3 nightSky = mix(vec3(0.05, 0.07, 0.16), vec3(0.01, 0.015, 0.05), h);
+    vec3 duskSky = mix(vec3(0.95, 0.45, 0.15), vec3(0.3, 0.12, 0.35), smoothstep(0.0, 0.7, h));
+    vec3 dawnSky = mix(vec3(0.75, 0.6, 0.55), vec3(0.2, 0.3, 0.5), smoothstep(0.0, 0.8, h));
+    vec3 sky = nightSky;
+    sky = mix(sky, duskSky, dusk);
+    sky = mix(sky, dawnSky, dawn);
+    return sky;
 }
-// Konvoi: drei kastige Fahrzeuge hintereinander mit Scheinwerfern
-vec3 convoy(vec2 q, float s, float t, float dir, vec3 col) {
-    q /= s;
-    vec3 c = col;
-    for (int i = 0; i < 3; i++) {
-        vec2 o = q - vec2(float(i) * 1.5, 0.0);
-        float hull = boxf(o, vec2(0.0, 0.18), vec2(0.5, 0.14)) + boxf(o, vec2(0.25, 0.4), vec2(0.2, 0.1));
-        float wheels = boxf(o, vec2(-0.3, 0.0), vec2(0.1, 0.06)) + boxf(o, vec2(0.3, 0.0), vec2(0.1, 0.06));
-        c = mix(c, vec3(0.38, 0.33, 0.28) * (0.8 + 0.2 * float(i)), clamp(hull + wheels, 0.0, 1.0));
-        c += vec3(1.0, 0.95, 0.7) * boxf(o, vec2(0.52 * dir, 0.2), vec2(0.04, 0.03));
-    }
-    return c;
+// Dünenkamm-Höhe einer Ebene an Position x (Ebene k), wandert ganz langsam
+float duneH(float x, float k, float t) {
+    float drift = t * (0.004 + 0.003 * k);
+    float h = 0.5 + 0.5 * sin(x * (0.9 + k * 0.4) + uSeed * k + drift);
+    h = h * 0.7 + 0.3 * sin(x * (2.3 + k) * 1.1 - drift * 1.7 + uSeed);
+    h += 0.25 * fbm3(vec2(x * 1.3 + k * 7.0, k * 3.0 + drift * 0.5)) - 0.12;
+    return h;
 }
-// Droide: runde Kuppel auf Zylinder, rollt nah am Boden vorbei, Lichter blinken
-vec3 droid(vec2 q, float s, float t, vec3 col) {
-    q /= s;
-    float body = boxf(q, vec2(0.0, 0.25), vec2(0.22, 0.3)) + step(length((q - vec2(0.0, 0.55)) * vec2(1.0, 1.3)), 0.22);
-    float legs = boxf(q, vec2(-0.3, 0.2), vec2(0.06, 0.28)) + boxf(q, vec2(0.3, 0.2), vec2(0.06, 0.28));
-    vec3 c = mix(col, vec3(0.8, 0.8, 0.85), clamp(body + legs, 0.0, 1.0));
-    c = mix(c, vec3(0.2, 0.4, 0.9), boxf(q, vec2(0.0, 0.3), vec2(0.22, 0.04)) + boxf(q, vec2(0.0, 0.12), vec2(0.22, 0.04)));
-    c += vec3(1.0, 0.2, 0.2) * step(0.5, fract(t * 3.0)) * step(length(q - vec2(0.08, 0.62)), 0.04);
-    c += vec3(0.3, 0.6, 1.0) * step(0.5, fract(t * 1.7 + 0.5)) * step(length(q - vec2(-0.08, 0.5)), 0.035);
-    return c;
-}
-// Kriecher: riesige Kastenmaschine auf Raupen, kriecht am Horizont
-vec3 crawler(vec2 q, float s, float t, vec3 col) {
-    q /= s;
-    float hull = tri(q, vec2(-1.0, 0.2), vec2(1.0, 0.2), vec2(0.0, 0.9)) * step(0.2, q.y) + boxf(q, vec2(0.0, 0.12), vec2(1.0, 0.12));
-    float treads = boxf(q, vec2(0.0, -0.05), vec2(0.95, 0.07)) * step(0.5, fract(q.x * 12.0 - t * 2.0));
-    vec3 c = mix(col, vec3(0.3, 0.26, 0.22), clamp(hull + treads, 0.0, 1.0));
-    c += vec3(1.0, 0.9, 0.6) * step(0.8, hash(vec2(floor(q.x * 10.0), floor(q.y * 10.0)))) * hull * step(0.25, q.y) * 0.5;
-    return c;
-}
-// Suchscheinwerfer einer fernen Basis: Kegel schwenkt über den Himmel
-vec3 searchlight(vec2 p, float t, float x0, float groundY, vec3 col) {
-    vec2 d = p - vec2(x0, groundY);
-    float ang = atan(d.y, d.x);
-    float target = 1.2 + 0.7 * sin(t * 0.6);
-    if (x0 > 0.0) target = 3.14159 - target;           // von rechts nach links in die Szene leuchten
-    float beam = smoothstep(0.1, 0.0, abs(ang - target)) * smoothstep(0.0, 0.1, d.y) * exp(-length(d) * 0.9);
-    col += vec3(0.8, 0.9, 1.0) * beam * 0.7;
-    col += vec3(1.0, 0.95, 0.8) * step(length(d * vec2(1.0, 2.0)), 0.015);
-    return col;
-}
-
-vec3 events(vec2 p, vec2 cellsz, float t, float groundY, vec3 col) {
-    float slot = floor(t / 16.0);
-    float u = fract(t / 16.0);                     // 0..1 im Zeitfenster
-    float kind = floor(hash1(slot + 3.7) * 16.0);  // 0..15: 14 Ereignisse, 14/15 = Pause
-    if (uEventForce > 0.5) kind = uEventForce - 1.0;
-    // Orbitalstation: langsam driftender Lichtpunkt, in jedem dritten Fenster sichtbar
-    if (mod(slot, 3.0) < 1.0) {
-        vec2 st = p - vec2(mix(-1.2, 1.2, u) * (step(0.5, hash1(slot + 44.4)) * 2.0 - 1.0), 0.9);
-        col += vec3(0.9, 0.95, 1.0) * step(length(st), 0.008);
-        col += vec3(1.0, 0.3, 0.2) * step(0.5, fract(t * 1.0)) * step(length(st - vec2(0.012, 0.0)), 0.006);
-    }
-    float dir = step(0.5, hash1(slot + 91.1)) * 2.0 - 1.0;
-    float x = mix(-1.3, 1.3, u) * dir;             // von links nach rechts oder umgekehrt
-    vec2 q;
-    if (kind < 1.0) {                              // Transporter hoch über dem Horizont
-        q = p - vec2(x, 0.72 + 0.03 * sin(u * 6.28)); q.x *= dir;
-        col = transporter(q, 0.16, t, col);
-    } else if (kind < 2.0) {                       // zwei Jäger, schnell (nur im ersten Drittel)
-        float uu = u * 3.0;
-        if (uu < 1.2) {
-            float xx = mix(-1.5, 1.5, uu) * dir;
-            q = p - vec2(xx, 0.62); q.x *= dir; col = fighter(q, 0.09, t, col);
-            q = p - vec2(xx - 0.22 * dir, 0.56); q.x *= dir; col = fighter(q, 0.08, t + 1.0, col);
-        }
-    } else if (kind < 3.0) {                       // Läufer am Horizont, sehr langsam
-        float xx = mix(-1.1, 1.1, u) * dir;
-        q = p - vec2(xx, groundY + 0.06); q.x *= dir; col = walker(q, 0.09, t, col);
-    } else if (kind < 4.0) {                       // Gleiter am Boden, zügig
-        float uu = u * 2.0;
-        if (uu < 1.3) {
-            float xx = mix(-1.5, 1.5, uu) * dir;
-            q = p - vec2(xx, groundY - 0.04); q.x *= dir; col = speeder(q, 0.1, t, col);
-        }
-    } else if (kind < 5.0) {                       // Sonde kommt, scannt, verschwindet
-        float xx = mix(-1.2, 0.5 * dir, smoothstep(0.0, 0.4, u)) * (dir) + (1.0 - smoothstep(0.75, 1.0, u)) * 0.0;
-        xx = mix(xx, 1.4 * dir, smoothstep(0.75, 1.0, u));
-        q = p - vec2(xx, 0.5 + 0.02 * sin(t * 2.0)); col = probe(q, 0.09, t, col);
-    } else if (kind < 6.0) {                       // Großschiff, weit und langsam
-        float xx = mix(-1.2, 1.2, u) * dir;
-        q = p - vec2(xx, 0.85); q.x *= dir; col = capital(q, 0.22, t, col);
-    } else if (kind < 7.0) {                       // Ferne Gefechtsblitze am Horizont (siehe unten)
-    } else if (kind < 8.0) {                       // Shuttle landet hinten, bleibt, startet wieder
-        float xx = 0.75 * dir;
-        float land = smoothstep(0.0, 0.3, u), lift = smoothstep(0.7, 1.0, u);
-        float yy = groundY + 0.03 + (1.0 - land) * 0.7 + lift * 0.8;
-        float fold = smoothstep(0.2, 0.3, u) * (1.0 - smoothstep(0.7, 0.8, u));
-        q = p - vec2(xx, yy); col = shuttle(q, 0.17, t, fold, col);
-        // Landelicht auf dem Boden, solange es steht
-        col += vec3(0.4, 0.7, 1.0) * fold * 0.25 * exp(-length((p - vec2(xx, groundY)) * vec2(2.0, 8.0)) * 3.0);
-    } else if (kind < 9.0) {                       // Konvoi hinten über den Boden
-        float xx = mix(-1.6, 1.6, u) * dir;
-        q = p - vec2(xx, groundY + 0.01); q.x *= dir; col = convoy(q, 0.06, t, dir, col);
-    } else if (kind < 10.0) {                      // Droide rollt nah vorbei
-        float uu = u * 1.6;
-        if (uu < 1.2) {
-            float xx = mix(-1.5, 1.5, uu) * dir;
-            q = p - vec2(xx, groundY - 0.1 + 0.01 * abs(sin(t * 6.0))); col = droid(q, 0.08, t, col);
-        }
-    } else if (kind < 11.0) {                      // Kriecher am Horizont, sehr langsam
-        float xx = mix(-0.9, 0.9, u) * dir;
-        q = p - vec2(xx, groundY + 0.02); q.x *= dir; col = crawler(q, 0.09, t, col);
-    } else if (kind < 12.0) {                      // Meteorschauer
-        for (int i = 0; i < 6; i++) {
-            float fi = float(i);
-            float ph = fract(t / 1.8 + hash(vec2(fi, slot)));
-            vec2 sp = vec2(-1.2 + hash(vec2(fi, slot + 1.0)) * 2.4 + ph * 0.9, 0.98 - ph * 0.45);
-            float shoot = smoothstep(0.012, 0.0, segDist(p, sp, sp - vec2(0.09, 0.035))) * step(ph, 0.55) * step(0.15, u) * step(u, 0.95);
-            col += vec3(1.0, 0.95, 0.8) * shoot;
-        }
-    } else if (kind < 13.0) {                      // Suchscheinwerfer einer fernen Basis
-        col = searchlight(p, t, 0.82 * dir, groundY, col);   // p.x reicht nur bis ±0.89
-    } else if (kind < 14.0) {                      // Patrouille: Transporter plus zwei Jäger als Eskorte
-        q = p - vec2(x, 0.72); q.x *= dir; col = transporter(q, 0.14, t, col);
-        q = p - vec2(x + 0.3 * dir, 0.66); q.x *= dir; col = fighter(q, 0.07, t, col);
-        q = p - vec2(x + 0.3 * dir, 0.78); q.x *= dir; col = fighter(q, 0.07, t + 1.0, col);
-    }
-    if (kind >= 6.0 && kind < 7.0) {               // Gefecht
-        float fl = step(0.93, hash(vec2(floor(t * 6.0), slot))) * step(0.2, u) * step(u, 0.8);
-        float fx = (hash(vec2(floor(t * 6.0), 1.0)) - 0.5) * 2.0;
-        col += vec3(1.0, 0.75, 0.45) * fl * exp(-length((p - vec2(fx, groundY + 0.04)) * vec2(1.0, 3.0)) * 3.5) * 1.6;
-        col += vec3(1.0, 0.4, 0.2) * fl * step(length((p - vec2(fx, groundY + 0.04)) * vec2(1.0, 1.6)), 0.03);
-        col += vec3(0.6, 0.5, 0.6) * fl * 0.12 * step(groundY, p.y);          // Himmel hellt kurz auf
-        // Leuchtspuren, die zum Blitz hinziehen
-        float tr = step(0.97, hash(vec2(floor(t * 9.0), slot + 2.0))) * step(0.2, u) * step(u, 0.8);
-        float ty = groundY + 0.05 + fract(t * 0.9) * 0.25;
-        col += vec3(0.3, 1.0, 0.4) * tr * step(abs(p.x - fx - (ty - groundY) * 0.6), 0.006) * step(abs(p.y - ty), 0.03);
-    }
-    return col;
-}
-
 
 void main() {
     float aspect = iResolution.x / iResolution.y;
-    vec2 uv = vUv;
-    vec2 p = vec2((uv.x - 0.5) * aspect, uv.y);
+    vec2 p = (vUv - 0.5) * vec2(aspect, 1.0);             // Mitte 0/0, Höhe -0.5..0.5
     float t = iTime;
     float live = 1.0 - uSilent;
-    float ignite = smoothstep(0.8, 5.0, iTime);
-    float flameH = mix(0.05, 1.0, ignite) * (1.0 + 0.15 * uBass * live);
-    float groundY = 0.22;
+    float day = uDay;
+    float night = nightAmount(day);
+    float dusk = smoothstep(0.2, 0.0, day), dawn = smoothstep(0.82, 1.0, day);
+    float horizon = 0.02;                                   // Horizontlinie
+    // Feuerparameter
+    vec2 fire = vec2(0.0, -0.33);                           // Feuerboden
+    float fireSize = 0.55 + 0.45 * uEnergy + 0.25 * uBassS;  // leise: kleiner, laut: größer
+    float flick = 0.85 + 0.15 * noise(vec2(uFireT * 9.0, 1.0)) + 0.12 * uBassS;
+    float wind = uWind;
 
-    // ---- Hitzeflimmern über dem Feuer: der Himmel wabert leicht
-    vec2 pS = p, uvS = uv;
-    float heat = smoothstep(0.55, 0.0, abs(p.x)) * smoothstep(0.26, 0.5, uv.y) * smoothstep(1.1, 0.7, uv.y) * ignite;
-    float shim = (noise(vec2(p.x * 16.0, uv.y * 10.0 - t * 3.0)) - 0.5) * 0.02 * heat;
-    pS.x += shim; uvS.x += shim / aspect;
-
-    // ---- Himmel: tiefes Violett, Nebel, weiche Sterne, zwei Monde, Sternschnuppe
-    vec3 col = mix(vec3(0.03, 0.02, 0.07), vec3(0.14, 0.06, 0.22), smoothstep(0.2, 1.0, uvS.y));
-    float neb = fbm(pS * 1.6 + vec2(t * 0.004, 0.0));
-    col += mix(vec3(0.3, 0.1, 0.4), vec3(0.1, 0.25, 0.45), noise(pS * 2.5)) * smoothstep(0.45, 0.85, neb) * 0.5 * smoothstep(0.2, 0.6, uvS.y);
-    for (int i = 0; i < 2; i++) {
-        float fi = float(i);
-        vec2 sg = pS * (70.0 + fi * 55.0) + fi * 13.0;
+    // ---- Himmel
+    vec2 skyP = vec2(p.x, (p.y - horizon) / (0.5 - horizon));
+    vec3 col = skyColor(skyP, day);
+    // Sterne (nur nachts), funkeln; Milchstraße als schräges Band aus Rauschen
+    if (p.y > horizon - 0.05) {
+        vec2 sg = p * 70.0;
         vec2 cell = floor(sg);
-        vec2 f = fract(sg) - 0.5 + (vec2(hash12(cell + 1.0), hash12(cell + 2.0)) - 0.5) * 0.6;
-        float h = hash12(cell + fi);
-        float star = step(0.93 - fi * 0.02, h) * smoothstep(0.08, 0.0, length(f)) * (0.5 + 0.5 * sin(t * (1.0 + h * 3.0) + h * 40.0));
-        col += mix(vec3(0.9, 0.95, 1.0), vec3(1.0, 0.8, 0.6), hash12(cell + 7.0)) * star * (0.7 + 0.5 * uHigh * live) * smoothstep(groundY, 0.4, uvS.y);
+        vec2 f = fract(sg) - 0.5 + (vec2(hash12(cell + 1.0), hash12(cell + 2.0)) - 0.5) * 0.7;
+        float h = hash12(cell + uSeed);
+        float star = step(0.9, h) * smoothstep(0.09, 0.0, length(f)) * (0.55 + 0.45 * sin(t * (1.5 + h * 3.0) + h * 40.0));
+        star *= 0.4 + 0.6 * h;
+        vec2 mw = vec2(p.x * 0.8 + p.y * 1.2, -p.x * 0.5 + p.y * 0.7) + t * 0.004;
+        float band = exp(-pow((mw.y - 0.25) * 2.2, 2.0));
+        float milky = band * smoothstep(0.35, 0.75, fbm(mw * 3.0 + uSeed)) * 0.35;
+        float sky_f = night * smoothstep(horizon - 0.05, horizon + 0.15, p.y);
+        col += vec3(0.9, 0.92, 1.0) * star * sky_f;
+        col += mix(vec3(0.5, 0.55, 0.8), vec3(0.8, 0.7, 0.75), noise(mw * 6.0)) * milky * sky_f;
+        col += vec3(1.0) * step(0.985, hash12(cell + uSeed + 5.0)) * smoothstep(0.03, 0.0, length(f)) * sky_f * 0.6;   // helle Sterne
     }
-    // großer Mond mit Kratern und Terminator
-    {
-        vec2 mc = pS - vec2(0.55, 0.78);
-        float mr = length(mc) / 0.085;
-        if (mr < 1.0) {
-            float z = sqrt(1.0 - mr * mr);
-            vec3 n = vec3(mc / 0.085, z);
-            float crat = fbm(n.xy * 9.0 + 3.0);
-            float lit = 0.1 + 0.9 * clamp(dot(n, normalize(vec3(-0.5, 0.3, 0.8))), 0.0, 1.0);
-            col = mix(col, mix(vec3(0.55, 0.58, 0.65), vec3(0.85, 0.87, 0.9), smoothstep(0.4, 0.7, crat)) * lit, smoothstep(1.0, 0.97, mr));
+    // Mond: steigt im Lauf der Nacht auf und wandert nach links
+    vec2 moonC = vec2(0.55 - 0.9 * smoothstep(0.1, 0.9, day), -0.05 + 0.45 * sin(clamp((day - 0.05) / 0.85, 0.0, 1.0) * 3.14159));
+    float moonR = 0.075;
+    vec2 md = p - moonC;
+    float mr = length(md) / moonR;
+    float moonVis = smoothstep(0.03, 0.12, day) * smoothstep(0.97, 0.88, day);
+    if (mr < 1.0) {
+        vec3 n = vec3(md / moonR, sqrt(max(0.0, 1.0 - mr * mr)));
+        float crat = fbm(n.xy * 3.0 + uSeed);
+        float craters = smoothstep(0.45, 0.7, fbm3(n.xy * 5.0 + 3.0)) * 0.25;
+        vec3 moon = mix(vec3(0.85, 0.85, 0.75), vec3(0.98, 0.97, 0.9), smoothstep(0.4, 0.7, crat)) * (1.0 - craters);
+        moon *= 0.55 + 0.45 * clamp(dot(n, normalize(vec3(-0.4, 0.3, 0.85))), 0.0, 1.0);
+        col = mix(col, moon, smoothstep(1.0, 0.97, mr) * moonVis);
+    }
+    col += vec3(0.8, 0.8, 0.7) * exp(-max(mr - 1.0, 0.0) * 4.0) * 0.25 * moonVis * step(1.0, mr);
+    // Sonne im Abendrot / Morgengrauen: Glühen am Horizont
+    col += vec3(1.0, 0.5, 0.2) * exp(-abs(p.y - horizon) * 10.0) * exp(-abs(p.x + 0.5) * 2.0) * dusk * 0.5;
+    col += vec3(0.9, 0.7, 0.5) * exp(-abs(p.y - horizon) * 10.0) * exp(-abs(p.x - 0.6) * 2.0) * dawn * 0.4;
+
+    // ---- Dünen: drei Ebenen von fern nach nah; Sand mit Rippeln, Mond- und Feuerlicht, Sandfahnen bei Wind
+    vec3 moonLight = vec3(0.45, 0.5, 0.7) * (0.35 + 0.65 * night) * moonVis + vec3(0.9, 0.55, 0.3) * dusk * 0.6 + vec3(0.7, 0.65, 0.6) * dawn * 0.5;
+    vec3 sandBase = vec3(0.78, 0.62, 0.42);
+    for (int k = 2; k >= 0; k--) {
+        float fk = float(k);
+        // ferne Ebene (k = 2) liegt am Horizont, nahe Ebenen (k = 0) weiter unten und größer
+        float base = horizon - 0.02 - (2.0 - fk) * 0.1;
+        float amp = 0.05 + (2.0 - fk) * 0.05;
+        float x = p.x * (1.6 - fk * 0.35) + fk * 3.1;
+        float ridge = base + amp * duneH(x, fk, t) * (fk < 1.5 ? 1.0 : 0.8);
+        if (p.y < ridge) {
+            // Hang: Steigung aus der Ableitung, lichtzugewandte Seite heller
+            float e = 0.01;
+            float slope = (duneH(x + e, fk, t) - duneH(x - e, fk, t)) / (2.0 * e) * amp;
+            float lit = clamp(0.5 - slope * 1.5, 0.0, 1.0);
+            float depth = (ridge - p.y);
+            float rip = 0.5 + 0.5 * sin((p.x * 60.0 + p.y * 120.0 + fk * 9.0) + fbm3(p * 20.0) * 6.0);   // Sandrippel
+            vec3 sand = sandBase * (0.22 + 0.5 * fk / 2.0 * 0.0 + 0.3) * (0.85 + 0.15 * rip);
+            sand *= (0.35 + 0.65 * lit);
+            sand *= moonLight * 1.6 + 0.05;
+            sand *= 1.0 - 0.35 * smoothstep(0.0, 0.25, depth) * (1.0 - fk * 0.3);    // zum Fuß dunkler
+            // ferne Ebenen bläulicher und dunkler (Dunst)
+            sand = mix(sand, skyColor(vec2(p.x, 0.0), day) * 0.6, fk * 0.22);
+            // Feuerlicht auf den nahen Dünen
+            float fd = length((p - fire) * vec2(1.0, 1.5));
+            sand += vec3(1.0, 0.55, 0.2) * exp(-fd * 3.5) * 0.55 * flick * fireSize * (1.0 - fk * 0.45);
+            sand *= 1.0 - 0.25 * fk;                                                // ferne Ebenen dunkler
+            col = sand;
         }
-        col += vec3(0.5, 0.55, 0.75) * smoothstep(0.2, 0.0, mr - 1.0) * 0.15;
-        // kleiner Ringplanet links
-        vec2 rc = pS - vec2(-0.62, 0.72);
-        float rr = length(rc) / 0.035;
-        vec2 rq = mat2(0.94, -0.34, 0.34, 0.94) * rc / 0.035;
-        float ring = smoothstep(0.1, 0.0, abs(rq.y)) * step(1.3, abs(rq.x)) * step(abs(rq.x), 2.4);
-        col = mix(col, vec3(0.85, 0.75, 0.6), ring * 0.8 * (1.0 - step(rr, 1.0) * step(0.0, rq.y)));
-        if (rr < 1.0) col = mix(col, vec3(0.9, 0.7, 0.45) * (0.4 + 0.6 * sqrt(1.0 - rr * rr)) * (0.8 + 0.2 * sin(rc.y * 80.0)), 1.0);
+        // Sandfahne über dem Kamm bei Wind
+        float above = p.y - ridge;
+        if (above > 0.0 && above < 0.06) {
+            float fx = p.x * 25.0 - t * (2.0 + 6.0 * wind) * (1.0 + fk * 0.3);
+            float sandBlow = noise(vec2(fx, p.y * 40.0 + fk)) * smoothstep(0.06, 0.0, above) * wind * 0.35;
+            col = mix(col, sandBase * moonLight * 1.5 + vec3(0.15), sandBlow);
+        }
     }
-    // Sternschnuppe
-    {
-        float ph = fract(t / 9.0);
-        vec2 sp = vec2(-0.9 + ph * 2.0, 0.97 - ph * 0.5);
-        float shoot = smoothstep(0.004, 0.0, segDist(pS, sp, sp - vec2(0.12, 0.03))) * step(ph, 0.5) * step(0.05, ph);
-        col += vec3(1.0, 0.95, 0.85) * shoot;
+    // Sichtbarkeit für die Karawane: nur wo keine nähere Düne (Ebene 0/1) davor liegt
+    float nearRidge = -1.0;
+    for (int k = 0; k <= 1; k++) {
+        float fk = float(k);
+        float base = horizon - 0.02 - (2.0 - fk) * 0.1;
+        float amp = 0.05 + (2.0 - fk) * 0.05;
+        float x = p.x * (1.6 - fk * 0.35) + fk * 3.1;
+        nearRidge = max(nearRidge, base + amp * duneH(x, fk, t));
     }
+    float farVisible = step(nearRidge, p.y);
 
-    // ---- Boden: dunkler Staub mit Steinen, vom Feuer beleuchtet
-    float ground = step(uv.y, groundY);
-    float gn = fbm(vec2(p.x * 5.0, uv.y * 28.0));
-    vec3 soil = mix(vec3(0.07, 0.05, 0.08), vec3(0.12, 0.09, 0.11), gn);
-    float rock = smoothstep(0.84, 0.9, noise(vec2(p.x * 30.0, uv.y * 130.0))) * 0.5;
-    soil = mix(soil, vec3(0.22, 0.2, 0.24) * (0.6 + 0.6 * gn), rock);
-    col = mix(col, soil, ground);
-
-    // ---- Hintergrund-Ereignisse (Silhouetten mit Lichtern)
-    col = events(p, vec2(1.0 / iResolution.x, 1.0 / iResolution.y) * 3.0, t, groundY, col);
-
-    // ---- Lichtschein des Feuers auf Boden und Luft, flackert
-    float flick = 0.75 + 0.2 * noise(vec2(t * 7.0, 3.0)) + 0.12 * noise(vec2(t * 23.0, 9.0)) + 0.1 * uBeat * live + 0.1 * uMid * live;
-    float d = length((p - vec2(0.0, groundY + 0.05)) * vec2(1.0, 1.4));
-    col += vec3(1.0, 0.45, 0.2) * exp(-d * 4.0) * 0.45 * flick * ignite;
-    col += vec3(1.0, 0.3, 0.08) * exp(-d * 1.6) * 0.12 * flick * ignite;
-    float groundLit = ground * exp(-d * 2.6) * flick * ignite;
-    col += vec3(1.0, 0.5, 0.2) * groundLit * 0.35 * (0.6 + 0.6 * gn);
-    // Schatten der Scheite auf dem Boden
-    col *= 1.0 - 0.3 * ground * smoothstep(0.26, 0.0, abs(p.x)) * smoothstep(groundY - 0.03, groundY - 0.1, uv.y) * ignite;
-
-    // ---- Rauch: dunkle Schwaden, die im Wind abdriften
-    if (uv.y > groundY + 0.25 * flameH) {
-        float wind = sin(t * 0.17) * 0.35;
-        float drift = (uv.y - groundY) * wind + sin(uv.y * 6.0 - t * 0.5) * 0.04;
-        float sm = fbm(vec2(p.x * 4.0 - drift * 2.0 + t * 0.1, uv.y * 3.0 - t * 0.55));
-        float column = smoothstep(0.3, 0.0, abs(p.x - drift)) * smoothstep(groundY + 0.3 * flameH, groundY + 0.75 * flameH, uv.y) * smoothstep(1.2, 0.8, uv.y);
-        float smoke = smoothstep(0.42, 0.75, sm) * column * ignite * 0.55;
-        col = mix(col, vec3(0.16, 0.13, 0.18), smoke);
-    }
-
-    // ---- Scheite: zwei gekreuzte Stämme, zylindrisch schattiert, Rinde, glühende Risse
-    float logs = 0.0;
-    {
-        vec2 a1 = vec2(-0.24, groundY - 0.005), b1 = vec2(0.22, groundY + 0.075);
-        vec2 a2 = vec2(0.24, groundY - 0.005), b2 = vec2(-0.22, groundY + 0.075);
-        for (int i = 0; i < 2; i++) {
-            vec2 a = i == 0 ? a1 : a2, b = i == 0 ? b1 : b2;
-            vec2 ba = b - a;
-            float h = clamp(dot(p - a, ba) / dot(ba, ba), 0.0, 1.0);
-            vec2 perp = p - (a + ba * h);
-            float dist = length(perp);
-            float rad = 0.034;
-            if (dist < rad && h > 0.0 && h < 1.0) {
-                float s = perp.y / rad;                                  // -1..1 quer über den Stamm
-                float shade = 0.2 + 0.8 * pow(max(0.0, 1.0 - s * s), 0.6) * (0.6 + 0.4 * smoothstep(-1.0, 0.4, s));
-                float bark = noise(vec2(h * 60.0, s * 4.0)) * 0.6 + noise(vec2(h * 180.0, s * 14.0)) * 0.3;
-                float ridges = smoothstep(0.3, 0.7, noise(vec2(h * 90.0, s * 3.0)));
-                vec3 wood = mix(vec3(0.12, 0.06, 0.03), vec3(0.3, 0.17, 0.08), bark) * (0.7 + 0.3 * ridges) * shade;
-                float charred = smoothstep(0.3, 0.0, abs(p.x)) * ignite;
-                wood = mix(wood, vec3(0.05, 0.03, 0.03), charred * 0.6);                    // verkohlt zur Mitte hin
-                float crack = smoothstep(0.66, 0.8, noise(vec2(h * 80.0, s * 7.0 + float(i) * 5.0))) * charred;
-                float pulse = 0.55 + 0.45 * sin(t * 2.0 + h * 25.0 + float(i));
-                wood = mix(wood, vec3(1.0, 0.3, 0.04) * (0.7 + 0.5 * pulse), crack * 0.95);
-                wood += vec3(1.0, 0.45, 0.15) * charred * 0.12 * pulse * (1.0 - abs(s)) * flick;
-                col = mix(col, wood, 1.0 - smoothstep(rad - 0.003, rad, dist));
-                logs = max(logs, 1.0 - smoothstep(rad - 0.003, rad, dist));
+    // ---- Karawane: Kamele ziehen als Silhouette über die ferne Düne (Ebene 2)
+    if (uCaravan > 0.0 && uCaravan < 1.0) {
+        float cx0 = (uCaravan * 2.6 - 1.3) * uCaravanDir;    // von einer Seite zur anderen
+        for (int i = 0; i < 5; i++) {
+            float fi = float(i);
+            float cx = cx0 - fi * 0.06 * uCaravanDir;
+            float xr = cx * (1.6 - 2.0 * 0.35) + 2.0 * 3.1;
+            float ry = horizon - 0.02 + 0.05 * duneH(xr, 2.0, t) * 0.8;    // auf dem Kamm der fernen Düne
+            vec2 c = p - vec2(cx, ry + 0.012);
+            float sc = 0.014;
+            float walk = sin(t * 2.0 + fi) * 0.15;
+            // Körper mit Höcker, Hals, Kopf, Beine
+            float body = step(sdEll(c, vec2(0.0, 0.0), vec2(sc * 1.4, sc * 0.75)), 0.0);
+            float hump = step(sdEll(c, vec2(-sc * 0.2, sc * 0.6), vec2(sc * 0.6, sc * 0.5)), 0.0);
+            float neck = step(sdSeg(c, vec2(sc * 1.2, sc * 0.2), vec2(sc * 1.9 * uCaravanDir, sc * 1.1)), sc * 0.22);
+            float head = step(sdEll(c, vec2(sc * 2.0 * uCaravanDir, sc * 1.15), vec2(sc * 0.4, sc * 0.25)), 0.0);
+            float legs = 0.0;
+            for (int l = 0; l < 4; l++) {
+                float fl = float(l);
+                float lx = (-0.9 + fl * 0.6) * sc;
+                float sw = sin(t * 2.0 + fi + fl * 1.5) * 0.25 * sc;
+                legs = max(legs, step(sdSeg(c, vec2(lx, -sc * 0.4), vec2(lx + sw, -sc * 1.5)), sc * 0.12));
             }
+            float rider = step(sdEll(c, vec2(sc * 0.3, sc * 1.25 + walk * sc), vec2(sc * 0.25, sc * 0.45)), 0.0) * step(0.5, hash12(vec2(fi, 3.0)));
+            float camel = max(max(body, hump), max(max(neck, head), max(legs, rider)));
+            float fade = smoothstep(0.0, 0.08, uCaravan) * smoothstep(1.0, 0.92, uCaravan);
+            col = mix(col, vec3(0.02, 0.02, 0.03) + col * 0.15, camel * fade * farVisible);
         }
-        // Glut zwischen den Scheiten
-        float ember = smoothstep(0.12, 0.0, length((p - vec2(0.0, groundY + 0.02)) * vec2(1.0, 2.5))) * ignite;
-        float en = noise(vec2(p.x * 60.0, p.y * 60.0 + t * 0.3));
-        col += fireRamp(0.5 + 0.4 * en) * ember * (0.5 + 0.5 * sin(t * 3.0 + en * 10.0)) * (1.0 - logs) * 0.9;
     }
 
-    // ---- Flammen: verformtes Rauschen, das aufsteigt, in einer Hüllkurve (unten breit, oben spitz),
-    //      mehrere Zungen, additiv mit Glühen
-    float fy = (uv.y - groundY) / (0.42 * flameH);
-    float fyp = max(fy, 0.0);
-    if (fy > -0.02 && fy < 1.6) {
-        vec2 fp = vec2(p.x, uv.y - groundY);
-        float warp = fbm(vec2(fp.x * 6.0 + t * 0.3, fp.y * 5.0 - t * 2.2));
-        float warp2 = fbm(vec2(fp.x * 11.0 - t * 0.5, fp.y * 9.0 - t * 3.6) + warp * 1.5);
-        float cx = (warp - 0.5) * 0.1 * fyp + (warp2 - 0.5) * 0.14 * fyp * fyp;
-        float width = 0.2 * flameH * (1.0 - fyp * 0.72) * (0.85 + 0.3 * warp);
-        float env = 1.0 - clamp(abs(fp.x + cx) / max(width, 0.001), 0.0, 1.0);
-        env = pow(env, 0.8);
-        float v = env * (0.45 + 1.1 * warp2 + 0.3 * warp) - fyp * 0.85;
-        // seitliche Zungen, die abreißen
-        for (int sgn = -1; sgn <= 1; sgn += 2) {
-            float sx = float(sgn) * (0.1 + 0.03 * sin(t * 1.7 + float(sgn)));
-            float tn = fbm(vec2(fp.x * 10.0 + float(sgn) * 7.0, fp.y * 12.0 - t * 4.5));
-            float tw = 0.07 * flameH * (1.0 - fyp * 1.1) * (0.5 + 0.8 * tn);
-            float ts = 1.0 - clamp(abs(fp.x - sx) / max(tw, 0.001), 0.0, 1.0);
-            v = max(v, ts * (0.35 + 0.9 * tn) - fyp * 1.3);
-        }
-        v += 0.1 * uMid * live;
-        float core = clamp(v, 0.0, 1.0);
-        vec3 fc = fireRamp(core);
-        float alpha = smoothstep(0.02, 0.25, core);
-        col = mix(col, fc, alpha * (1.0 - 0.6 * logs));                          // Scheite bleiben vor der Flammenbasis sichtbar
-        col += fc * core * 0.35;                                             // Glühen
-        // Hitzesaum
-        col += vec3(0.9, 0.3, 0.1) * smoothstep(0.0, 0.15, core) * (1.0 - smoothstep(0.15, 0.4, core)) * 0.25;
+    // ---- Zelt links: dunkles Tuch, Dachkanten, warm leuchtender Eingang, Tuch flattert im Wind
+    vec2 tz = p - vec2(-0.58, -0.2);
+    float flutter = sin(p.y * 40.0 + t * (4.0 + 10.0 * wind)) * 0.004 * (0.3 + wind);
+    vec2 tq = tz + vec2(flutter, 0.0);
+    float roof = step(abs(tq.x), 0.26 - max(0.0, tq.y) * 0.9) * step(-0.12, tq.y) * step(tq.y, 0.22);
+    float wall = step(abs(tq.x), 0.26) * step(-0.14, tq.y) * step(tq.y, -0.11);
+    float tent = max(roof, wall);
+    if (tent > 0.5) {
+        float stripe = 0.5 + 0.5 * sin(tq.x * 70.0 + tq.y * 20.0);
+        vec3 cloth = mix(vec3(0.12, 0.08, 0.06), vec3(0.2, 0.13, 0.08), stripe) * (0.8 + 0.2 * noise(tq * 80.0));
+        cloth *= 0.5 + 0.5 * smoothstep(-0.14, 0.2, tq.y);                 // Firstkante heller
+        cloth *= 0.4 + 0.6 * night + dusk * 0.8 + dawn * 0.6;
+        // Feuerschein auf dem Tuch
+        cloth += vec3(1.0, 0.5, 0.2) * exp(-length((p - fire) * vec2(1.0, 1.4)) * 2.5) * 0.5 * flick * fireSize;
+        col = cloth;
+        // Eingang: warmes Licht von innen, Lampe als heller Punkt, Schatten einer Person
+        vec2 dq = tq - vec2(0.06, -0.06);
+        float door = step(sdBox(dq, vec2(0.07, 0.085), 0.02), 0.0) * step(-0.14, tq.y);
+        float lampGlow = 0.75 + 0.25 * sin(t * 1.3) + 0.1 * noise(vec2(t * 5.0, 2.0));
+        vec3 inside = mix(vec3(0.9, 0.5, 0.15), vec3(1.0, 0.85, 0.5), smoothstep(0.1, 0.0, length(dq - vec2(0.0, 0.03)))) * lampGlow;
+        float person = step(sdEll(dq, vec2(-0.02, -0.03), vec2(0.022, 0.05)), 0.0) + step(sdEll(dq, vec2(-0.02, 0.03), vec2(0.012, 0.014)), 0.0);
+        inside *= 1.0 - 0.85 * clamp(person, 0.0, 1.0);
+        col = mix(col, inside, door);
     }
-    // Funke vor dem Anzünden
-    col += vec3(1.0, 0.9, 0.5) * step(iTime, 1.2) * smoothstep(0.012, 0.0, length(p - vec2(0.0, groundY + 0.06))) * step(0.5, fract(iTime * 8.0));
+    // Spannseile vom Zelt in den Sand
+    float rope = min(sdSeg(p, vec2(-0.84, -0.0), vec2(-0.98, -0.2)), sdSeg(p, vec2(-0.32, -0.0), vec2(-0.2, -0.22)));
+    col = mix(col, vec3(0.1, 0.08, 0.06), smoothstep(0.0025, 0.0, rope) * 0.8);
+    // Zeltlicht fällt auf den Sand davor
+    col += vec3(0.9, 0.5, 0.15) * exp(-length((p - vec2(-0.52, -0.3)) * vec2(1.0, 2.5)) * 5.0) * 0.25 * step(p.y, -0.23);
 
-    // ---- Funken: steigen in Wirbeln auf, glühen mit Nachleuchten, kühlen von gelb nach rot ab
-    for (int i = 0; i < 26; i++) {
+    // ---- Boden ums Feuer: Teppiche, Kissen, Teetablett (vom Feuer beleuchtet)
+    float fireLight = exp(-length((p - fire) * vec2(1.0, 1.6)) * 3.0) * flick * fireSize;
+    if (p.y < -0.2) {
+        // Teppich links und rechts (Rauten- und Streifenmuster)
+        for (int i = -1; i <= 1; i += 2) {
+            vec2 rq = p - vec2(float(i) * 0.36, -0.42);
+            float rug = step(sdBox(rq, vec2(0.2, 0.06), 0.01), 0.0);
+            float stripes = step(0.5, fract(rq.x * 40.0));
+            float diamonds = step(abs(fract(rq.x * 12.0) - 0.5) + abs(fract(rq.y * 24.0) - 0.5), 0.35);
+            vec3 rugCol = mix(vec3(0.5, 0.1, 0.08), vec3(0.75, 0.55, 0.15), stripes * 0.4 + diamonds * 0.6);
+            rugCol = mix(rugCol, vec3(0.1, 0.15, 0.35), step(abs(rq.y), 0.06) * step(0.055, abs(rq.y)));   // Bordüre
+            col = mix(col, rugCol * (0.15 + 1.6 * fireLight), rug);
+            // Kissen
+            vec2 kq = rq - vec2(float(-i) * 0.05, 0.03);
+            float cushion = step(sdEll(kq, vec2(0.0), vec2(0.07, 0.035)), 0.0);
+            vec3 kc = (i < 0 ? vec3(0.2, 0.35, 0.55) : vec3(0.6, 0.2, 0.3)) * (0.15 + 1.5 * fireLight) * (0.8 + 0.4 * smoothstep(0.0, -0.035, kq.y));
+            col = mix(col, kc, cushion);
+        }
+        // Teetablett rechts vorn: Tablett, Kanne mit Tülle, drei Gläser
+        vec2 tt = p - vec2(0.22, -0.47);
+        float tray = step(sdEll(tt, vec2(0.0), vec2(0.11, 0.03)), 0.0);
+        col = mix(col, vec3(0.7, 0.55, 0.25) * (0.2 + 1.8 * fireLight), tray);
+        vec2 pot = tt - vec2(-0.03, 0.035);
+        float potB = step(sdEll(pot, vec2(0.0), vec2(0.03, 0.03)), 0.0) + step(sdSeg(pot, vec2(0.025, 0.0), vec2(0.05, 0.035)), 0.006) + step(sdSeg(pot, vec2(0.0, 0.03), vec2(0.0, 0.045)), 0.005);
+        col = mix(col, vec3(0.75, 0.6, 0.3) * (0.2 + 1.8 * fireLight) * (0.6 + 0.6 * smoothstep(0.03, -0.01, pot.x)), clamp(potB, 0.0, 1.0));
+        for (int g = 0; g < 3; g++) {
+            vec2 gq = tt - vec2(0.03 + float(g) * 0.025, 0.02);
+            float glass = step(sdBox(gq, vec2(0.006, 0.012), 0.002), 0.0);
+            col = mix(col, vec3(0.9, 0.5, 0.2) * (0.3 + 1.5 * fireLight), glass);
+        }
+    }
+
+    // ---- Feuer: Holzscheite, Glut, Flammen (fbm, nach oben gezogen), Funken, Rauch, Hitzeflimmern
+    vec2 fq = p - fire;
+    // Holz: drei Scheite, verkohlt, mit glühenden Rissen
+    for (int i = 0; i < 3; i++) {
         float fi = float(i);
-        float speed = 0.1 + 0.12 * hash(vec2(fi, 2.0));
-        float life = fract(t * speed + hash(vec2(fi, 3.0)));
-        float sx = (hash(vec2(fi, 4.0)) - 0.5) * 0.22 + sin(t * 1.3 + fi) * 0.05 * life
-                 + life * (hash(vec2(fi, 5.0)) - 0.5) * 0.3 + 0.03 * sin(t * 4.0 + fi * 2.0) * life;
-        float sy = groundY + 0.08 + life * (0.45 + 0.45 * hash(vec2(fi, 6.0)));
-        float bright = (1.0 - life) * ignite * step(0.25, hash(vec2(fi, floor(t * 6.0) + 0.0)));
-        bright *= 1.0 + 1.5 * uBeat * live;
-        float dd = length((p - vec2(sx, sy)) * vec2(1.0, 0.7));
-        vec3 sc = mix(vec3(0.7, 0.1, 0.02), mix(vec3(1.0, 0.5, 0.1), vec3(1.0, 0.95, 0.6), bright), smoothstep(0.1, 0.7, bright));
-        col += sc * bright * (smoothstep(0.004, 0.0, dd) + 0.5 * smoothstep(0.014, 0.0, dd));
+        float ang = -0.5 + fi * 0.5;
+        vec2 a = vec2(cos(ang), sin(ang) * 0.35) * 0.1, b = -a;
+        vec2 lq = fq - vec2(0.0, 0.015 + fi * 0.006);
+        float d = sdSeg(lq, a, b);
+        float logm = smoothstep(0.016, 0.013, d);
+        float ember = smoothstep(0.65, 0.9, noise(lq * 90.0 + fi * 5.0 + uFireT * 0.5)) * (0.5 + 0.5 * uBassS + 0.3 * sin(uFireT * 6.0 + fi));
+        vec3 logc = mix(vec3(0.08, 0.05, 0.03), vec3(1.0, 0.35, 0.05), ember) * (0.6 + 0.6 * fireLight);
+        col = mix(col, logc, logm);
     }
-    // Knistern: Funkenregen alle paar Sekunden
-    float burstT = mod(t, 3.0);
-    float burstOn = step(0.55, hash(vec2(floor(t / 3.0), 7.0))) * ignite;
-    if (burstOn > 0.5 && burstT < 1.0) {
-        for (int i = 0; i < 8; i++) {
-            float seed = floor(t / 3.0) * 10.0 + float(i);
-            float vx = (hash(vec2(seed, 1.0)) - 0.5) * 0.9, vy = 0.5 + hash(vec2(seed, 2.0)) * 0.7;
-            vec2 bp = vec2((hash(vec2(seed, 3.0)) - 0.5) * 0.15 + vx * burstT, groundY + 0.06 + vy * burstT - 0.45 * burstT * burstT);
-            float dd = length(p - bp);
-            col += mix(vec3(1.0, 0.95, 0.7), vec3(1.0, 0.4, 0.1), burstT) * (smoothstep(0.004, 0.0, dd) + 0.4 * smoothstep(0.012, 0.0, dd)) * (1.0 - burstT);
-        }
+    // Glutbett
+    float bed = smoothstep(0.1, 0.0, length(fq * vec2(1.0, 3.0)));
+    col += vec3(1.0, 0.35, 0.05) * bed * (0.6 + 0.8 * uBassS) * flick;
+    // Flammen
+    {
+        float height = 0.3 * fireSize;
+        vec2 f = fq;
+        f.x -= wind * 0.12 * clamp(f.y, 0.0, 1.0) * (1.0 + 0.3 * sin(uFireT * 7.0));          // Wind legt die Flamme
+        float ny = clamp(f.y / height, 0.0, 1.0);
+        vec2 nq = vec2(f.x * 9.0, f.y * 5.0 - uFireT * 3.0);
+        float n = fbm(nq + vec2(0.0, uFireT * 0.5));
+        float n2 = fbm(nq * 2.2 + vec2(uFireT * 0.8, -uFireT * 2.0));
+        float width = (0.1 + 0.04 * uBassS) * (1.0 - ny * 0.85) * (0.7 + 0.6 * n);
+        float shape = smoothstep(width, width * 0.3, abs(f.x + (n - 0.5) * 0.08 * ny)) * step(0.0, f.y) * smoothstep(height * 1.05, height * 0.5, f.y);
+        float flame = shape * (0.6 + 0.6 * n2) * smoothstep(0.0, 0.05, f.y + 0.02);
+        vec3 fc = mix(vec3(1.0, 0.95, 0.6), vec3(1.0, 0.5, 0.05), smoothstep(0.0, 0.5, ny));
+        fc = mix(fc, vec3(0.8, 0.15, 0.02), smoothstep(0.5, 1.0, ny));
+        col = mix(col, fc, clamp(flame * 1.3, 0.0, 1.0));
+        col += fc * flame * 0.6;
+        // Glühen in die Umgebung
+        col += vec3(1.0, 0.55, 0.2) * exp(-length(fq * vec2(1.0, 1.2)) * 6.0) * 0.5 * flick * fireSize;
+        // Rauch darüber
+        vec2 sq = vec2(fq.x - wind * 0.3 * max(0.0, fq.y) - 0.02 * sin(uFireT + fq.y * 8.0), fq.y);
+        float smoke = fbm(vec2(sq.x * 6.0, sq.y * 3.0 - uFireT * 0.8)) * smoothstep(0.0, 0.25, fq.y) * smoothstep(0.9, 0.3, fq.y) * smoothstep(0.2, 0.0, abs(sq.x) - 0.02 * fq.y * 3.0);
+        col = mix(col, col * 0.6 + vec3(0.25, 0.22, 0.2), smoothstep(0.35, 0.7, smoke) * 0.45);
+    }
+    // Funken: steigen auf, flackern, mehr bei Anschlägen
+    for (int i = 0; i < 20; i++) {
+        float fi = float(i);
+        float h1 = hash12(vec2(fi, uSeed)), h2 = hash12(vec2(fi + 20.0, uSeed));
+        float life = 1.2 + h2 * 1.5;
+        float age = mod(uFireT * 0.9 + h1 * life, life);
+        float k = age / life;
+        vec2 sp = fire + vec2((h1 - 0.5) * 0.08 + k * k * (0.08 + wind * 0.25) * (h2 - 0.3) + 0.02 * sin(age * 6.0 + fi), 0.02 + k * (0.3 + 0.2 * h2) * fireSize);
+        float sz = 0.004 * (1.0 - k * 0.7);
+        float s = smoothstep(sz, 0.0, length(p - sp));
+        float on = step(0.5 - 0.5 * uSpark, h2 * (1.0 - k)) * (0.6 + 0.4 * sin(age * 30.0 + fi));
+        col += vec3(1.0, 0.6, 0.15) * s * on * (1.0 + 1.5 * uSpark) * (1.0 - k);
     }
 
-    // ---- Nachbearbeitung: leichtes Korn, Vignette
+    // ---- Abschluss: nachts etwas dunkler, warme Vignette am Rand
+    col *= 0.85 + 0.15 * (1.0 - night);
+    col *= 1.0 - 0.4 * pow(length(vUv - 0.5) * 1.3, 2.5);
     col = col / (1.0 + col * 0.25);
-    col += (hash12(vUv * iResolution + t) - 0.5) * 0.012;
-    col *= 1.0 - 0.4 * smoothstep(0.6, 1.6, length(vUv * 2.0 - 1.0));
     fragColor = vec4(col, 1.0);
 }

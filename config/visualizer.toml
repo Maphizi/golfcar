@@ -33,7 +33,10 @@ render_scale = 1.0
 
 [scenes.campfire]
 shader = "campfire"
-render_scale = 0.7      # weiche Flammen, kein Pixelraster mehr; bei unter 45 fps auf dem Pi 0.55
+controller = "campfire"   # Beduinen-Abend: Lauf des Abends, Wind, Karawane, Musikhüllkurven
+render_scale = 0.7        # weiche Zeichnung; bei unter 45 fps auf dem Pi 0.55
+cycle_minutes = 22        # ein Abend (Dämmerung, Nacht, Morgengrauen) in Minuten
+start_phase = 0.0         # 0 = Start in der Abenddämmerung, 0.3 = mitten in der Nacht
 
 [scenes.error]
 shader = "error"
