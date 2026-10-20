@@ -517,10 +517,16 @@ etwa alle 25 Sekunden eines der anderen Objekte seitlich vorbei (wächst, drifte
 `assets/sponsor.png` auf dem Pi (3:1, weißer Hintergrund wird durchsichtig), zeichnet der Shader es
 daneben. Die Datei ist nicht im Repo (Markenrechte), lege sie selbst ab.
 
-**Lautstärke am Drehknopf:** `launcher/volume_knob.py` liest die Drehknopf-Achse des Buttonboards
-und setzt die Lautstärke des Standard-Ausgangs über `wpctl` (höchstens zehnmal pro Sekunde).
-Einstellungen in `config/settings.toml` unter `[volume]`: `axis` (leer = automatisch erkennen,
-Meldung „Drehknopf erkannt: Achse …“ im Launcher-Log), `min_percent`, `max_percent`, `invert`.
+**Zwei Drehknöpfe, Musik und Stimme getrennt:**
+- Stimme: `launcher/volume_knob.py` liest die ABS-Achse des einen Knopfs (`[volume].axis`, ohne
+  Eintrag nur Beobachtung mit Log-Meldung „Achse ABS_… = …“) und schreibt einen Faktor nach
+  `logs/voice_volume.txt`; jeder Sprecher (KITT, HAL, BIBO, Ansagen) liest ihn vor jedem Satz.
+  `max_percent` 130 erlaubt etwas lauter als normal. `target = "sink"` regelt stattdessen alles.
+- Musik: `launcher/music_knob.py` steuert nur mpv über dessen Socket `/tmp/mpv.sock`: Consumer-Tasten
+  Lauter/Leiser werden immer erkannt, `[music].rel = true` nimmt REL_MISC-Schritte, `axis` eine
+  absolute Achse; `step` Prozent je Schritt. mpv startet man mit `scripts/music.sh [Ordner|Datei|URL]`
+  (Zufall, Endlosschleife, Startlautstärke `[music].start_percent`), das setzt den Socket. Läuft mpv
+  anderswo, genügt dort `--input-ipc-server=/tmp/mpv.sock`.
 
 **Pi aktualisieren:** `scripts/update.sh` holt den neuesten Stand, rendert fehlende Ansagen und
 startet den Launcher neu. Das ist der Standardweg für jede Änderung.

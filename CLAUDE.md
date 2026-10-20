@@ -28,10 +28,11 @@ Statusbehaftet – jeder Druck wechselt den Zustand:
 - **AUS** (zweiter Druck) → injiziert `KEY_BACKSPACE` → stoppt Warp-Flug
 - Bei HAL 3000 (Taste 4): AN = Sprechmodus (Musik leise, Mikrofon an), AUS = Musik normal, Mikrofon aus
 
-### Drehknopf (EV_ABS, Achse laut Log)
-`launcher/volume_knob.py` liest die Achse des Drehknopfs und setzt die Lautstärke des Standard-Ausgangs
-(`wpctl set-volume @DEFAULT_AUDIO_SINK@ N%`). Achse in `config/settings.toml` `[volume].axis`,
-leer = automatisch (erste bewegte Achse außer HAT0X/Y, Meldung im Launcher-Log).
+### Drehknöpfe
+- Stimme: `launcher/volume_knob.py`, ABS-Achse aus `config/settings.toml` `[volume].axis` (leer = nur
+  Beobachtung, Log meldet bewegte Achsen) -> `logs/voice_volume.txt`, von Piper je Satz gelesen.
+- Musik: `launcher/music_knob.py`, KEY_VOLUMEUP/DOWN (immer), REL_MISC (`[music].rel`) oder ABS-Achse
+  (`[music].axis`) -> mpv-Socket `/tmp/mpv.sock` (`scripts/music.sh` startet mpv mit Socket).
 
 ### Launcher-Tasten (BTN-Codes von event7)
 

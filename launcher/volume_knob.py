@@ -1,4 +1,8 @@
-"""Drehknopf am PXN-CB1 -> Lautstärke des Standard-Ausgangs (PipeWire, wpctl).
+"""Drehknopf am PXN-CB1 -> Lautstärke der Sprachausgabe (KITT, HAL, BIBO, Ansagen).
+
+Schreibt den Faktor 0..max_percent/100 nach logs/voice_volume.txt; die Sprecher lesen ihn vor jedem
+Satz. Die Musik bleibt davon unberührt (dafür launcher/music_knob.py). Mit target = "sink" regelt
+der Knopf stattdessen den ganzen Ausgang über wpctl.
 
 Liest alle Achsenwerte (EV_ABS) der PXN-Geräte außer dem D-Pad (HAT0X/Y). Welche Achse der Knopf
 ist, steht in config/settings.toml [volume].axis (z. B. "ABS_Z"); leer = die erste Achse, die sich
@@ -16,7 +20,10 @@ import time
 import evdev
 from evdev import ecodes
 
+from pathlib import Path
+
 log = logging.getLogger("volume")
+VOICE_FILE = Path(__file__).resolve().parents[1] / "logs" / "voice_volume.txt"
 DEVICE_NAME = "PXN"
 SKIP = {ecodes.ABS_HAT0X, ecodes.ABS_HAT0Y}
 
@@ -30,7 +37,7 @@ class VolumeKnob(threading.Thread):
         self.min_pct = int(cfg.get("min_percent", 0))
         self.max_pct = int(cfg.get("max_percent", 100))
         self.invert = bool(cfg.get("invert", False))
-        self.target = str(cfg.get("target", "@DEFAULT_AUDIO_SINK@"))
+        self.target = str(cfg.get("target", "voice"))      # "voice" = Stimme (Datei), "sink" = ganzer Ausgang
         if self.axis is None:
             log.info("Lautstärkeknopf: keine Achse konfiguriert, nur Beobachtung ([volume].axis in settings.toml)")
         self.last_set = 0.0
@@ -117,9 +124,16 @@ class VolumeKnob(threading.Thread):
         if pct == self.last_pct:
             return
         self.last_pct = pct
+        if self.target == "sink":
+            try:
+                subprocess.run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", f"{pct}%"], check=False,
+                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=2)
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                log.warning("wpctl fehlgeschlagen: %s", exc)
+            return
         try:
-            subprocess.run(["wpctl", "set-volume", self.target, f"{pct}%"], check=False,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=2)
-            log.debug("Lautstärke %d%%", pct)
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            log.warning("wpctl fehlgeschlagen: %s", exc)
+            VOICE_FILE.parent.mkdir(parents=True, exist_ok=True)
+            VOICE_FILE.write_text(f"{pct / 100.0:.2f}")
+            log.debug("Stimme %d%%", pct)
+        except OSError as exc:
+            log.warning("voice_volume.txt: %s", exc)

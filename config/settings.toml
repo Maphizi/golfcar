@@ -19,16 +19,29 @@ pilot_name = "MARC"
 smart_model = ""
 
 [volume]
-# Drehknopf am PXN-CB1 regelt die Lautstärke des Standard-Ausgangs (wpctl). axis leer = nur beobachten:
-# der Launcher meldet im Log, welche Achsen sich bewegen ("Achse ABS_Z = 128 ..."); die des Drehknopfs
-# hier eintragen (z. B. "ABS_Z"). Ohne Eintrag wird die Lautstärke nicht angefasst.
+# Drehknopf (ABS-Achse) regelt die Lautstärke der STIMME (KITT, HAL, BIBO, Ansagen), nicht die Musik.
+# axis leer = nur beobachten: der Launcher meldet im Log, welche Achsen sich bewegen ("Achse ABS_Z = 128 ...");
+# die des Drehknopfs hier eintragen (z. B. "ABS_Z"). target = "sink" regelt stattdessen den ganzen Ausgang.
 enabled = true
 axis = ""
+target = "voice"
 min_percent = 0
-max_percent = 100
+max_percent = 130
 invert = false
 # Sprechmodus bei HAL (Kippschalter unten): Musik auf diesen Anteil der aktuellen Lautstärke absenken
 duck_percent = 25
+
+[music]
+# Musik über mpv (scripts/music.sh, Steuer-Socket /tmp/mpv.sock). Der zweite Drehknopf regelt nur mpv:
+# Consumer-Tasten (Lauter/Leiser) werden immer erkannt; rel = true nimmt zusätzlich REL_MISC-Schritte,
+# axis = "ABS_..." eine absolute Achse. step = Prozent je Schritt.
+knob_enabled = true
+socket = "/tmp/mpv.sock"
+step = 5
+rel = false
+axis = ""
+max_percent = 100
+start_percent = 70
 
 [display]
 # 0 = native Auflösung des Displays (1920x1080 am Ninja V)

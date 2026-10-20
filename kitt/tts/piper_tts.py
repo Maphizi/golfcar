@@ -84,6 +84,17 @@ class Player:
             self.proc = None
 
 
+VOICE_VOLUME_FILE = Path(__file__).resolve().parents[2] / "logs" / "voice_volume.txt"
+
+
+def voice_volume() -> float:
+    """Lautstärkefaktor der Stimme (0..1.5) aus logs/voice_volume.txt, gesetzt vom Drehknopf. 1.0 ohne Datei."""
+    try:
+        return min(1.5, max(0.0, float(VOICE_VOLUME_FILE.read_text().strip())))
+    except (OSError, ValueError):
+        return 1.0
+
+
 class PiperTTS:
     def __init__(self, cfg: dict, voices_dir: Path, output_target: str = "", backend: str = "piper"):
         self.cfg = cfg
@@ -137,6 +148,9 @@ class PiperTTS:
             pcm = robotize(pcm, self.rate, self.robot_freq, self.robot_mix, self.robot_bits, self.robot_comb_ms)
         if self.sentence_silence > 0:
             pcm = np.concatenate((pcm, np.zeros(int(self.rate * self.sentence_silence), dtype=np.float32)))
+        vol = voice_volume()
+        if vol != 1.0:
+            pcm = np.clip(pcm * vol, -1.0, 1.0).astype(np.float32)
         return pcm
 
     def _beep(self, text: str) -> np.ndarray:

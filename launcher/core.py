@@ -20,6 +20,7 @@ from .actions import ACTION_TO_MODE, Action
 from .input_evdev import EvdevInput
 from .dpad_remap import DPadRemap
 from .volume_knob import VolumeKnob
+from .music_knob import MusicKnob
 from .input_socket import SocketInput
 from .process_manager import ProcessManager
 
@@ -114,6 +115,14 @@ class Launcher:
                 self.inputs.append(vk)
         except Exception as exc:
             log.warning("Lautstärkeknopf nicht gestartet: %s", exc)
+        try:
+            mus_cfg = self.settings.get("music", {})
+            if mus_cfg.get("knob_enabled", True):
+                mk = MusicKnob(mus_cfg)
+                mk.start()
+                self.inputs.append(mk)
+        except Exception as exc:
+            log.warning("Musikknopf nicht gestartet: %s", exc)
         try:
             jb = JoystickBridge()
             jb.start()
