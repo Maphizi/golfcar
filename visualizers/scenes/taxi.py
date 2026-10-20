@@ -21,6 +21,7 @@ from launcher import config as lcfg, theme as ltheme, wled
 
 log = logging.getLogger("taxi")
 PHOTO = lcfg.ROOT / "assets" / "pilot.png"
+DRIVER = lcfg.ROOT / "assets" / "taxi" / "driver.png"
 
 GOLD = (255, 214, 10)
 DIM = (150, 140, 90)
@@ -95,6 +96,16 @@ class Controller:
         self.photo = _load_rgba(PHOTO) if PHOTO.exists() else None
         if self.photo is None:
             log.warning("Kein Pilotenfoto unter %s", PHOTO)
+        # Digitale Lizenz: neues Fahrerfoto (assets/taxi/driver.png); fehlt es, bleibt das Duotone-Porträt
+        self.driver = _load_rgba(DRIVER) if DRIVER.exists() else None
+        self.eyes = [tuple(float(v) for v in e) for e in scene_cfg.get("eyes", [[0.425, 0.655], [0.573, 0.655]])]
+        self.eye_r = float(scene_cfg.get("eye_r", 0.03))
+        self.beat_zoom = 0.0
+        self.bass_s = 0.0
+        self.energy = 0.0
+        self.glitch = 0.0
+        self.spin_t = 0.0
+        self.last_beat = 0.0
         self.covers: dict[int, np.ndarray] = {}
         for i, t in enumerate(self.themes):
             p = lcfg.ROOT / str(t.get("cover", "")) if t.get("cover") else None
@@ -136,17 +147,34 @@ class Controller:
     def images(self) -> dict:
         cover = self.covers.get(self.idx, self.blank)
         return {"uPhotoTex": (self.photo if self.photo is not None else self.blank, 1),
-                "uCoverTex": (cover, self.cover_version)}
+                "uCoverTex": (cover, self.cover_version),
+                "uDriverTex": (self.driver if self.driver is not None else self.blank, 1)}
 
     def uniform_names(self):
-        return ("uPhotoTex", "uCoverTex", "uPhotoOK", "uCoverOK", "uCoverStyle", "uAccessory", "uColA", "uColB",
-                "uTint", "uSlide", "uConfirm", "uChosen", "uSeed")
+        return ("uPhotoTex", "uCoverTex", "uDriverTex", "uPhotoOK", "uCoverOK", "uCoverStyle", "uAccessory", "uColA", "uColB",
+                "uTint", "uSlide", "uConfirm", "uChosen", "uSeed",
+                "uDriverOK", "uDriverSize", "uBeatZoom", "uBassS", "uEnergy", "uGlitch", "uSpinT", "uEyes", "uEyeR")
 
     def uniforms(self, t: float, f) -> dict:
         now = time.monotonic()
         dt = min(0.1, now - self.t_last)
         self.t_last = now
         self.meter += dt * (0.35 + 3.0 * getattr(f, "bass", 0.0))
+        # Digitale Lizenz: Beat zoomt ins Gesicht (klingt über ~1.5 s ab), Bass und Energie geglättet,
+        # kräftige Beats lösen manchmal einen kurzen Glitch aus, die Spiralen drehen mit der Musik schneller
+        silent = bool(getattr(f, "silent", True))
+        live = 0.0 if silent else 1.0
+        beat = float(getattr(f, "beat", 0.0)) * live
+        self.bass_s += (float(getattr(f, "bass", 0.0)) * live - self.bass_s) * min(1.0, dt / 0.2)
+        self.energy += (float(getattr(f, "rms", 0.0)) * live - self.energy) * min(1.0, dt / 2.0)
+        if beat > 0.5 and now - self.last_beat > 0.25:
+            self.last_beat = now
+            self.beat_zoom = min(1.0, self.beat_zoom + 0.35 + 0.4 * beat)
+            if beat > 0.8 and self.rng.random() < 0.5:
+                self.glitch = 1.0
+        self.beat_zoom = max(0.0, self.beat_zoom - dt / 1.5)
+        self.glitch = max(0.0, self.glitch - dt / 0.25)
+        self.spin_t += dt * (0.6 + 2.5 * self.bass_s + 2.0 * self.beat_zoom)
         if now >= self.radio_at:
             self.radio = self.rng.choice([r for r in RADIO if r != self.radio])
             self.radio_at = now + self.rng.uniform(12.0, 25.0)
@@ -157,6 +185,11 @@ class Controller:
         slide = self.slide * max(0.0, 1.0 - (now - self.slide_t0) / 0.5)
         return {
             "uPhotoOK": 1.0 if self.photo is not None else 0.0,
+            "uDriverOK": 1.0 if self.driver is not None else 0.0,
+            "uDriverSize": (float(self.driver.shape[1]), float(self.driver.shape[0])) if self.driver is not None else (1.0, 1.0),
+            "uBeatZoom": self.beat_zoom, "uBassS": self.bass_s, "uEnergy": self.energy, "uGlitch": self.glitch,
+            "uSpinT": self.spin_t % 1000.0,
+            "uEyes": (self.eyes[0][0], self.eyes[0][1], self.eyes[1][0], self.eyes[1][1]), "uEyeR": self.eye_r,
             "uCoverOK": 1.0 if self.idx in self.covers else 0.0,
             "uCoverStyle": float(th.get("cover_style", 0)),
             "uAccessory": float(self.accessory),
@@ -191,8 +224,11 @@ class Controller:
             (self.slogan, 0.02, 0.30, 0.018, col_a, 0.9),
             ("<  THEMA  >      START  WÄHLEN", 0.016, 0.775, 0.018, GREY, 0.5 + 0.2 * abs(((now * 1.5) % 2.0) - 1.0)),
         ]
-        if self.photo is None:
-            out.append(("KEIN FOTO: assets/pilot.png", 0.02, 0.775, 0.55, (255, 90, 70), 0.9))
+        if self.photo is None and self.driver is None:
+            out.append(("KEIN FOTO: assets/taxi/driver.png", 0.02, 0.775, 0.55, (255, 90, 70), 0.9))
+        if self.driver is not None:
+            out.append(("● LIVE", 0.016, 0.905, 0.978, (255, 60, 50), 0.5 + 0.5 * abs(((now * 2.0) % 2.0) - 1.0)))
+            out.append(("DIGITALE LIZENZ  ·  SPACE TAXI DRIVER", 0.014, 0.72, 0.978, (200, 200, 210), 0.7))
         if now - self.confirm_t0 < 1.5:
             out.append((f"THEMA {th.get('title', '').upper()} AKTIV", 0.04, 0.5, 0.5, WHITE, 1.0 - (now - self.confirm_t0) / 1.5))
         return out

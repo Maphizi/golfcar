@@ -71,6 +71,10 @@ Cinemagraph: Foto `assets/campfire/scene.png` + Flammen-Spritesheet `assets/camp
 `[scenes.campfire] fire = [x, y, w, h]`; uDay Farbstimmung über `cycle_minutes`, uWind, uSpark, uBassS. Neue Bilder:
 `scripts/campfire_assets.py`. Test: `python -m visualizers.engine campfire --test-signal --demo`.
 
+## Taxistand (`visualizers/scenes/taxi.py`)
+Rechts digitale Lizenz aus `assets/taxi/driver.png`: Beat-Zoom auf die Augen (uBeatZoom), Spiralen in den Augen
+(`[scenes.taxi] eyes`, `eye_r`), Glitch, Hologramm. Ohne driver.png altes Duotone-Porträt (`assets/pilot.png`).
+
 ## Themen (`launcher/theme.py`, `config/themes.toml`)
 Standard: Thema mit `default = true` (SPACE TAXI, gelbes Taxischild, `cover_style = 4`). `theme.content()` liefert
 den Inhaltssatz ("space" = die Weltraum-Programme); die anderen Themen bekommen später eigene Inhalte.

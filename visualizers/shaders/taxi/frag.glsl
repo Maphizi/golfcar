@@ -8,8 +8,12 @@ uniform float iTime;
 uniform vec2 iResolution;
 uniform float uRms, uBass, uMid, uHigh, uBeat, uSilent;
 uniform sampler2D uAudioTex;
-uniform sampler2D uPhotoTex, uCoverTex;
+uniform sampler2D uPhotoTex, uCoverTex, uDriverTex;
 uniform float uPhotoOK, uCoverOK, uCoverStyle, uAccessory, uSlide, uConfirm, uChosen, uSeed;
+// Digitale Lizenz: Fahrerfoto mit Beat-Zoom auf die Augen (uBeatZoom), Bass (uBassS), Glitch, Spiralen (uSpinT)
+uniform float uDriverOK, uBeatZoom, uBassS, uEnergy, uGlitch, uSpinT, uEyeR;
+uniform vec2 uDriverSize;
+uniform vec4 uEyes;                                   // Augenmitten im Foto (x1, y1, x2, y2), y von unten
 uniform vec3 uColA, uColB, uTint;
 
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
@@ -20,6 +24,63 @@ float noise(vec2 p) {
     return mix(mix(hash12(i), hash12(i + vec2(1, 0)), f.x), mix(hash12(i + vec2(0, 1)), hash12(i + vec2(1, 1)), f.x), f.y);
 }
 float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { v += a * noise(p); p = p * 2.1 + 5.0; a *= 0.5; } return v; }
+vec3 palx(float t) { return 0.5 + 0.5 * cos(6.28318 * (vec3(1.0, 0.9, 0.7) * t + vec3(0.0, 0.25, 0.5))); }
+// bilinear aus einer Textur, die mit GL_NEAREST vorliegt
+vec3 bilin(sampler2D tex, vec2 uv, vec2 size) {
+    vec2 px = uv * size - 0.5;
+    vec2 i = floor(px), f = fract(px);
+    vec2 a = clamp(i, vec2(0.0), size - 1.0), b = clamp(i + 1.0, vec2(0.0), size - 1.0);
+    vec3 s00 = texture(tex, (vec2(a.x, a.y) + 0.5) / size).rgb, s10 = texture(tex, (vec2(b.x, a.y) + 0.5) / size).rgb;
+    vec3 s01 = texture(tex, (vec2(a.x, b.y) + 0.5) / size).rgb, s11 = texture(tex, (vec2(b.x, b.y) + 0.5) / size).rgb;
+    return mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
+}
+// Digitale Lizenz: Foto lebt. q 0..1 über das Feld. Beat zoomt auf die Augen, Kopf schwingt leicht,
+// Hologramm-Streifen und Lichtwischer, Glitch-Scheiben bei harten Beats, in den Augen psychedelische Kreisel.
+vec3 digitalLicense(vec2 q, float t) {
+    vec2 eyeC = (uEyes.xy + uEyes.zw) * 0.5;
+    float zoom = 1.0 + 0.9 * uBeatZoom + 0.08 * uBassS;
+    vec2 tq = eyeC + (q - eyeC) / zoom;
+    // leichtes Schwingen wie Atmen und Kopfwiegen, dazu langsamer Kameraschwenk
+    float sway = 0.012 * sin(t * 0.9) + 0.012 * uBassS * sin(t * 4.0);
+    tq.x += sway * (tq.y - 0.25);
+    tq.y += 0.004 * sin(t * 1.3) + 0.006 * uBassS;
+    tq += vec2(0.005 * sin(t * 0.37), 0.004 * cos(t * 0.29));
+    // Glitch: einzelne Zeilenstreifen springen zur Seite
+    float row = floor(tq.y * 28.0);
+    float gl = uGlitch * step(0.65, hash12(vec2(row, floor(t * 24.0))));
+    tq.x += gl * (hash12(vec2(row, floor(t * 11.0))) - 0.5) * 0.1;
+    // Farbsaum bei Beat und Glitch
+    float ca = 0.0025 * uBeatZoom + 0.005 * uGlitch;
+    vec2 cq = clamp(tq, 0.0, 1.0);
+    vec3 s;
+    s.r = bilin(uDriverTex, clamp(tq + vec2(ca, 0.0), 0.0, 1.0), uDriverSize).r;
+    s.g = bilin(uDriverTex, cq, uDriverSize).g;
+    s.b = bilin(uDriverTex, clamp(tq - vec2(ca, 0.0), 0.0, 1.0), uDriverSize).b;
+    // Augen: psychedelische Kreisel, wachsen mit dem Beat-Zoom
+    float strength = clamp(uBeatZoom * 1.4 + 0.15 * uBassS, 0.0, 1.0);
+    for (int i = 0; i < 2; i++) {
+        vec2 ec = i == 0 ? uEyes.xy : uEyes.zw;
+        vec2 e = tq - ec;
+        float r = length(e) / (uEyeR * (1.0 + 0.5 * strength));
+        if (r < 1.4) {
+            float ang = atan(e.y, e.x);
+            float sp = 0.5 + 0.5 * sin(ang * 3.0 + log(r + 0.04) * 9.0 - uSpinT * 7.0 * (i == 0 ? 1.0 : -1.0));
+            sp = pow(sp, 1.5);
+            vec3 sc = palx(sp * 0.6 + uSpinT * 0.25 + float(i) * 0.3) * (0.6 + 0.9 * sp);
+            float m = smoothstep(1.0, 0.55, r) * strength;
+            s = mix(s, sc, m);
+            s += sc * exp(-r * 3.0) * strength * 0.5;                   // Leuchten nach außen
+        }
+    }
+    // Hologramm: Zeilen, Lichtwischer, Rand in Themenfarbe, Rauschen
+    s *= 0.92 + 0.08 * sin(q.y * 520.0 + t * 6.0);
+    float sweep = exp(-pow((q.x + q.y * 0.6 - fract(t * 0.18) * 2.2 + 0.4) * 7.0, 2.0));
+    s += vec3(0.6, 0.8, 1.0) * sweep * 0.25;
+    s += uColA * 0.15 * (0.5 + 0.5 * sin(t * 2.0 + q.y * 6.0)) * uBassS;
+    s += vec3(0.8, 0.9, 1.0) * uGlitch * 0.15 * step(0.8, hash12(vec2(floor(q.y * 90.0), floor(t * 40.0))));
+    s *= 1.0 + 0.25 * uBeatZoom;
+    return s;
+}
 float sdBox(vec2 p, vec2 b, float r) { vec2 d = abs(p) - b + r; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r; }
 float rect(vec2 uv, vec2 a, vec2 b) { vec2 s = step(a, uv) * step(uv, b); return s.x * s.y; }
 mat2 rot(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
@@ -286,7 +347,9 @@ void main() {
         vec2 f3 = fract(sg3) - 0.5 + (vec2(hash12(c3 + 1.0), hash12(c3 + 2.0)) - 0.5) * 0.6;
         bg2 += vec3(0.8) * step(0.93, hash12(c3 + uSeed + 4.0)) * smoothstep(0.12, 0.0, length(f3)) * 0.7;
         vec3 dcol = bg2;
-        if (uPhotoOK > 0.5) {
+        if (uDriverOK > 0.5) {
+            dcol = digitalLicense(q, t);
+        } else if (uPhotoOK > 0.5) {
             vec2 tq = vec2(q.x, (q.y - 0.02) * 1.15);          // Büste etwas tiefer, Kopf oben
             vec4 s = texture(uPhotoTex, clamp(tq, 0.0, 1.0));
             float inside = step(0.0, tq.y) * step(tq.y, 1.0);
@@ -319,7 +382,10 @@ void main() {
         col = dcol;
     }
     float dframe = step(abs(dq.x), 1.04) * step(abs(dq.y), 1.025) - inDriver;
-    col = mix(col, vec3(0.75, 0.7, 0.55) * (0.8 + 0.2 * beat), dframe);
+    vec3 frameCol = uDriverOK > 0.5 ? mix(vec3(0.2, 0.6, 0.9), uColA, 0.5 + 0.5 * sin(t * 1.5)) * (0.7 + 0.5 * uBassS + 0.6 * uBeatZoom)
+                                    : vec3(0.75, 0.7, 0.55) * (0.8 + 0.2 * beat);
+    col = mix(col, frameCol, dframe);
+    col += frameCol * 0.25 * smoothstep(0.2, 0.0, max(abs(dq.x) - 1.0, abs(dq.y) - 1.0)) * (1.0 - inDriver) * uDriverOK * (0.4 + uBeatZoom);
     // Textfeld unter dem Fahrerplakat
     col = mix(col, vec3(0.02, 0.02, 0.03), rect(uv, vec2(0.605, 0.065), vec2(0.945, 0.27)) * 0.8);
     col += uColA * (rect(uv, vec2(0.605, 0.267), vec2(0.945, 0.27)) + rect(uv, vec2(0.605, 0.065), vec2(0.608, 0.27)));
