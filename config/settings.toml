@@ -15,6 +15,15 @@ prefetch_models = true
 # Name des Piloten für Startbildschirm und Figuren (Foto: assets/pilot.png, siehe scripts/pilot_cutout.py)
 pilot_name = "MARC"
 
+[volume]
+# Drehknopf am PXN-CB1 regelt die Lautstärke des Standard-Ausgangs (wpctl). axis leer = die erste
+# Achse, die sich bewegt, wird genommen und im Launcher-Log gemeldet; dann hier eintragen (z. B. "ABS_Z").
+enabled = true
+axis = ""
+min_percent = 0
+max_percent = 100
+invert = false
+
 [display]
 # 0 = native Auflösung des Displays (1920x1080 am Ninja V)
 width = 0

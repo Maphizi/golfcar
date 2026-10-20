@@ -19,6 +19,7 @@ from .joystick import JoystickBridge
 from .actions import ACTION_TO_MODE, Action
 from .input_evdev import EvdevInput
 from .dpad_remap import DPadRemap
+from .volume_knob import VolumeKnob
 from .input_socket import SocketInput
 from .process_manager import ProcessManager
 
@@ -105,6 +106,14 @@ class Launcher:
             self.inputs.append(ev)
         except Exception as exc:  # evdev nicht verfügbar o. ä.
             log.error("evdev-Eingabe nicht verfügbar: %s", exc)
+        try:
+            vol_cfg = self.settings.get("volume", {})
+            if vol_cfg.get("enabled", True):
+                vk = VolumeKnob(vol_cfg)
+                vk.start()
+                self.inputs.append(vk)
+        except Exception as exc:
+            log.warning("Lautstärkeknopf nicht gestartet: %s", exc)
         try:
             jb = JoystickBridge()
             jb.start()

@@ -27,6 +27,11 @@ Statusbehaftet – jeder Druck wechselt den Zustand:
 - **AN** (erster Druck) → injiziert `KEY_SPACE` → startet Warp-Flug (Planeten)
 - **AUS** (zweiter Druck) → injiziert `KEY_BACKSPACE` → stoppt Warp-Flug
 
+### Drehknopf (EV_ABS, Achse laut Log)
+`launcher/volume_knob.py` liest die Achse des Drehknopfs und setzt die Lautstärke des Standard-Ausgangs
+(`wpctl set-volume @DEFAULT_AUDIO_SINK@ N%`). Achse in `config/settings.toml` `[volume].axis`,
+leer = automatisch (erste bewegte Achse außer HAT0X/Y, Meldung im Launcher-Log).
+
 ### Launcher-Tasten (BTN-Codes von event7)
 
 | Physische Taste | BTN-Code | Launcher-Aktion |

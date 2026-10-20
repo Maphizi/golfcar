@@ -517,6 +517,14 @@ etwa alle 25 Sekunden eines der anderen Objekte seitlich vorbei (wächst, drifte
 `assets/sponsor.png` auf dem Pi (3:1, weißer Hintergrund wird durchsichtig), zeichnet der Shader es
 daneben. Die Datei ist nicht im Repo (Markenrechte), lege sie selbst ab.
 
+**Lautstärke am Drehknopf:** `launcher/volume_knob.py` liest die Drehknopf-Achse des Buttonboards
+und setzt die Lautstärke des Standard-Ausgangs über `wpctl` (höchstens zehnmal pro Sekunde).
+Einstellungen in `config/settings.toml` unter `[volume]`: `axis` (leer = automatisch erkennen,
+Meldung „Drehknopf erkannt: Achse …“ im Launcher-Log), `min_percent`, `max_percent`, `invert`.
+
+**Pi aktualisieren:** `scripts/update.sh` holt den neuesten Stand, rendert fehlende Ansagen und
+startet den Launcher neu. Das ist der Standardweg für jede Änderung.
+
 **Verkehr und Abschießen im Hyperraum:** Zwischen den Planeten-Vorbeiflügen tauchen alle 4 bis 8
 Sekunden kleine Objekte auf (höchstens drei zugleich): Jäger (Kugel mit zwei Flügelplatten),
 Satellit mit Schüssel und Solarflügeln, Kreuzer mit Aufbauten und Triebwerksglühen, Ringstation
