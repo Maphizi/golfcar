@@ -14,7 +14,7 @@ import signal
 import time
 from queue import Empty, Queue
 
-from . import config, sysmon, theme, wled
+from . import config, sysmon, theme, wled, pxn_led
 from .joystick import JoystickBridge
 from .actions import ACTION_TO_MODE, Action
 from .input_evdev import EvdevInput
@@ -168,6 +168,7 @@ class Launcher:
             if mode == HOME:                       # Taxistand leuchtet in der Farbe des gewählten Themas
                 col = [int(c * 255) for c in theme.current().get("color_a", [1.0, 0.75, 0.0])]
             wled.apply_mode_async(mode, col)
+            pxn_led.apply_mode_async(mode)
         except Exception as exc:
             log.debug("WLED-Fehler: %s", exc)
 
