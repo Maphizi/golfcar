@@ -553,12 +553,15 @@ Die Maschine steht still; nur eine Walze, die sich dreht, verschwimmt (weiche Un
 Bewegungsunschärfe, wanderndes Doppelbild), und sobald sie steht, ist sie wieder scharf. Die
 Trommeln tragen tiefe, ruhige Farben des Themas, die langsam ineinanderfließen, jedes Symbol auf
 einem etwas helleren Etikett. Die Walzen laufen gemächlich, das Einrasten hat einen kleinen
-Rückprall. Sechs übergeordnete Themen; jedes Einschalten des Modus bringt das nächste (Zähler in
-`logs/slots_theme.txt`), innerhalb einer Sitzung bleibt es, Pfeiltasten wechseln von Hand: KANTINE, IMPERIUM, SCHROTTPLATZ, ORBIT-GOLF,
-SCHMUGGLERKASINO, RAUMFAHRT-RETRO. Jedes Thema bringt sieben eigene 16×16-Pixel-Symbole (das
-letzte ist das Jackpot-Symbol: Kuss, Totenkopf, Schädel, Pokal, Geldsack, Astronaut), zwei
-Farben für Rahmen und Nebel, einen Titel und Sprüche für Verlust, Beinahe-Treffer, kleinen Gewinn,
-großen Gewinn und Jackpot. Das Spiel läuft von selbst, der Startknopf (ENTER) dreht sofort. Die
+Rückprall. Drei Automaten mit echten Bildern: ORBITAL CASINO (fotorealistische Weltraumobjekte),
+SPACE-ARCADE AUTOMAT (Comic-Stil) und KOSMISCHER WAHNSINN (grell, psychedelisch, mit
+Alien-Lady, Augenpizza und Kuh-Entführung). Die Bildbögen liegen in `assets/slots/*.png`
+(je 3×3 Kacheln à 256×170, vom Piloten selbst erzeugt), jedes Einschalten des Modus bringt den
+nächsten Automaten (Zähler in `logs/slots_theme.txt`), der Steuerknüppel bzw. D-Pad links/rechts
+wechselt von Hand (derselbe Knüppel, der beim Navigationscomputer die Planeten wechselt). Jeder
+Automat hat neun Symbole (das letzte, das Schwarze Loch, ist das Jackpot-Symbol), zwei Farben für
+Rahmen und Trommelband, Titel und Sprüche für Verlust, Beinahe-Treffer, kleinen Gewinn, großen
+Gewinn und Jackpot. Das Spiel läuft von selbst, der Startknopf (ENTER) dreht sofort. Die
 Walzen bleiben in wechselnden Mustern stehen: nacheinander, zwei zugleich, alle zugleich, eine früh
 und die anderen drehen lange weiter, die letzte zögert; nach einer Niete dreht gelegentlich eine
 Walze noch einmal nach. Quoten: 62 % Verlust (davon fast die Hälfte knapp daneben, das passende
@@ -566,10 +569,11 @@ Symbol steht dann direkt über oder unter der Linie), 22 % zwei gleiche, 12 % dr
 Jackpot. Gewinn: sanftes Leuchten und ein Lichtstreifen über den Gewinnsymbolen, Gold beim Jackpot; bei
 Verlust dunkeln die Walzen kurz ab. Guthaben
 startet bei 1337 Credits, Einsatz 10, Gewinne 25 / 150 / 1000.
-Technik: Symbole und Walzenstreifen liegen in einem Sprite-Atlas (`visualizers/scenes/slots_art.py`),
-den der Controller (`visualizers/scenes/slots.py`) als Textur an den Shader
-(`visualizers/shaders/slots/frag.glsl`) gibt; die Engine lädt Controller-Bilder über `images()`
-hoch. Neue Themen: Eintrag in `THEMES` mit sieben ASCII-Sprites, Farben und Sprüchen.
+Technik: Die Bildbögen werden beim Start zu einem Atlas zusammengesetzt (Zeile je Automat, neun
+Kacheln nebeneinander, darunter die Walzenstreifen), den der Controller (`visualizers/scenes/slots.py`)
+als Textur an den Shader (`visualizers/shaders/slots/frag.glsl`) gibt; die Engine lädt
+Controller-Bilder über `images()` hoch. Neuer Automat: Bildbogen 768×510 (3×3) nach `assets/slots/`
+und Eintrag in `visualizers/scenes/slots_themes.py` (Symbolnamen, Farben, Sprüche).
 
 **Taxistand und Themenwahl (`home`, Taste 1):** Kein Menü. Links ein großes Plakat des
 gewählten Themas, rechts daneben das Fahrerplakat: der Pilot als Duotone-Druck in der Themenfarbe

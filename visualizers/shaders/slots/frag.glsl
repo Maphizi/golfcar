@@ -12,6 +12,7 @@ uniform sampler2D uAudioTex;
 uniform sampler2D uSpriteTex;
 uniform vec2 uAtlasSize;
 uniform float uTheme, uState, uStateT, uWin, uWinMask, uFade, uStripRow;
+uniform vec2 uTile;                 // Kachelgröße im Atlas (Pixel)
 uniform vec3 uColA, uColB, uReel, uSpeed, uBlur;
 
 const float STRIP = 32.0;
@@ -33,20 +34,23 @@ float stripSymbol(float reel, float k) {
     float kk = mod(k, STRIP);
     return floor(texture(uSpriteTex, vec2((kk + 0.5) / uAtlasSize.x, (uStripRow + reel + 0.5) / uAtlasSize.y)).r * 255.0 + 0.5);
 }
-// Symbol idx, Position l in 0..1: Pixelgrafik mit weich gezeichneten Kanten (wirkt gedruckt, nicht klotzig)
+// Symbol idx (Kachel idx der Zeile uTheme), Position l in 0..1: bilinear aus dem Bildbogen, Ecken rund
 vec4 sprite(float idx, vec2 l, float soft) {
     if (l.x < 0.0 || l.x >= 1.0 || l.y < 0.0 || l.y >= 1.0) return vec4(0.0);
-    vec2 px = vec2(idx * 16.0 + l.x * 16.0, uTheme * 16.0 + l.y * 16.0) - 0.5;
+    vec2 base = vec2(idx * uTile.x, uTheme * uTile.y);
+    vec2 px = base + l * uTile - 0.5;
     vec2 i = floor(px), f = fract(px);
-    vec2 w = smoothstep(0.5 - soft, 0.5 + soft, f);          // weiche Kante zwischen Texeln
-    vec2 base = vec2(idx * 16.0, uTheme * 16.0);
-    vec2 lo = base, hi = base + 15.0;
+    vec2 lo = base, hi = base + uTile - 1.0;
     vec2 a = clamp(i, lo, hi), b = clamp(i + 1.0, lo, hi);
     vec4 s00 = texture(uSpriteTex, (vec2(a.x, a.y) + 0.5) / uAtlasSize);
     vec4 s10 = texture(uSpriteTex, (vec2(b.x, a.y) + 0.5) / uAtlasSize);
     vec4 s01 = texture(uSpriteTex, (vec2(a.x, b.y) + 0.5) / uAtlasSize);
     vec4 s11 = texture(uSpriteTex, (vec2(b.x, b.y) + 0.5) / uAtlasSize);
-    return mix(mix(s00, s10, w.x), mix(s01, s11, w.x), w.y);
+    vec4 s = mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
+    vec2 c = abs(l - 0.5) - vec2(0.44, 0.42);              // abgerundetes Etikett
+    float d = length(max(c, 0.0)) - 0.06;
+    s.a *= smoothstep(0.012, -0.012, d);
+    return s;
 }
 // Ein Punkt auf der Trommel: q.x -0.5..0.5 über die Walzenbreite, q.y -0.5..0.5 Bildhöhe
 vec3 drumPixel(float reel, vec2 q, float pos, float soft) {
@@ -67,10 +71,10 @@ vec3 drumPixel(float reel, vec2 q, float pos, float soft) {
     float label = smoothstep(0.0, 0.02, 0.40 - max(abs(cellP.x) * 1.15, abs(cellP.y)));
     band = mix(band, band * 1.35 + 0.04, label * 0.8);
     float idx = stripSymbol(reel, k);
-    vec2 l = (vec2(lx, ly) - vec2(0.17, 0.12)) / vec2(0.66, 0.76);
+    vec2 l = (vec2(lx, ly) - vec2(0.06, 0.07)) / vec2(0.88, 0.86);
     vec4 s = sprite(idx, l, soft);
-    vec3 ink = mix(s.rgb, vec3(dot(s.rgb, vec3(0.33))), 0.12) * (0.95 + grain);   // leicht entsättigt
-    vec3 col = mix(band, ink, s.a * 0.97);
+    vec3 ink = s.rgb * (0.97 + grain * 0.6);                 // gedrucktes Foto mit feinem Korn
+    vec3 col = mix(band, ink, s.a);
     float sep = smoothstep(0.03, 0.0, min(ly, 1.0 - ly));
     col *= 1.0 - 0.25 * sep;
     // Beleuchtung: Licht von schräg oben, Glanzband, Zylinderabschattung

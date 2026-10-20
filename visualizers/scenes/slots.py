@@ -2,10 +2,10 @@
 
 Spielt von selbst: Walzen drehen, bleiben einzeln, paarweise oder alle zugleich stehen, manchmal
 dreht eine noch einmal nach. Meist verliert man, ab und zu gewinnt man, selten den Jackpot.
-Alle paar Runden wechselt zufällig das übergeordnete Thema (Symbole, Farben, Sprüche).
+Drei Automaten (Bildbögen in assets/slots, siehe slots_themes.py), bei jedem Einschalten der nächste.
 
-Eingabe: ENTER / Leertaste (Startknopf) = sofort drehen, Pfeil links/rechts = Thema wechseln.
-Die Walzeninhalte, Ziele und Sprüche kommen aus diesem Controller; der Shader zeichnet nur.
+Eingabe: ENTER / Leertaste (Startknopf) = sofort drehen, Steuerknüppel bzw. D-Pad links/rechts =
+anderer Automat. Die Walzeninhalte, Ziele und Sprüche kommen aus diesem Controller; der Shader zeichnet nur.
 """
 from __future__ import annotations
 
@@ -17,7 +17,13 @@ import numpy as np
 import pygame
 
 from launcher import config as lcfg
-from visualizers.scenes import slots_art as art
+import logging
+
+import pygame.image
+
+from visualizers.scenes import slots_themes as art
+
+log = logging.getLogger("slots")
 
 THEME_FILE = lcfg.ROOT / "logs" / "slots_theme.txt"   # Zähler: jedes Einschalten das nächste Thema
 
@@ -38,9 +44,10 @@ def next_theme_index() -> int:
 
 STRIP_LEN = 32          # Symbole pro Walze
 N_REELS = 3
-SYM = 16                # Sprite-Kantenlänge in Pixeln
-ATLAS_W = 7 * SYM       # 7 Symbole pro Thema nebeneinander
-ATLAS_H = len(art.THEMES) * SYM + 4   # Themenzeilen + Streifenzeilen (eine je Walze)
+TW, TH = art.TILE_W, art.TILE_H         # Kachelgröße der Bildbögen
+N_SYM = art.SHEET_COLS * art.SHEET_ROWS
+ATLAS_W = N_SYM * TW                    # 9 Symbole eines Automaten nebeneinander
+ATLAS_H = len(art.THEMES) * TH + 4      # Themenzeilen + Streifenzeilen (eine je Walze)
 
 ST_IDLE, ST_SPIN, ST_RESULT, ST_THEME = 0, 1, 2, 3
 WIN_NONE, WIN_SMALL, WIN_BIG, WIN_JACKPOT = 0, 1, 2, 3
@@ -51,18 +58,37 @@ WHITE = (245, 245, 250)
 GOLD = (255, 220, 80)
 
 
+def _sheet_tiles(path) -> np.ndarray | None:
+    """Bildbogen (3x3) laden und als Zeile von 9 Kacheln (TH x 9*TW x 4) zurückgeben; None bei Fehler."""
+    try:
+        surf = pygame.image.load(str(path))
+        if surf.get_size() != (TW * art.SHEET_COLS, TH * art.SHEET_ROWS):
+            surf = pygame.transform.smoothscale(surf, (TW * art.SHEET_COLS, TH * art.SHEET_ROWS))
+        rgb = pygame.surfarray.array3d(surf).transpose(1, 0, 2)        # (H, W, 3)
+    except Exception as exc:
+        log.warning("Bildbogen %s nicht ladbar: %s", path, exc)
+        return None
+    row = np.zeros((TH, N_SYM * TW, 4), dtype=np.uint8)
+    for ry in range(art.SHEET_ROWS):
+        for rx in range(art.SHEET_COLS):
+            k = ry * art.SHEET_COLS + rx
+            tile = rgb[ry * TH:(ry + 1) * TH, rx * TW:(rx + 1) * TW]
+            row[:, k * TW:(k + 1) * TW, :3] = tile[::-1]                 # GL: Zeile 0 unten
+            row[:, k * TW:(k + 1) * TW, 3] = 255
+    return row
+
+
 def build_atlas() -> np.ndarray:
-    """RGBA-Atlas: Zeile ti = Thema ti (16 px hoch), darunter die Walzenstreifen als Rotwert."""
+    """RGBA-Atlas: Zeilenblock ti = Automat ti (TH Pixel hoch, 9 Kacheln), darunter die Walzenstreifen."""
     img = np.zeros((ATLAS_H, ATLAS_W, 4), dtype=np.uint8)
     for ti, th in enumerate(art.THEMES):
-        for si, (_, ascii_art) in enumerate(th["symbols"]):
-            rows = ascii_art.strip("\n").split("\n")
-            for ry, row in enumerate(rows):
-                for rx, ch in enumerate(row):
-                    if ch == ".":
-                        continue
-                    r, g, b = art.PALETTE[ch]
-                    img[ti * SYM + (SYM - 1 - ry), si * SYM + rx] = (r, g, b, 255)
+        row = _sheet_tiles(art.SHEET_DIR / th["sheet"])
+        if row is None:                                                  # Platzhalter: Themenfarbe
+            ca = tuple(int(c * 255) for c in th["colors"][0])
+            img[ti * TH:(ti + 1) * TH, :, :3] = ca
+            img[ti * TH:(ti + 1) * TH, :, 3] = 255
+        else:
+            img[ti * TH:(ti + 1) * TH] = row
     return img
 
 
@@ -72,7 +98,7 @@ def build_strip(theme: int, reel: int) -> list[int]:
     n_sym = len(art.THEMES[theme]["symbols"])
     pool = []
     for s in range(n_sym - 1):
-        pool += [s] * 5
+        pool += [s] * 3
     pool += [n_sym - 1] * 2
     pool = pool[:STRIP_LEN]
     while len(pool) < STRIP_LEN:
@@ -173,7 +199,7 @@ class Controller:
 
     def _write_strips(self) -> None:
         """Walzenstreifen als Rotwert in die Streifenzeilen des Atlas schreiben (Zeile uStripRow + Walze)."""
-        base = len(art.THEMES) * SYM
+        base = len(art.THEMES) * TH
         for r in range(N_REELS):
             self.atlas[base + r, :, :] = 0
             for k, sym in enumerate(self.strips[r]):
@@ -366,7 +392,7 @@ class Controller:
 
     def uniform_names(self):
         return ("uSpriteTex", "uAtlasSize", "uTheme", "uColA", "uColB", "uReel", "uSpeed", "uState", "uStateT",
-                "uWin", "uWinMask", "uBlur", "uFade", "uStripRow")
+                "uWin", "uWinMask", "uBlur", "uFade", "uStripRow", "uTile")
 
     def uniforms(self, t: float, f) -> dict:
         self._advance()
@@ -389,7 +415,8 @@ class Controller:
             "uWinMask": float(self.win_mask),
             "uBlur": tuple(self.blur),
             "uFade": fade,
-            "uStripRow": float(len(art.THEMES) * SYM),
+            "uStripRow": float(len(art.THEMES) * TH),
+            "uTile": (float(TW), float(TH)),
         }
 
     def overlays(self, t: float):
@@ -410,5 +437,5 @@ class Controller:
             elif self.win == WIN_BIG:
                 out.append(("G E W I N N", 0.055, 0.5, 0.5, GOLD, 0.5 + 0.3 * math.sin(t * 3.0)))
         if self.state == ST_THEME and st_t >= 0.9:
-            out.append(("NEUES THEMA", 0.03, 0.5, 0.5, WHITE, 1.0 - (st_t - 0.9) / 0.9))
+            out.append(("NEUER AUTOMAT", 0.03, 0.5, 0.5, WHITE, 1.0 - (st_t - 0.9) / 0.9))
         return out
