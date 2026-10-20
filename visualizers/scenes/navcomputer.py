@@ -94,18 +94,15 @@ class Controller:
         # Startknopf (266) kommt als ENTER. F13/F14 der älteren joystick.py werden bewusst ignoriert,
         # sonst würde ein Druck doppelt gezählt. Ablauf: AN = scharf, Start = los, Flug bis AUS.
         if ev.type == pygame.KEYDOWN:
-            if ev.key in (pygame.K_SPACE, pygame.K_BACKSPACE):
-                # Kippschalter (AN oder AUS): beide Zustände fliegen los
-                if self.phase == PHASE_CRUISE:
-                    pass  # im Hyperraum nichts tun
-                else:
-                    self.set_armed(True)
-                    self.fly()
+            if ev.key == pygame.K_SPACE:
+                self.set_armed(True)
+            elif ev.key == pygame.K_BACKSPACE:
+                self.set_armed(False)
             elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                 if self.phase == PHASE_CRUISE:
                     self.shoot()
-                elif self.armed:
-                    self.fly()
+                else:
+                    self.fly()   # Startknopf fliegt direkt, kein armed nötig
             elif ev.key in (pygame.K_LEFT, pygame.K_a):
                 if self.phase == PHASE_CRUISE:
                     self.cross[0] = max(-1.6, self.cross[0] - CROSS_STEP)
