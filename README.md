@@ -647,10 +647,11 @@ eine Wand; alle ein bis zwei Minuten läuft eine breite Farbwelle langsam von hi
 den Gang. Das Auge reagiert nur auf HALs eigene Stimme (`uVoice`). Sprechmodus über die Sprechtaste: ein Druck senkt die
 Musik auf `[volume].duck_percent` der aktuellen Lautstärke und schaltet das Mikrofon ein; während
 HAL antwortet, geht die Lautstärke kurz auf normal, danach wieder leise. Der nächste Druck stellt
-die Lautstärke wieder her und schaltet das Mikrofon ab. Die Sprechtaste ist eine beliebige Taste
-des Boards, die in `config/keymap.toml` auf `action = "talk"` liegt (`code = N`, den Code zeigt der
-Launcher im Log als "Taste ohne Belegung: code = N"); der Launcher schickt dann F15 an den
-laufenden HAL-Modus, in anderen Modi passiert nichts. Test ohne Taste: `scripts/kittctl talk`.
+die Lautstärke wieder her und schaltet das Mikrofon ab. Die Sprechtaste ist eine eigene Taste des
+Boards (nicht der Kippschalter, der bleibt dem Navigationscomputer): entweder `[buttons].talk_code = N`
+in `config/settings.toml` (der Remapper schickt dann direkt F15) oder in `config/keymap.toml`
+`code = N` mit `action = "talk"` (der Launcher schickt F15 nur, wenn HAL läuft). Den Code zeigt
+`scripts/input_monitor.py 10` oder das Launcher-Log als "Taste ohne Belegung: code = N". Test ohne Taste: `scripts/kittctl talk`.
 Mit `[hal].kipp_talk = true` schaltet zusätzlich wie früher der Kippschalter (unten = an, oben = aus).
 Ohne Sprechmodus hört HAL nicht zu und der Mikrofonstream ist wirklich geschlossen
 (`AudioCapture.suspend()`), die Musik läuft normal. Nach `[hal].talk_timeout` Sekunden

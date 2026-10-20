@@ -97,7 +97,7 @@ class Launcher:
 
     def start_inputs(self) -> None:
         try:
-            dp = DPadRemap()
+            dp = DPadRemap(self.settings.get("buttons", {}))
             dp.start()
             self.inputs.append(dp)
             self.dpad = dp

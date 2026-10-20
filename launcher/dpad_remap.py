@@ -1,9 +1,15 @@
 """D-Pad + Button Remapper: physische HID-Events -> echte Tastatur-Events via uinput.
 
-- ABS_HAT0X/Y  (D-Pad)       -> KEY_LEFT/RIGHT/UP/DOWN
-- code 266     (Startknopf)  -> KEY_ENTER  (universell: Auswahl, Losfliegen)
-- code 267     (Kippschalter)-> KEY_F15 (Sprechtaste: HAL Mikrofon an/aus)
-- Action "talk" (keymap.toml) -> KEY_F15 über inject_talk(): HAL schaltet Sprechmodus um
+- ABS_HAT0X/Y  (D-Pad)                -> KEY_LEFT/RIGHT/UP/DOWN
+- Startknopf   ([buttons].start_code) -> KEY_ENTER   (universell: Auswahl, Losfliegen)
+- Kippschalter ([buttons].kipp_code)  -> KEY_SPACE (AN) / KEY_BACKSPACE (AUS)
+                                         kipp_mode = "toggle": jeder Druck wechselt AN/AUS
+                                         kipp_mode = "state":  value 1 = AN, value 0 = AUS (echter Schalter)
+- Sprechtaste  ([buttons].talk_code)  -> KEY_F15 (HAL 3000: Musik leise + Mikrofon an/aus); alternativ
+                                         Action "talk" in keymap.toml -> inject_talk() vom Launcher
+Die Codes stehen in config/settings.toml [buttons]; scripts/input_monitor.py zeigt, welche Taste
+welchen Code sendet und ob eine Taste von selbst dauernd sendet. Wiederholte Ereignisse derselben
+Taste innerhalb von debounce_ms werden verworfen (Prellen, periodisch sendende Schalter).
 """
 from __future__ import annotations
 import logging, select, threading, time
@@ -22,26 +28,30 @@ HAT_TO_KEY = {
     (ecodes.ABS_HAT0Y,  1): ecodes.KEY_DOWN,
 }
 
-# Unbenannte Button-Codes -> Key (Kippschalter ist toggle, wird separat behandelt)
-BTN_TO_KEY = {
-    266: ecodes.KEY_ENTER,   # Startknopf
-}
-
-KIPPSCHALTER_CODE = 269
-KIPP_KEY_AN  = ecodes.KEY_SPACE      # Kippschalter AN  -> Losfliegen
+KIPP_KEY_AN  = ecodes.KEY_SPACE      # Kippschalter AN  -> Losfliegen / scharf
 KIPP_KEY_AUS = ecodes.KEY_BACKSPACE  # Kippschalter AUS -> Stoppen
+START_KEY = ecodes.KEY_ENTER
+TALK_KEY = ecodes.KEY_F15            # Sprechtaste: HAL 3000 Musik leise + Mikrofon an/aus
 
-TALK_KEY = ecodes.KEY_F15            # Sprechtaste (Action "talk"): HAL 3000 Musik leise + Mikrofon an/aus
-
-ALL_KEYS = list(HAT_TO_KEY.values()) + list(BTN_TO_KEY.values()) + [KIPP_KEY_AN, KIPP_KEY_AUS, TALK_KEY]
+ALL_KEYS = list(HAT_TO_KEY.values()) + [START_KEY, KIPP_KEY_AN, KIPP_KEY_AUS, TALK_KEY]
+DEFAULTS = {"start_code": 266, "kipp_code": 267, "kipp_mode": "toggle", "talk_code": 0, "debounce_ms": 300}
 
 
 class DPadRemap(threading.Thread):
-    def __init__(self):
+    def __init__(self, cfg: dict | None = None):
         super().__init__(name="dpad-remap", daemon=True)
+        c = {**DEFAULTS, **(cfg or {})}
         self._stop = threading.Event()
         self._kipp_state = False  # False = AUS, True = AN
         self._ui = None
+        self.start_code = int(c["start_code"])
+        self.kipp_code = int(c["kipp_code"])
+        self.kipp_mode = str(c["kipp_mode"]).lower()
+        self.talk_code = int(c["talk_code"])
+        self.debounce = max(0.0, float(c["debounce_ms"]) / 1000.0)
+        self._last_press: dict[int, float] = {}
+        log.info("Tasten: Start=%d, Kippschalter=%d (%s), Sprechtaste=%s, Entprellung %.0f ms",
+                 self.start_code, self.kipp_code, self.kipp_mode, self.talk_code or "keine", self.debounce * 1000)
 
     def inject_talk(self) -> bool:
         """Sprechtaste an den laufenden Modus schicken (vom Launcher-Thread aufgerufen)."""
@@ -90,6 +100,21 @@ class DPadRemap(threading.Thread):
         ui.write(ecodes.EV_KEY, key, 0)
         ui.syn()
 
+    def _debounced(self, code: int) -> bool:
+        """True, wenn dieselbe Taste gerade erst kam (dann ignorieren)."""
+        now = time.monotonic()
+        last = self._last_press.get(code, 0.0)
+        self._last_press[code] = now
+        return now - last < self.debounce
+
+    def _kipp(self, ui, on: bool) -> None:
+        if on == self._kipp_state and self.kipp_mode == "state":
+            return                                   # Schalter meldet denselben Zustand nochmal: nichts tun
+        self._kipp_state = on
+        key = KIPP_KEY_AN if on else KIPP_KEY_AUS
+        self._inject(ui, key)
+        log.info("Kippschalter %s -> %s", "AN" if on else "AUS", ecodes.KEY.get(key))
+
     def _loop(self, dev, ui) -> None:
         while not self._stop.is_set():
             try:
@@ -103,18 +128,26 @@ class DPadRemap(threading.Thread):
                         if key:
                             self._inject(ui, key)
                             log.debug("HAT -> %s", ecodes.KEY.get(key))
-
-                    # Buttons (EV_KEY, nur Press = value 1)
-                    elif ev.type == ecodes.EV_KEY and ev.value == 1:
-                        if ev.code == KIPPSCHALTER_CODE:
-                            # Sprechtaste: HAL Mikrofon an/aus (KEY_F15)
-                            self._inject(ui, TALK_KEY)
-                            log.info("Kippschalter -> TALK (KEY_F15)")
-                        else:
-                            key = BTN_TO_KEY.get(ev.code)
-                            if key:
-                                self._inject(ui, key)
-                                log.debug("BTN %d -> %s", ev.code, ecodes.KEY.get(key))
+                        continue
+                    if ev.type != ecodes.EV_KEY:
+                        continue
+                    # Kippschalter als echter Schalter: Zustand aus value (1 = unten/AN, 0 = oben/AUS)
+                    if ev.code == self.kipp_code and self.kipp_mode == "state" and ev.value in (0, 1):
+                        self._kipp(ui, ev.value == 1)
+                        continue
+                    if ev.value != 1:                # nur Tastendruck, keine Repeats (2) oder Loslassen (0)
+                        continue
+                    if self._debounced(ev.code):
+                        log.debug("Taste %d innerhalb der Entprellung ignoriert", ev.code)
+                        continue
+                    if ev.code == self.kipp_code:
+                        self._kipp(ui, not self._kipp_state)
+                    elif ev.code == self.start_code:
+                        self._inject(ui, START_KEY)
+                        log.info("Startknopf -> KEY_ENTER")
+                    elif self.talk_code and ev.code == self.talk_code:
+                        self._inject(ui, TALK_KEY)
+                        log.info("Sprechtaste (%d) -> KEY_F15", ev.code)
             except OSError:
                 break
 

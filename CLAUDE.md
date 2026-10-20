@@ -19,18 +19,24 @@ Funktionieren systemweit in EmulationStation, KITT und allen anderen Apps.
 | Oben | KEY_UP |
 | Unten | KEY_DOWN |
 
-### Startknopf (HID-Code 266)
+Die HID-Codes von Startknopf, Kippschalter und Sprechtaste stehen in `config/settings.toml` `[buttons]`
+(`start_code`, `kipp_code`, `kipp_mode`, `talk_code`, `debounce_ms`), nicht mehr im Python-Code.
+`scripts/input_monitor.py 10` zeigt je Taste Code, Werte, Rate und ob sie von selbst periodisch sendet.
+
+### Startknopf (HID-Code 266, `[buttons].start_code`)
 → Injiziert `KEY_ENTER` – universelle Bestätigung / Losfliegen im Planeten-Modus
 
-### Kippschalter (HID-Code 267) – Toggle
-Statusbehaftet – jeder Druck wechselt den Zustand:
+### Kippschalter (HID-Code 267, `[buttons].kipp_code`) – Toggle
+Statusbehaftet (`kipp_mode = "toggle"`) – jeder Druck wechselt den Zustand; `"state"` nimmt value 1/0 als AN/AUS:
 - **AN** (erster Druck) → injiziert `KEY_SPACE` → startet Warp-Flug (Planeten)
 - **AUS** (zweiter Druck) → injiziert `KEY_BACKSPACE` → stoppt Warp-Flug
 - Bei HAL 3000 (Taste 4): nur mit `[hal].kipp_talk = true` (Standard aus) AN = Sprechmodus, AUS = Musik normal
 
-### Sprechtaste (Action `talk`)
-Beliebige Board-Taste in `config/keymap.toml` auf `action = "talk"` (`code = N`, Code steht im Launcher-Log als
-"Taste ohne Belegung"). Launcher injiziert dann `KEY_F15`; HAL 3000 schaltet damit den Sprechmodus um
+### Sprechtaste (Action `talk` oder `[buttons].talk_code`)
+Eigene Taste, NICHT der Kippschalter (der bleibt SPACE/BACKSPACE für den Navigationscomputer). Entweder
+`[buttons].talk_code = N` in settings.toml oder in `config/keymap.toml` `code = N` mit `action = "talk"` (Code steht
+im Launcher-Log als "Taste ohne Belegung" oder im input_monitor). Soll der Kippschalter bei HAL den Sprechmodus
+schalten, stattdessen `[hal].kipp_talk = true`. Launcher injiziert dann `KEY_F15`; HAL 3000 schaltet damit den Sprechmodus um
 (Musik auf `duck_percent`, Mikrofon an; nochmal = zurück; nach `[hal].talk_timeout` s ohne Gespräch von selbst aus).
 Test: `scripts/kittctl talk`. Ohne Sprechmodus ist der Mikrofonstream geschlossen (`AudioCapture.suspend()`),
 sonst zwingt ein Bluetooth-Headset die Musik ins HFP-Profil (leise, mono). `[capture].avoid_bluetooth_mic` nimmt
