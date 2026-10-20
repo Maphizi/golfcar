@@ -645,13 +645,19 @@ Pi läuft) und reagiert bewusst langsam darauf (`kitt/hal/motion.py`): Der Gang 
 nach vorn oder hinten (Tempo aus der über Sekunden geglätteten Energie, nichts zuckt im Takt), ein
 Drop (Beat nach einer leisen Stelle) lässt den Gang anschwellen und kehrt meist die Fahrtrichtung
 um (der Gang bremst weich ab und fährt rückwärts an; ohne Drops alle ein bis zwei Minuten von
-selbst). Langsame Wellen laufen durch die Wände, das Rot driftet kaum merklich nach Orange und
-Magenta, in manchen Wandfenstern erscheinen weiße Schriftzeichen und verschwinden langsam wieder,
-selten gleitet ein weißer Lichtstreifen durch. Variationen: pro Start eines von fünf Zellenmustern
-(Speicherbänke, schmale Lamellen, große Tafeln, Punktraster, Rhythmus-Spalten); alle 15 bis 45
-Sekunden hüpft eine einzelne andersfarbige Zelle (cyan, grün, weiß, violett, gelb) im Takt durch
-eine Wand; alle ein bis zwei Minuten läuft eine breite Farbwelle langsam von hinten nach vorn durch
-den Gang. Das Auge reagiert nur auf HALs eigene Stimme (`uVoice`). Sprechmodus über die Sprechtaste: ein Druck senkt die
+selbst). Lauflicht im Takt: Ein Beat-Zähler schaltet bei jedem Beat 1-2-3-4 weiter (ohne erkannte Beats
+läuft er im zuletzt gemessenen Tempo weiter, bei Stille gemächlich), und je Schritt leuchtet ein
+anderer Teil des Gangs in Schrittfarbe auf (weißrot, orange, magenta, gold), der Rest dunkelt beim
+Anschlag kurz ab. Sechs Lauflicht-Muster, die alle 25 bis 45 Sekunden und bei jedem Drop wechseln:
+Tiefenviertel von hinten nach vorn, Reihen von innen nach außen, Streben-Abschnitte, Wand um Wand,
+jede vierte Spalte, ein Ring, der im Beat nach vorn läuft. Wellen laufen durch die Wände, das Rot
+wandert mit der Energie nach Orange und Magenta (je Zelle leicht anders), Höhen lassen einzelne
+Zellen funkeln, in Wandfenstern erscheinen weiße Schriftzeichen, weiße Lichtstreifen gleiten durch.
+Variationen: fünf Zellenmuster (Speicherbänke, schmale Lamellen, große Tafeln, Punktraster,
+Rhythmus-Spalten), das Muster wechselt alle ein bis zwei Minuten; alle 5 bis 15 Sekunden hüpft eine
+einzelne andersfarbige Zelle (cyan, grün, weiß, violett, gelb) im Takt durch eine Wand; alle 20 bis
+50 Sekunden läuft eine breite Farbwelle von hinten nach vorn durch den Gang. Rot bleibt die
+Hauptfarbe. Das Auge reagiert nur auf HALs eigene Stimme (`uVoice`). Sprechmodus über die Sprechtaste: ein Druck senkt die
 Musik auf `[volume].duck_percent` der aktuellen Lautstärke und schaltet das Mikrofon ein; während
 HAL antwortet, geht die Lautstärke kurz auf normal, danach wieder leise. Der nächste Druck stellt
 die Lautstärke wieder her und schaltet das Mikrofon ab. Die Sprechtaste ist eine eigene Taste des

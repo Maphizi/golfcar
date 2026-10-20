@@ -34,6 +34,7 @@ float spec(float x) { return texture(uAudioTex, vec2(clamp(x, 0.0, 1.0), 0.25)).
 float sdBox(vec2 p, vec2 b, float r) { vec2 d = abs(p) - b + r; return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r; }
 
 uniform float uDrift, uDir, uEnergy, uBassS, uDrop, uVariant;
+uniform float uStep, uStepPhase, uStepCount, uPattern, uHigh2;   // Beat-Zähler 0..3, Phase seit dem Schritt, Lauflicht-Muster
 uniform vec4 uAccent;   // Akzentzelle: Zellenindex entlang des Gangs, Farbe, Reihe, Seite (alles 0 = aus)
 uniform vec4 uWash;     // Farbwelle: Fortschritt 0..1 (Tiefe hinten -> vorn), Farbe, Stärke
 // uDrift: Position im Gang (vom Controller sehr langsam bewegt, Richtung kann beim Drop wechseln),
@@ -46,6 +47,25 @@ vec3 accentColor(float id) {
     if (id < 2.5) return vec3(1.0, 0.97, 0.9);     // weiß
     if (id < 3.5) return vec3(0.75, 0.3, 1.0);     // violett
     return vec3(1.0, 0.9, 0.25);                   // gelb
+}
+// Farbe des Lauflichts je Schritt: 1 = weißrot (Betonung), 2 orange, 3 magenta, 4 gold
+vec3 stepColor(float st) {
+    if (st < 0.5) return vec3(1.0, 0.55, 0.45);
+    if (st < 1.5) return vec3(1.0, 0.45, 0.12);
+    if (st < 2.5) return vec3(1.0, 0.2, 0.6);
+    return vec3(1.0, 0.8, 0.3);
+}
+// Lauflicht 1-2-3-4: welcher Teil der Wand gehört zum aktuellen Schritt? (0/1, Muster uPattern)
+float stepHit(float depth, vec2 cell, float side, float along, vec2 wq) {
+    int pat = int(uPattern + 0.5);
+    float st = uStep;
+    if (pat == 0) return step(abs(floor(depth * 4.0) - (3.0 - st)), 0.5);                  // Tiefenviertel, von hinten nach vorn
+    if (pat == 1) return step(abs(mod(floor(abs(wq.y * 2.0)), 4.0) - st), 0.5);           // Reihen von innen nach außen
+    if (pat == 2) return step(abs(mod(floor(along * 0.5), 4.0) - st), 0.5);              // Streben-Abschnitte
+    if (pat == 3) { float w = side < 0.0 ? 0.0 : (side < 2.0 ? 1.0 : (side < 4.0 ? 2.0 : 3.0)); return step(abs(w - st), 0.5); }  // Wand um Wand
+    if (pat == 4) return step(abs(mod(cell.x, 4.0) - st), 0.5);                            // jede vierte Spalte
+    float ring = 1.0 - uStepPhase;                                                        // Ring läuft im Beat von hinten nach vorn
+    return smoothstep(0.12, 0.0, abs(depth - ring));
 }
 // Speicherbank-Zellen auf einer Wandfläche: wq.x = Koordinate entlang des Korridors (Tiefe, mit Drift),
 // wq.y = Höhe/Breite, depth 0 nah .. 1 fern. Alles bewegt sich nur mit uDrift, nichts zuckt mit der Zeit.
@@ -66,18 +86,27 @@ vec3 bankCells(vec2 wq, float depth, float t, float live, float side) {
     // Grundleuchten: langsames Atmen je Zelle; mit Musik langsame Wellen durch die Wand und das Spektrum
     // als Tiefenverteilung (nur schwach, damit nichts flackert)
     float band = spec(fract(cell.x * 0.07 + side * 0.3));
-    float wave = 0.5 + 0.5 * sin(wq.x * 1.2 + wq.y * 0.5 - uDrift * 3.0);
-    float slow = 0.55 + 0.45 * sin(t * 0.25 + hash12(cell) * 6.28);
-    float lit = mix(slow * 0.5, 0.3 + 0.45 * wave * (0.4 + uEnergy) + 0.3 * band * uEnergy + 0.3 * uBassS, live);
-    lit *= 1.0 + 0.5 * uDrop;
+    float wave = 0.5 + 0.5 * sin(wq.x * 1.6 + wq.y * 0.7 - uDrift * 4.0);
+    float slow = 0.55 + 0.45 * sin(t * 0.5 + hash12(cell) * 6.28);
+    float lit = mix(slow * 0.5, 0.3 + 0.5 * wave * (0.4 + uEnergy) + 0.4 * band * uEnergy + 0.35 * uBassS, live);
+    lit *= 1.0 + 0.6 * uDrop;
+    // Höhen: einzelne Zellen funkeln kurz auf
+    lit += uHigh2 * live * 0.8 * step(0.96, hash12(cell + floor(t * 8.0)));
     float dark = step(0.93, hash12(cell + 3.0));                       // einzelne tote Zellen
-    // Farbe: hauptsächlich rot, driftet ganz langsam nach Orange und Magenta
-    vec3 red = hueShift(vec3(1.0, 0.08, 0.05), (0.06 + 0.12 * uEnergy) * sin(t * 0.05 + wq.x * 0.12 + side) + 0.12 * uDrop);
+    // Farbe: hauptsächlich rot, wandert mit der Energie Richtung Orange und Magenta, je Zelle leicht anders
+    vec3 red = hueShift(vec3(1.0, 0.08, 0.05), (0.08 + 0.2 * uEnergy) * sin(t * 0.12 + wq.x * 0.15 + side + hash12(cell) * 0.6) + 0.15 * uDrop);
     vec3 c = red * on * lit * (1.0 - dark * 0.85);
     c += red * 0.18 * (1.0 - on) * lit * 0.5;                            // Schein zwischen den Zellen
+    // Lauflicht 1-2-3-4: der aktive Teil leuchtet beim Beat auf und klingt bis zum nächsten Schritt ab
+    float hit = stepHit(depth, cell, side, wq.x, wq);
+    float pulse = (1.0 - 0.75 * uStepPhase) * (0.5 + 0.5 * live + 0.5 * uBassS);
+    vec3 sc = stepColor(uStep);
+    c *= 1.0 - 0.35 * (1.0 - hit) * live * (1.0 - uStepPhase);            // Rest dunkelt beim Anschlag kurz ab
+    c = mix(c, sc * (1.5 + 0.7 * uBassS) * on * (1.0 - dark * 0.85), hit * pulse * 0.9);
+    c += sc * hit * pulse * 0.3 * (1.0 - on);                                // Schein zwischen den Zellen
     // Fremde Zeichen: in manchen Fenstern der Wand erscheinen weiße Glyphen und verschwinden langsam wieder
     vec2 win = floor(vec2(wq.x * 1.4, wq.y * 1.0));
-    float ph = t * 0.12 + hash12(win) * 7.0;
+    float ph = t * 0.25 + hash12(win) * 7.0;
     float showT = floor(ph);
     float show = step(0.84, hash12(win + showT)) * smoothstep(0.0, 0.3, fract(ph)) * smoothstep(1.0, 0.6, fract(ph));
     vec2 wl = fract(vec2(wq.x * 1.4, wq.y * 1.0));
@@ -88,7 +117,7 @@ vec3 bankCells(vec2 wq, float depth, float t, float live, float side) {
     c += vec3(1.0, 0.95, 0.9) * gl * show * (0.5 + 0.5 * uEnergy);
     // Weiße Lichter: seltene Streifen, die etwas schneller als die Wand durch den Gang gleiten
     float lane = hash12(vec2(cell.y, side));
-    float streak = smoothstep(0.03, 0.0, abs(fract(wq.x * 0.35 + uDrift * 0.5 * uDir + lane) - 0.5)) * step(0.82, hash12(vec2(cell.y, floor(t * 0.2) + side)));
+    float streak = smoothstep(0.03, 0.0, abs(fract(wq.x * 0.35 + uDrift * 0.8 * uDir + t * 0.08 + lane) - 0.5)) * step(0.72, hash12(vec2(cell.y, floor(t * 0.4) + side)));
     c += vec3(1.0, 0.98, 0.95) * streak * (0.25 + 0.6 * uEnergy) * live * on;
     // Akzentzelle: eine einzelne Zelle in anderer Farbe hüpft durch die Wand, mit weichem Schein
     if (uAccent.w != 0.0 && abs(side - uAccent.w) < 0.5) {
@@ -139,7 +168,8 @@ void main() {
     float strut = step(0.9, fract(along * 0.5)) * inCorr;
     col = mix(col, vec3(0.03, 0.01, 0.01), strut);
     // Rote Füllung der Luft, Tiefennebel; nach einem Drop schwillt der ganze Gang langsam an und ab
-    col += vec3(0.35, 0.03, 0.02) * (0.4 + 0.4 * uEnergy + 0.3 * uDrop) * smoothstep(0.0, 0.5, max(ax, ay)) * inCorr;
+    col += vec3(0.35, 0.03, 0.02) * (0.4 + 0.4 * uEnergy + 0.3 * uDrop + 0.15 * (1.0 - uStepPhase) * live) * smoothstep(0.0, 0.5, max(ax, ay)) * inCorr;
+    col += stepColor(uStep) * 0.05 * (1.0 - uStepPhase) * live * inCorr;
     col = mix(col, vec3(0.08, 0.01, 0.01), smoothstep(0.6, 1.0, depth) * inCorr);
     // ---- Rückwand (dunkel), Konsole in der Mitte
     float back = 1.0 - inCorr;

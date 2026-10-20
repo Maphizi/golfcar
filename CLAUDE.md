@@ -72,7 +72,8 @@ D-Pad LINKS/RECHTS/OBEN/UNTEN = Planet aus `config/planets.toml` von dieser Seit
 
 ## HAL 3000 Hintergrund (`kitt/hal/motion.py`)
 Korridor bewegt sich nur über `uDrift` (langsam, Richtung ±1, Wechsel beim Drop), nicht über die Zeit.
-`uVariant` 0–4 Zellenmuster pro Start, `uAccent` hüpfende Einzelzelle, `uWash` Farbwelle. Test:
+`uVariant` 0–4 Zellenmuster, `uAccent` hüpfende Einzelzelle, `uWash` Farbwelle, Beat-Zähler `uStep` 0–3 /
+`uStepPhase` mit Lauflicht-Muster `uPattern` 0–5 (wechseln bei Drops und alle 25–45 s). Test:
 `KITT_HAL_VARIANT=n python -m kitt.hal --demo` (Demo nutzt das Testsignal als Musik).
 
 ## Planeten-Visualizer (`visualizers/scenes/planets.py`)
