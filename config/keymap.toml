@@ -4,7 +4,7 @@
 
 [devices]
 include = ["*"]
-exclude = []
+exclude = ["GolfCar D-Pad"]  # Virtuelles uinput-Gerät von DPadRemap ausschließen
 
 # ── PXN-CB1 Buttonboard — 10 Tasten (BTN-Codes von event7) ───────────────
 # Nicht auf dem Board, aber über scripts/kittctl <modus> erreichbar: news, viz_crt, viz_eye,

@@ -46,7 +46,7 @@ max_speech_ms = 12000
 llama_dir = "{root}/vendor/llama.cpp"
 models_dir = "{root}/models"
 # Nach dem Benchmark (scripts/llm_bench.sh) hier das gewählte Modell eintragen
-model = "Qwen3.5-2B-Q4_K_M.gguf"
+model = "Qwen3.5-4B-Q4_K_M.gguf"
 port = 8179
 threads = 4
 # Kontextfenster: System-Prompt + wenige Dialogrunden reichen
