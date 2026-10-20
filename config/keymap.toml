@@ -53,7 +53,7 @@ action = "kitt"       # Taste 10: Bordcomputer (Sprachassistent)
 # Den HID-Code der gewünschten Taste eintragen (Log des Launchers zeigt unbekannte Codes), z. B.:
 # [[bindings]]
 # code   = 268
-action = "talk"
+# action = "talk"
 
 # ── Cherry-Tastatur ESC (Entwicklung/Notfall) ──────────────────────────
 [[bindings]]
