@@ -16,8 +16,9 @@ prefetch_models = true
 pilot_name = "MARC"
 
 [volume]
-# Drehknopf am PXN-CB1 regelt die Lautstärke des Standard-Ausgangs (wpctl). axis leer = die erste
-# Achse, die sich bewegt, wird genommen und im Launcher-Log gemeldet; dann hier eintragen (z. B. "ABS_Z").
+# Drehknopf am PXN-CB1 regelt die Lautstärke des Standard-Ausgangs (wpctl). axis leer = nur beobachten:
+# der Launcher meldet im Log, welche Achsen sich bewegen ("Achse ABS_Z = 128 ..."); die des Drehknopfs
+# hier eintragen (z. B. "ABS_Z"). Ohne Eintrag wird die Lautstärke nicht angefasst.
 enabled = true
 axis = ""
 min_percent = 0

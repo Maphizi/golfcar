@@ -105,6 +105,12 @@ class HalUI(PersonaUI):
             if not self.talk_mode:
                 self.base_volume = None
 
+    def shutdown(self) -> None:
+        # Beim Verlassen des Modus die Lautstärke auf keinen Fall leise lassen
+        if self._ducked and self.base_volume:
+            self._set_sink(self.base_volume)
+            self._ducked = False
+
     def set_talk_mode(self, on: bool) -> None:
         if on == self.talk_mode:
             return

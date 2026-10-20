@@ -31,6 +31,8 @@ class VolumeKnob(threading.Thread):
         self.max_pct = int(cfg.get("max_percent", 100))
         self.invert = bool(cfg.get("invert", False))
         self.target = str(cfg.get("target", "@DEFAULT_AUDIO_SINK@"))
+        if self.axis is None:
+            log.info("Lautstärkeknopf: keine Achse konfiguriert, nur Beobachtung ([volume].axis in settings.toml)")
         self.last_set = 0.0
         self.last_pct = -1
         self.pending: int | None = None
@@ -69,6 +71,8 @@ class VolumeKnob(threading.Thread):
 
     def _loop(self, devs: list[evdev.InputDevice]) -> None:
         info = {}
+        now_seen: dict[int, int] = {}
+        last_log: dict[int, float] = {}
         for d in devs:
             for code, ai in d.capabilities(absinfo=True).get(ecodes.EV_ABS, []):
                 if isinstance(ai, evdev.AbsInfo):
@@ -83,9 +87,15 @@ class VolumeKnob(threading.Thread):
                         if ev.type != ecodes.EV_ABS or ev.code in SKIP:
                             continue
                         if self.axis is None:
-                            self.axis = ev.code
-                            log.info("Drehknopf erkannt: Achse %s (in settings.toml [volume].axis eintragen)",
-                                     ecodes.ABS.get(ev.code, ev.code))
+                            # Nur beobachten: Achsen und Werte melden, damit man die richtige einträgt.
+                            # Keine automatische Übernahme, sonst dreht eine zitternde Stick-Achse die Musik weg.
+                            key = ev.code
+                            if now_seen.get(key) != ev.value and time.monotonic() - last_log.get(key, 0.0) > 5.0:
+                                log.info("Achse %s = %d (Drehknopf? dann [volume].axis = \"%s\" in settings.toml)",
+                                         ecodes.ABS.get(key, key), ev.value, ecodes.ABS.get(key, key))
+                                last_log[key] = time.monotonic()
+                                now_seen[key] = ev.value
+                            continue
                         if ev.code != self.axis:
                             continue
                         ai = info.get((d.fd, ev.code))

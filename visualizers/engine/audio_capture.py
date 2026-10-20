@@ -26,6 +26,10 @@ def _default_sink_name() -> str:
         for line in out.splitlines():
             if "node.name" in line and "=" in line:
                 return line.split("=", 1)[1].strip().strip('"')
+        # Fallback: erste Zeile von wpctl inspect ist "id N, type ..." -> ID als Ziel
+        head = out.strip().splitlines()[0] if out.strip() else ""
+        if head.startswith("id "):
+            return head.split(",")[0].split()[1]
     except Exception:
         pass
     return ""
@@ -91,16 +95,19 @@ class AudioCapture(threading.Thread):
             c = ["pw-record", "--raw", "--rate", str(self.rate), "--channels", "1", "--format", "s16",
                  "--latency", f"{max(1, int(1000 * self.block / self.rate))}ms"]   # PipeWire 1.4 lehnt "1024/48000" ab
             if self.source == "playback":
-                c += ["-P", "{ stream.capture.sink = true }"]      # Monitor des Sinks statt Mikrofon
-            if self.target:
-                c += ["--target", self.target]
-            cmds.append(("pipewire", c + ["-"]))
-            if self.source == "playback" and not self.target:
-                # Fallback: Monitor des Standard-Sinks ausdrücklich als Ziel (manche PipeWire-Stände
-                # ignorieren stream.capture.sink ohne --target)
-                sink = _default_sink_name()
+                # Monitor des Sinks statt Mikrofon. Ohne ausdrückliches --target nimmt pw-record trotz
+                # stream.capture.sink die Standardquelle (das Mikrofon), deshalb Sink-Name ermitteln.
+                c += ["-P", "{ stream.capture.sink = true }"]
+                sink = self.target or _default_sink_name()
                 if sink:
                     cmds.append(("pipewire-sink", c + ["--target", sink, "-"]))
+                else:
+                    log.warning("Standard-Sink nicht ermittelbar, Monitor-Aufnahme ohne Ziel (kann das Mikrofon treffen)")
+                cmds.append(("pipewire", c + ["-"]))
+            else:
+                if self.target:
+                    c += ["--target", self.target]
+                cmds.append(("pipewire", c + ["-"]))
         if self.backend in ("auto", "alsa") and shutil.which("arecord") and self.source != "playback":
             dev = self.target if (self.backend == "alsa" and self.target) else "default"
             cmds.append(("alsa", ["arecord", "-q", "-D", dev, "-f", "S16_LE", "-r", str(self.rate),
