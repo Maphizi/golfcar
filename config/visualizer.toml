@@ -48,7 +48,7 @@ render_scale = 0.6
 [scenes.blackhole]
 shader = "blackhole"
 controller = "blackhole"
-render_scale = 0.5        # Strahlverfolgung, teuer; auf dem Pi ggf. 0.4
+render_scale = 0.35       # Strahlverfolgung, teuer: Pi 5 schafft 0.5 mit 64 Schritten nur 9 fps
 
 [scenes.taxi]
 shader = "taxi"

@@ -13,7 +13,7 @@ uniform float uRms, uBass, uMid, uHigh, uBeat, uSilent;
 uniform sampler2D uAudioTex;
 uniform float uSeed, uTilt, uAngle, uPalette, uJet, uFlare, uZoom, uBassS;
 
-const int STEPS = 64;
+const int STEPS = 36;      // Pi 5: 64 Schritte bei 0.5 = 9 fps, 36 bei 0.35 ≈ 40 fps
 const float R_H = 1.0;       // Horizont
 const float R_IN = 2.3;      // Innenrand der Scheibe
 const float R_OUT = 11.0;    // Außenrand
@@ -25,7 +25,7 @@ float noise(vec2 p) {
     f = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash12(i), hash12(i + vec2(1, 0)), f.x), mix(hash12(i + vec2(0, 1)), hash12(i + vec2(1, 1)), f.x), f.y);
 }
-float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { v += a * noise(p); p = p * 2.07 + 3.1; a *= 0.5; } return v; }
+float fbm(vec2 p) { float v = 0.0, a = 0.5; for (int i = 0; i < 3; i++) { v += a * noise(p); p = p * 2.07 + 3.1; a *= 0.5; } return v; }
 float spec(float x) { return texture(uAudioTex, vec2(clamp(x, 0.0, 1.0), 0.25)).r; }
 mat2 rot(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
 
@@ -108,8 +108,8 @@ void main() {
         if (r < R_H) { captured = true; break; }
         if (r > 60.0 && dot(p, v) > 0.0) { escaped = true; break; }
         // Schrittweite: fein nahe am Loch und nahe der Scheibenebene
-        float ds = clamp(r * 0.18, 0.05, 1.5);
-        ds = min(ds, max(abs(p.y) * 0.8, 0.06) + 0.25);
+        float ds = clamp(r * 0.3, 0.08, 2.6);
+        ds = min(ds, max(abs(p.y) * 1.2, 0.08) + 0.35);
         // Lichtablenkung (Newton-Näherung, stärker nahe am Horizont)
         vec3 acc = -p * (G / (r * r * r)) * (1.0 + 1.5 / r);
         v = normalize(v + acc * ds);

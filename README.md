@@ -560,7 +560,7 @@ Flare. Pro Start zufällig: eine von drei Gaspaletten (orange/weiß, blau/violet
 Neigung, Orbitrichtung und Tempo der langsam kreisenden Kamera. D-Pad LINKS/RECHTS ändert das
 Kreisen, OBEN/UNTEN die Neigung, Start zündet den Jet, Kippschalter AN fährt näher heran.
 `visualizers/scenes/blackhole.py` (Hüllkurven, Kamera), Shader `visualizers/shaders/blackhole/frag.glsl`,
-`render_scale 0.5`; bei unter 40 fps auf dem Pi auf 0.4 senken.
+`render_scale 0.35` mit 36 Schritten (auf dem Pi 5 liefen 64 Schritte bei 0.5 nur mit 9 fps).
 
 **Galaktische Nachrichten (`news`, über `scripts/kittctl news`):** Holo-Studio des Senders GNN mit Lichtkegeln,
 drehendem Holo-Globus und einem Droiden-Sprecher, dessen Mundbalken zur Stimme schwingen. Das lokale
