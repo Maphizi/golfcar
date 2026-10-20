@@ -1,0 +1,8 @@
+2026-10-20 18:03:33 INFO  viz_taxi: fps 60.0  audio=pipewire level=0.0000 rms=0.00 bass=0.00 mid=0.00 high=0.00 beat=0.00  (Stille)
+2026-10-20 18:03:43 INFO  viz_taxi: fps 60.0  audio=pipewire level=0.0000 rms=0.00 bass=0.00 mid=0.00 high=0.00 beat=0.00  (Stille)
+2026-10-20 18:03:53 INFO  viz_taxi: fps 60.0  audio=pipewire level=0.0000 rms=0.00 bass=0.00 mid=0.00 high=0.00 beat=0.00  (Stille)
+2026-10-20 18:04:06 INFO  taxi: Taxistand: Thema spacetaxi, 4 Themen, 0 eigene Plakate, Accessoire 1
+2026-10-20 18:04:16 INFO  viz_taxi: fps 43.7  audio=pipewire level=0.0000 rms=0.00 bass=0.00 mid=0.00 high=0.00 beat=0.00  (Stille)
+2026-10-20 18:04:23 INFO  taxi: Thema gewählt: kantine
+2026-10-20 18:04:26 INFO  viz_taxi: fps 54.2  audio=pipewire level=0.0000 rms=0.00 bass=0.00 mid=0.00 high=0.00 beat=0.00  (Stille)
+2026-10-20 18:04:36 INFO  viz_taxi: fps 54.7  audio=pipewire level=0.0000 rms=0.00 bass=0.00 mid=0.00 high=0.00 beat=0.00  (Stille)
