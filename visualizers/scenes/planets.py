@@ -1,10 +1,11 @@
-"""Planeten-Visualizer: Sternenhimmel mit Warp-Flug-Modus.
+"""Planeten-Visualizer: Sternenhimmel mit Warp-Flug und Planeten-Auswahl.
 
 Steuerung:
-  SPACE      (Kippschalter AN)  -> Warp-Flug starten
-  BACKSPACE  (Kippschalter AUS) -> Warp-Flug stoppen, zurück zu Drift
-  ENTER      (Startknopf)       -> gleiche Funktion wie SPACE (toggle)
-  ESC        -> Beenden
+  LEFT / RIGHT   (Hebel)         -> Ziel-Planeten durchschalten
+  SPACE          (Kippschalter AN)  -> Warp-Flug zum Zielplaneten starten
+  BACKSPACE      (Kippschalter AUS) -> Warp stoppen, zurück zu Drift
+  ENTER          (Startknopf)    -> gleiche Funktion wie SPACE (toggle)
+  ESC            -> Beenden
 """
 from __future__ import annotations
 import math, random, sys, time
@@ -15,11 +16,21 @@ WHITE  = (255, 255, 255)
 YELLOW = (255, 220,  80)
 CYAN   = (100, 220, 255)
 RED    = (255,  80,  60)
+GREY   = (80,  80,  80)
+GREEN  = (80,  220, 100)
 
 NUM_STARS   = 300
-NUM_PLANETS = 5
-WARP_SPEED  = 18.0   # Pixel/Frame im Warp
+WARP_SPEED  = 18.0
 DRIFT_SPEED = 0.4
+
+PLANET_DEFS = [
+    {"name": "MARS",       "color": RED,              "r": 38, "ring": False},
+    {"name": "NEPTUN",     "color": (60,  100, 220),  "r": 45, "ring": False},
+    {"name": "KEPLER-22b", "color": (60,  180, 100),  "r": 50, "ring": False},
+    {"name": "SATURN",     "color": YELLOW,           "r": 55, "ring": True},
+    {"name": "PROXIMA b",  "color": CYAN,             "r": 35, "ring": False},
+    {"name": "GLIESE 667C","color": (180, 80,  200),  "r": 42, "ring": False},
+]
 
 
 class Star:
@@ -48,33 +59,44 @@ class Star:
             pygame.draw.circle(surf, (bright, bright, bright), (x, y), size)
 
 
-class Planet:
-    COLORS = [RED, (120, 80, 200), (60, 180, 100), CYAN, YELLOW]
-
-    def __init__(self, w, h, idx):
+class PlanetObj:
+    def __init__(self, w, h, defn):
         self.w, self.h = w, h
-        self.color = self.COLORS[idx % len(self.COLORS)]
-        self.reset()
+        self.defn = defn
+        self.x = w // 2
+        self.y = -defn["r"]
+        self.vy = random.uniform(0.3, 0.7)
 
     def reset(self):
-        self.x = random.uniform(0.1 * self.w, 0.9 * self.w)
-        self.y = random.uniform(0.1 * self.h, 0.9 * self.h)
-        self.r = random.randint(18, 55)
-        self.vy = random.uniform(0.2, 0.6)
+        self.x = random.randint(int(self.w * 0.15), int(self.w * 0.85))
+        self.y = -self.defn["r"]
+        self.vy = random.uniform(0.3, 0.7)
 
     def update(self, flying: bool):
-        speed = WARP_SPEED * 0.3 if flying else self.vy
+        speed = WARP_SPEED * 0.35 if flying else self.vy
         self.y += speed
-        if self.y - self.r > self.h:
+        if self.y - self.defn["r"] > self.h:
             self.reset()
-            self.y = -self.r
 
-    def draw(self, surf):
-        pygame.draw.circle(surf, self.color, (int(self.x), int(self.y)), self.r)
+    def draw(self, surf, highlight: bool):
+        r = self.defn["r"]
+        col = self.defn["color"]
+        cx, cy = int(self.x), int(self.y)
+        pygame.draw.circle(surf, col, (cx, cy), r)
         # Glanzpunkt
         pygame.draw.circle(surf, WHITE,
-                            (int(self.x) - self.r // 3, int(self.y) - self.r // 3),
-                            max(3, self.r // 5))
+                            (cx - r // 3, cy - r // 3),
+                            max(3, r // 5))
+        # Ring (Saturn)
+        if self.defn.get("ring"):
+            rx = int(r * 1.7)
+            ry = int(r * 0.35)
+            ring_surf = pygame.Surface((rx * 2, ry * 2), pygame.SRCALPHA)
+            pygame.draw.ellipse(ring_surf, (*YELLOW, 140), (0, 0, rx * 2, ry * 2), 5)
+            surf.blit(ring_surf, (cx - rx, cy - ry))
+        # Auswahl-Rahmen
+        if highlight:
+            pygame.draw.circle(surf, GREEN, (cx, cy), r + 6, 3)
 
 
 def main() -> int:
@@ -87,18 +109,31 @@ def main() -> int:
 
     w, h = screen.get_size()
     stars   = [Star(w, h) for _ in range(NUM_STARS)]
-    planets = [Planet(w, h, i) for i in range(NUM_PLANETS)]
+    planets = [PlanetObj(w, h, d) for d in PLANET_DEFS]
+    # Planeten auf dem Bildschirm verteilen
+    for i, p in enumerate(planets):
+        p.x = int(w * (i + 1) / (len(planets) + 1))
+        p.y = random.randint(int(h * 0.15), int(h * 0.6))
 
-    flying = False
-    font = pygame.font.SysFont(None, 36)
+    selected = 0          # aktuell ausgewählter Planet (Hebel)
+    flying   = False
+
+    font_big  = pygame.font.SysFont(None, 52)
+    font_small = pygame.font.SysFont(None, 32)
 
     while True:
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
                 return 0
             if ev.type == pygame.KEYDOWN:
-                if ev.key in (pygame.K_ESCAPE,):
+                if ev.key == pygame.K_ESCAPE:
                     return 0
+                # Hebel → Planeten-Auswahl
+                if ev.key == pygame.K_LEFT:
+                    selected = (selected - 1) % len(planets)
+                if ev.key == pygame.K_RIGHT:
+                    selected = (selected + 1) % len(planets)
+                # Kippschalter / Startknopf → Warp-Toggle
                 if ev.key in (pygame.K_SPACE, pygame.K_RETURN):
                     flying = True
                 if ev.key == pygame.K_BACKSPACE:
@@ -113,13 +148,18 @@ def main() -> int:
         screen.fill(BLACK)
         for s in stars:
             s.draw(screen)
-        for p in planets:
-            p.draw(screen)
+        for i, p in enumerate(planets):
+            p.draw(screen, highlight=(i == selected))
 
-        # Status-Label
-        label = "⚡ WARP" if flying else "· DRIFT"
-        txt = font.render(label, True, YELLOW if flying else (80, 80, 80))
-        screen.blit(txt, (20, 20))
+        # Planetenname
+        sel = planets[selected]
+        name_txt = font_big.render(PLANET_DEFS[selected]["name"], True, GREEN)
+        screen.blit(name_txt, (w // 2 - name_txt.get_width() // 2, h - 90))
+
+        # Status
+        label = "⚡ WARP → " + PLANET_DEFS[selected]["name"] if flying else "[ HEBEL: Planet wählen ]"
+        status_txt = font_small.render(label, True, YELLOW if flying else GREY)
+        screen.blit(status_txt, (w // 2 - status_txt.get_width() // 2, h - 46))
 
         pygame.display.flip()
         clock.tick(60)

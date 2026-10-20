@@ -1,8 +1,8 @@
 """Joystick-zu-Tastatur-Bridge für den PXN-CB1.
 
 REL_MISC-Joystick  → KEY_LEFT / KEY_RIGHT  (Flanken-Erkennung, 1× pro Geste)
-BTN_TR  (code 267) → KEY_F13               (Kippschalter: Arm/Disarm toggle)
-BTN_1   (code 257) → KEY_F14               (Startknopf: Launch wenn armed)
+
+Kippschalter (267) und Startknopf (266) werden von DPadRemap behandelt.
 """
 from __future__ import annotations
 
@@ -16,11 +16,9 @@ from evdev import UInput, ecodes as ec
 
 log = logging.getLogger("joystick")
 
-REL_MISC     = ec.REL_MISC   # 9
-BTN_TR       = 267            # Kippschalter
-BTN_START_HW = 257            # Startknopf (BTN_1)
-THROTTLE_S   = 0.4
-SILENCE_S    = 0.15
+REL_MISC   = ec.REL_MISC   # 9
+THROTTLE_S = 0.4
+SILENCE_S  = 0.15
 
 
 class JoystickBridge(threading.Thread):
@@ -53,13 +51,19 @@ class JoystickBridge(threading.Thread):
             log.warning("Kein PXN-Gerät gefunden, Bridge inaktiv")
             return
 
+        # Nur Geräte mit REL_MISC (Joystick-Achse)
+        devices = [d for d in devices if ec.REL_MISC in d.capabilities().get(ec.EV_REL, [])]
+        if not devices:
+            log.warning("Kein PXN-Gerät mit REL_MISC gefunden, Bridge inaktiv")
+            for d in devices:
+                d.close()
+            return
+
         ui = UInput(
-            {ec.EV_KEY: [ec.KEY_LEFT, ec.KEY_RIGHT,
-                           ec.KEY_UP, ec.KEY_DOWN,
-                           ec.KEY_F13, ec.KEY_F14]},
+            {ec.EV_KEY: [ec.KEY_LEFT, ec.KEY_RIGHT, ec.KEY_UP, ec.KEY_DOWN]},
             name="KITT Joystick Bridge",
         )
-        log.info("JoystickBridge aktiv: %d PXN-Gerät(e)", len(devices))
+        log.info("JoystickBridge aktiv: %d PXN-Gerät(e) mit Joystick", len(devices))
 
         last_inject  = 0.0
         last_event_t = 0.0
@@ -77,17 +81,7 @@ class JoystickBridge(threading.Thread):
             for dev in r:
                 try:
                     for ev in dev.read():
-                        # ── Kippschalter & Startknopf ────────────────
-                        if ev.type == ec.EV_KEY and ev.value == 1:
-                            if ev.code == BTN_TR:
-                                inject(ec.KEY_F13)
-                                log.debug("Kippschalter → KEY_F13")
-                            elif ev.code == BTN_START_HW:
-                                inject(ec.KEY_F14)
-                                log.debug("Startknopf → KEY_F14")
-
-                        # ── Joystick Links/Rechts ─────────────────────
-                        elif ev.type == ec.EV_REL and ev.code == REL_MISC:
+                        if ev.type == ec.EV_REL and ev.code == REL_MISC:
                             if ev.value == 0:
                                 continue
                             last_event_t = now
@@ -96,7 +90,6 @@ class JoystickBridge(threading.Thread):
                 except OSError:
                     pass
 
-            # Joystick-Key feuern wenn Stick losgelassen
             if pending_key is not None and now - last_event_t >= SILENCE_S:
                 inject(pending_key)
                 log.debug("Joystick → %s", "KEY_RIGHT" if pending_key == ec.KEY_RIGHT else "KEY_LEFT")
