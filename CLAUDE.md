@@ -66,6 +66,10 @@ ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-S
 
 Nicht auf dem Board, über `scripts/kittctl <modus>`: droid (BIBO), news, viz_crt, viz_eye, planeten, menu, status.
 
+## Themen (`launcher/theme.py`, `config/themes.toml`)
+Standard: Thema mit `default = true` (SPACE TAXI, gelbes Taxischild, `cover_style = 4`). `theme.content()` liefert
+den Inhaltssatz ("space" = die Weltraum-Programme); die anderen Themen bekommen später eigene Inhalte.
+
 ## Navigationscomputer (`visualizers/scenes/navcomputer.py`)
 ENTER = Flug starten, Flug endet NUR per Kippschalter (SPACE oder BACKSPACE im Flug = Ankunft), nie von selbst
 (Demo: cruise_seconds). Ereignisse alle 30–60 s (`EVENTS`): Asteroidenfeld, Farbnebel, Sonne, Wurmloch,

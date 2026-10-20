@@ -72,6 +72,71 @@ vec3 posterRocket(vec2 q, float t, float bass) {
     col += mix(uColB, vec3(0.9, 0.95, 1.0), fl) * fl * (1.5 + 2.0 * bass) * smoothstep(-1.45, -0.75, r.y);
     return col;
 }
+// Gelbes Taxischild (Standard): Dachschild eines Taxis mit Karo-Band, Leuchtkasten, Schriftzug TAXI, Rakete
+float sdSeg(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h); }
+float letterTAXI(vec2 p) {
+    // p: x -1..1 über die Schriftbreite, y -1..1; Strichbreite 0.11
+    float w = 0.11, d = 10.0;
+    // T
+    d = min(d, sdSeg(p, vec2(-0.95, 0.5), vec2(-0.55, 0.5)));
+    d = min(d, sdSeg(p, vec2(-0.75, 0.5), vec2(-0.75, -0.5)));
+    // A
+    d = min(d, sdSeg(p, vec2(-0.45, -0.5), vec2(-0.25, 0.5)));
+    d = min(d, sdSeg(p, vec2(-0.25, 0.5), vec2(-0.05, -0.5)));
+    d = min(d, sdSeg(p, vec2(-0.38, -0.1), vec2(-0.12, -0.1)));
+    // X
+    d = min(d, sdSeg(p, vec2(0.1, 0.5), vec2(0.5, -0.5)));
+    d = min(d, sdSeg(p, vec2(0.1, -0.5), vec2(0.5, 0.5)));
+    // I
+    d = min(d, sdSeg(p, vec2(0.75, 0.5), vec2(0.75, -0.5)));
+    d = min(d, sdSeg(p, vec2(0.62, 0.5), vec2(0.88, 0.5)));
+    d = min(d, sdSeg(p, vec2(0.62, -0.5), vec2(0.88, -0.5)));
+    return smoothstep(w, w - 0.03, d);
+}
+vec3 posterTaxi(vec2 q, float t, float bass) {
+    vec2 p = (q - 0.5) * vec2(2.0, 3.0);                 // -1..1 breit, -1.5..1.5 hoch
+    vec3 yellow = vec3(0.98, 0.78, 0.08);
+    vec3 col = yellow * (0.92 + 0.08 * noise(p * 30.0));
+    // Karo-Bänder oben und unten (schwarz-gelb), leicht zum Takt flackernd
+    float checker = step(0.5, fract(p.x * 4.0 + 0.25)) == step(0.5, fract(p.y * 4.0)) ? 1.0 : 0.0;
+    float bandTop = step(1.1, p.y) * step(p.y, 1.35);
+    float bandBot = step(-1.35, p.y) * step(p.y, -1.1);
+    col = mix(col, vec3(0.05), (bandTop + bandBot) * checker);
+    // Leuchtkasten in der Mitte: schwarzer Rahmen, gelb leuchtende Fläche, Schriftzug TAXI
+    vec2 bq = p - vec2(0.0, 0.25);
+    float boxOuter = step(abs(bq.x), 0.92) * step(abs(bq.y), 0.42);
+    float boxInner = step(abs(bq.x), 0.86) * step(abs(bq.y), 0.36);
+    float glow = 0.85 + 0.15 * sin(t * 2.0) + 0.25 * bass;
+    col = mix(col, vec3(0.06), boxOuter);
+    col = mix(col, yellow * (1.05 * glow) + vec3(0.1, 0.05, 0.0), boxInner);
+    float txt = letterTAXI(vec2(bq.x / 0.8, bq.y / 0.26)) * boxInner;
+    col = mix(col, vec3(0.05), txt);
+    // Dachlampen links und rechts vom Kasten
+    for (int i = -1; i <= 1; i += 2) {
+        vec2 lq = p - vec2(float(i) * 0.78, 0.78);
+        float lamp = smoothstep(0.1, 0.08, length(lq * vec2(1.0, 1.6)));
+        col = mix(col, vec3(1.0, 0.95, 0.7) * (0.8 + 0.3 * sin(t * 3.0 + float(i))), lamp);
+        col += vec3(1.0, 0.9, 0.5) * exp(-length(lq) * 6.0) * 0.3;
+    }
+    // Rakete als Silhouette unten (Space Taxi), mit Flämmchen
+    vec2 r = (p - vec2(0.0, -0.62)) * 1.6;
+    r = rot(0.5) * r;
+    float body = step(abs(r.x), 0.12) * step(-0.45, r.y) * step(r.y, 0.3);
+    float nose = step(abs(r.x), 0.12 * (1.0 - smoothstep(0.3, 0.7, r.y))) * step(0.3, r.y) * step(r.y, 0.7);
+    float fins = step(abs(r.x) - 0.12, 0.14 * smoothstep(-0.2, -0.5, r.y)) * step(-0.5, r.y) * step(r.y, -0.2) * step(0.12, abs(r.x));
+    float win = smoothstep(0.06, 0.05, length(r - vec2(0.0, 0.12)));
+    float rocket = max(max(body, nose), fins);
+    col = mix(col, vec3(0.05), rocket);
+    col = mix(col, yellow * 1.2, win * rocket);
+    float fl = smoothstep(0.1 + 0.06 * bass, 0.0, abs(r.x) / max(0.01, 1.0 + (r.y + 0.45) * 1.5)) * step(r.y, -0.45) * step(-0.95, r.y);
+    fl *= 0.6 + 0.4 * noise(vec2(r.x * 20.0, r.y * 6.0 - t * 12.0));
+    col += vec3(1.0, 0.4, 0.05) * fl * (1.2 + 1.5 * bass);
+    // Nummernzeile als Balken unten (Taxi-Nummer stilisiert)
+    float plate = step(abs(p.x), 0.55) * step(abs(p.y + 1.0), 0.06);
+    col = mix(col, vec3(0.05), plate);
+    col = mix(col, yellow, plate * step(0.5, fract(p.x * 9.0)) * step(abs(p.y + 1.0), 0.04));
+    return col;
+}
 vec3 posterFortress(vec2 q, float t, float bass) {
     vec2 p = (q - 0.5) * vec2(2.0, 3.0);
     vec3 col = vec3(0.0);
@@ -188,7 +253,7 @@ void main() {
             pcol = texture(uCoverTex, q).rgb;
         } else {
             int st = int(uCoverStyle + 0.5);
-            pcol = st == 0 ? posterRocket(q, t, bass) : (st == 1 ? posterFortress(q, t, bass) : (st == 2 ? posterDiner(q, t, bass) : posterRetro(q, t, bass)));
+            pcol = st == 4 ? posterTaxi(q, t, bass) : (st == 0 ? posterRocket(q, t, bass) : (st == 1 ? posterFortress(q, t, bass) : (st == 2 ? posterDiner(q, t, bass) : posterRetro(q, t, bass))));
             // Sterne auch im gezeichneten Plakat
             vec2 sg2 = q * vec2(40.0, 60.0);
             vec2 c2 = floor(sg2);

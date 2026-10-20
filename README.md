@@ -604,7 +604,7 @@ gezeichnete; der Ordner ist in `.gitignore`, die Bilder bleiben auf dem Pi. Nur 
 an denen du die Rechte hast. Jeder Start würfelt Accessoire, Nummern und Sprüche neu, mit Musik
 funkeln die Sterne zum Beat und das Schachbrettband läuft mit dem Bass. Szene `taxi`
 (`visualizers/scenes/taxi.py`, Shader `visualizers/shaders/taxi/frag.glsl`). Das alte Menü bleibt
-als Modus `menu` über `scripts/kittctl menu` erreichbar.
+als Modus `menu` über `scripts/kittctl menu` erreichbar. Standard ist das Thema SPACE TAXI (`default = true` in `config/themes.toml`): es gilt, solange nichts gewählt wurde, und sein gezeichnetes Plakat ist das gelbe Taxischild (Karo-Band, Leuchtkasten TAXI, Rakete, `cover_style = 4`). Jedes Thema hat einen Inhaltssatz `content`; bei SPACE TAXI ist das "space", also die Weltraum-Programme, wie sie jetzt sind. Die anderen Themen stehen vorerst ebenfalls auf "space" und bekommen später eigene Inhalte; Modi fragen den Satz über `launcher.theme.content()` ab.
 
 **Schwarzes Loch (Taste 3, `blackhole`):** Echte Strahlverfolgung mit Lichtkrümmung im Shader
 (64 Schritte pro Pixel, Newton-Näherung der Ablenkung): Die Akkretionsscheibe aus glühendem Gas

@@ -5,19 +5,25 @@
 # Shader ein eigenes Plakat (cover_style). Nur Bilder verwenden, an denen du die Rechte hast;
 # assets/themes/ steht in .gitignore, die Bilder bleiben auf dem Pi.
 # color_a / color_b: Themenfarben (0..1), tint: Duotone-Farbe für das Pilotenporträt.
+# default = true: dieses Thema gilt, solange keines gewählt wurde (oder die Wahl unbekannt ist).
+# content: welche Inhalte die Modi zeigen ("space" = die Weltraum-Programme, wie sie jetzt sind).
+#          Die anderen Themen zeigen vorerst ebenfalls "space" und bekommen später eigene Inhalte.
 
 [[themes]]
 name = "spacetaxi"
+default = true
+content = "space"
 title = "SPACE TAXI"
 tagline = "DER NEUE WETTLAUF ZUM LOCH 19"
 cover = "assets/themes/spacetaxi.png"
-cover_style = 0        # Rakete vor dem Mond
+cover_style = 4        # gelbes Taxischild (Standard); 0 wäre die Rakete vor dem Mond
 color_a = [0.95, 0.80, 0.25]
 color_b = [0.15, 0.45, 0.85]
 tint = [0.95, 0.75, 0.25]
 
 [[themes]]
 name = "imperium"
+content = "space"      # vorerst; eigene Inhalte folgen
 title = "IMPERIUM"
 tagline = "ORDNUNG. DISZIPLIN. ABSCHLAG."
 cover = "assets/themes/imperium.png"
@@ -28,6 +34,7 @@ tint = [0.95, 0.25, 0.2]
 
 [[themes]]
 name = "kantine"
+content = "space"      # vorerst; eigene Inhalte folgen
 title = "KANTINE"
 tagline = "WIR BEDIENEN KEINE DROIDEN"
 cover = "assets/themes/kantine.png"
@@ -38,6 +45,7 @@ tint = [0.35, 0.95, 0.55]
 
 [[themes]]
 name = "retro"
+content = "space"      # vorerst; eigene Inhalte folgen
 title = "RAUMFAHRT RETRO"
 tagline = "SEIT 1957 IN BETRIEB. UNGEFAEHR."
 cover = "assets/themes/retro.png"

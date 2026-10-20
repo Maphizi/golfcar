@@ -3,6 +3,7 @@
     from launcher import theme
     theme.current()          -> dict des gewählten Themas (name, title, color_a, ...)
     theme.set_current(name)  -> speichert die Wahl
+    theme.content()          -> Inhaltssatz des Themas ("space"); Standard ist das Thema mit default = true
 Modi bekommen den Namen zusätzlich als Umgebungsvariable KITT_THEME.
 """
 from __future__ import annotations
@@ -40,7 +41,22 @@ def current() -> dict:
     for t in all_:
         if t.get("name") == name:
             return t
-    return all_[0]
+    return default_theme()
+
+
+def default_theme() -> dict:
+    """Thema mit default = true (sonst das erste): gilt, solange nichts gewählt wurde."""
+    all_ = themes()
+    for t in all_:
+        if t.get("default"):
+            return t
+    return all_[0] if all_ else {"name": "default", "title": "KITT-CART", "tagline": "", "color_a": [0.95, 0.8, 0.25],
+                                 "color_b": [0.15, 0.45, 0.85], "tint": [0.95, 0.75, 0.25], "cover_style": 0}
+
+
+def content() -> str:
+    """Inhaltssatz des aktuellen Themas ("space"), für Modi, die je Thema andere Inhalte zeigen."""
+    return str(current().get("content", "space"))
 
 
 def set_current(name: str) -> None:
