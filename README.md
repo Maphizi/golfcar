@@ -608,14 +608,23 @@ jeder kräftige Beat zündet einen Jet aus den Polen (klingt über drei Sekunden
 Flare. Pro Start zufällig: eine von drei Gaspaletten (orange/weiß, blau/violett, gold/rot),
 Neigung, Orbitrichtung und Tempo der langsam kreisenden Kamera. Start zündet den Jet,
 Kippschalter AN fährt näher heran.
-Planeten werfen: Steuerknüppel LINKS/RECHTS/OBEN/UNTEN wirft einen zufälligen Planeten aus dem
+Planeten werfen: Steuerknüppel LINKS/RECHTS wirft einen zufälligen Planeten aus dem
 Katalog (`config/planets.toml`, auch Sterne, Kometen, der Todesstern) von dieser Bildseite ins Loch.
 Er erscheint erst als Kugel (mit Ringen, Streifen, Stadtlichtern je nach Typ), wird über 50 bis 70
 Sekunden spiralig eingezogen und dabei zu einem immer längeren, dünneren Band gestreckt
 (Spaghettisierung), das sich schlangenförmig zur Musik windet (Bass und Mitten bestimmen Ausschlag
 und Tempo der Wellen, alles sehr langsam), dessen Farben mit zunehmender Streckung psychedelisch
 durchwandern, und das nahe am Horizont rot verglüht und verschwindet. Zwei Planeten können
-gleichzeitig unterwegs sein; ihr Name steht klein am oberen Rand. `visualizers/scenes/blackhole.py`
+gleichzeitig unterwegs sein; ihr Name steht klein am oberen Rand.
+OBEN wirft einen Asteroidenschwarm: zwei Dutzend unregelmäßige Brocken fallen als Perlenkette von
+oben hinein, quer zur Bahn gestreut, jeder wackelt für sich zur Musik, Bass lässt Glut in den
+Rissen leuchten, Höhen lassen einzelne Brocken funkeln, nahe am Loch werden sie in Bahnrichtung
+langgezogen und verglühen. UNTEN löst die Umkehrung aus, das Loch spuckt aus: gut eine Sekunde
+schwillt die Glut um das Loch pulsierend an und das Bild wird nach innen gezogen, dann Blitz,
+Druckwelle als Ring nach außen, Jet an beiden Polen, eine Trümmerfontäne aus über vierzig glühenden
+Brocken mit Schweif, die Akkretionsscheibe läuft vier Sekunden rückwärts, und alles, was gerade
+hineinfällt (Planeten, Schwarm), fliegt seine Spiralbahn mit dreifacher Geschwindigkeit wieder
+hinaus ("WIRD AUSGESPUCKT"). Nach acht Sekunden ist alles wieder normal. `visualizers/scenes/blackhole.py`
 (Hüllkurven, Kamera, Würfe), Shader `visualizers/shaders/blackhole/frag.glsl` (Band in
 Bildkoordinaten über dem Strahlverfolgungsbild), `render_scale 0.35` mit 36 Schritten (auf dem
 Pi 5 liefen 64 Schritte bei 0.5 nur mit 9 fps).

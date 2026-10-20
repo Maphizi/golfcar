@@ -20,6 +20,11 @@ uniform vec2 uThrowPos0, uThrowPos1;                 // Startpunkt (Bildkoordina
 uniform vec3 uThrowColA0, uThrowColB0, uThrowColA1, uThrowColB1;
 uniform vec4 uThrowPar0, uThrowPar1;                 // Größe, Typ, Seed, Spirale (±Stärke)
 uniform vec4 uThrowPar20, uThrowPar21;               // Ringe, frei
+uniform float uSwarm;                                // Asteroidenschwarm: Fortschritt 0..1 (0 = keiner)
+uniform vec2 uSwarmPos;
+uniform vec4 uSwarmPar;                              // Seed, Spirale, Anzahl, 1 = wird ausgespuckt
+uniform float uEjectT;                               // Umkehrung: Sekunden seit Auslösung, -1 = aus
+uniform float uDiskT;                                // Scheibenzeit (läuft bei der Umkehrung rückwärts)
 
 const int STEPS = 36;      // Pi 5: 64 Schritte bei 0.5 = 9 fps, 36 bei 0.35 ≈ 40 fps
 const float R_H = 1.0;       // Horizont
@@ -53,9 +58,9 @@ vec3 diskEmission(vec3 p, vec3 rd, float t, float live, out float alpha) {
     float u = (r - R_IN) / (R_OUT - R_IN);                 // 0 innen, 1 außen
     // Keplerrotation: innen schnell. Gaswirbel in log-polar-Koordinaten plus zwei Spiralarme
     float omega = 1.1 * pow(r, -1.5);
-    float ang = phi + t * omega * 3.0;
+    float ang = phi + uDiskT * omega * 3.0;
     vec2 q = vec2(ang * 2.2, log(r) * 5.5 + uSeed);
-    float n = fbm(q + vec2(0.0, -t * 0.08));
+    float n = fbm(q + vec2(0.0, -uDiskT * 0.08));
     float spiral = 0.5 + 0.5 * sin(ang * 2.0 - log(r) * 5.0 + uSeed);
     float dens = smoothstep(0.25, 0.8, n * 0.8 + spiral * 0.35);
     // Spektrum als Ringe: Position auf der Scheibe entspricht Frequenz
@@ -176,6 +181,96 @@ vec3 ribbon(vec3 col, vec2 uv, float P, vec2 p0, vec3 cA, vec3 cB, vec4 par, vec
     return col;
 }
 
+// ---- Asteroidenschwarm: Kette aus Brocken auf der Spiralbahn, jeder wackelt für sich
+vec3 swarm(vec3 col, vec2 uv, float P, vec2 p0, vec4 par, float live) {
+    float seed = par.x, swirl = par.y, cnt = par.z, back = par.w;
+    float wob = 0.3 + 0.8 * uBassS * live + 0.4 * uMidS * live;
+    float rh = mix(0.15, 0.2, uZoom);
+    float head = pow(P, 1.3);
+    vec3 glow = gasColor(0.8, 0.0);
+    for (int i = 0; i < 28; i++) {
+        float fi = float(i);
+        if (fi >= cnt) break;
+        float h1 = hash12(vec2(fi, seed)), h2 = hash12(vec2(fi * 3.0 + 1.0, seed)), h3 = hash12(vec2(fi * 7.0 + 2.0, seed));
+        float s = head - fi * (0.022 + 0.014 * h1) * (0.5 + 0.7 * P);     // Perlenkette hinter dem Kopf
+        if (s <= 0.0 || s >= 1.0) continue;
+        vec2 c = pathPoint(p0, s, swirl, seed + fi * 0.37, wob * (0.5 + h2));
+        vec2 dir0 = normalize(c + 1e-5);
+        c += vec2(-dir0.y, dir0.x) * (h2 - 0.5) * 0.09 * (1.0 - s);         // quer zur Bahn gestreut
+        // eigener Wackler je Brocken
+        c += vec2(sin(uSnakeT * 1.7 + fi * 1.3), cos(uSnakeT * 1.3 + fi * 2.1)) * 0.012 * (0.3 + uBassS * live);
+        float rq = length(c);
+        float vanish = smoothstep(rh * 0.95, rh * 1.3, rq);
+        if (vanish <= 0.0) continue;
+        float heat = smoothstep(rh * 2.8, rh * 1.1, rq);
+        float size = (0.009 + 0.016 * h3) * (1.0 - 0.35 * smoothstep(0.5, 1.0, s));
+        vec2 d = uv - c;
+        // nahe am Loch in Bahnrichtung langgezogen
+        vec2 dir = normalize(c - pathPoint(p0, s - 0.01, swirl, seed + fi * 0.37, wob * (0.5 + h2)) + 1e-5);
+        vec2 dl = vec2(dot(d, dir) / (1.0 + 2.5 * heat), dot(d, vec2(-dir.y, dir.x)));
+        float ang = atan(dl.y, dl.x);
+        float rr = size * (0.8 + 0.25 * sin(ang * 3.0 + h1 * 9.0) + 0.1 * sin(ang * 7.0 + h2 * 5.0));   // unregelmäßig
+        float v = length(dl) / rr;
+        if (v > 1.6) continue;
+        float nz = sqrt(max(0.0, 1.0 - v * v));
+        vec3 N = normalize(vec3(dl / rr, nz));
+        vec3 L = normalize(vec3(-c * 0.8, 0.6));
+        float light = 0.25 + 0.75 * max(dot(N, L), 0.0);
+        vec3 rock = mix(vec3(0.26, 0.22, 0.19), vec3(0.45, 0.4, 0.35), h2) * light;
+        rock += vec3(1.0, 0.45, 0.12) * uBassS * live * (0.3 + 0.7 * step(0.5, h3)) * pow(nz, 2.0) * 0.8;   // Bass: Glut in den Rissen
+        rock += vec3(1.0, 0.95, 0.85) * uHigh * live * step(0.7, h1) * pow(nz, 8.0) * 1.5;                 // Höhen: Funkeln
+        rock = mix(rock, vec3(dot(rock, vec3(0.5, 0.4, 0.1))) * vec3(1.0, 0.3, 0.1), heat * 0.7);
+        rock += glow * heat * (1.2 + 0.6 * uBassS * live) * (0.4 + 0.6 * nz);
+        if (back > 0.5) rock += vec3(1.0, 0.6, 0.3) * 0.5;                                               // ausgespuckt: glüht nach
+        float a = smoothstep(1.0, 0.8, v) * vanish * smoothstep(0.0, 0.03, P);
+        col = mix(col, rock, a);
+        col += mix(vec3(0.6, 0.5, 0.4), glow, heat) * exp(-max(v - 1.0, 0.0) * 5.0) * vanish * (0.05 + 0.4 * heat);
+    }
+    return col;
+}
+// ---- Umkehrung: das Loch spuckt aus. et = Sekunden seit Auslösung (Ausbruch bei 1.2 s)
+vec3 ejectFx(vec3 col, vec2 uv, float et, float fov, float live) {
+    float screenR = length(uv) / fov;
+    float build = clamp(et / 1.2, 0.0, 1.0);
+    float bt = et - 1.2;                                   // Zeit seit dem Ausbruch
+    vec3 hot = gasColor(0.9, 0.0);
+    if (bt < 0.0) {
+        // Anschwellen: Glut um das Loch pulst immer schneller, Bild wird nach innen gezogen
+        float pulse = 0.5 + 0.5 * sin(et * et * 14.0);
+        col += hot * exp(-screenR * 2.0) * build * (0.4 + 0.5 * pulse);
+        col *= 1.0 - 0.25 * build * smoothstep(0.3, 1.2, screenR);
+        return col;
+    }
+    // Blitz und Druckwelle
+    col += vec3(1.0, 0.95, 0.85) * exp(-bt * 5.0) * exp(-screenR * 1.2) * 2.5;
+    float ringR = bt * 0.9;
+    float ring = exp(-pow((screenR - ringR) * 14.0, 2.0)) * exp(-bt * 0.7);
+    col += mix(hot, vec3(0.7, 0.85, 1.0), 0.5 + 0.5 * sin(bt * 3.0)) * ring * 1.3;
+    col = mix(col, col * 1.6, ring * 0.5);
+    // Trümmerfontäne: Partikel fliegen aus dem Loch nach außen, leicht verdreht, mit Schweif
+    for (int k = 0; k < 44; k++) {
+        float fk = float(k);
+        float a0 = hash12(vec2(fk, 3.0)) * 6.2832;
+        float sp = 0.18 + 0.4 * hash12(vec2(fk, 5.0));
+        float life = 3.0 + 3.0 * hash12(vec2(fk, 9.0));
+        float age = bt - hash12(vec2(fk, 7.0)) * 0.6;      // nicht alle zugleich
+        if (age < 0.0 || age > life) continue;
+        float a1 = a0 + 0.5 * (hash12(vec2(fk, 11.0)) - 0.5) * age;
+        vec2 dir = vec2(cos(a1), sin(a1));
+        vec2 pos = dir * (0.12 + sp * age * (1.0 - 0.06 * age));
+        float sz = (0.007 + 0.012 * hash12(vec2(fk, 13.0))) * (1.0 - 0.6 * age / life);
+        vec2 d = uv - pos;
+        float along = dot(d, dir), side = dot(d, vec2(-dir.y, dir.x));
+        float tail = sp * 0.12;
+        float dist = length(vec2(max(0.0, -along) - max(0.0, -along - tail) + max(0.0, along), side));  // Strecke mit Schweif
+        float g = smoothstep(sz, 0.0, dist) + 0.5 * exp(-dist / (sz * 2.0));
+        float fade = (1.0 - age / life) * (0.6 + 0.4 * uBassS * live);
+        vec3 pc = mix(vec3(1.0, 0.85, 0.5), vec3(0.9, 0.3, 0.1), age / life);
+        col += pc * g * fade * 1.3;
+    }
+    return col;
+}
+
 void main() {
     float aspect = iResolution.x / iResolution.y;
     vec2 uv = (vUv - 0.5) * vec2(aspect, 1.0);
@@ -255,6 +350,8 @@ void main() {
     // Geworfene Planeten (vor der Kamera, deshalb über dem Bild)
     if (uThrow0 > 0.0) col = ribbon(col, uv, uThrow0, uThrowPos0, uThrowColA0, uThrowColB0, uThrowPar0, uThrowPar20, live);
     if (uThrow1 > 0.0) col = ribbon(col, uv, uThrow1, uThrowPos1, uThrowColA1, uThrowColB1, uThrowPar1, uThrowPar21, live);
+    if (uSwarm > 0.0) col = swarm(col, uv, uSwarm, uSwarmPos, uSwarmPar, live);
+    if (uEjectT >= 0.0) col = ejectFx(col, uv, uEjectT, fov, live);
     // Tonemapping und Vignette
     col = col / (1.0 + col * 0.45);
     col *= 1.0 - 0.45 * pow(length(vUv - 0.5) * 1.35, 2.5);

@@ -2,10 +2,15 @@
 nicht selbst halten kann (Jet-Ausbruch nach dem Beat, Flare, Kamerawackeln), würfelt pro Start
 Blickwinkel, Scheibenfarbe und Orbitdrehung und lässt die Kamera langsam kreisen.
 
-Steuerknüppel LINKS/RECHTS/OBEN/UNTEN = einen Planeten aus dem Katalog (config/planets.toml) von
-dieser Bildseite ins Loch werfen. Er wird über rund eine Minute eingezogen, dabei zu einem immer
-längeren Band gestreckt (Spaghettisierung), das sich schlangenförmig zur Musik windet, und verglüht
-am Horizont. Zwei Planeten können gleichzeitig unterwegs sein.
+Steuerknüppel LINKS/RECHTS = einen Planeten aus dem Katalog (config/planets.toml) von dieser
+Bildseite ins Loch werfen. Er wird über rund eine Minute eingezogen, dabei zu einem immer längeren
+Band gestreckt (Spaghettisierung), das sich schlangenförmig zur Musik windet, und verglüht am
+Horizont. Zwei Planeten können gleichzeitig unterwegs sein.
+OBEN = Asteroidenschwarm: zwei Dutzend Brocken fallen als Perlenkette von oben hinein, jeder wackelt
+für sich zur Musik, Bass lässt sie glühen, Höhen funkeln.
+UNTEN = Umkehrung: das Loch spuckt aus. Kurzes Anschwellen, dann Blitz, Druckwelle, Trümmerfontäne,
+Jet an beiden Polen, die Scheibe läuft rückwärts, und alles, was gerade hineinfällt, fliegt seine
+Bahn wieder hinaus. Danach geht es normal weiter.
 Start (ENTER) = Jet zünden, Kippschalter AN (SPACE) = Nahaufnahme, AUS (BACKSPACE) = zurück.
 """
 from __future__ import annotations
@@ -24,6 +29,8 @@ log = logging.getLogger("blackhole")
 TYPES = ["desert", "ice", "forest", "ocean", "city", "volcanic", "gas", "swamp", "grass", "rock", "crystal", "star", "comet", "station"]
 SLOTS = 2
 THROW_SECONDS = (50.0, 70.0)        # Dauer vom Bildrand bis zum Verschwinden: sehr langsam
+EJECT_SECONDS = 8.0                 # Umkehrung: Anschwellen 1.2 s, dann Ausbruch, klingt bis 8 s ab
+EJECT_BURST_AT = 1.2
 
 
 class Throw:
@@ -51,11 +58,33 @@ class Throw:
         self.col_b = tuple(planet.get("color_b", [0.3, 0.3, 0.3]))
         self.name = str(planet.get("name", "?")).upper()
 
+        self.reverse_t0: float | None = None       # Umkehrung: ab hier läuft die Bahn rückwärts (3x so schnell)
+        self.reverse_p = 0.0
+
     def progress(self, now: float) -> float:
+        if self.reverse_t0 is not None:
+            return self.reverse_p - (now - self.reverse_t0) / self.dur * 3.0
         return (now - self.t0) / self.dur
 
+    def reverse(self, now: float) -> None:
+        if self.reverse_t0 is None:
+            self.reverse_p = min(1.0, self.progress(now))
+            self.reverse_t0 = now
+
     def done(self, now: float) -> bool:
-        return self.progress(now) >= 1.0
+        p = self.progress(now)
+        return p >= 1.0 or (self.reverse_t0 is not None and p <= 0.0)
+
+
+class Swarm(Throw):
+    """Asteroidenschwarm von oben: nutzt dieselbe Bahn, der Shader zeichnet eine Kette aus Brocken."""
+
+    def __init__(self, rng: random.Random, now: float, aspect: float):
+        planet = {"name": "ASTEROIDENSCHWARM", "type": "rock", "color_a": [0.55, 0.48, 0.4], "color_b": [0.3, 0.26, 0.22], "size": 1.0}
+        super().__init__(rng, planet, "up", now, aspect)
+        self.dur = rng.uniform(40.0, 55.0)
+        self.swirl = rng.choice((-1.0, 1.0)) * rng.uniform(1.2, 2.0)
+        self.count = rng.randint(20, 28)
 
 
 class Controller:
@@ -78,6 +107,11 @@ class Controller:
         self.snake_t = 0.0                                  # langsame Zeit für die Schlangenwellen
         self.aspect = 16.0 / 9.0
         self.throws: list[Throw | None] = [None] * SLOTS
+        self.swarm: Swarm | None = None
+        self.eject_t0: float | None = None          # Umkehrung läuft (8 s)
+        self.eject_burst_done = False
+        self.disk_t = 0.0                           # Scheibenzeit: vorwärts, bei Umkehrung rückwärts
+        self.disk_dir = 1.0
         self.last_names: list[str] = []
         self.demo_next = time.monotonic() + 4.0
         try:
@@ -106,6 +140,21 @@ class Controller:
         self.throws[slot] = Throw(self.rng, planet, side, now, self.aspect)
         log.info("Planet geworfen: %s von %s (%.0f s)", self.throws[slot].name, side, self.throws[slot].dur)
 
+    def throw_swarm(self) -> None:
+        now = time.monotonic()
+        if self.swarm is not None and self.swarm.progress(now) < 0.7:
+            return
+        self.swarm = Swarm(self.rng, now, self.aspect)
+        log.info("Asteroidenschwarm geworfen: %d Brocken (%.0f s)", self.swarm.count, self.swarm.dur)
+
+    def eject(self) -> None:
+        now = time.monotonic()
+        if self.eject_t0 is not None and now - self.eject_t0 < EJECT_SECONDS:
+            return
+        self.eject_t0 = now
+        self.eject_burst_done = False
+        log.info("Umkehrung: das Loch spuckt aus")
+
     def handle_event(self, ev) -> None:
         if ev.type != pygame.KEYDOWN:
             return
@@ -114,9 +163,9 @@ class Controller:
         elif ev.key in (pygame.K_RIGHT, pygame.K_d):
             self.throw("right")
         elif ev.key in (pygame.K_UP, pygame.K_w):
-            self.throw("up")
+            self.throw_swarm()
         elif ev.key in (pygame.K_DOWN, pygame.K_s):
-            self.throw("down")
+            self.eject()
         elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
             self.jet = 1.0
             self.flare = 1.0
@@ -126,7 +175,8 @@ class Controller:
             self.zoom_target = 0.0
 
     def uniform_names(self):
-        names = ["uSeed", "uTilt", "uAngle", "uPalette", "uJet", "uFlare", "uZoom", "uBassS", "uMidS", "uSnakeT"]
+        names = ["uSeed", "uTilt", "uAngle", "uPalette", "uJet", "uFlare", "uZoom", "uBassS", "uMidS", "uSnakeT",
+                 "uSwarm", "uSwarmPos", "uSwarmPar", "uEjectT", "uDiskT"]
         for i in range(SLOTS):
             names += [f"uThrow{i}", f"uThrowPos{i}", f"uThrowColA{i}", f"uThrowColB{i}", f"uThrowPar{i}", f"uThrowPar2{i}"]
         return tuple(names)
@@ -152,16 +202,54 @@ class Controller:
         self.snake_t += dt * (0.25 + 0.9 * self.bass_s * (0.0 if silent else 1.0))
         self.angle += dt * self.orbit_speed * (1.0 + 0.6 * self.bass_s)
         self.zoom += (self.zoom_target - self.zoom) * min(1.0, dt / 2.0)
+        # Umkehrung: nach dem Anschwellen Ausbruch (Jet, Flare, alles fliegt zurück), Scheibe rückwärts
+        eject_t = -1.0
+        dir_target = 1.0
+        if self.eject_t0 is not None:
+            eject_t = now - self.eject_t0
+            if eject_t >= EJECT_SECONDS:
+                self.eject_t0 = None
+                eject_t = -1.0
+            else:
+                if eject_t >= EJECT_BURST_AT and not self.eject_burst_done:
+                    self.eject_burst_done = True
+                    self.jet, self.flare = 1.0, 1.0
+                    for th in self.throws:
+                        if th is not None:
+                            th.reverse(now)
+                    if self.swarm is not None:
+                        self.swarm.reverse(now)
+                if eject_t >= EJECT_BURST_AT and eject_t < EJECT_BURST_AT + 4.0:
+                    dir_target = -2.5
+        self.disk_dir += (dir_target - self.disk_dir) * min(1.0, dt / 0.6)
+        self.disk_t = (self.disk_t + dt * self.disk_dir) % 1000.0
         if self.demo and now >= self.demo_next:
             self.jet, self.flare = 1.0, 1.0
-            self.throw(self.rng.choice(("left", "right", "up", "down")))
+            pick = self.rng.choice(("left", "right", "swarm", "eject"))
+            if pick == "swarm":
+                self.throw_swarm()
+            elif pick == "eject":
+                self.eject()
+            else:
+                self.throw(pick)
             self.demo_next = now + 12.0
         out = {"uSeed": self.seed, "uTilt": self.tilt, "uAngle": self.angle, "uPalette": float(self.palette),
                "uJet": self.jet, "uFlare": self.flare, "uZoom": self.zoom, "uBassS": self.bass_s,
-               "uMidS": self.mid_s, "uSnakeT": self.snake_t % 1000.0}
+               "uMidS": self.mid_s, "uSnakeT": self.snake_t % 1000.0,
+               "uEjectT": eject_t, "uDiskT": self.disk_t}
+        sw = self.swarm
+        if sw is not None and sw.done(now):
+            log.info("Asteroidenschwarm %s", "zurückgeschleudert" if sw.reverse_t0 else "verschluckt")
+            self.swarm = sw = None
+        if sw is None:
+            out["uSwarm"], out["uSwarmPos"], out["uSwarmPar"] = 0.0, (0.0, 0.0), (0.0, 0.0, 0.0, 0.0)
+        else:
+            out["uSwarm"] = max(0.0, min(1.0, sw.progress(now)))
+            out["uSwarmPos"] = sw.pos
+            out["uSwarmPar"] = (sw.seed, sw.swirl, float(sw.count), 1.0 if sw.reverse_t0 else 0.0)
         for i, th in enumerate(self.throws):
             if th is not None and th.done(now):
-                log.info("%s ist im Loch verschwunden", th.name)
+                log.info("%s %s", th.name, "wurde wieder ausgespuckt" if th.reverse_t0 else "ist im Loch verschwunden")
                 self.throws[i] = th = None
             if th is None:
                 out[f"uThrow{i}"] = 0.0
@@ -183,12 +271,18 @@ class Controller:
         now = time.monotonic()
         out = []
         y = 0.05
-        for th in self.throws:
-            if th is None:
-                continue
+        items = [th for th in self.throws if th is not None] + ([self.swarm] if self.swarm else [])
+        for th in items:
             p = th.progress(now)
-            a = 0.75 * min(1.0, p * 8.0) * min(1.0, (1.0 - p) * 6.0)
-            label = f"{th.name}  -  WIRD ZERRISSEN" if p > 0.55 else f"{th.name}  -  FÄLLT"
+            a = 0.75 * min(1.0, max(0.0, p) * 8.0) * min(1.0, (1.0 - p) * 6.0)
+            if th.reverse_t0 is not None:
+                label = f"{th.name}  -  WIRD AUSGESPUCKT"
+            else:
+                label = f"{th.name}  -  WIRD ZERRISSEN" if p > 0.55 else f"{th.name}  -  FÄLLT"
             out.append((label, 0.018, 0.5, y, (255, 170, 120), a))
             y += 0.035
+        if self.eject_t0 is not None:
+            et = now - self.eject_t0
+            a = min(1.0, et / 0.6) * min(1.0, (EJECT_SECONDS - et) / 1.5)
+            out.append(("U M K E H R U N G", 0.045, 0.5, 0.5, (255, 240, 220), 0.85 * a))
         return out

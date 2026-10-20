@@ -67,8 +67,10 @@ ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-S
 Nicht auf dem Board, über `scripts/kittctl <modus>`: droid (BIBO), news, viz_crt, viz_eye, planeten, menu, status.
 
 ## Schwarzes Loch (`visualizers/scenes/blackhole.py`)
-D-Pad LINKS/RECHTS/OBEN/UNTEN = Planet aus `config/planets.toml` von dieser Seite ins Loch werfen
-(wird über ~1 Minute zum Band gestreckt, wogt zur Musik). ENTER = Jet, SPACE = Nahaufnahme, BACKSPACE = zurück.
+D-Pad LINKS/RECHTS = Planet aus `config/planets.toml` von dieser Seite ins Loch werfen (wird über ~1 Minute zum
+Band gestreckt, wogt zur Musik). OBEN = Asteroidenschwarm (Perlenkette). UNTEN = Umkehrung (Loch spuckt aus:
+Blitz, Druckwelle, Trümmer, Scheibe rückwärts, alles fliegt zurück, 8 s). ENTER = Jet, SPACE = Nahaufnahme,
+BACKSPACE = zurück.
 
 ## HAL 3000 Hintergrund (`kitt/hal/motion.py`)
 Korridor bewegt sich nur über `uDrift` (langsam, Richtung ±1, Wechsel beim Drop), nicht über die Zeit.
