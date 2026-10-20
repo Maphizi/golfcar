@@ -531,14 +531,13 @@ daneben. Die Datei ist nicht im Repo (Markenrechte), lege sie selbst ab.
 **Pi aktualisieren:** `scripts/update.sh` holt den neuesten Stand, rendert fehlende Ansagen und
 startet den Launcher neu. Das ist der Standardweg für jede Änderung.
 
-**Verkehr und Abschießen im Hyperraum:** Zwischen den Planeten-Vorbeiflügen zieht alle 15 bis 30
-Sekunden ein kleiner Komet mit Schweif vorbei (aus der Tiefe oder querend). Der Shader kennt auch
-Schiffe (Jäger, Satellit, Kreuzer, Ringstation, Modulstation als eigene Silhouetten), sie sind über
-`TRAFFIC_KINDS` in `visualizers/scenes/navcomputer.py` abgeschaltet und lassen sich dort wieder
-einschalten. D-Pad bewegt das
-Fadenkreuz, der Startknopf feuert: zwei grüne Strahlen aus den unteren Ecken zum Fadenkreuz, bei
-Treffer Blitz, Ring, Trümmer und ein Zähler ABSCHÜSSE / SCHÜSSE oben rechts; ZIEL ERFASST erscheint,
-wenn ein Objekt im Fadenkreuz liegt. Die Texte im Navigationscomputer verwackeln ganz dezent zur Musik
+**Verkehr im Hyperraum:** Zwischen den Planeten-Vorbeiflügen zieht alle 15 bis 30
+Sekunden ein kleiner Komet mit Schweif vorbei (aus der Tiefe oder querend), nur zum Anschauen. Der
+Shader kennt auch Schiffe (Jäger, Satellit, Kreuzer, Ringstation, Modulstation als eigene
+Silhouetten), sie sind über `TRAFFIC_KINDS` in `visualizers/scenes/navcomputer.py` abgeschaltet und
+lassen sich dort wieder einschalten (die Ringstation nutzt das Ereignis RAUMSTATION). Das frühere
+Abschießen mit Fadenkreuz und Laser ist entfernt; die Shader-Routinen dafür liegen noch im Code,
+bekommen aber keine Werte mehr. Die Texte im Navigationscomputer verwackeln ganz dezent zur Musik
 (wenige Pixel bei Bass und Beat). Schiffswinkel werden auf
 0 bis 2π reduziert, weil große Winkelwerte auf der GPU ungenaue Sinus-Werte liefern.
 

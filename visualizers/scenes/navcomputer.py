@@ -1,7 +1,7 @@
 """Navigationscomputer (F2): Planeten durchblättern und anfliegen.
 
 Bedienung:  Maus links / Pfeil links = vorheriger Planet, Maus rechts / Pfeil rechts = nächster,
-            Maus Mitte, Enter oder Leertaste = Kurs setzen und anfliegen.
+            Maus Mitte oder Startknopf (Enter) = Kurs setzen und anfliegen. Kein Schießen mehr.
 Phasen:     0 browse (Planet steht, Sterne ruhen) -> 1 launch (Sterne ziehen sich zu Streifen)
             -> 2 cruise (psychedelischer Schweif, langsam) -> 3 arrive (Ziel wächst aus der Mitte) -> browse
 Der Flug endet nur, wenn der Pilot den Kippschalter umlegt (nie von selbst; im --demo nach cruise_seconds).
@@ -30,7 +30,7 @@ KINDS = {"desert": "WÜSTENWELT", "ice": "EISWELT", "forest": "WALDWELT", "ocean
 ORIGINS = {"real": "ECHTER HIMMEL", "saga": "FERNE GALAXIS", "fiction": "ERDACHTE WELT"}
 SPONSOR = lcfg.ROOT / "assets" / "sponsor.png"
 FLYBY_EVERY = 25.0
-# Verkehr im Hyperraum: Kometen zwischen den Planeten (selten, klein). Der Shader kennt auch Schiffe
+# Verkehr im Hyperraum: Kometen zwischen den Planeten (selten, klein), nur zum Anschauen. Der Shader kennt auch Schiffe
 # (Arten 0 Jäger, 1 Satellit, 2 Kreuzer, 3 Ringstation, 5 Stationsmodule), sie sind hier abgeschaltet;
 # TRAFFIC_KINDS erweitern, um sie wieder einzuschalten.
 TRAFFIC_MAX = 1
@@ -38,7 +38,6 @@ TRAFFIC_EVERY = (15.0, 30.0)
 TRAFFIC_KINDS = [4]
 COMET_SCALE = 0.45
 TRAFFIC_NAMES = ["JÄGER", "SATELLIT", "KREUZER", "RINGSTATION", "KOMET", "STATION"]
-CROSS_STEP = 0.14
 PHASE_BROWSE, PHASE_LAUNCH, PHASE_CRUISE, PHASE_ARRIVE = 0, 1, 2, 3
 # Ereignisse unterwegs: (Name, Dauer in s, HUD-Zeile während des Ereignisses); Index + 1 = uEvent im Shader
 EVENTS = [
@@ -47,7 +46,7 @@ EVENTS = [
     ("SONNE", 16.0, "HITZESCHILD AKTIV   ABSTAND HALTEN"),
     ("WURMLOCH", 12.0, "RAUMZEIT INSTABIL   FESTHALTEN"),
     ("RAUMSTATION", 10.0, "ANDOCKEN VERWEIGERT   WEITERFLUG"),
-    ("KOMETENSCHAUER", 12.0, "FEUER FREI   START = SCHUSS"),
+    ("KOMETENSCHAUER", 12.0, "TRÜMMER VORAUS   KURS HALTEN"),
 ]
 EVENT_EVERY = (30.0, 60.0)
 EVENT_WARN = 3.0
@@ -93,12 +92,6 @@ class Controller:
                 log.warning("Sponsor-Logo nicht ladbar: %s", exc)
         self.traffic: list[dict] = []      # {kind, t0, len, ang, dir, spin, cross}
         self.next_traffic_at = 0.0
-        self.cross = [0.0, 0.1]            # Fadenkreuz (Bildkoordinaten, x in ±aspect, y in ±1)
-        self.laser_t0 = -10.0
-        self.laser_target = (0.0, 0.0)
-        self.boom = None                   # (x, y, t0, kind)
-        self.kills = 0
-        self.shots = 0
         self.last_f = None
         self.armed = False          # Kippschalter-Zustand
         self.end_after_launch = False
@@ -127,24 +120,11 @@ class Controller:
                 else:
                     self.set_armed(ev.key == pygame.K_SPACE)
             elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                if self.phase == PHASE_CRUISE:
-                    self.shoot()
-                else:
-                    self.fly()   # Startknopf fliegt direkt, kein armed nötig
+                self.fly()   # Startknopf fliegt direkt, kein armed nötig (im Flug ohne Funktion)
             elif ev.key in (pygame.K_LEFT, pygame.K_a):
-                if self.phase == PHASE_CRUISE:
-                    self.cross[0] = max(-1.6, self.cross[0] - CROSS_STEP)
-                else:
-                    self.select(-1)
+                self.select(-1)
             elif ev.key in (pygame.K_RIGHT, pygame.K_d):
-                if self.phase == PHASE_CRUISE:
-                    self.cross[0] = min(1.6, self.cross[0] + CROSS_STEP)
-                else:
-                    self.select(+1)
-            elif ev.key == pygame.K_UP and self.phase == PHASE_CRUISE:
-                self.cross[1] = min(0.9, self.cross[1] + CROSS_STEP)
-            elif ev.key == pygame.K_DOWN and self.phase == PHASE_CRUISE:
-                self.cross[1] = max(-0.9, self.cross[1] - CROSS_STEP)
+                self.select(+1)
         elif ev.type == pygame.MOUSEBUTTONDOWN:
             if ev.button == 1:
                 self.select(-1)
@@ -223,24 +203,6 @@ class Controller:
                 "y": self.rng.uniform(-0.5, 0.6), "scale": self.rng.uniform(0.7, 1.3) * (COMET_SCALE if kind == 4 else 1.0),
             })
             self.next_traffic_at = now + self.rng.uniform(*TRAFFIC_EVERY)
-
-    def shoot(self) -> None:
-        now = time.monotonic()
-        self.shots += 1
-        self.laser_t0 = now
-        self.laser_target = (self.cross[0], self.cross[1])
-        best, best_d = None, 1e9
-        for s in self.traffic:
-            x, y, size, k = self._traffic_pos(s, now)
-            d = math.hypot(x - self.cross[0], y - self.cross[1])
-            if d < size * 1.3 + 0.08 and d < best_d:
-                best, best_d = s, d
-        if best is not None:
-            x, y, size, _ = self._traffic_pos(best, now)
-            self.boom = (x, y, now, best["kind"], size)
-            self.traffic.remove(best)
-            self.kills += 1
-            log.info("Abschuss: %s (%d/%d)", TRAFFIC_NAMES[best["kind"]], self.kills, self.shots)
 
     def _advance_flyby(self, now: float) -> None:
         """Alle ~25 s im Hyperraum zieht eines der anderen Objekte vorbei."""
@@ -360,15 +322,9 @@ class Controller:
             else:
                 ships[f"uShip{i}"] = (0.0, 0.0, 0.0, 0.0)
                 ships[f"uShipP{i}"] = (0.0, 0.0, 0.0, 1.0)
-        boom = self.boom if self.boom and now - self.boom[2] < 1.4 else None
-        ships.update({
-            "uCross": (self.cross[0], self.cross[1]),
-            "uLaser": max(0.0, 1.0 - (now - self.laser_t0) / 0.35),
-            "uLaserTo": self.laser_target,
-            "uBoom": (boom[0], boom[1], now - boom[2], boom[4]) if boom else (0.0, 0.0, 9.0, 0.0),
-            "uBoomKind": float(boom[3]) if boom else 0.0,
-            "uShoot": 1.0 if self.phase == PHASE_CRUISE else 0.0,
-        })
+        # Abschießen gibt es nicht mehr: Fadenkreuz, Laser und Explosion bleiben aus
+        ships.update({"uCross": (0.0, 0.0), "uLaser": 0.0, "uLaserTo": (0.0, 0.0),
+                      "uBoom": (0.0, 0.0, 9.0, 0.0), "uBoomKind": 0.0, "uShoot": 0.0})
         ev = self.event
         started = bool(ev and ev["started"])
         ships.update({
@@ -451,12 +407,6 @@ class Controller:
         if self.phase == PHASE_CRUISE:
             eta = max(0.0, self.cruise_s - pt)
             out = []
-            if self.kills or self.shots:
-                out.append((f"ABSCHÜSSE {self.kills}   SCHÜSSE {self.shots}", 0.024, 0.86, 0.9, (255, 120, 80), 0.9))
-            near = any(math.hypot(x - self.cross[0], y - self.cross[1]) < size * 1.3 + 0.08
-                       for x, y, size, _ in (self._traffic_pos(s, now) for s in self.traffic))
-            out.append(("ZIEL ERFASST" if near else "D-PAD ZIELEN   START FEUER", 0.02, 0.5, 0.13,
-                        (255, 80, 60) if near else DIM, 0.9 if near else 0.6))
             if self.fly_idx >= 0:
                 k = (now - self.fly_t0) / self.fly_len
                 fp = self.planets[self.fly_idx]
