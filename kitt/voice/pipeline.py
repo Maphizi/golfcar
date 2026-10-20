@@ -127,12 +127,15 @@ class VoicePipeline:
 
         if mood or use_ctx:
             self.kitt.context_provider = provider
-        # Prompt-Cache füllen, damit die erste echte Antwort schnell kommt
-        try:
-            self.kitt.ask("Systemcheck.")
-            self.kitt.reset()
-        except Exception as exc:
-            log.warning("Warm-up fehlgeschlagen: %s", exc)
+        # Prompt-Cache im Hintergrund füllen (auf dem Pi ~35 s); die Oberfläche ist sofort bereit
+        def warm() -> None:
+            try:
+                self.kitt.ask("Systemcheck.")
+                self.kitt.reset()
+                log.info("Warm-up fertig, Prompt-Cache gefüllt")
+            except Exception as exc:
+                log.warning("Warm-up fehlgeschlagen: %s", exc)
+        threading.Thread(target=warm, name="warmup", daemon=True).start()
         if self.use_mic:
             from visualizers.engine.audio_capture import AudioCapture
             vad = load_vad(self.cfg["vad"], kcfg.path(self.cfg["vad"]["model"]))

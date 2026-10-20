@@ -171,6 +171,17 @@ class HalUI(PersonaUI):
                 for i, ln in enumerate(self.wrap("HAL: " + lk, 78)[:2]):
                     self.text(ln, 0.023, 0.5, 0.125 - i * 0.034, (255, 220, 200), 0.95)
         self.text("KIPPSCHALTER  SPRECHEN (MUSIK LEISE)      START  HAL FRAGEN      OBEN/UNTEN  LICHT", 0.015, 0.5, 0.03, (110, 60, 60), 0.5 + 0.2 * math.sin(now * 2.0))
+        # kleine Musikanzeige unten rechts: Quelle und Pegel, damit man ohne Log sieht, ob Musik ankommt
+        f = self.last_f
+        cap = self.music_cap
+        src = getattr(cap, "active_backend", None) if cap else None
+        if f is None or cap is None:
+            self.text("MUSIK: KEINE QUELLE", 0.014, 0.9, 0.03, (120, 60, 60), 0.7)
+        elif getattr(f, "silent", True):
+            self.text(f"MUSIK: STILLE ({src})", 0.014, 0.9, 0.03, (120, 60, 60), 0.7)
+        else:
+            bars = "|" * max(1, min(10, int(float(getattr(f, "rms", 0.0)) * 12)))
+            self.text(f"MUSIK {bars}", 0.014, 0.9, 0.03, (200, 90, 70), 0.9)
 
     def run_demo(self) -> None:
         import numpy as np

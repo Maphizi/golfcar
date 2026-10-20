@@ -525,16 +525,15 @@ Meldung „Drehknopf erkannt: Achse …“ im Launcher-Log), `min_percent`, `max
 **Pi aktualisieren:** `scripts/update.sh` holt den neuesten Stand, rendert fehlende Ansagen und
 startet den Launcher neu. Das ist der Standardweg für jede Änderung.
 
-**Verkehr und Abschießen im Hyperraum:** Zwischen den Planeten-Vorbeiflügen tauchen alle 4 bis 8
-Sekunden kleine Objekte auf (höchstens drei zugleich): Jäger (Kugel mit zwei Flügelplatten),
-Satellit mit Schüssel und Solarflügeln, Kreuzer mit Aufbauten und Triebwerksglühen, Ringstation
-mit geschwungenen Pylonen, Kometen mit Schweif und eine Modulstation mit goldenen Solarflächen.
-Alles eigene Silhouetten im Shader mit Schattierung und blinkenden Lichtern. Sie kommen aus der
-Tiefe und fliegen an uns vorbei oder queren das Bild in mittlerer Entfernung. D-Pad bewegt das
+**Verkehr und Abschießen im Hyperraum:** Zwischen den Planeten-Vorbeiflügen zieht alle 15 bis 30
+Sekunden ein kleiner Komet mit Schweif vorbei (aus der Tiefe oder querend). Der Shader kennt auch
+Schiffe (Jäger, Satellit, Kreuzer, Ringstation, Modulstation als eigene Silhouetten), sie sind über
+`TRAFFIC_KINDS` in `visualizers/scenes/navcomputer.py` abgeschaltet und lassen sich dort wieder
+einschalten. D-Pad bewegt das
 Fadenkreuz, der Startknopf feuert: zwei grüne Strahlen aus den unteren Ecken zum Fadenkreuz, bei
 Treffer Blitz, Ring, Trümmer und ein Zähler ABSCHÜSSE / SCHÜSSE oben rechts; ZIEL ERFASST erscheint,
-wenn ein Objekt im Fadenkreuz liegt. Die Texte im Navigationscomputer verwackeln zur Musik (Bass
-schüttelt, der Beat stößt an und vergrößert kurz, Höhen zittern fein). Schiffswinkel werden auf
+wenn ein Objekt im Fadenkreuz liegt. Die Texte im Navigationscomputer verwackeln ganz dezent zur Musik
+(wenige Pixel bei Bass und Beat). Schiffswinkel werden auf
 0 bis 2π reduziert, weil große Winkelwerte auf der GPU ungenaue Sinus-Werte liefern.
 
 **Kippschalter im Navigationscomputer:** Kippschalter AN schaltet scharf (Anzeige SCHARF), der
@@ -632,6 +631,12 @@ leise. Kippschalter oben (BACKSPACE) stellt die Lautstärke wieder her und schal
 Ohne Sprechmodus hört HAL nicht zu, die Musik läuft normal. Allgemein: Persona-Szenen können über
 `music_source()` eine eigene Musikquelle wählen und bekommen dann `uVoice` als Stimmpegel. Prompt `kitt/personality/hal_prompt.txt`, Logik `kitt/hal/app.py`,
 Shader `visualizers/shaders/hal/frag.glsl`. Eigene Gestaltung, keine Fremdgrafik.
+
+**Startzeit der Figuren:** Die Oberfläche ist bereit, sobald die Server laufen; das Füllen des
+Prompt-Caches („Systemcheck“, auf dem Pi rund 35 Sekunden) läuft im Hintergrund. HAL zeigt unten
+rechts eine kleine Musikanzeige (Quelle, Stille oder Pegelbalken), damit man ohne Log sieht, ob die
+Musik ankommt. Die Musikquelle `playback` versucht zuerst den Monitor des Standard-Sinks über
+`stream.capture.sink`, dann ausdrücklich mit `--target <Sink>`.
 
 **Antwortzeit:** Der Faktenblock (Uhrzeit, Laufzeit, Spiele) hängt nicht mehr am System-Prompt,
 sondern am Ende der jeweiligen Anfrage. Vorher änderte er sich jede Minute, der Prompt-Cache des

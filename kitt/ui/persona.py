@@ -52,6 +52,8 @@ class PersonaUI:
         self.running = True
         self.overlays: dict[int, object] = {}
         self.voice_rms = 0.0
+        self.last_f = None
+        self.music_cap = None
         self.w = self.h = 0
         self.prepare_cfg(self.cfg)
 
@@ -262,6 +264,7 @@ class PersonaUI:
                     samples = np.zeros(analyzer.n, dtype=np.float32)
                 f = analyzer.update(samples, now)
                 self.voice_rms = voice_rms
+                self.last_f = f
                 scene.maybe_reload(now)
                 renderer.upload_audio(f.spectrum, f.wave)
                 uniforms = {"uState": STATES.get(state, 0), "uStateT": now - since, "uLevel": self.level}

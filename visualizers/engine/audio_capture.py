@@ -19,6 +19,18 @@ import numpy as np
 log = logging.getLogger("audio.capture")
 
 
+def _default_sink_name() -> str:
+    """node.name des Standard-Sinks laut WirePlumber, "" wenn unbekannt."""
+    try:
+        out = subprocess.run(["wpctl", "inspect", "@DEFAULT_AUDIO_SINK@"], capture_output=True, text=True, timeout=2).stdout
+        for line in out.splitlines():
+            if "node.name" in line and "=" in line:
+                return line.split("=", 1)[1].strip().strip('"')
+    except Exception:
+        pass
+    return ""
+
+
 class AudioCapture(threading.Thread):
     def __init__(self, cfg: dict, ring_seconds: float = 2.0, source: str | None = None):
         super().__init__(name="audio-capture", daemon=True)
@@ -83,6 +95,12 @@ class AudioCapture(threading.Thread):
             if self.target:
                 c += ["--target", self.target]
             cmds.append(("pipewire", c + ["-"]))
+            if self.source == "playback" and not self.target:
+                # Fallback: Monitor des Standard-Sinks ausdrücklich als Ziel (manche PipeWire-Stände
+                # ignorieren stream.capture.sink ohne --target)
+                sink = _default_sink_name()
+                if sink:
+                    cmds.append(("pipewire-sink", c + ["--target", sink, "-"]))
         if self.backend in ("auto", "alsa") and shutil.which("arecord") and self.source != "playback":
             dev = self.target if (self.backend == "alsa" and self.target) else "default"
             cmds.append(("alsa", ["arecord", "-q", "-D", dev, "-f", "S16_LE", "-r", str(self.rate),

@@ -26,10 +26,13 @@ KINDS = {"desert": "WÜSTENWELT", "ice": "EISWELT", "forest": "WALDWELT", "ocean
 ORIGINS = {"real": "ECHTER HIMMEL", "saga": "FERNE GALAXIS", "fiction": "ERDACHTE WELT"}
 SPONSOR = lcfg.ROOT / "assets" / "sponsor.png"
 FLYBY_EVERY = 25.0
-# Verkehr im Hyperraum: kleine Schiffe und Kometen zwischen den Planeten. Arten (Shader): 0 Jäger,
-# 1 Satellit, 2 Kreuzer, 3 Ringstation, 4 Komet, 5 Stationsmodule
-TRAFFIC_MAX = 3
-TRAFFIC_EVERY = (4.0, 8.0)
+# Verkehr im Hyperraum: Kometen zwischen den Planeten (selten, klein). Der Shader kennt auch Schiffe
+# (Arten 0 Jäger, 1 Satellit, 2 Kreuzer, 3 Ringstation, 5 Stationsmodule), sie sind hier abgeschaltet;
+# TRAFFIC_KINDS erweitern, um sie wieder einzuschalten.
+TRAFFIC_MAX = 1
+TRAFFIC_EVERY = (15.0, 30.0)
+TRAFFIC_KINDS = [4]
+COMET_SCALE = 0.45
 TRAFFIC_NAMES = ["JÄGER", "SATELLIT", "KREUZER", "RINGSTATION", "KOMET", "STATION"]
 CROSS_STEP = 0.14
 PHASE_BROWSE, PHASE_LAUNCH, PHASE_CRUISE, PHASE_ARRIVE = 0, 1, 2, 3
@@ -181,12 +184,12 @@ class Controller:
             return
         self.traffic = [s for s in self.traffic if now - s["t0"] < s["len"]]
         if len(self.traffic) < TRAFFIC_MAX and now >= self.next_traffic_at:
-            kind = self.rng.choice([0, 0, 1, 2, 3, 4, 4, 5])
+            kind = self.rng.choice(TRAFFIC_KINDS)
             self.traffic.append({
                 "kind": kind, "t0": now, "len": self.rng.uniform(2.5, 4.0) if kind == 4 else self.rng.uniform(5.0, 9.0),
                 "ang": self.rng.uniform(0.0, 6.283), "dir": self.rng.choice((-1.0, 1.0)),
                 "spin": self.rng.uniform(-0.6, 0.6), "cross": self.rng.random() < 0.35,
-                "y": self.rng.uniform(-0.5, 0.6), "scale": self.rng.uniform(0.7, 1.3),
+                "y": self.rng.uniform(-0.5, 0.6), "scale": self.rng.uniform(0.7, 1.3) * (COMET_SCALE if kind == 4 else 1.0),
             })
             self.next_traffic_at = now + self.rng.uniform(*TRAFFIC_EVERY)
 
@@ -314,14 +317,11 @@ class Controller:
         f = self.last_f
         if f is not None and not getattr(f, "silent", True):
             bass, beat, high = float(getattr(f, "bass", 0.0)), float(getattr(f, "beat", 0.0)), float(getattr(f, "high", 0.0))
-            amp = 0.012 * bass + 0.02 * beat
-            jx = amp * math.sin(t * 37.0) + 0.003 * high * math.sin(t * 91.0)
-            jy = amp * math.cos(t * 29.0) + 0.003 * high * math.cos(t * 83.0)
-            out = []
-            for item in base:
-                text, size, x, y, col, a = item
-                out.append((text, size * (1.0 + 0.25 * beat), x + jx * (0.6 + 0.4 * len(text) % 2), y + jy, col, a))
-            base = out
+            # ganz dezent: höchstens wenige Pixel, keine Größenänderung
+            amp = 0.0025 * bass + 0.004 * beat
+            jx = amp * math.sin(t * 37.0) + 0.001 * high * math.sin(t * 91.0)
+            jy = amp * math.cos(t * 29.0) + 0.001 * high * math.cos(t * 83.0)
+            base = [(text, size, x + jx, y + jy, col, a) for text, size, x, y, col, a in base]
         # Sponsorzeile klein unten rechts; das Logo (assets/sponsor.png) zeichnet der Shader daneben
         base.append(("SPONSORED BY", 0.015, 0.76 if self.sponsor is not None else 0.845, 0.03, (120, 130, 150), 0.7))
         if self.sponsor is None:
