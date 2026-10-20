@@ -26,6 +26,7 @@ Funktionieren systemweit in EmulationStation, KITT und allen anderen Apps.
 Statusbehaftet – jeder Druck wechselt den Zustand:
 - **AN** (erster Druck) → injiziert `KEY_SPACE` → startet Warp-Flug (Planeten)
 - **AUS** (zweiter Druck) → injiziert `KEY_BACKSPACE` → stoppt Warp-Flug
+- Bei HAL 3000 (Taste 4): AN = Sprechmodus (Musik leise, Mikrofon an), AUS = Musik normal, Mikrofon aus
 
 ### Drehknopf (EV_ABS, Achse laut Log)
 `launcher/volume_knob.py` liest die Achse des Drehknopfs und setzt die Lautstärke des Standard-Ausgangs

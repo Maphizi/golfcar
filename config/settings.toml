@@ -23,6 +23,8 @@ axis = ""
 min_percent = 0
 max_percent = 100
 invert = false
+# Sprechmodus bei HAL (Kippschalter unten): Musik auf diesen Anteil der aktuellen Lautstärke absenken
+duck_percent = 25
 
 [display]
 # 0 = native Auflösung des Displays (1920x1080 am Ninja V)

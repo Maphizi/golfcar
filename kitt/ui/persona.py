@@ -51,6 +51,7 @@ class PersonaUI:
         self.pipe = None
         self.running = True
         self.overlays: dict[int, object] = {}
+        self.voice_rms = 0.0
         self.w = self.h = 0
         self.prepare_cfg(self.cfg)
 
@@ -124,6 +125,11 @@ class PersonaUI:
 
     def use_mic(self) -> bool:
         return True
+
+    def music_source(self) -> str | None:
+        """Eigene Musikquelle für die Szene ("playback" oder "mic"); None = Mikrofon/TTS wie bisher.
+        Mit Musikquelle liefert uRms/uBass/... die Musik und uVoice den Pegel der eigenen Stimme."""
+        return None
 
     def say(self, text: str) -> None:
         """Text sprechen (im Hintergrund), wenn die Pipeline bereit ist; sonst nur anzeigen."""
@@ -209,6 +215,16 @@ class PersonaUI:
         scene.load()
         renderer = eng.Renderer(scene, w, h)
         analyzer = Analyzer(self.rate, self.audio_cfg)
+        voice_analyzer = Analyzer(self.rate, self.audio_cfg)
+        self.music_cap = None
+        src = self.music_source()
+        if src and not self.demo:
+            try:
+                from visualizers.engine.audio_capture import AudioCapture
+                self.music_cap = AudioCapture(self.audio_cfg, source=src)
+                self.music_cap.start()
+            except Exception:
+                log.exception("Musikquelle nicht gestartet")
         signal.signal(signal.SIGTERM, lambda *_: setattr(self, "running", False))
         worker = threading.Thread(target=self.run_demo if self.demo else self.start_pipeline, daemon=True)
         worker.start()
@@ -232,13 +248,20 @@ class PersonaUI:
                 self.tick(now)
                 with self.lock:
                     state, since, lu, lk = self.state, self.state_since, self.last_user, self.last_kitt
-                if state == "speaking":
+                voice_rms = 0.0
+                if self.music_cap is not None or (self.demo and src):
+                    samples = self.music_cap.latest(analyzer.n) if self.music_cap else np.zeros(analyzer.n, dtype=np.float32)
+                    fv = voice_analyzer.update(self.tts_ring.latest(voice_analyzer.n) if state == "speaking"
+                                               else np.zeros(voice_analyzer.n, dtype=np.float32), now)
+                    voice_rms = float(fv.rms)
+                elif state == "speaking":
                     samples = self.tts_ring.latest(analyzer.n)
                 elif self.pipe and self.pipe.cap:
                     samples = self.pipe.cap.latest(analyzer.n)
                 else:
                     samples = np.zeros(analyzer.n, dtype=np.float32)
                 f = analyzer.update(samples, now)
+                self.voice_rms = voice_rms
                 scene.maybe_reload(now)
                 renderer.upload_audio(f.spectrum, f.wave)
                 uniforms = {"uState": STATES.get(state, 0), "uStateT": now - since, "uLevel": self.level}
@@ -267,5 +290,7 @@ class PersonaUI:
                 log.exception("Shutdown")
             if self.pipe:
                 self.pipe.stop()
+            if getattr(self, "music_cap", None):
+                self.music_cap.stop()
             pygame.quit()
         return rc

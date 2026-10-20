@@ -619,7 +619,18 @@ mit dem Pegel atmet und beim Nachdenken eine wandernde Markierung zeigt. HAL spr
 Gegenfrage, nennt den Piloten beim Namen (`pilot_name`). Alle 50 bis 100 Sekunden Stille sagt er
 von sich aus etwas (erfundene Wahrscheinlichkeiten, kleine Unregelmäßigkeiten, Vertrauensfragen).
 Stimme langsamer als der Bordcomputer, mit nur einem Hauch Ringmodulation. Start = HAL soll etwas
-sagen, OBEN/UNTEN = Blende. Prompt `kitt/personality/hal_prompt.txt`, Logik `kitt/hal/app.py`,
+sagen, OBEN/UNTEN = Blende.
+Musik und Stimme getrennt: Der Korridor hört die Musik (Quelle `playback`, also alles, was über den
+Pi läuft) und reagiert psychedelisch darauf: Bass treibt die Fahrt, Mitten lassen Wellen durch die
+Wände laufen und die Wände atmen, der Beat lässt den Gang aufleuchten und schickt weiße
+Lichtstreifen nach vorn, Höhen färben das Rot kühler, die Farbe driftet langsam nach Orange und
+Magenta, in manchen Wandfenstern erscheinen weiße Schriftzeichen und verschwinden wieder. Das Auge
+reagiert nur auf HALs eigene Stimme (`uVoice`). Sprechmodus: Kippschalter unten (SPACE) senkt die
+Musik auf `[volume].duck_percent` der aktuellen Lautstärke und schaltet das Mikrofon ein, solange
+der Schalter unten steht; während HAL antwortet, geht die Lautstärke kurz auf normal, danach wieder
+leise. Kippschalter oben (BACKSPACE) stellt die Lautstärke wieder her und schaltet das Mikrofon ab.
+Ohne Sprechmodus hört HAL nicht zu, die Musik läuft normal. Allgemein: Persona-Szenen können über
+`music_source()` eine eigene Musikquelle wählen und bekommen dann `uVoice` als Stimmpegel. Prompt `kitt/personality/hal_prompt.txt`, Logik `kitt/hal/app.py`,
 Shader `visualizers/shaders/hal/frag.glsl`. Eigene Gestaltung, keine Fremdgrafik.
 
 **Antwortzeit:** Der Faktenblock (Uhrzeit, Laufzeit, Spiele) hängt nicht mehr am System-Prompt,
