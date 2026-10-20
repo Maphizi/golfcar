@@ -91,6 +91,8 @@ class PiperTTS:
         self.voices_dir = voices_dir
         self.voice_name = cfg.get("voice", "de_DE-thorsten-medium")
         self.length_scale = float(cfg.get("length_scale", 1.0))
+        self.noise_scale = float(cfg.get("noise_scale", 0.667))     # Ausdruck/Variation der Stimme
+        self.noise_w = float(cfg.get("noise_w", 0.8))               # Variation der Silbendauer
         self.pitch_factor = float(cfg.get("pitch_factor", 1.0))
         self.sentence_silence = float(cfg.get("sentence_silence", 0.15))
         self.volume = float(cfg.get("volume", 1.0))
@@ -124,7 +126,7 @@ class PiperTTS:
         if self.backend != "piper" or self.voice is None:
             return self._beep(text)
         from piper import SynthesisConfig
-        cfg = SynthesisConfig(length_scale=self.length_scale, volume=self.volume)
+        cfg = SynthesisConfig(length_scale=self.length_scale, noise_scale=self.noise_scale, noise_w_scale=self.noise_w, volume=self.volume)
         parts = [np.asarray(ch.audio_float_array, dtype=np.float32) for ch in self.voice.synthesize(text, cfg)]
         pcm = np.concatenate(parts) if parts else np.zeros(0, dtype=np.float32)
         if self.pitch_factor != 1.0 and len(pcm):

@@ -602,6 +602,18 @@ Stimme langsamer als der Bordcomputer, mit nur einem Hauch Ringmodulation. Start
 sagen, OBEN/UNTEN = Blende. Prompt `kitt/personality/hal_prompt.txt`, Logik `kitt/hal/app.py`,
 Shader `visualizers/shaders/hal/frag.glsl`. Eigene Gestaltung, keine Fremdgrafik.
 
+**Antwortzeit:** Der Faktenblock (Uhrzeit, Laufzeit, Spiele) hängt nicht mehr am System-Prompt,
+sondern am Ende der jeweiligen Anfrage. Vorher änderte er sich jede Minute, der Prompt-Cache des
+Servers wurde bei jeder Antwort verworfen und der ganze Prompt neu gerechnet (auf dem Pi etwa
+35 Sekunden). Jetzt bleiben System-Prompt und Historie im Cache, nur die neue Zeile wird gerechnet.
+Erwartung auf dem Pi: erstes gesprochenes Wort nach etwa 10 bis 15 Sekunden (Spracherkennung
+4 bis 6 s, Modell 5 bis 8 s), Messung mit `scripts/kitt_latency.sh`.
+
+**Stimme einstellen:** `[tts]` in `config/kitt.toml` kennt neben `length_scale` (Tempo) und
+`pitch_factor` jetzt `noise_scale` (Ausdruck, 0.667 Standard, 1.0 überdreht) und `noise_w`
+(Variation der Silbendauer). BIBO spricht hell, schnell und ohne Maschineneffekt, mit viel Ausdruck,
+und ruft eher, als dass er redet.
+
 **Bord-Droide BIBO (`droid`, über `scripts/kittctl droid`):** Ein kleiner Pixel-Droide im Hangar, der zur Musik tanzt
 (Beat = Hüpfen, Mitten = Arme und Kopf), mit Auge, Antenne, Mundgitter und Ohrschüsseln, die beim
 Hören leuchten. Er hat Laune, Energie und Öl, die in `logs/droid_state.json` über Tage erhalten

@@ -91,19 +91,20 @@ class DroidUI(PersonaUI):
     # -- Konfiguration dieser Figur ----------------------------------------
     def prepare_cfg(self, cfg: dict) -> None:
         cfg["llm"]["system_prompt"] = str(lcfg.ROOT / "kitt" / "personality" / "droid_prompt.txt")
-        cfg["llm"]["history_turns"] = 6
-        cfg["llm"]["max_tokens"] = 70
+        cfg["llm"]["history_turns"] = 4
+        cfg["llm"]["max_tokens"] = 60
         cfg["llm"]["ctx"] = 3072
         cfg["llm"]["temperature"] = 0.9
         cfg["voice"]["require_name"] = False
         cfg["voice"]["max_sentences"] = 2
         cfg["voice"]["mood"] = False
         tts = cfg["tts"]
-        tts["pitch_factor"] = 1.22          # höher und schneller als der Bordcomputer
-        tts["robot"] = True
-        tts["robot_freq"] = 95.0
-        tts["robot_mix"] = 0.5
-        tts["robot_bits"] = 8
+        tts["pitch_factor"] = 1.2           # hell
+        tts["length_scale"] = 0.82          # schnell, aufgedreht
+        tts["noise_scale"] = 1.0            # viel Ausdruck, fast überdreht
+        tts["noise_w"] = 1.0
+        tts["volume"] = 1.0
+        tts["robot"] = False                # klare Stimme, kein Maschineneffekt
         cfg["ui"]["greeting"] = ""
 
     def context_block(self) -> str:

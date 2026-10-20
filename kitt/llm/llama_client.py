@@ -208,15 +208,19 @@ class Kitt:
     context_provider = None     # Callable[[], str], liefert den Bordbuch-Block (optional)
 
     def ask(self, user_text: str, on_token=None) -> Result:
-        system = self.system
+        # Der Faktenblock (Uhrzeit usw.) ändert sich ständig. Er gehört ans Ende der Anfrage, nicht in
+        # den System-Prompt: so bleibt der Prompt-Cache des Servers für System-Prompt und Historie
+        # gültig und nur die letzten Zeilen werden neu gerechnet (auf dem Pi 35 s statt 2 s Unterschied).
+        ctx = ""
         if self.context_provider:
             try:
-                system = system + "\n\n" + self.context_provider()
+                ctx = self.context_provider()
             except Exception:
-                pass
+                ctx = ""
         recent = self.history[-2 * self.history_turns:] if self.history_turns > 0 else []
-        msgs = [{"role": "system", "content": system}] + recent + \
-               [{"role": "user", "content": user_text}]
+        content = (ctx + "\n\n" + user_text) if ctx else user_text
+        msgs = [{"role": "system", "content": self.system}] + recent + \
+               [{"role": "user", "content": content}]
         res = chat(self.port, msgs, self.max_tokens, self.temperature, self.top_p, self.repeat_penalty, on_token)
         self.history += [{"role": "user", "content": user_text}, {"role": "assistant", "content": res.text}]
         return res
