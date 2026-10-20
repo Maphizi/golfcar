@@ -54,11 +54,14 @@ class HalUI(PersonaUI):
     def prepare_cfg(self, cfg: dict) -> None:
         cfg["llm"]["system_prompt"] = str(lcfg.ROOT / "kitt" / "personality" / "hal_prompt.txt")
         cfg["llm"]["history_turns"] = 6
-        cfg["llm"]["max_tokens"] = 70
-        cfg["llm"]["temperature"] = 0.75
+        cfg["llm"]["max_tokens"] = 110
+        cfg["llm"]["temperature"] = 0.55          # weniger Zufall, mehr Inhalt
+        cfg["llm"]["repeat_penalty"] = 1.08
+        if self.settings.get("launcher", {}).get("smart_model"):
+            cfg["llm"]["model"] = str(self.settings["launcher"]["smart_model"])
         cfg["llm"]["ctx"] = 3072
         cfg["voice"]["require_name"] = False
-        cfg["voice"]["max_sentences"] = 2
+        cfg["voice"]["max_sentences"] = 3
         cfg["voice"]["mood"] = False
         tts = cfg["tts"]
         tts["pitch_factor"] = 1.0

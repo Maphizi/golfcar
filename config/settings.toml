@@ -14,6 +14,9 @@ status_interval = 60
 prefetch_models = true
 # Name des Piloten für Startbildschirm und Figuren (Foto: assets/pilot.png, siehe scripts/pilot_cutout.py)
 pilot_name = "MARC"
+# Größeres Sprachmodell nur für HAL (leer = das aus kitt.toml). Qwen3.5-4B antwortet deutlich klüger,
+# braucht aber auf dem Pi etwa doppelt so lange (ca. 2,5 statt 5 Wörter pro Sekunde).
+smart_model = ""
 
 [volume]
 # Drehknopf am PXN-CB1 regelt die Lautstärke des Standard-Ausgangs (wpctl). axis leer = nur beobachten:

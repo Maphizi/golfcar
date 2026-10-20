@@ -94,7 +94,7 @@ class DroidUI(PersonaUI):
         cfg["llm"]["history_turns"] = 4
         cfg["llm"]["max_tokens"] = 60
         cfg["llm"]["ctx"] = 3072
-        cfg["llm"]["temperature"] = 0.9
+        cfg["llm"]["temperature"] = 0.7
         cfg["voice"]["require_name"] = False
         cfg["voice"]["max_sentences"] = 2
         cfg["voice"]["mood"] = False

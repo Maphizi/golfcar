@@ -632,6 +632,15 @@ Ohne Sprechmodus hört HAL nicht zu, die Musik läuft normal. Allgemein: Persona
 `music_source()` eine eigene Musikquelle wählen und bekommen dann `uVoice` als Stimmpegel. Prompt `kitt/personality/hal_prompt.txt`, Logik `kitt/hal/app.py`,
 Shader `visualizers/shaders/hal/frag.glsl`. Eigene Gestaltung, keine Fremdgrafik.
 
+**Klügere Antworten:** Die Prompts von HAL und BIBO beginnen jetzt mit der Regel „erst auf die
+Frage eingehen, dann Charakter“, nutzen Allgemeinwissen ausdrücklich und halten nur Wetter,
+Position und Messwerte für unbekannt (vorher verbot der Prompt dem kleinen Modell zu viel). HAL:
+bis zu drei Sätze, Temperatur 0.55. Wer mehr Verstand will, trägt in `config/settings.toml`
+`smart_model = "Qwen3.5-4B-Q4_K_M.gguf"` ein (nur für HAL, liegt nach `scripts/llm_bench.sh` unter
+`models/`): deutlich klügere Antworten, aber etwa doppelte Antwortzeit auf dem Pi.
+Wenn der Roboter an einer Frage vorbeiredet, zuerst die Zeile „> …“ am unteren Rand prüfen: Das ist,
+was die Spracherkennung verstanden hat. Stimmt die nicht, liegt es am Mikrofon, nicht am Modell.
+
 **Startzeit der Figuren:** Die Oberfläche ist bereit, sobald die Server laufen; das Füllen des
 Prompt-Caches („Systemcheck“, auf dem Pi rund 35 Sekunden) läuft im Hintergrund. HAL zeigt unten
 rechts eine kleine Musikanzeige (Quelle, Stille oder Pegelbalken), damit man ohne Log sieht, ob die
