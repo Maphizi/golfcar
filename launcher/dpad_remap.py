@@ -27,7 +27,7 @@ BTN_TO_KEY = {
     266: ecodes.KEY_ENTER,   # Startknopf
 }
 
-KIPPSCHALTER_CODE = 267
+KIPPSCHALTER_CODE = 269
 KIPP_KEY_AN  = ecodes.KEY_SPACE      # Kippschalter AN  -> Losfliegen
 KIPP_KEY_AUS = ecodes.KEY_BACKSPACE  # Kippschalter AUS -> Stoppen
 
