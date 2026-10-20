@@ -95,7 +95,12 @@ class Controller:
         # sonst würde ein Druck doppelt gezählt. Ablauf: AN = scharf, Start = los, Flug bis AUS.
         if ev.type == pygame.KEYDOWN:
             if ev.key == pygame.K_SPACE:
-                self.set_armed(True)
+                # Kippschalter AN: sofort losfliegen (kein separates Scharf-Schalten)
+                if self.phase == PHASE_CRUISE:
+                    pass  # im Hyperraum nichts tun
+                else:
+                    self.set_armed(True)
+                    self.fly()
             elif ev.key == pygame.K_BACKSPACE:
                 self.set_armed(False)
             elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
