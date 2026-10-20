@@ -78,7 +78,7 @@ Board sie über sein Tastatur-Interface ungewollt mitsendet.
 | 3 FLASH | `BTN_2` | `blackhole` | Schwarzes Loch (Strahlverfolgung mit Lichtkrümmung, reagiert auf Musik) |
 | 4 AUDIO | `BTN_3` | `hal` | HAL 3000: ruhiger Bordrechner mit rotem Auge, spricht mit dem Sprachmodell |
 | 5 WIPERS | `BTN_4` | `slots` | Space-Slotmaschine (siehe Space-Thema) |
-| 6 MAP | `BTN_5` | `campfire` | Lagerfeuer (Pixel-Art) |
+| 6 MAP | `BTN_5` | `campfire` | Lagerfeuer: Beduinen-Abend in der Wüste |
 | 7 LIGHT | `BTN_6` | `error` | Systemfehler-Visualizer (grüner Code, der zusammenbricht) |
 | 8 E-TALK | `BTN_7` | `gaming` | Retro-Gaming (EmulationStation, RetroPie) |
 | 9 | `BTN_8` | `quit` | Launcher beenden (nur wenn `dev_emergency_exit = true`) |
@@ -270,12 +270,8 @@ Shader laufen und steht im Log.
   das ganze Auge, Mitten drehen die Iris, Höhen verschieben Zeilen, der Beat sendet einen Ring
   nach außen. Pixelraster und Scanlines.
 
-- `campfire` (Taste 6): realistisches Lagerfeuer ohne Pixelraster: weiche Flammen aus verformtem Rauschen mit Farbverlauf, seitliche Zungen, die
-  abreißen, Fetzen über der Spitze, Rauch, der im Wind abdriftet, Hitzeflimmern über dem Feuer,
-  glühende Risse in den Scheiten, 22 Funken in Wirbeln und alle paar Sekunden ein Funkenregen. Zündet nach dem Start in etwa fünf
-  Sekunden an (Funke, dann wachsende Flamme), zwei gekreuzte Scheite mit Glut, aufsteigende Funken,
-  flackernder Lichtschein auf dem Boden, Sternenhimmel. Braucht kein Mikrofon; mit Musik werden
-  Flamme und Funken etwas lebhafter. Zylindrisch schattierte, verkohlte Scheite mit glühenden Rissen, Funken mit Nachleuchten, Mond mit Kratern, `render_scale 0.7`. Die Hintergrund-Ereignisse sind Silhouetten mit Lichtern.
+- `campfire` (Taste 6): Beduinen-Abend in der Wüste (siehe Abschnitt Lagerfeuer): Feuer, Zelt, Dünen,
+  Mond, Karawane, Lauf des Abends.
 - `error` (Taste 7): grüner Code, der alle 24 Sekunden zusammenbricht. Beschreibung unter
   „Systemfehler-Modus“ weiter unten.
 
@@ -490,20 +486,22 @@ der Mitte. Zeiten in `config/visualizer.toml` unter `[scenes.psychedelic]`. Die 
 `visualizers/scenes/navcomputer.py` (Szenen-Controller der Engine: Eingabe, Phasen, Text-Overlays),
 weitere Welten einfach an die TOML anhängen.
 
-**Lagerfeuer-Ereignisse (Taste 6):** Alle 16 Sekunden ein Zeitfenster, der Inhalt kommt aus einem
-Hash der Fensternummer (zwei von sechzehn Fenstern bleiben leer), 14 Ereignisse: Transporter mit
-Positionslichtern, zwei Jäger mit roten Schweifen, vierbeiniger Läufer am Horizont, Gleiter mit
-Staubfahne, Sonde mit rotem Scanstrahl, Großschiff weit oben, ferne Gefechtsblitze mit Leuchtspuren,
-Shuttle, das hinten landet, kurz steht und wieder startet, Konvoi aus drei Fahrzeugen, rollender
-Droide nah am Feuer, Raupenkriecher am Horizont, Meteorschauer, Suchscheinwerfer einer fernen Basis
-und eine Patrouille aus Transporter mit Jägereskorte. Dazu in jedem dritten Fenster eine driftende
-Orbitalstation und die Sternschnuppe alle neun Sekunden. Alles sind eigene Pixel-Silhouetten im
-Shader (`visualizers/shaders/campfire/frag.glsl`, Funktion `events`). Die Fahrzeuge kommen vom
-Rand herein, in den ersten Sekunden eines Fensters ist also noch nichts zu sehen, und am Horizont
-verdeckt das Feuer sie in der Bildmitte kurz. Zum Prüfen lässt sich ein Ereignis erzwingen:
-`scripts/viz_test.sh campfire --test-signal --seconds 5 --uniform uEventForce=8` (Wert = Nummer + 1,
-1 Transporter … 14 Patrouille). `--uniform NAME=WERT` setzt allgemein ein Shader-Uniform fest und
-ist mehrfach erlaubt.
+**Lagerfeuer (Taste 6, `campfire`):** Beduinen-Abend in der Wüste, komplett neu gezeichnet, zum
+Sitzen am Feuer bei ruhiger Gitarrenmusik. Vorn das Lagerfeuer mit Scheiten, Glutbett, Flammen aus
+Rauschen, Funken und Rauch; Teppiche mit Rauten- und Streifenmuster, Kissen und ein Teetablett mit
+Kanne und Gläsern im Feuerschein. Links ein Beduinenzelt mit Dachkanten, Spannseilen und warm
+leuchtendem Eingang, in dem eine Gestalt sitzt; das Tuch flattert im Wind. Dahinter drei Ebenen
+Dünen mit Sandrippeln, Hangschattierung und Parallaxe, die sich ganz langsam bewegen (die Kämme
+wandern, bei Windböen weht Sand über die Kuppen). Am Himmel der Lauf des Abends über
+`cycle_minutes` (Standard 22 Minuten, `config/visualizer.toml`): Abendrot in Orange und Violett,
+dann tiefe Nacht mit funkelnden Sternen, Milchstraße und einem großen Mond, der aufsteigt und
+wandert, dann kühles Morgengrauen, danach wieder Dämmerung. Alle zwei bis fünf Minuten zieht eine
+Kamelkarawane mit Reitern als Silhouette über die ferne Düne. Musik: das Feuer atmet ruhig mit, Bass
+pulst die Glut, Anschläge schicken Funken hoch, leise Stellen lassen das Feuer kleiner werden,
+laute lassen es wachsen; bei Stille brennt es ruhig weiter. Windböen alle 15 bis 45 Sekunden legen
+Flammen und Rauch zur Seite. Controller `visualizers/scenes/campfire.py` (Abend, Wind, Karawane,
+Hüllkurven), Shader `visualizers/shaders/campfire/frag.glsl`. `--demo` lässt den Abend 40-mal
+schneller laufen. Die früheren Außenposten-Ereignisse (Transporter, Jäger, Läufer) sind entfallen.
 
 **Katalog des Navigationscomputers:** `config/planets.toml` enthält jetzt 56 Objekte in drei
 Gruppen, die als Beschriftung erscheinen: ECHTER HIMMEL (Sonne, Erde, Mond, Mars, Venus, Jupiter,
