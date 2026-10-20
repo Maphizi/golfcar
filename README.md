@@ -517,6 +517,18 @@ etwa alle 25 Sekunden eines der anderen Objekte seitlich vorbei (wächst, drifte
 `assets/sponsor.png` auf dem Pi (3:1, weißer Hintergrund wird durchsichtig), zeichnet der Shader es
 daneben. Die Datei ist nicht im Repo (Markenrechte), lege sie selbst ab.
 
+**Verkehr und Abschießen im Hyperraum:** Zwischen den Planeten-Vorbeiflügen tauchen alle 4 bis 8
+Sekunden kleine Objekte auf (höchstens drei zugleich): Jäger (Kugel mit zwei Flügelplatten),
+Satellit mit Schüssel und Solarflügeln, Kreuzer mit Aufbauten und Triebwerksglühen, Ringstation
+mit geschwungenen Pylonen, Kometen mit Schweif und eine Modulstation mit goldenen Solarflächen.
+Alles eigene Silhouetten im Shader mit Schattierung und blinkenden Lichtern. Sie kommen aus der
+Tiefe und fliegen an uns vorbei oder queren das Bild in mittlerer Entfernung. D-Pad bewegt das
+Fadenkreuz, der Startknopf feuert: zwei grüne Strahlen aus den unteren Ecken zum Fadenkreuz, bei
+Treffer Blitz, Ring, Trümmer und ein Zähler ABSCHÜSSE / SCHÜSSE oben rechts; ZIEL ERFASST erscheint,
+wenn ein Objekt im Fadenkreuz liegt. Die Texte im Navigationscomputer verwackeln zur Musik (Bass
+schüttelt, der Beat stößt an und vergrößert kurz, Höhen zittern fein). Schiffswinkel werden auf
+0 bis 2π reduziert, weil große Winkelwerte auf der GPU ungenaue Sinus-Werte liefern.
+
 **Kippschalter im Navigationscomputer:** Kippschalter AN schaltet scharf (Anzeige SCHARF), der
 Startknopf startet den Flug, und der Hyperraumflug dauert so lange, bis der Kippschalter wieder AUS
 steht; dann kommt die Ankunft. Ohne Kippschalter (Maus-Mitteltaste, Demo) gilt weiter die feste

@@ -26,6 +26,12 @@ KINDS = {"desert": "WÜSTENWELT", "ice": "EISWELT", "forest": "WALDWELT", "ocean
 ORIGINS = {"real": "ECHTER HIMMEL", "saga": "FERNE GALAXIS", "fiction": "ERDACHTE WELT"}
 SPONSOR = lcfg.ROOT / "assets" / "sponsor.png"
 FLYBY_EVERY = 25.0
+# Verkehr im Hyperraum: kleine Schiffe und Kometen zwischen den Planeten. Arten (Shader): 0 Jäger,
+# 1 Satellit, 2 Kreuzer, 3 Ringstation, 4 Komet, 5 Stationsmodule
+TRAFFIC_MAX = 3
+TRAFFIC_EVERY = (4.0, 8.0)
+TRAFFIC_NAMES = ["JÄGER", "SATELLIT", "KREUZER", "RINGSTATION", "KOMET", "STATION"]
+CROSS_STEP = 0.14
 PHASE_BROWSE, PHASE_LAUNCH, PHASE_CRUISE, PHASE_ARRIVE = 0, 1, 2, 3
 YEL = (255, 214, 10)
 DIM = (150, 130, 40)
@@ -67,6 +73,15 @@ class Controller:
                 self.sponsor = np.ascontiguousarray(np.dstack((rgb, alpha)).astype(np.uint8)[::-1])
             except Exception as exc:
                 log.warning("Sponsor-Logo nicht ladbar: %s", exc)
+        self.traffic: list[dict] = []      # {kind, t0, len, ang, dir, spin, cross}
+        self.next_traffic_at = 0.0
+        self.cross = [0.0, 0.1]            # Fadenkreuz (Bildkoordinaten, x in ±aspect, y in ±1)
+        self.laser_t0 = -10.0
+        self.laser_target = (0.0, 0.0)
+        self.boom = None                   # (x, y, t0, kind)
+        self.kills = 0
+        self.shots = 0
+        self.last_f = None
         self.armed = False          # Kippschalter-Zustand
         self.end_after_launch = False
 
@@ -81,12 +96,24 @@ class Controller:
             elif ev.key == pygame.K_BACKSPACE:
                 self.set_armed(False)
             elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
-                if self.armed:
+                if self.phase == PHASE_CRUISE:
+                    self.shoot()
+                elif self.armed:
                     self.fly()
             elif ev.key in (pygame.K_LEFT, pygame.K_a):
-                self.select(-1)
+                if self.phase == PHASE_CRUISE:
+                    self.cross[0] = max(-1.6, self.cross[0] - CROSS_STEP)
+                else:
+                    self.select(-1)
             elif ev.key in (pygame.K_RIGHT, pygame.K_d):
-                self.select(+1)
+                if self.phase == PHASE_CRUISE:
+                    self.cross[0] = min(1.6, self.cross[0] + CROSS_STEP)
+                else:
+                    self.select(+1)
+            elif ev.key == pygame.K_UP and self.phase == PHASE_CRUISE:
+                self.cross[1] = min(0.9, self.cross[1] + CROSS_STEP)
+            elif ev.key == pygame.K_DOWN and self.phase == PHASE_CRUISE:
+                self.cross[1] = max(-0.9, self.cross[1] - CROSS_STEP)
         elif ev.type == pygame.MOUSEBUTTONDOWN:
             if ev.button == 1:
                 self.select(-1)
@@ -131,6 +158,56 @@ class Controller:
         elif ph != PHASE_CRUISE:
             self.fly_idx = -1
 
+    # -- Verkehr und Schießen --------------------------------------------------
+    def _traffic_pos(self, s: dict, now: float) -> tuple[float, float, float, float]:
+        """(x, y, Größe, Fortschritt) eines Verkehrsobjekts."""
+        k = min(1.0, (now - s["t0"]) / s["len"])
+        if s["cross"]:
+            # quert das Bild in mittlerer Entfernung
+            x = (-1.9 + 3.8 * k) * s["dir"]
+            y = s["y"] + 0.15 * math.sin(k * 3.0 + s["ang"])
+            size = 0.13 + 0.06 * s["scale"]
+        else:
+            # kommt aus der Tiefe und fliegt an uns vorbei
+            dist = 0.03 + k * k * 1.9
+            x = math.cos(s["ang"]) * dist
+            y = math.sin(s["ang"]) * dist * 0.7
+            size = (0.02 + k ** 1.5 * 0.7) * s["scale"]
+        return x, y, size, k
+
+    def _advance_traffic(self, now: float) -> None:
+        if self.phase != PHASE_CRUISE:
+            self.traffic = []
+            return
+        self.traffic = [s for s in self.traffic if now - s["t0"] < s["len"]]
+        if len(self.traffic) < TRAFFIC_MAX and now >= self.next_traffic_at:
+            kind = self.rng.choice([0, 0, 1, 2, 3, 4, 4, 5])
+            self.traffic.append({
+                "kind": kind, "t0": now, "len": self.rng.uniform(2.5, 4.0) if kind == 4 else self.rng.uniform(5.0, 9.0),
+                "ang": self.rng.uniform(0.0, 6.283), "dir": self.rng.choice((-1.0, 1.0)),
+                "spin": self.rng.uniform(-0.6, 0.6), "cross": self.rng.random() < 0.35,
+                "y": self.rng.uniform(-0.5, 0.6), "scale": self.rng.uniform(0.7, 1.3),
+            })
+            self.next_traffic_at = now + self.rng.uniform(*TRAFFIC_EVERY)
+
+    def shoot(self) -> None:
+        now = time.monotonic()
+        self.shots += 1
+        self.laser_t0 = now
+        self.laser_target = (self.cross[0], self.cross[1])
+        best, best_d = None, 1e9
+        for s in self.traffic:
+            x, y, size, k = self._traffic_pos(s, now)
+            d = math.hypot(x - self.cross[0], y - self.cross[1])
+            if d < size * 1.3 + 0.08 and d < best_d:
+                best, best_d = s, d
+        if best is not None:
+            x, y, size, _ = self._traffic_pos(best, now)
+            self.boom = (x, y, now, best["kind"], size)
+            self.traffic.remove(best)
+            self.kills += 1
+            log.info("Abschuss: %s (%d/%d)", TRAFFIC_NAMES[best["kind"]], self.kills, self.shots)
+
     def _advance_flyby(self, now: float) -> None:
         """Alle ~25 s im Hyperraum zieht eines der anderen Objekte vorbei."""
         if self.phase != PHASE_CRUISE or len(self.planets) < 2:
@@ -160,6 +237,7 @@ class Controller:
         elif self.phase == PHASE_ARRIVE and pt >= self.arrive_s:
             self._set_phase(PHASE_BROWSE)
         self._advance_flyby(now)
+        self._advance_traffic(now)
         if self.demo and self.phase == PHASE_BROWSE and now >= self.demo_next:
             if self.rng.random() < 0.6:
                 self.select(self.rng.choice((-1, 1)))
@@ -170,7 +248,8 @@ class Controller:
 
     def uniform_names(self):
         return ("uPhase", "uPhaseT", "uSlide", "uPlanetType", "uColA", "uColB", "uPlanetSize", "uRings", "uMoons", "uLaunchS", "uCruiseS", "uArriveS",
-                "uFly", "uFlyType", "uFlySize", "uFlyRings", "uFlySide", "uFlyColA", "uFlyColB", "uSponsorTex", "uSponsorOK")
+                "uFly", "uFlyType", "uFlySize", "uFlyRings", "uFlySide", "uFlyColA", "uFlyColB", "uSponsorTex", "uSponsorOK",
+                "uShip0", "uShip1", "uShip2", "uShipP0", "uShipP1", "uShipP2", "uCross", "uLaser", "uLaserTo", "uBoom", "uBoomKind", "uShoot")
 
     def images(self) -> dict:
         if self.sponsor is None:
@@ -183,7 +262,29 @@ class Controller:
     def uniforms(self, t: float, f) -> dict:
         self._advance()
         now = time.monotonic()
+        self.last_f = f
         p = self.planets[self.idx]
+        ships = {}
+        for i in range(3):
+            if i < len(self.traffic):
+                s = self.traffic[i]
+                x, y, size, k = self._traffic_pos(s, now)
+                alpha = min(1.0, k * 6.0) * min(1.0, (1.0 - k) * 4.0 + 0.2)
+                ships[f"uShip{i}"] = (x, y, size, float(s["kind"]))
+                # Winkel klein halten: große Werte (Sekunden seit Boot mal Drehung) machen sin/cos auf der GPU ungenau
+                ships[f"uShipP{i}"] = (alpha, (s["ang"] + (now - s["t0"]) * s["spin"]) % 6.2832, k, s["dir"])
+            else:
+                ships[f"uShip{i}"] = (0.0, 0.0, 0.0, 0.0)
+                ships[f"uShipP{i}"] = (0.0, 0.0, 0.0, 1.0)
+        boom = self.boom if self.boom and now - self.boom[2] < 1.4 else None
+        ships.update({
+            "uCross": (self.cross[0], self.cross[1]),
+            "uLaser": max(0.0, 1.0 - (now - self.laser_t0) / 0.35),
+            "uLaserTo": self.laser_target,
+            "uBoom": (boom[0], boom[1], now - boom[2], boom[4]) if boom else (0.0, 0.0, 9.0, 0.0),
+            "uBoomKind": float(boom[3]) if boom else 0.0,
+            "uShoot": 1.0 if self.phase == PHASE_CRUISE else 0.0,
+        })
         slide = self.slide * max(0.0, 1.0 - (now - self.slide_t0) / 0.6)
         return {
             "uPhase": float(self.phase),
@@ -204,10 +305,23 @@ class Controller:
             "uFlyColA": tuple(self.planets[self.fly_idx].get("color_a", [0.5] * 3)) if self.fly_idx >= 0 else (0.5, 0.5, 0.5),
             "uFlyColB": tuple(self.planets[self.fly_idx].get("color_b", [0.3] * 3)) if self.fly_idx >= 0 else (0.3, 0.3, 0.3),
             "uSponsorOK": 1.0 if self.sponsor is not None else 0.0,
+            **ships,
         }
 
     def overlays(self, t: float):
         base = self._overlays(t)
+        # Text verwackelt zur Musik: Bass schüttelt, Beat stößt an, Höhen zittern fein
+        f = self.last_f
+        if f is not None and not getattr(f, "silent", True):
+            bass, beat, high = float(getattr(f, "bass", 0.0)), float(getattr(f, "beat", 0.0)), float(getattr(f, "high", 0.0))
+            amp = 0.012 * bass + 0.02 * beat
+            jx = amp * math.sin(t * 37.0) + 0.003 * high * math.sin(t * 91.0)
+            jy = amp * math.cos(t * 29.0) + 0.003 * high * math.cos(t * 83.0)
+            out = []
+            for item in base:
+                text, size, x, y, col, a = item
+                out.append((text, size * (1.0 + 0.25 * beat), x + jx * (0.6 + 0.4 * len(text) % 2), y + jy, col, a))
+            base = out
         # Sponsorzeile klein unten rechts; das Logo (assets/sponsor.png) zeichnet der Shader daneben
         base.append(("SPONSORED BY", 0.015, 0.76 if self.sponsor is not None else 0.845, 0.03, (120, 130, 150), 0.7))
         if self.sponsor is None:
@@ -244,6 +358,12 @@ class Controller:
         if self.phase == PHASE_CRUISE:
             eta = max(0.0, self.cruise_s - pt)
             out = []
+            if self.kills or self.shots:
+                out.append((f"ABSCHÜSSE {self.kills}   SCHÜSSE {self.shots}", 0.024, 0.86, 0.9, (255, 120, 80), 0.9))
+            near = any(math.hypot(x - self.cross[0], y - self.cross[1]) < size * 1.3 + 0.08
+                       for x, y, size, _ in (self._traffic_pos(s, now) for s in self.traffic))
+            out.append(("ZIEL ERFASST" if near else "D-PAD ZIELEN   START FEUER", 0.02, 0.5, 0.13,
+                        (255, 80, 60) if near else DIM, 0.9 if near else 0.6))
             if self.fly_idx >= 0:
                 k = (now - self.fly_t0) / self.fly_len
                 fp = self.planets[self.fly_idx]
