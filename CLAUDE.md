@@ -26,7 +26,13 @@ Funktionieren systemweit in EmulationStation, KITT und allen anderen Apps.
 Statusbehaftet – jeder Druck wechselt den Zustand:
 - **AN** (erster Druck) → injiziert `KEY_SPACE` → startet Warp-Flug (Planeten)
 - **AUS** (zweiter Druck) → injiziert `KEY_BACKSPACE` → stoppt Warp-Flug
-- Bei HAL 3000 (Taste 4): AN = Sprechmodus (Musik leise, Mikrofon an), AUS = Musik normal, Mikrofon aus
+- Bei HAL 3000 (Taste 4): nur mit `[hal].kipp_talk = true` (Standard aus) AN = Sprechmodus, AUS = Musik normal
+
+### Sprechtaste (Action `talk`)
+Beliebige Board-Taste in `config/keymap.toml` auf `action = "talk"` (`code = N`, Code steht im Launcher-Log als
+"Taste ohne Belegung"). Launcher injiziert dann `KEY_F15`; HAL 3000 schaltet damit den Sprechmodus um
+(Musik auf `duck_percent`, Mikrofon an; nochmal = zurück; nach `[hal].talk_timeout` s ohne Gespräch von selbst aus).
+Test: `scripts/kittctl talk`.
 
 ### Drehknöpfe
 - Stimme: `launcher/volume_knob.py`, ABS-Achse aus `config/settings.toml` `[volume].axis` (leer = nur

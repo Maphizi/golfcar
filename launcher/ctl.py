@@ -1,6 +1,6 @@
 """Kommandozeile: Action an den laufenden Launcher senden.
 
-    python -m launcher.ctl home | gaming | viz_psychedelic | viz_crt | viz_eye | kitt | status | quit
+    python -m launcher.ctl home | gaming | viz_psychedelic | viz_crt | viz_eye | kitt | talk | status | quit
     python -m launcher.ctl state   -> aktuellen Zustand ausgeben
 """
 from __future__ import annotations

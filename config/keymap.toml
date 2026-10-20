@@ -49,6 +49,12 @@ action = "quit"       # Taste 9: Launcher beenden (nur mit dev_emergency_exit)
 key    = "BTN_9"
 action = "kitt"       # Taste 10: Bordcomputer (Sprachassistent)
 
+# ── Sprechtaste für HAL 3000 (Musik leise + Mikrofon an, nochmal drücken = zurück) ──
+# Den HID-Code der gewünschten Taste eintragen (Log des Launchers zeigt unbekannte Codes), z. B.:
+# [[bindings]]
+# code   = 268
+# action = "talk"
+
 # ── Cherry-Tastatur ESC (Entwicklung/Notfall) ──────────────────────────
 [[bindings]]
 key    = "KEY_ESC"

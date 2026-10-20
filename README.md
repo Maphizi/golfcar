@@ -644,11 +644,17 @@ selten gleitet ein weißer Lichtstreifen durch. Variationen: pro Start eines von
 (Speicherbänke, schmale Lamellen, große Tafeln, Punktraster, Rhythmus-Spalten); alle 15 bis 45
 Sekunden hüpft eine einzelne andersfarbige Zelle (cyan, grün, weiß, violett, gelb) im Takt durch
 eine Wand; alle ein bis zwei Minuten läuft eine breite Farbwelle langsam von hinten nach vorn durch
-den Gang. Das Auge reagiert nur auf HALs eigene Stimme (`uVoice`). Sprechmodus: Kippschalter unten (SPACE) senkt die
-Musik auf `[volume].duck_percent` der aktuellen Lautstärke und schaltet das Mikrofon ein, solange
-der Schalter unten steht; während HAL antwortet, geht die Lautstärke kurz auf normal, danach wieder
-leise. Kippschalter oben (BACKSPACE) stellt die Lautstärke wieder her und schaltet das Mikrofon ab.
-Ohne Sprechmodus hört HAL nicht zu, die Musik läuft normal. Allgemein: Persona-Szenen können über
+den Gang. Das Auge reagiert nur auf HALs eigene Stimme (`uVoice`). Sprechmodus über die Sprechtaste: ein Druck senkt die
+Musik auf `[volume].duck_percent` der aktuellen Lautstärke und schaltet das Mikrofon ein; während
+HAL antwortet, geht die Lautstärke kurz auf normal, danach wieder leise. Der nächste Druck stellt
+die Lautstärke wieder her und schaltet das Mikrofon ab. Die Sprechtaste ist eine beliebige Taste
+des Boards, die in `config/keymap.toml` auf `action = "talk"` liegt (`code = N`, den Code zeigt der
+Launcher im Log als "Taste ohne Belegung: code = N"); der Launcher schickt dann F15 an den
+laufenden HAL-Modus, in anderen Modi passiert nichts. Test ohne Taste: `scripts/kittctl talk`.
+Mit `[hal].kipp_talk = true` schaltet zusätzlich wie früher der Kippschalter (unten = an, oben = aus).
+Ohne Sprechmodus hört HAL nicht zu, die Musik läuft normal. Nach `[hal].talk_timeout` Sekunden
+ohne Gespräch (Standard 150) endet der Sprechmodus von selbst, damit die Musik nicht versehentlich
+leise bleibt. Allgemein: Persona-Szenen können über
 `music_source()` eine eigene Musikquelle wählen und bekommen dann `uVoice` als Stimmpegel. Prompt `kitt/personality/hal_prompt.txt`, Logik `kitt/hal/app.py`,
 Shader `visualizers/shaders/hal/frag.glsl`. Eigene Gestaltung, keine Fremdgrafik.
 

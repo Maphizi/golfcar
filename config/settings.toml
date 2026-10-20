@@ -28,8 +28,15 @@ target = "voice"
 min_percent = 0
 max_percent = 130
 invert = false
-# Sprechmodus bei HAL (Kippschalter unten): Musik auf diesen Anteil der aktuellen Lautstärke absenken
+# Sprechmodus bei HAL (Sprechtaste): Musik auf diesen Anteil der aktuellen Lautstärke absenken
 duck_percent = 25
+
+[hal]
+# Sprechmodus (Musik leise, Mikrofon an) schaltet die Sprechtaste um: eine Taste des Boards in
+# config/keymap.toml auf action = "talk" legen (z. B. [[bindings]] code = 268 / action = "talk");
+# der Launcher schickt dann F15 an HAL. Zum Testen: scripts/kittctl talk
+kipp_talk = false        # true = zusätzlich wie früher Kippschalter unten = Sprechmodus an, oben = aus
+talk_timeout = 150       # Sekunden ohne Gespräch, nach denen der Sprechmodus von selbst endet (0 = nie)
 
 [music]
 # Musik über mpv (scripts/music.sh, Steuer-Socket /tmp/mpv.sock). Der zweite Drehknopf regelt nur mpv:

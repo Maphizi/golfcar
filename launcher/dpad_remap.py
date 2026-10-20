@@ -4,6 +4,7 @@
 - code 266     (Startknopf)  -> KEY_ENTER  (universell: Auswahl, Losfliegen)
 - code 267     (Kippschalter)-> KEY_SPACE  (AN = losfliegen)
                                 KEY_BACKSPACE (AUS = stoppen)
+- Action "talk" (keymap.toml) -> KEY_F15 über inject_talk(): HAL schaltet Sprechmodus um
 """
 from __future__ import annotations
 import logging, select, threading, time
@@ -31,7 +32,9 @@ KIPPSCHALTER_CODE = 267
 KIPP_KEY_AN  = ecodes.KEY_SPACE      # Kippschalter AN  -> Losfliegen
 KIPP_KEY_AUS = ecodes.KEY_BACKSPACE  # Kippschalter AUS -> Stoppen
 
-ALL_KEYS = list(HAT_TO_KEY.values()) + list(BTN_TO_KEY.values()) + [KIPP_KEY_AN, KIPP_KEY_AUS]
+TALK_KEY = ecodes.KEY_F15            # Sprechtaste (Action "talk"): HAL 3000 Musik leise + Mikrofon an/aus
+
+ALL_KEYS = list(HAT_TO_KEY.values()) + list(BTN_TO_KEY.values()) + [KIPP_KEY_AN, KIPP_KEY_AUS, TALK_KEY]
 
 
 class DPadRemap(threading.Thread):
@@ -39,9 +42,20 @@ class DPadRemap(threading.Thread):
         super().__init__(name="dpad-remap", daemon=True)
         self._stop = threading.Event()
         self._kipp_state = False  # False = AUS, True = AN
+        self._ui = None
+
+    def inject_talk(self) -> bool:
+        """Sprechtaste an den laufenden Modus schicken (vom Launcher-Thread aufgerufen)."""
+        ui = self._ui
+        if ui is None:
+            log.warning("Sprechtaste: uinput nicht bereit")
+            return False
+        self._inject(ui, TALK_KEY)
+        return True
 
     def run(self) -> None:
         ui = UInput({ecodes.EV_KEY: ALL_KEYS}, name="GolfCar D-Pad")
+        self._ui = ui
         log.info("D-Pad Remapper gestartet (uinput: %s)", ui.device)
         try:
             while not self._stop.is_set():
@@ -53,6 +67,7 @@ class DPadRemap(threading.Thread):
                 self._loop(dev, ui)
                 dev.close()
         finally:
+            self._ui = None
             ui.close()
 
     def _find_device(self):

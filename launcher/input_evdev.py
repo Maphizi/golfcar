@@ -42,6 +42,7 @@ class EvdevInput(threading.Thread):
 
         # EV_KEY-Bindings (name oder numerischer code)
         self.bindings: dict[int, Action] = {}
+        self._unbound_seen: set[int] = set()
         for b in keymap_cfg.get("bindings", []):
             action = parse_action(b.get("action", ""))
             if action is None:
@@ -154,6 +155,11 @@ class EvdevInput(threading.Thread):
             if action is not None:
                 log.debug("KEY %s -> %s (%s)", ev.code, action.value, dev.name)
                 self.queue.put(action)
+            elif ev.code not in self._unbound_seen:
+                # Einmal je Code melden, damit man neue Tasten in keymap.toml eintragen kann (code = N)
+                self._unbound_seen.add(ev.code)
+                log.info("Taste ohne Belegung: code = %d (%s) auf %s", ev.code,
+                         ecodes.KEY.get(ev.code) or ecodes.BTN.get(ev.code) or "unbenannt", dev.name)
 
         # EV_ABS: Hat-Switch D-Pad (ignoriere value=0 = losgelassen)
         elif ev.type == ecodes.EV_ABS and ev.value != 0:

@@ -25,6 +25,7 @@ from .input_socket import SocketInput
 from .process_manager import ProcessManager
 
 log = logging.getLogger("launcher")
+TALK_MODES = ("hal",)          # Modi, die die Sprechtaste (Action talk) verstehen
 
 HOME = "home"
 
@@ -99,6 +100,7 @@ class Launcher:
             dp = DPadRemap()
             dp.start()
             self.inputs.append(dp)
+            self.dpad = dp
         except Exception as exc:
             log.warning("D-Pad Remapper nicht gestartet: %s", exc)
         try:
@@ -186,6 +188,14 @@ class Launcher:
             return
         if action == Action.STATUS:
             log.info("Status: mode=%s %s", self.pm.current.name if self.pm.current else None, sysmon.format_line())
+            return
+        if action == Action.TALK:
+            cur = self.pm.current.name if self.pm.current and self.pm.is_running() else None
+            if cur in TALK_MODES and getattr(self, "dpad", None):
+                log.info("Sprechtaste -> %s (F15)", cur)
+                self.dpad.inject_talk()
+            else:
+                log.info("Sprechtaste ignoriert: läuft %s, Sprechmodus nur bei %s", cur, ", ".join(TALK_MODES))
             return
         mode = ACTION_TO_MODE.get(action)
         if mode:

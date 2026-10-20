@@ -24,6 +24,7 @@ class Action(str, Enum):
     BLACKHOLE = "blackhole"    # Schwarzes Loch
     DROID = "droid"            # Bord-Droide
     HAL = "hal"                # HAL 3000
+    TALK = "talk"              # Sprechtaste: bei HAL Musik leise + Mikrofon an/aus (Taste F15 an den Modus)
 
 
 # Welche Action startet welchen Modus (Modus-Namen siehe config/modes.toml)

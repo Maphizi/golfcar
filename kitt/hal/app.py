@@ -54,6 +54,10 @@ class HalUI(PersonaUI):
         self._ducked = False
         super().__init__(*a, **kw)
         self.duck_percent = int(self.settings.get("volume", {}).get("duck_percent", 25))
+        hal_cfg = self.settings.get("hal", {})
+        self.kipp_talk = bool(hal_cfg.get("kipp_talk", False))          # Kippschalter schaltet Sprechmodus (alt)
+        self.talk_timeout = float(hal_cfg.get("talk_timeout", 150))      # s ohne Gespräch -> Sprechmodus aus
+        self.talk_last_activity = time.monotonic()
         self.name = str(self.settings.get("launcher", {}).get("pilot_name", "")).strip().title()
 
     def prepare_cfg(self, cfg: dict) -> None:
@@ -123,7 +127,8 @@ class HalUI(PersonaUI):
         if on == self.talk_mode:
             return
         self.talk_mode = on
-        log.info("Sprechmodus %s", "AN" if on else "AUS")
+        self.talk_last_activity = time.monotonic()
+        log.info("Sprechmodus %s (Musik %s, Mikrofon %s)", "AN" if on else "AUS", "leise" if on else "normal", "an" if on else "aus")
         if self.pipe and self.pipe.listener:
             (self.pipe.listener.resume if on else self.pipe.listener.pause)()
         threading.Thread(target=self._update_duck, args=(self.state == "speaking",), daemon=True).start()
@@ -145,9 +150,11 @@ class HalUI(PersonaUI):
     def handle_key(self, key: int) -> None:
         if key in (pygame.K_RETURN, pygame.K_KP_ENTER):
             self.next_prompt_at = 0.0
-        elif key == pygame.K_SPACE:
+        elif key == pygame.K_F15:                       # Sprechtaste (Launcher-Action "talk"): umschalten
+            self.set_talk_mode(not self.talk_mode)
+        elif key == pygame.K_SPACE and self.kipp_talk:
             self.set_talk_mode(True)
-        elif key == pygame.K_BACKSPACE:
+        elif key == pygame.K_BACKSPACE and self.kipp_talk:
             self.set_talk_mode(False)
         elif key == pygame.K_UP:
             self.bright = min(1.4, self.bright + 0.1)
@@ -166,6 +173,13 @@ class HalUI(PersonaUI):
         if self.pipe.stats.get("turns", 0) != self._turns_seen:
             self._turns_seen = self.pipe.stats["turns"]
             self.next_prompt_at = now + self.rng.uniform(45.0, 90.0)
+            self.talk_last_activity = now
+        if self.pipe.state != "idle":
+            self.talk_last_activity = now
+        # Sicherheitsnetz: Sprechmodus vergessen -> nach talk_timeout s ohne Gespräch wieder Musik normal
+        if self.talk_mode and self.talk_timeout > 0 and now - self.talk_last_activity > self.talk_timeout:
+            log.info("Sprechmodus nach %.0f s ohne Gespräch beendet", self.talk_timeout)
+            self.set_talk_mode(False)
         if now >= self.next_prompt_at and self.pipe.state == "idle":
             self.ask_hidden(self.rng.choice(PROMPTS))
             self.next_prompt_at = now + self.rng.uniform(50.0, 100.0)
@@ -189,7 +203,10 @@ class HalUI(PersonaUI):
             else:
                 for i, ln in enumerate(self.wrap("HAL: " + lk, 78)[:2]):
                     self.text(ln, 0.023, 0.5, 0.125 - i * 0.034, (255, 220, 200), 0.95)
-        self.text("KIPPSCHALTER  SPRECHEN (MUSIK LEISE)      START  HAL FRAGEN      OBEN/UNTEN  LICHT", 0.015, 0.5, 0.03, (110, 60, 60), 0.5 + 0.2 * math.sin(now * 2.0))
+        talk = "SPRECHTASTE  MUSIK WIEDER LAUT, MIKRO AUS" if self.talk_mode else "SPRECHTASTE  MUSIK LEISE, MIKRO AN"
+        if self.kipp_talk:
+            talk = "KIPPSCHALTER  SPRECHEN (MUSIK LEISE)"
+        self.text(f"{talk}      START  HAL FRAGEN      OBEN/UNTEN  LICHT", 0.015, 0.5, 0.03, (110, 60, 60), 0.5 + 0.2 * math.sin(now * 2.0))
         # kleine Musikanzeige unten rechts: Quelle und Pegel, damit man ohne Log sieht, ob Musik ankommt
         f = self.last_f
         cap = self.music_cap
