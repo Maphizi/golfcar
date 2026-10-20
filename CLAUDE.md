@@ -33,6 +33,7 @@ Statusbehaftet (`kipp_mode = "toggle"`) – jeder Druck wechselt den Zustand; `"
 - Bei HAL 3000 (Taste 4): nur mit `[hal].kipp_talk = true` (Standard aus) AN = Sprechmodus, AUS = Musik normal
 
 ### Sprechtaste (Action `talk` oder `[buttons].talk_code`)
+Nur mit `[hal].mic = true` (Standard false: HAL ohne Mikrofon, Musik wird nie abgesenkt).
 Eigene Taste, NICHT der Kippschalter (der bleibt SPACE/BACKSPACE für den Navigationscomputer). Entweder
 `[buttons].talk_code = N` in settings.toml oder in `config/keymap.toml` `code = N` mit `action = "talk"` (Code steht
 im Launcher-Log als "Taste ohne Belegung" oder im input_monitor). Soll der Kippschalter bei HAL den Sprechmodus

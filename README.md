@@ -633,6 +633,9 @@ Gegenfrage, nennt den Piloten beim Namen (`pilot_name`). Alle 50 bis 100 Sekunde
 von sich aus etwas (erfundene Wahrscheinlichkeiten, kleine Unregelmäßigkeiten, Vertrauensfragen).
 Stimme langsamer als der Bordcomputer, mit nur einem Hauch Ringmodulation. Start = HAL soll etwas
 sagen, OBEN/UNTEN = Blende.
+Standard ist `[hal].mic = false`: HAL hört nicht zu, öffnet kein Mikrofon, senkt die Musik nie ab
+und lädt keine Spracherkennung; er spricht nur von sich aus und auf den Startknopf. Alles Folgende
+zum Sprechmodus gilt erst mit `mic = true`.
 Musik und Stimme getrennt: Der Korridor hört die Musik (Quelle `playback`, also alles, was über den
 Pi läuft) und reagiert bewusst langsam darauf (`kitt/hal/motion.py`): Der Gang treibt ganz langsam
 nach vorn oder hinten (Tempo aus der über Sekunden geglätteten Energie, nichts zuckt im Takt), ein

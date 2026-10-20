@@ -49,7 +49,9 @@ class HalUI(PersonaUI):
             self.motion.variant = int(os.environ["KITT_HAL_VARIANT"]) % 5
         self.next_prompt_at = time.monotonic() + 40.0
         self._turns_seen = 0
-        self.talk_mode = False          # Kippschalter unten: Musik leise, Mikrofon an
+        self.talk_mode = False          # Sprechmodus: Musik leise, Mikrofon an
+        # vor super().__init__ (prepare_cfg läuft dort): ohne Mikrofon keine Spracherkennung laden
+        self.mic = bool(lcfg.load_settings().get("hal", {}).get("mic", False))
         self.base_volume: float | None = None
         self._ducked = False
         super().__init__(*a, **kw)
@@ -69,6 +71,8 @@ class HalUI(PersonaUI):
         if self.settings.get("launcher", {}).get("smart_model"):
             cfg["llm"]["model"] = str(self.settings["launcher"]["smart_model"])
         cfg["llm"]["ctx"] = 3072
+        if not self.mic:
+            cfg["stt"]["enabled"] = False
         cfg["voice"]["require_name"] = False
         cfg["voice"]["max_sentences"] = 3
         cfg["voice"]["mood"] = False
@@ -123,7 +127,14 @@ class HalUI(PersonaUI):
             self._set_sink(self.base_volume)
             self._ducked = False
 
+    def use_mic(self) -> bool:
+        return self.mic
+
     def set_talk_mode(self, on: bool) -> None:
+        if not self.mic:
+            if on:
+                log.info("Sprechtaste ignoriert: HAL läuft ohne Mikrofon ([hal].mic = false), Musik bleibt normal")
+            return
         if on == self.talk_mode:
             return
         self.talk_mode = on
@@ -213,7 +224,9 @@ class HalUI(PersonaUI):
                 for i, ln in enumerate(self.wrap("HAL: " + lk, 78)[:2]):
                     self.text(ln, 0.023, 0.5, 0.125 - i * 0.034, (255, 220, 200), 0.95)
         talk = "SPRECHTASTE  MUSIK WIEDER LAUT, MIKRO AUS" if self.talk_mode else "SPRECHTASTE  MUSIK LEISE, MIKRO AN"
-        if self.kipp_talk:
+        if not self.mic:
+            talk = "OHNE MIKROFON"
+        elif self.kipp_talk:
             talk = "KIPPSCHALTER  SPRECHEN (MUSIK LEISE)"
         self.text(f"{talk}      START  HAL FRAGEN      OBEN/UNTEN  LICHT", 0.015, 0.5, 0.03, (110, 60, 60), 0.5 + 0.2 * math.sin(now * 2.0))
         # kleine Musikanzeige unten rechts: Quelle und Pegel, damit man ohne Log sieht, ob Musik ankommt

@@ -44,6 +44,10 @@ talk_code = 0            # Sprechtaste -> F15 (HAL: Musik leise, Mikrofon an); 0
 debounce_ms = 300        # gleiche Taste innerhalb dieser Zeit nochmal = ignorieren (Prellen, Dauerfeuer)
 
 [hal]
+# mic = false: HAL hört nicht zu, es wird kein Mikrofon geöffnet und die Musik nie abgesenkt (ein
+# Bluetooth-Headset bleibt so immer im Stereo-Musikprofil). HAL spricht trotzdem von selbst, Start = sagt etwas.
+# true: Sprechtaste schaltet Musik leise + Mikrofon an (braucht ein Mikrofon, das nicht das Headset ist).
+mic = false
 # Sprechmodus (Musik leise, Mikrofon an) schaltet die Sprechtaste um: eine Taste des Boards in
 # config/keymap.toml auf action = "talk" legen (z. B. [[bindings]] code = 268 / action = "talk");
 # der Launcher schickt dann F15 an HAL. Zum Testen: scripts/kittctl talk
