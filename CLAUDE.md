@@ -160,6 +160,12 @@ Sternenhimmel mit Warp-Flug-Modus.
 | BACKSPACE | Warp-Flug stoppen (zurück zu Drift) |
 | ESC | Beenden |
 
+## Musik vom Handy (`scripts/setup_cast.sh`)
+Spotify Connect (`kitt-spotify`, librespot/raspotify, Premium nötig) und AirPlay (`kitt-airplay`, shairport-sync) als
+`systemd --user`-Dienste über PipeWire auf den Standard-Sink; Systemdienste der Pakete werden abgeschaltet (kein
+PipeWire-Zugriff). Kein Chromecast möglich. Android ohne AirPlay: `scripts/setup_bluetooth.sh`. Titel: `logs/now_playing.txt`
+(`scripts/spotify_event.sh` via `--onevent`). Status: `scripts/setup_cast.sh --status`.
+
 ## /dev/uinput Berechtigung
 udev-Regel in `/etc/udev/rules.d/99-uinput.rules`:
 ```

@@ -900,6 +900,16 @@ Musik vom Telefon läuft über den Standard-Sink des Pi. Mit `source = "playback
 Spiele und KITTs Stimme, ganz ohne Mikrofon. Die Spracherkennung bleibt immer am Mikrofon.
 Test: `scripts/viz_test.sh crt --source playback`.
 
+**Spotify Connect und AirPlay (Musik vom Handy schicken):** `scripts/setup_cast.sh` richtet zwei
+Benutzerdienste über PipeWire ein: `kitt-spotify` (librespot aus dem raspotify-Paket, der Pi erscheint in der
+Spotify-App unter "Geräte" als "KITT-Cart", braucht Spotify Premium) und `kitt-airplay` (shairport-sync, der Pi ist
+auf iPhone/iPad/Mac ein AirPlay-Lautsprecher "KITT-Cart", damit SoundCloud, YouTube und alles andere). Beides landet
+auf dem Standard-Sink (Bose-Headset oder Klinke), und die Visualizer sehen die Musik über `source = "playback"`.
+Einen echten Chromecast-Empfänger gibt es für den Pi nicht (Google-Protokoll); Android-Handys ohne AirPlay nehmen
+die Bluetooth-Senke (`scripts/setup_bluetooth.sh`). Die Lautstärke von Spotify und AirPlay regelt das Handy, der
+Musik-Drehknopf nur mpv. Der laufende Spotify-Titel steht in `logs/now_playing.txt` (`scripts/spotify_event.sh`).
+Prüfen: `scripts/setup_cast.sh --status`, anderer Name: `--name NAME`, entfernen: `--undo`.
+
 **Spielstatistik für KITT:** `scripts/configure_gaming.sh` installiert zwei RetroPie-Hooks
 (`runcommand-onstart.sh`, `runcommand-onend.sh`), die jeden Spielstart und jedes Spielende nach
 `logs/games.jsonl` schreiben. `kitt/context.py` macht daraus ein kurzes Bordbuch (zuletzt gespieltes
