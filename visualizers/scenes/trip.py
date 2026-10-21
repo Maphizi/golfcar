@@ -187,7 +187,7 @@ class Controller:
             self.wander_next = now + self.rng.uniform(12.0, 22.0)
             self.spin_dir = self.rng.choice((-1.0, 1.0))
             self.trip_started = now
-            log.info("Reise beginnt: %s", b.get("name"))
+            log.info("Reise beginnt: %s (Spiegel %d, Tempo %.2f, Palette %d, Symbole %s)", self.beings[self.idx].get("name"), int(self.mirrors), self.tempo, int(self.palette), self.symbols_key)
         elif ph == PH_COMEDOWN and self.phase == PH_TRIP:
             secs = int(now - self.trip_started)
             self.return_line = f"DU WARST {secs // 60} MIN {secs % 60:02d} S WEG.  " + self.rng.choice(RETURN_LINES)
