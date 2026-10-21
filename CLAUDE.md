@@ -89,7 +89,7 @@ Raumstation, Kometenschauer; Shader-Uniforms uEvent/uEventT/uEventLen/uEventWarn
 ## LED-Buttonboard (`launcher/wled.py`, `config/wled.toml`)
 Profil je Modus `[modes.<modus>]` (bri, fx, col, col2, col3, sx, ix, pal); Ereignis-Profile `hal_astronaut`,
 `hal_alien`, `hal_both`, `slots_win`, `slots_jackpot`, `blackhole_throw`, `blackhole_eject` schicken die Modi selbst
-über `wled.apply_mode_async()`. Home nimmt die Themenfarbe. Test: `scripts/wledctl.py set --col R,G,B --fx N`.
+über `wled.apply_mode_async()`. Home nimmt die Themenfarbe (WLED und PXN-Tasten, schon beim Blättern am Taxistand). Test: `scripts/wledctl.py set --col R,G,B --fx N`.
 
 ## Schwarzes Loch (`visualizers/scenes/blackhole.py`)
 D-Pad LINKS/RECHTS = Planet aus `config/planets.toml` von dieser Seite ins Loch werfen (wird über ~1 Minute zum

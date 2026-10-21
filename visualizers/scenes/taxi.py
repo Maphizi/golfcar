@@ -17,7 +17,7 @@ import time
 import numpy as np
 import pygame
 
-from launcher import config as lcfg, theme as ltheme, wled
+from launcher import config as lcfg, pxn_led, theme as ltheme, wled
 
 log = logging.getLogger("taxi")
 PHOTO = lcfg.ROOT / "assets" / "pilot.png"
@@ -150,13 +150,19 @@ class Controller:
         self.slide_t0 = time.monotonic()
         self.cover_version += 1
         self.mission_line = self.rng.choice(self.cur.missions)
+        self._board_color()                                  # Board zeigt schon beim Blättern die Themenfarbe
+
+    def _board_color(self) -> None:
+        col = [int(c * 255) for c in self.themes[self.idx].get("color_a", [0.95, 0.8, 0.25])]
+        wled.apply_mode_async("home", col)
+        pxn_led.set_color_async(*col)
 
     def confirm(self) -> None:
         self.chosen = self.idx
         ltheme.set_current(self.themes[self.idx].get("name", ""))
         self.confirm_t0 = time.monotonic()
         log.info("Thema gewählt: %s", self.themes[self.idx].get("name"))
-        wled.apply_mode_async("home", [int(c * 255) for c in self.themes[self.idx].get("color_a", [0.95, 0.8, 0.25])])
+        self._board_color()
 
     # -- Schnittstelle zur Engine --------------------------------------------
     @property

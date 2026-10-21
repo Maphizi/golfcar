@@ -168,7 +168,10 @@ class Launcher:
             if mode == HOME:                       # Taxistand leuchtet in der Farbe des gewählten Themas
                 col = [int(c * 255) for c in theme.current().get("color_a", [1.0, 0.75, 0.0])]
             wled.apply_mode_async(mode, col)
-            pxn_led.apply_mode_async(mode)
+            if mode == HOME and col:
+                pxn_led.set_color_async(*col)       # Tasten in der Themenfarbe
+            else:
+                pxn_led.apply_mode_async(mode)
         except Exception as exc:
             log.debug("WLED-Fehler: %s", exc)
 

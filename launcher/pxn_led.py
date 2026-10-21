@@ -102,3 +102,8 @@ def apply_mode(mode: str) -> bool:
 
 def apply_mode_async(mode: str) -> None:
     threading.Thread(target=apply_mode, args=(mode,), daemon=True, name=f"pxn-led-{mode}").start()
+
+
+def set_color_async(r: int, g: int, b: int) -> None:
+    """Freie Farbe (z. B. Themenfarbe beim Blättern am Taxistand) im Hintergrund setzen."""
+    threading.Thread(target=set_color, args=(r, g, b), daemon=True, name="pxn-led-color").start()
