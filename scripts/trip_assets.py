@@ -8,6 +8,7 @@
     .venv/bin/python scripts/trip_assets.py atlas AUS.png BOGEN.png SPALTEN REIHEN ZELLE [SPLIT]   (beliebiger Bogen, z. B. Moorsee)
     .venv/bin/python scripts/trip_assets.py plate AUS.png BILD.png  (Vollbild, max. 1920 breit)
     .venv/bin/python scripts/trip_assets.py grid AUS.png BOGEN.png SPALTEN REIHEN ZELLE [SPLIT]    (Bogen mit Raster, Reihenfolge bleibt; Auge des Waldes)
+    .venv/bin/python scripts/trip_assets.py slice AUS.png BOGEN.png SPALTEN REIHEN ZELLE          (gleich große Zellen schneiden, Fußpunkt unten; Animationen)
 Wesen-Bogen: 5 Spalten x 4 Reihen auf Schwarz, jede Zelle wird einzeln freigestellt (gefüllte Fläche).
 Symbol-Bogen: viele kleine Objekte auf Schwarz, Zusammenhangskomponenten, größte zuerst.
 Braucht numpy, pygame, scipy (nur zum Erzeugen).
@@ -127,6 +128,32 @@ def grid(out_path: str, path: str, cols: int, rows: int, cell: int, split: int =
     print(f"Raster {out_path}: {len(items)} Objekte in {cols}x{rows} Zellen à {cell} px")
 
 
+def slice_sheet(out_path: str, path: str, cols: int, rows: int, cell: int, pad: int = 4) -> None:
+    """Bogen in gleich große Zellen schneiden (ohne Objektsuche): jede Zelle einzeln freistellen (weißer oder
+    schwarzer Hintergrund, Alpha) und in die Zielzelle einpassen. Für Animationsbögen, bei denen Spritzer oder
+    Sockel sonst als eigene Objekte zählen würden (Froschsprung, Zwerge)."""
+    surf = pygame.image.load(path).convert_alpha()
+    W, H = surf.get_size()
+    cw, ch = W / cols, H / rows
+    atlas = np.zeros((rows * cell, cols * cell, 4), dtype=np.uint8)
+    for r in range(rows):
+        for c in range(cols):
+            sub = surf.subsurface((int(c * cw), int(r * ch), int(cw), int(ch))).copy()
+            rgb, alpha = derive_alpha(sub, connected=True)
+            ys, xs = np.where(alpha > 16)
+            if len(ys) == 0:
+                continue
+            y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+            arr, al = fit_cell(rgb[y0:y1, x0:x1], alpha[y0:y1, x0:x1], cell, pad)
+            # unten bündig (Fußpunkt), horizontal zentriert
+            oy, ox = r * cell + (cell - arr.shape[0]) - pad // 2, c * cell + (cell - arr.shape[1]) // 2
+            atlas[oy:oy + arr.shape[0], ox:ox + arr.shape[1], :3] = arr
+            atlas[oy:oy + arr.shape[0], ox:ox + arr.shape[1], 3] = al
+    out = pygame.image.frombuffer(atlas.tobytes(), (cols * cell, rows * cell), "RGBA")
+    pygame.image.save(out, out_path)
+    print(f"Schnitt {out_path}: {cols}x{rows} Zellen à {cell} px")
+
+
 def symbols(path: str, cols: int = 8, rows: int = 5, cell: int = 128, split: int = 5) -> None:
     rgb, alpha = derive_alpha(pygame.image.load(path).convert_alpha())
     lab, items = _components(alpha, split)
@@ -197,6 +224,8 @@ def main() -> int:
         beings(sys.argv[2])
     elif cmd == "symbols":
         symbols(sys.argv[2])
+    elif cmd == "slice":        # slice AUSGABE.png BOGEN.png SPALTEN REIHEN ZELLE  (gleich große Zellen, unten bündig)
+        slice_sheet(sys.argv[2], sys.argv[3], int(sys.argv[4]), int(sys.argv[5]), int(sys.argv[6]))
     elif cmd == "grid":
         grid(sys.argv[2], sys.argv[3], int(sys.argv[4]), int(sys.argv[5]), int(sys.argv[6]), int(sys.argv[7]) if len(sys.argv) > 7 else 5)
     elif cmd == "texture":

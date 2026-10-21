@@ -31,16 +31,24 @@ from launcher import wled
 log = logging.getLogger("woodeye")
 
 ASSETS = Path(__file__).resolve().parents[2] / "assets" / "woodeye"
-# Frösche: (x, y, Größe) im Bild (Anteile, y von unten); Band 0 = Bass (links, groß) .. Band 7 = Höhen (rechts, klein)
-FROGS = [(0.072, 0.118, 0.100), (0.157, 0.150, 0.100), (0.287, 0.150, 0.097), (0.428, 0.150, 0.094),
-         (0.571, 0.150, 0.091), (0.712, 0.150, 0.088), (0.849, 0.150, 0.085), (0.930, 0.118, 0.085)]
-SWIMMERS = (0, 7)                     # Frösche im Wasser (halb untergetaucht) statt auf dem Blatt
-PH_SIT, PH_DIVE, PH_UNDER, PH_EMERGE = 0, 1, 2, 3
-DIVE_SECONDS, EMERGE_SECONDS = 0.6, 0.7
+# Seerosenblätter: (x, y, Größe) im Bild (Anteile, y von unten); Band 0 = Bass (links) .. Band 7 = Höhen (rechts)
+FROGS = [(0.072, 0.118, 0.085), (0.157, 0.150, 0.085), (0.287, 0.150, 0.082), (0.428, 0.150, 0.080),
+         (0.571, 0.150, 0.078), (0.712, 0.150, 0.076), (0.849, 0.150, 0.074), (0.930, 0.118, 0.074)]
+# Frosch je Blatt: assets/woodeye/frogs.png (8x4 à 160: Reihe = Art, Spalte = Sprungbild 0 sitzt .. 7 Kehlsack),
+# assets/woodeye/dive.png (8x2 à 192: Reihe 0 springt ins Wasser, Reihe 1 taucht auf). Phasen:
+PH_EMPTY, PH_EMERGE, PH_SIT, PH_HOP, PH_DIVE, PH_UNDER = 0, 1, 2, 3, 4, 5
+HOP_SECONDS, DIVE_SECONDS, EMERGE_SECONDS, UNDER_MIN = 0.7, 0.9, 1.0, 1.2
+N_SPECIES = 4
 EYE_OPEN, EYE_LEFT, EYE_RIGHT, EYE_UP, EYE_DOWN, EYE_FIRE, EYE_SPIRAL = 7, 16, 18, 19, 20, 22, 23
 EYE_COLORS = list(range(8, 16))
-FOX_CELLS, OWL_CELLS = (24, 25, 26, 27), (28, 29, 30, 31)
-FIG_NONE, FIG_FOX, FIG_OWL, FIG_BOTH = 0, 1, 2, 3
+OWL_CELLS = (28, 29, 30, 31)
+FIG_NONE, FIG_OWL, FIG_GNOMES, FIG_BOTH = 0, 1, 2, 3
+# Zwerge (assets/woodeye/gnomes.png 8x3 à 160: Reihe 0 gucken, 1 ducken, 2 winken): (x, y Fußlinie, Größe, Zelle) über den Wurzeln
+GNOMES = [(0.06, 0.40, 0.075, 0), (0.14, 0.36, 0.08, 1), (0.22, 0.42, 0.07, 2), (0.30, 0.33, 0.085, 3),
+          (0.38, 0.38, 0.07, 4), (0.46, 0.30, 0.08, 5), (0.56, 0.31, 0.078, 6), (0.64, 0.37, 0.072, 7),
+          (0.72, 0.33, 0.082, 1), (0.80, 0.41, 0.07, 3), (0.88, 0.36, 0.08, 5), (0.95, 0.42, 0.072, 7)]
+N_GNOMES = len(GNOMES)
+G_PEEK, G_DUCK, G_WAVE = 0, 1, 2
 CHORUS_SECONDS = 4.0
 SPORE_SECONDS = 4.0
 
@@ -67,6 +75,9 @@ class Controller:
         self.scene = _load_rgba(ASSETS / "scene.png")
         self.eyes = _load_rgba(ASSETS / "eyes.png")
         self.figs = _load_rgba(ASSETS / "figures.png")
+        self.frogs_tex = _load_rgba(ASSETS / "frogs.png")
+        self.dive_tex = _load_rgba(ASSETS / "dive.png")
+        self.gnomes_tex = _load_rgba(ASSETS / "gnomes.png")
         self.eye = tuple(float(v) for v in scene_cfg.get("eye", [0.511, 0.722, 0.175]))     # x, y, Breite
         self.seed = self.rng.uniform(1.0, 100.0)
         self.last = time.monotonic()
@@ -74,13 +85,21 @@ class Controller:
         self.energy = 0.0
         self.live_s = 0.0
         self.bands = [0.0] * 8
-        self.jump_t0 = [-10.0] * 8
         self.jump_arm = [True] * 8
-        self.phase = [PH_SIT] * 8             # Tauchen: sitzt -> springt ins Wasser -> unter Wasser -> taucht auf
+        self.phase = [PH_EMPTY] * 8           # je Blatt: leer -> taucht auf -> sitzt -> hüpft / springt ins Wasser -> unten
         self.phase_t0 = [0.0] * 8
+        self.species = [self.rng.randrange(N_SPECIES) for _ in range(8)]
         self.under_beats = [0] * 8
+        self.returning = [False] * 8          # unter Wasser: kommt wieder hoch (Tauchspiel) oder bleibt weg
         self.last_dive = -10.0
+        self.last_pop_change = 0.0
         self.hue_burst = 0.0
+        # Zwerge
+        self.gnome_pose = [G_PEEK] * N_GNOMES
+        self.gnome_prev = [G_PEEK] * N_GNOMES
+        self.gnome_t0 = [0.0] * N_GNOMES
+        self.gnome_rise = [0.0] * N_GNOMES
+        self.gnome_wave_next = time.monotonic() + 3.0
         # Beat-Zähler / Lauflicht
         self.step = 0
         self.step_t0 = 0.0
@@ -109,9 +128,6 @@ class Controller:
         self.fire_until = -1.0
         # Figuren
         self.fig = FIG_NONE
-        self.fox_pose = 0
-        self.fox_prev = 0
-        self.fox_t0 = 0.0
         self.owl_t = 0.0
         self.flap_t = 0.0
         self.kaleido = 0.0
@@ -121,8 +137,10 @@ class Controller:
         self.chorus_t0 = -100.0
         self.led_back_at: float | None = None
         self.demo_next = time.monotonic() + 4.0
-        log.info("Auge des Waldes: Szene %s, Augen %s, Figuren %s", "ok" if self.scene is not None else "fehlt",
-                 "ok" if self.eyes is not None else "fehlt", "ok" if self.figs is not None else "fehlt")
+        log.info("Auge des Waldes: Szene %s, Augen %s, Eule %s, Frösche %s, Tauchen %s, Zwerge %s",
+                 "ok" if self.scene is not None else "fehlt", "ok" if self.eyes is not None else "fehlt",
+                 "ok" if self.figs is not None else "fehlt", "ok" if self.frogs_tex is not None else "fehlt",
+                 "ok" if self.dive_tex is not None else "fehlt", "ok" if self.gnomes_tex is not None else "fehlt")
 
     # -- Aktionen ----------------------------------------------------------
     def set_fig(self, which: int) -> None:
@@ -132,9 +150,9 @@ class Controller:
             wled.apply_mode_async("woodeye")
             self.led_back_at = None
             return
-        profile = {FIG_FOX: "woodeye_fox", FIG_OWL: "woodeye_owl", FIG_BOTH: "woodeye_both"}[self.fig]
+        profile = {FIG_OWL: "woodeye_owl", FIG_GNOMES: "woodeye_fox", FIG_BOTH: "woodeye_both"}[self.fig]
         self._led_event(profile, now + 6.0)
-        log.info("Figur: %s", {FIG_FOX: "Fuchs", FIG_OWL: "Eule", FIG_BOTH: "Fuchs und Eule"}[self.fig])
+        log.info("Figur: %s", {FIG_OWL: "Eule", FIG_GNOMES: "Zwerge", FIG_BOTH: "Eule und Zwerge"}[self.fig])
 
     def toggle_kaleido(self) -> None:
         self.kaleido_on = not self.kaleido_on
@@ -146,9 +164,12 @@ class Controller:
         if now - self.chorus_t0 < CHORUS_SECONDS:
             return
         self.chorus_t0 = now
-        for i in range(8):                   # Welle: alle tauchen nacheinander ab und kommen wieder hoch
-            self._set_phase(i, PH_DIVE, now + 0.4 + i * 0.16)
-            self.under_beats[i] = 2
+        for i in range(8):                   # Welle: alle sitzenden hüpfen nacheinander, leere Blätter bekommen Besuch
+            if self.phase[i] == PH_SIT:
+                self._set_phase(i, PH_HOP, now + 0.3 + i * 0.14)
+            elif self.phase[i] in (PH_EMPTY, PH_UNDER):
+                self._set_phase(i, PH_EMERGE, now + 0.3 + i * 0.14)
+                self.species[i] = self.rng.randrange(N_SPECIES)
         self._led_event("woodeye_chorus", now + CHORUS_SECONDS)
         log.info("Froschchor")
 
@@ -174,10 +195,11 @@ class Controller:
         self.color_cell = self.rng.choice([c for c in EYE_COLORS if c != self.color_cell])
         self.color_until = now + 7.0
         for i in range(8):
-            if self.phase[i] == PH_UNDER:
+            if self.phase[i] in (PH_UNDER, PH_EMPTY):
                 self._set_phase(i, PH_EMERGE, now + 0.05 * i)
-            else:
-                self.jump_t0[i] = now + 0.05 * i
+                self.species[i] = self.rng.randrange(N_SPECIES)
+            elif self.phase[i] == PH_SIT:
+                self._set_phase(i, PH_HOP, now + 0.05 * i)
         self.hue_burst = 1.0
         log.info("Drop: Auge brennt, Sporen, Frösche springen")
 
@@ -185,45 +207,100 @@ class Controller:
         self.phase[i] = ph
         self.phase_t0[i] = t0
 
-    def _frogs_tick(self, now: float, on_beat: bool, live: float) -> None:
-        """Tauchspiel im Takt: auf Beats springen einzelne Frösche ins Wasser, bleiben ein paar Beats unten und
-        kommen auf einem Beat wieder hoch. Ohne Musik langsam nach Uhr."""
-        under = sum(1 for p in self.phase if p != PH_SIT)
+    def _frogs_tick(self, now: float, on_beat: bool, live: float, dt: float) -> None:
+        """Besetzung der Blätter folgt der Musik: Stille = keiner, leise = vereinzelt, laut = alle. Frösche kommen aus dem
+        Wasser (tauchen auf) und gehen, indem sie hineinspringen. Dazu das Tauchspiel im Takt: auf Beats springt mal
+        einer ab und kommt ein paar Beats später wieder hoch."""
+        # Phasenübergänge
         for i in range(8):
             ph, t0 = self.phase[i], self.phase_t0[i]
-            if ph == PH_DIVE and now - t0 >= DIVE_SECONDS:
+            if now < t0:
+                continue
+            if ph == PH_HOP and now - t0 >= HOP_SECONDS:
+                self._set_phase(i, PH_SIT, now)
+            elif ph == PH_DIVE and now - t0 >= DIVE_SECONDS:
                 self._set_phase(i, PH_UNDER, now)
             elif ph == PH_EMERGE and now - t0 >= EMERGE_SECONDS:
                 self._set_phase(i, PH_SIT, now)
-            elif ph == PH_UNDER:
-                if on_beat and now - t0 > 0.3:
-                    self.under_beats[i] -= 1
-                    if self.under_beats[i] <= 0:
-                        self._set_phase(i, PH_EMERGE, now)
-                elif live < 0.3 and now - t0 > 3.5:
-                    self._set_phase(i, PH_EMERGE, now)
-        if on_beat and live > 0.3 and under < 4 and now - self.last_dive > 0.5:
-            p = 0.10 + 0.35 * self.energy + 0.2 * self.bass_s
-            if self.rng.random() < p:
-                cands = [i for i in range(8) if self.phase[i] == PH_SIT and now - self.phase_t0[i] > 1.5]
+            elif ph == PH_UNDER and now - t0 >= UNDER_MIN:
+                if self.returning[i]:
+                    if on_beat:
+                        self.under_beats[i] -= 1
+                        if self.under_beats[i] <= 0:
+                            self._set_phase(i, PH_EMERGE, now)
+                    elif live < 0.3 and now - t0 > 3.0:
+                        self._set_phase(i, PH_EMPTY, now)
+                elif now - t0 > 2.5:
+                    self._set_phase(i, PH_EMPTY, now)
+        # Zielbesetzung aus der Musik
+        if live < 0.3:
+            target = 0
+        else:
+            e = max(0.0, min(1.0, (self.energy - 0.12) / 0.5))
+            target = int(round(0.5 + 7.5 * e + 0.8 * self.bass_s))
+            target = max(0, min(8, target))
+        present = [i for i in range(8) if self.phase[i] in (PH_SIT, PH_HOP, PH_EMERGE)]
+        if now - self.last_pop_change > (0.35 if target > len(present) else 1.2):
+            if target > len(present):
+                cands = [i for i in range(8) if self.phase[i] == PH_EMPTY or (self.phase[i] == PH_UNDER and not self.returning[i] and now - self.phase_t0[i] > UNDER_MIN)]
                 if cands:
                     i = self.rng.choice(cands)
+                    self.species[i] = self.rng.randrange(N_SPECIES)
+                    self._set_phase(i, PH_EMERGE, now)
+                    self.last_pop_change = now
+            elif target < len(present) - 1 or (target == 0 and present):
+                cands = [i for i in present if self.phase[i] == PH_SIT and now - self.phase_t0[i] > 1.0]
+                if cands:
+                    i = self.rng.choice(cands)
+                    self.returning[i] = False
                     self._set_phase(i, PH_DIVE, now)
+                    self.last_pop_change = now
+        # Tauchspiel im Takt
+        under = sum(1 for p in self.phase if p in (PH_DIVE, PH_UNDER))
+        if on_beat and live > 0.3 and under < 3 and now - self.last_dive > 0.6 and len(present) >= 2:
+            if self.rng.random() < 0.08 + 0.3 * self.energy + 0.15 * self.bass_s:
+                cands = [i for i in present if self.phase[i] == PH_SIT and now - self.phase_t0[i] > 1.5]
+                if cands:
+                    i = self.rng.choice(cands)
+                    self.returning[i] = True
                     self.under_beats[i] = self.rng.choice((2, 2, 3, 4, 6))
+                    self._set_phase(i, PH_DIVE, now)
                     self.last_dive = now
-        elif live < 0.3 and now - self.last_dive > 6.0 and under == 0:
-            i = self.rng.randrange(8)
-            self._set_phase(i, PH_DIVE, now)
-            self.under_beats[i] = 99
-            self.last_dive = now
+
+    def _gnomes_tick(self, now: float, on_beat: bool, dt: float) -> None:
+        show = self.fig in (FIG_GNOMES, FIG_BOTH)
+        for i in range(N_GNOMES):
+            target = 1.0 if show else 0.0
+            delay = 0.06 * i if show else 0.04 * (N_GNOMES - i)
+            self.gnome_rise[i] += (target - self.gnome_rise[i]) * min(1.0, dt / 0.5) * (1.0 if now - self.gnome_t0[i] > delay else 0.3)
+            if self.gnome_pose[i] == G_DUCK and now - self.gnome_t0[i] > 0.45:
+                self._gnome_set(i, G_PEEK, now)
+            elif self.gnome_pose[i] == G_WAVE and now - self.gnome_t0[i] > 1.3:
+                self._gnome_set(i, G_PEEK, now)
+        if not show:
+            return
+        if on_beat:
+            for i in range(N_GNOMES):
+                if self.gnome_pose[i] == G_PEEK and self.rng.random() < 0.25 + 0.3 * self.bass_s:
+                    self._gnome_set(i, G_DUCK, now)
+        if now >= self.gnome_wave_next:
+            self.gnome_wave_next = now + self.rng.uniform(2.0, 5.0)
+            i = self.rng.randrange(N_GNOMES)
+            if self.gnome_pose[i] == G_PEEK:
+                self._gnome_set(i, G_WAVE, now)
+
+    def _gnome_set(self, i: int, pose: int, now: float) -> None:
+        self.gnome_prev[i] = self.gnome_pose[i]
+        self.gnome_pose[i] = pose
+        self.gnome_t0[i] = now
 
     def handle_event(self, ev) -> None:
         if ev.type != pygame.KEYDOWN:
             return
         if ev.key in (pygame.K_LEFT, pygame.K_a):
-            self.set_fig(FIG_FOX)
-        elif ev.key in (pygame.K_RIGHT, pygame.K_d):
             self.set_fig(FIG_OWL)
+        elif ev.key in (pygame.K_RIGHT, pygame.K_d):
+            self.set_fig(FIG_GNOMES)
         elif ev.key in (pygame.K_UP, pygame.K_w):
             self.set_fig(FIG_BOTH)
         elif ev.key in (pygame.K_DOWN, pygame.K_s):
@@ -239,7 +316,10 @@ class Controller:
     def images(self) -> dict:
         return {"uSceneTex": (self.scene if self.scene is not None else self.blank, 1),
                 "uEyeTex": (self.eyes if self.eyes is not None else self.blank, 1),
-                "uFigTex": (self.figs if self.figs is not None else self.blank, 1)}
+                "uFigTex": (self.figs if self.figs is not None else self.blank, 1),
+                "uFrogTex": (self.frogs_tex if self.frogs_tex is not None else self.blank, 1),
+                "uDiveTex": (self.dive_tex if self.dive_tex is not None else self.blank, 1),
+                "uGnomeTex": (self.gnomes_tex if self.gnomes_tex is not None else self.blank, 1)}
 
     def uniform_names(self):
         names = ["uSceneTex", "uEyeTex", "uFigTex", "uSceneSize", "uEyeSize", "uFigSize", "uSeed", "uEyePos",
@@ -248,7 +328,9 @@ class Controller:
                  "uFig", "uOwl", "uBands0", "uBands1", "uHueT"]
         names += [f"uFrog{i}" for i in range(8)]
         names += [f"uFrogPh{i}" for i in range(8)]
-        names.append("uHueBurst")
+        names += ["uHueBurst", "uFrogTex", "uDiveTex", "uGnomeTex", "uFrogSize", "uDiveSize", "uGnomeSize"]
+        names += [f"uGnome{i}" for i in range(N_GNOMES)]
+        names += [f"uGnomeS{i}" for i in range(N_GNOMES)]
         return tuple(names)
 
     def uniforms(self, t: float, f) -> dict:
@@ -277,8 +359,8 @@ class Controller:
                 v = min(1.0, v * (1.15 + 0.1 * i))
                 rate = 0.05 if v > self.bands[i] else 0.3
                 self.bands[i] += (v - self.bands[i]) * min(1.0, dt / rate)
-                if v > 0.78 and self.jump_arm[i] and now - self.jump_t0[i] > 0.7:
-                    self.jump_t0[i] = now
+                if v > 0.78 and self.jump_arm[i] and self.phase[i] == PH_SIT and now - self.phase_t0[i] > 0.5:
+                    self._set_phase(i, PH_HOP, now)
                     self.jump_arm[i] = False
                 if v < 0.5:
                     self.jump_arm[i] = True
@@ -287,7 +369,8 @@ class Controller:
                 self.bands[i] += (0.0 - self.bands[i]) * min(1.0, dt / 0.6)
         # Beat: Lauflicht einen Schritt weiter, Puls, Frösche tauchen
         on_beat = beat > 0.5 and now - self.last_beat > 0.25
-        self._frogs_tick(now, on_beat, self.live_s)
+        self._frogs_tick(now, on_beat, self.live_s, dt)
+        self._gnomes_tick(now, on_beat, dt)
         self.hue_burst = max(0.0, self.hue_burst - dt / 3.0)
         if on_beat:
             self.last_beat = now
@@ -295,8 +378,6 @@ class Controller:
             self.step_t0 = now
             self.beat_pulse = 1.0
             self.flap_t += 1.0
-            if self.fig in (FIG_FOX, FIG_BOTH):
-                self.fox_prev, self.fox_pose, self.fox_t0 = self.fox_pose, self.step, now
         self.beat_pulse = max(0.0, self.beat_pulse - dt / 0.45)
         if now >= self.pattern_next:
             self.pattern = (self.pattern + self.rng.randint(1, 3)) % 4
@@ -347,12 +428,11 @@ class Controller:
             self.led_back_at = None
             wled.apply_mode_async("woodeye")
         if self.demo and now >= self.demo_next:
-            pick = self.rng.choice(("fox", "owl", "both", "kaleido", "chorus", "drop"))
-            {"fox": lambda: self.set_fig(FIG_FOX), "owl": lambda: self.set_fig(FIG_OWL), "both": lambda: self.set_fig(FIG_BOTH),
+            pick = self.rng.choice(("gnomes", "owl", "both", "kaleido", "chorus", "drop"))
+            {"gnomes": lambda: self.set_fig(FIG_GNOMES), "owl": lambda: self.set_fig(FIG_OWL), "both": lambda: self.set_fig(FIG_BOTH),
              "kaleido": self.toggle_kaleido, "chorus": self.chorus, "drop": lambda: self._drop(now)}[pick]()
             self.demo_next = now + 9.0
         size = lambda a: (float(a.shape[1]), float(a.shape[0])) if a is not None else (1.0, 1.0)
-        fox_mix = min(1.0, (now - self.fox_t0) / 0.12)
         flap = self.flap_t % 4.0
         out = {
             "uSceneSize": size(self.scene), "uEyeSize": size(self.eyes), "uFigSize": size(self.figs), "uSeed": self.seed,
@@ -362,20 +442,25 @@ class Controller:
             "uSporeT": (now - self.spore_t0) if now - self.spore_t0 < SPORE_SECONDS else -1.0, "uZoom": self.zoom,
             "uKaleido": self.kaleido, "uChorusT": (now - self.chorus_t0) if now - self.chorus_t0 < CHORUS_SECONDS else -1.0,
             "uBlink": openness, "uEyeA": float(self.look_prev), "uEyeB": float(self.look), "uEyeMix": look_mix,
-            "uFig": (float(self.fig), float(FOX_CELLS[self.fox_prev]), float(FOX_CELLS[self.fox_pose]), fox_mix),
+            "uFig": (float(self.fig), 0.0, 0.0, 0.0),
+            "uFrogSize": size(self.frogs_tex), "uDiveSize": size(self.dive_tex), "uGnomeSize": size(self.gnomes_tex),
             "uOwl": (self.owl_t % 1000.0, float(OWL_CELLS[int(flap) % 4]), float(OWL_CELLS[(int(flap) + 1) % 4]), flap - int(flap)),
             "uBands0": tuple(self.bands[0:4]), "uBands1": tuple(self.bands[4:8]), "uHueT": (t * 0.15) % 1000.0,
         }
         out["uHueBurst"] = self.hue_burst
         for i, (x, y, s) in enumerate(FROGS):
-            jt = now - self.jump_t0[i]
-            hop = jt / 0.55 if 0.0 <= jt < 0.55 and self.phase[i] == PH_SIT else -1.0
-            out[f"uFrog{i}"] = (x, y, s, hop)
             ph = self.phase[i]
-            pt = max(0.0, now - self.phase_t0[i])
-            prog = pt / DIVE_SECONDS if ph == PH_DIVE else (pt / EMERGE_SECONDS if ph == PH_EMERGE else pt)
-            out[f"uFrogPh{i}"] = (float(ph), min(prog, 1.0) if ph in (PH_DIVE, PH_EMERGE) else prog,
-                                  1.0 if i in SWIMMERS else 0.0, 0.0)
+            pt = now - self.phase_t0[i]
+            if pt < 0.0:                                          # geplant, noch nicht dran: wie vorher weiter zeigen
+                ph = PH_SIT if ph == PH_HOP else (PH_EMPTY if ph == PH_EMERGE else ph)
+                pt = 0.0
+            dur = {PH_HOP: HOP_SECONDS, PH_DIVE: DIVE_SECONDS, PH_EMERGE: EMERGE_SECONDS}.get(ph, 1.0)
+            prog = min(1.0, pt / dur) if ph in (PH_HOP, PH_DIVE, PH_EMERGE) else pt
+            out[f"uFrog{i}"] = (x, y, s, float(self.species[i]))
+            out[f"uFrogPh{i}"] = (float(ph), prog, 1.0 if x > 0.5 else 0.0, 0.0)
+        for i, (x, y, s, cell) in enumerate(GNOMES):
+            out[f"uGnome{i}"] = (x, y, s, float(cell))
+            out[f"uGnomeS{i}"] = (float(self.gnome_prev[i]), float(self.gnome_pose[i]), min(1.0, (now - self.gnome_t0[i]) / 0.12), self.gnome_rise[i])
         return out
 
     def overlays(self, t: float):
@@ -388,6 +473,6 @@ class Controller:
             a = min(1.0, (2.5 - (now - self.spore_t0)) / 0.8)
             out.append(("D E R   W A L D   E R W A C H T", 0.03, 0.5, 0.08, (180, 255, 220), 0.7 * a))
         if self.fig != FIG_NONE:
-            label = {FIG_FOX: "DER FUCHS TANZT", FIG_OWL: "DIE EULE KREIST", FIG_BOTH: "FUCHS UND EULE"}[self.fig]
+            label = {FIG_GNOMES: "DIE ZWERGE SCHAUEN", FIG_OWL: "DIE EULE KREIST", FIG_BOTH: "EULE UND ZWERGE"}[self.fig]
             out.append((label, 0.018, 0.5, 0.05, (190, 220, 200), 0.55))
         return out

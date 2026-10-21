@@ -103,14 +103,19 @@ Test: `python -m visualizers.engine pond --test-signal --demo`.
 ## Auge des Waldes (`visualizers/scenes/woodeye.py`, Thema green ersetzt Taste 4 / HAL)
 `themes.toml` `modes = { hal = "woodeye" }`. Szene `assets/woodeye/scene.png`, Augen `eyes.png` (8x3 à 224: Reihe 0 Öffnen
 0..7, Reihe 1 Irisfarben 8..15, Reihe 2: 16 links, 17 Mitte, 18 rechts, 19 oben, 20 unten, 21 halb, 22 Feuer, 23 Spirale),
-Figuren `figures.png` (8x4 à 192: Reihe 0 Frösche sitzend, 1 Kehlsack, 2 Sprung, 3 Fuchs 24-27 / Eule 28-31), gebaut mit
-`scripts/trip_assets.py grid AUS.png BOGEN.png 8 3 224` (Zellen in Bildreihenfolge). Frosch i = Spektrumband i (`FROGS`
-Position/Größe im Controller, `uBands0/1`, `uFrogN.w` Sprungphase). Beat -> `uStep`/`uPattern` Lauflicht auf den türkisen
-Stellen des Fotos (Shader erkennt Türkis), Drop -> `uFlash`, `uSporeT`, Auge Feuer + neue Irisfarbe. Auge über `uBlink`
-(Öffnung, Reihe 0) und `uEyeA/uEyeB/uEyeMix` (Blickzelle). Knüppel LINKS Fuchs / RECHTS Eule / OBEN beide (`uFig`, `uOwl`),
-UNTEN Kaleidoskop, ENTER Froschchor (`uChorusT`, Tauchwelle), SPACE/BACKSPACE Zoom. `[scenes.woodeye] eye = [x, y, Breite]`.
-Tauchspiel: `phase[i]` (sit/dive/under/emerge, `_frogs_tick` auf Beats), Shader `uFrogPhN` = (Phase, Fortschritt, Schwimmer);
-`SWIMMERS` (0, 7) sitzen halb im Wasser. Nachbilder und Spritzer im Shader (`frog()`).
+Figuren `figures.png` (8x4 à 192: Eule 28-31; Reihen 0-2 und Fuchs unbenutzt), Frösche `frogs.png` (8x4 à 160: Reihe = Art,
+Spalte = Sprungbild 0 sitzt .. 7 Kehlsack), Tauchen `dive.png` (8x2 à 192: Reihe 0 springt ins Wasser, 1 taucht auf, grün,
+im Shader je Art umgefärbt `speciesHue`), Zwerge `gnomes.png` (8x3 à 160: Reihe 0 gucken, 1 ducken, 2 winken); Bögen mit
+`scripts/trip_assets.py slice AUS.png BOGEN.png SPALTEN REIHEN ZELLE` (gleich große Zellen, Fußpunkt unten). Blatt i =
+Spektrumband i (`FROGS` Position/Größe, `uBands0/1`). Besetzung folgt der Musik (`_frogs_tick`: Ziel 0 bei Stille bis 8 bei
+hoher Energie; kommen per `PH_EMERGE`, gehen per `PH_DIVE`), Hüpfen `PH_HOP` bei Bandspitzen/Chor/Drop, Tauchspiel auf Beats
+(`returning`, `under_beats`). Shader `uFrogN` = (x, y, Größe, Art), `uFrogPhN` = (Phase 0 leer 1 auftauchen 2 sitzt 3 hüpft
+4 springt 5 unten, Fortschritt, rechts = spiegeln). Zwerge `GNOMES` (x, Fußlinie, Größe, Zelle), `uGnomeN`/`uGnomeSN` (Pose
+A, B, Mischung, aufgetaucht), unterhalb der Fußlinie abgeschnitten (`gnome()`), `_gnomes_tick` (Beat = ducken, alle 2-5 s
+winkt einer). Beat -> `uStep`/`uPattern` Lauflicht auf den türkisen Stellen des Fotos, Drop -> `uFlash`, `uSporeT`, Auge
+Feuer + neue Irisfarbe. Auge über `uBlink` (Öffnung, Reihe 0) und `uEyeA/uEyeB/uEyeMix` (Blickzelle). Knüppel LINKS Eule /
+RECHTS Zwerge / OBEN beide (`uFig`, `uOwl`), UNTEN Kaleidoskop, ENTER Froschchor (`uChorusT`), SPACE/BACKSPACE Zoom.
+`[scenes.woodeye] eye = [x, y, Breite]`.
 Test: `python -m visualizers.engine woodeye --test-signal --demo`.
 
 ## Pilzautomat (`visualizers/scenes/forestslots.py`, Thema green ersetzt Taste 5 / Slots)

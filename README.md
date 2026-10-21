@@ -598,21 +598,26 @@ Glühwürmchen funkeln mit den Höhen. Alle zufälligen Kreaturen (`assets/pond/
 Rinde ein riesiges Auge (`assets/woodeye/eyes.png`, 8x3: Öffnen in acht Schritten, acht Irisfarben, Blickrichtungen,
 Feuer, Spirale). Jedes Musikmerkmal hat sein eigenes Element: der Bass weitet die Pupille (Linse), lässt die Rinde
 pumpen und die Kamera atmen; jeder Beat schaltet das Myzel in den Wurzeln einen Schritt weiter (Lauflicht 1-2-3-4,
-Muster wechseln alle 25-45 s) und lässt den Mond pulsen; acht Frösche auf den Seerosenblättern
-(`assets/woodeye/figures.png`, Reihen sitzend, Kehlsack, Sprung) sind die acht Frequenzbänder, der dicke
-Ochsenfrosch links der Bass, die kleinen rechts die Höhen: der Kehlsack bläht sich mit der Bandenergie, laute Bänder
-springen, das Auge schaut zum lautesten Frosch; dazu das Tauchspiel im Takt: auf Beats springt immer mal ein Frosch
+Muster wechseln alle 25-45 s) und lässt den Mond pulsen; acht Seerosenblätter sind die acht Frequenzbänder, links
+der Bass, rechts die Höhen: wer dort sitzt, bläht den Kehlsack mit der Bandenergie, laute Bänder lassen ihn hüpfen
+(flüssige Sprungfolge aus acht Bildern, `assets/woodeye/frogs.png`, vier Arten), das Auge schaut zum lautesten.
+Wie viele Frösche da sind, entscheidet die Musik: in der Stille keiner, bei leiser Musik vereinzelt, wenn sie
+richtig loslegt, kommen alle acht aus dem Wasser (Auftauch-Sequenz, `assets/woodeye/dive.png`), und wenn es wieder
+leiser wird, springen sie nacheinander hinein. Dazu das Tauchspiel im Takt: auf Beats springt mal einer kopfüber
 ins Wasser (Spritzer, Ringe, psychedelische Nachbilder), wabert als bunter Schatten unter der Oberfläche und taucht
-ein paar Beats später wieder auf; zwei Frösche schwimmen links und rechts halb untergetaucht im Wasser statt auf
-Felsen zu sitzen; die Mitten wiegen das Kronendach und lassen Pollen steigen; die Höhen
+ein paar Beats später wieder auf; die Mitten wiegen das Kronendach und lassen Pollen steigen; die Höhen
 funkeln als Glühwürmchen und Tautropfen. Beim Drop blinzelt das Auge und brennt, die Iris wechselt die Farbe, eine
 Sporenwolke steigt auf, alle Frösche springen, das Lauflicht wechselt die Richtung und eine Farbwelle läuft durchs
-Myzel. In der Stille schließt sich das Auge langsam, das Myzel glimmt nur noch, die Frösche schlafen. Knüppel links =
-der Fuchs tanzt am Wurzelstock (Pose wechselt mit jedem Beat), rechts = die Eule kreist um den Baum (Flügelschlag auf
+Myzel. In der Stille schließt sich das Auge langsam, das Myzel glimmt nur noch, die Blätter sind leer. Knüppel links =
+die Eule kreist um den Baum (Flügelschlag auf den Beat), rechts = zwölf kleine Zwerge lugen über die Wurzeln
+(`assets/woodeye/gnomes.png`, steigen nacheinander auf, wippen mit dem Bass, ducken sich auf den Beat, ab und zu
+winkt einer), oben = beide, nochmal = aus; unten = Kaleidoskop (Spiral-Iris, Farben kreisen). Startknopf = Froschchor
+(Welle durch alle Blätter, leere bekommen Besuch), Kippschalter AN = Nahaufnahme ins Auge, AUS = zurück. Board: Türkis,
+Zwerge/Eule/Chor als
 den Beat), oben = beide, nochmal = aus; unten = Kaleidoskop (Spiral-Iris, Farben kreisen). Startknopf = Froschchor
 (Welle durch alle Frösche), Kippschalter AN = Nahaufnahme ins Auge, AUS = zurück. Board: Türkis, Fuchs/Eule/Chor als
 Ereignisprofile (`config/wled.toml` `woodeye_*`). Augenmitte und -größe: `config/visualizer.toml` `[scenes.woodeye]`
-`eye`. Bildmaterial: `scripts/trip_assets.py plate|grid` (Raster-Atlas in Bildreihenfolge). Controller
+`eye`. Bildmaterial: `scripts/trip_assets.py plate|grid|slice` (`slice` schneidet Animationsbögen in gleich große Zellen). Controller
 `visualizers/scenes/woodeye.py`, Shader `visualizers/shaders/woodeye/frag.glsl`.
 Test: `python -m visualizers.engine woodeye --test-signal --demo`.
 
