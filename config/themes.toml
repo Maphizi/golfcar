@@ -46,3 +46,23 @@ cover_style = 2
 color_a = [0.42, 0.62, 0.22]
 color_b = [0.35, 0.22, 0.10]
 tint = [0.45, 0.75, 0.3]
+
+[[themes]]
+name = "future"
+content = "space"
+title = "ZURÜCK IN DIE ZUKUNFT"
+tagline = "88 MEILEN PRO STUNDE BIS LOCH 19"
+dir = "future"
+driver_title = "ZEITREISE-FAHRER"
+eyes = [[0.467, 0.694], [0.555, 0.694]]
+eye_r = 0.026
+missions = [
+  "1,21 GIGAWATT, BITTE BEIM BLITZ TANKEN", "FAHRGAST AUS 1955 WILL ZUM TANZ",
+  "HOVERBOARD GEHT NICHT ÜBER WASSER", "PLUTONIUM IM KOFFERRAUM, VORSICHT BEIM BREMSEN",
+  "UHRTURM UM 22:04 ERREICHEN, SONST NIE", "SPORTALMANACH NICHT ANNEHMEN",
+  "ZUM TWIN PINES MALL, DOPPELT HIN", "BIFF STEHT AM STRASSENRAND. WEITERFAHREN.",
+]
+cover_style = 3
+color_a = [0.95, 0.55, 0.12]
+color_b = [0.2, 0.4, 0.95]
+tint = [0.95, 0.6, 0.2]

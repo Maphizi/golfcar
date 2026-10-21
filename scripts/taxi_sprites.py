@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Mission-Logo und schwebende Figuren für den Taxistand vorbereiten.
 
-    .venv/bin/python scripts/taxi_sprites.py LOGO.png FIGURENBOGEN.png [--out assets/taxi/space] [--max 24] [--side 130]
+    .venv/bin/python scripts/taxi_sprites.py LOGO.png FIGURENBOGEN.png [--out assets/taxi/space] [--max 24] [--side 130] [--split 8]
 Schreibt <out>/mission.png (Logo, auf 1024 Breite) und <out>/sprites.png (Atlas 8 x 3
 Zellen à 96 px, RGBA). Logo und Bogen dürfen einen Alphakanal haben, einen schwarzen Hintergrund (Logo) oder ein eingebranntes
 Transparenz-Schachbrett (wird herausgerechnet); aus dem Bogen werden die
 Zusammenhangskomponenten genommen, die kleinen (längste Seite <= --side Pixel) bevorzugt, bis --max
-Stück, von unten nach oben. Braucht numpy, pygame, scipy (nur zum Erzeugen).
+Stück, von unten nach oben. --split N trennt sich berührende Objekte (Erosion um N Pixel). Braucht numpy, pygame, scipy (nur zum Erzeugen).
 """
 from __future__ import annotations
 
@@ -81,7 +81,15 @@ def main() -> int:
     rgb, alpha = derive_alpha(pygame.image.load(sys.argv[2]).convert_alpha())
     fg = alpha > 40
     fg = ndimage.binary_closing(fg, iterations=2)
-    lab, n = ndimage.label(fg)
+    split = int(sys.argv[sys.argv.index("--split") + 1]) if "--split" in sys.argv else 0
+    if split > 0:
+        # Objekte, die sich berühren, trennen: Maske erodieren, Kerne beschriften, Pixel dem nächsten Kern zuordnen
+        core = ndimage.binary_erosion(fg, iterations=split)
+        lab, n = ndimage.label(core)
+        _, (iy, ix) = ndimage.distance_transform_edt(lab == 0, return_indices=True)
+        lab = np.where(fg, lab[iy, ix], 0)
+    else:
+        lab, n = ndimage.label(fg)
     objs = ndimage.find_objects(lab)
     items = []
     for i, sl in enumerate(objs):
