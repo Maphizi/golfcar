@@ -95,6 +95,17 @@ Strudel, ~40-60 s), OBEN = Blätterregen, UNTEN = Umkehrung (Fontäne, Seegrund)
 Zoom. Beat = Ring, Drop = `uFlash`. Wasserebene perspektivisch: Shader-Konstante `FLAT` (y gestaucht).
 Test: `python -m visualizers.engine pond --test-signal --demo`.
 
+## Auge des Waldes (`visualizers/scenes/woodeye.py`, Thema green ersetzt Taste 4 / HAL)
+`themes.toml` `modes = { hal = "woodeye" }`. Szene `assets/woodeye/scene.png`, Augen `eyes.png` (8x3 à 224: Reihe 0 Öffnen
+0..7, Reihe 1 Irisfarben 8..15, Reihe 2: 16 links, 17 Mitte, 18 rechts, 19 oben, 20 unten, 21 halb, 22 Feuer, 23 Spirale),
+Figuren `figures.png` (8x4 à 192: Reihe 0 Frösche sitzend, 1 Kehlsack, 2 Sprung, 3 Fuchs 24-27 / Eule 28-31), gebaut mit
+`scripts/trip_assets.py grid AUS.png BOGEN.png 8 3 224` (Zellen in Bildreihenfolge). Frosch i = Spektrumband i (`FROGS`
+Position/Größe im Controller, `uBands0/1`, `uFrogN.w` Sprungphase). Beat -> `uStep`/`uPattern` Lauflicht auf den türkisen
+Stellen des Fotos (Shader erkennt Türkis), Drop -> `uFlash`, `uSporeT`, Auge Feuer + neue Irisfarbe. Auge über `uBlink`
+(Öffnung, Reihe 0) und `uEyeA/uEyeB/uEyeMix` (Blickzelle). Knüppel LINKS Fuchs / RECHTS Eule / OBEN beide (`uFig`, `uOwl`),
+UNTEN Kaleidoskop, ENTER Froschchor (`uChorusT`), SPACE/BACKSPACE Zoom. `[scenes.woodeye] eye = [x, y, Breite]`.
+Test: `python -m visualizers.engine woodeye --test-signal --demo`.
+
 ## Navigationscomputer (`visualizers/scenes/navcomputer.py`)
 ENTER = Flug starten, Flug endet NUR per Kippschalter (SPACE oder BACKSPACE im Flug = Ankunft), nie von selbst
 (Demo: cruise_seconds). Ereignisse alle 30–60 s (`EVENTS`): Asteroidenfeld, Farbnebel, Sonne, Wurmloch,

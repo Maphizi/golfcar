@@ -104,3 +104,9 @@ render_scale = 1.0
 shader = "navcomputer"
 controller = "navcomputer"
 render_scale = 0.75
+
+[scenes.woodeye]
+shader = "woodeye"
+controller = "woodeye"     # Das Auge des Waldes (Thema Power of the Green, Gegenstück zu HAL 3000)
+render_scale = 0.6
+eye = [0.511, 0.722, 0.175] # Augenmitte x, y (von unten), Breite (Bildanteile)

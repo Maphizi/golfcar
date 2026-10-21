@@ -7,6 +7,7 @@
     .venv/bin/python scripts/trip_assets.py bar BILD.png            -> assets/trip/bar.png (max. 1920 breit)
     .venv/bin/python scripts/trip_assets.py atlas AUS.png BOGEN.png SPALTEN REIHEN ZELLE [SPLIT]   (beliebiger Bogen, z. B. Moorsee)
     .venv/bin/python scripts/trip_assets.py plate AUS.png BILD.png  (Vollbild, max. 1920 breit)
+    .venv/bin/python scripts/trip_assets.py grid AUS.png BOGEN.png SPALTEN REIHEN ZELLE [SPLIT]    (Bogen mit Raster, Reihenfolge bleibt; Auge des Waldes)
 Wesen-Bogen: 5 Spalten x 4 Reihen auf Schwarz, jede Zelle wird einzeln freigestellt (gefüllte Fläche).
 Symbol-Bogen: viele kleine Objekte auf Schwarz, Zusammenhangskomponenten, größte zuerst.
 Braucht numpy, pygame, scipy (nur zum Erzeugen).
@@ -94,6 +95,38 @@ def beings(path: str, cols: int = 5, rows: int = 4, cell: int = 256, split: int 
     print(f"Wesen: {len(items)} Objekte in {cols}x{rows} Zellen à {cell} px")
 
 
+def grid(out_path: str, path: str, cols: int, rows: int, cell: int, split: int = 5) -> None:
+    """Bogen mit Rasteranordnung (z. B. 8x3 Augen, 8x4 Frösche/Figuren) -> Atlas in derselben Reihenfolge:
+    jedes Objekt landet in der Zelle, in der sein Schwerpunkt im Quellbild liegt (für andere Modi)."""
+    rgb, alpha = derive_alpha(pygame.image.load(path).convert_alpha())
+    H, W = alpha.shape
+    lab, items = _components(alpha, split)
+    items.sort(key=lambda it: -it["area"])
+    items = items[:cols * rows]
+    for it in items:
+        it["r"] = min(rows - 1, int(it["cy"] * rows / H))
+        it["c"] = min(cols - 1, int(it["cx"] * cols / W))
+    items.sort(key=lambda it: (it["r"], it["c"]))
+    atlas = np.zeros((rows * cell, cols * cell, 4), dtype=np.uint8)
+    used = set()
+    for it in items:
+        r, c = it["r"], it["c"]
+        if (r, c) in used:
+            free = [(rr, cc) for rr in range(rows) for cc in range(cols) if (rr, cc) not in used]
+            if not free:
+                break
+            r, c = free[0]
+            print(f"  Hinweis: Objekt bei ({it['cx']:.0f},{it['cy']:.0f}) doppelt in Zelle, nach ({r},{c}) verschoben")
+        used.add((r, c))
+        sl = it["sl"]
+        mask = lab[sl] == it["idx"]
+        arr, al = fit_cell(rgb[sl], (alpha[sl] * mask).astype(np.uint8), cell)
+        place(atlas, arr, al, r, c, cell)
+    out = pygame.image.frombuffer(atlas.tobytes(), (cols * cell, rows * cell), "RGBA")
+    pygame.image.save(out, out_path)
+    print(f"Raster {out_path}: {len(items)} Objekte in {cols}x{rows} Zellen à {cell} px")
+
+
 def symbols(path: str, cols: int = 8, rows: int = 5, cell: int = 128, split: int = 5) -> None:
     rgb, alpha = derive_alpha(pygame.image.load(path).convert_alpha())
     lab, items = _components(alpha, split)
@@ -164,6 +197,8 @@ def main() -> int:
         beings(sys.argv[2])
     elif cmd == "symbols":
         symbols(sys.argv[2])
+    elif cmd == "grid":
+        grid(sys.argv[2], sys.argv[3], int(sys.argv[4]), int(sys.argv[5]), int(sys.argv[6]), int(sys.argv[7]) if len(sys.argv) > 7 else 5)
     elif cmd == "texture":
         texture(sys.argv[2], sys.argv[3])
     elif cmd == "bar":

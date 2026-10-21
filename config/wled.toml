@@ -75,6 +75,14 @@ col2 = [5, 20, 40]
 sx  = 35
 ix  = 150
 
+[modes.woodeye]             # Auge des Waldes: Myzel-Türkis, langsam atmend
+bri = 170
+fx  = 2
+col = [30, 255, 170]
+col2 = [0, 20, 15]
+sx  = 40
+ix  = 150
+
 [modes.blackhole]           # Schwarzes Loch: oranges Glühen der Akkretionsscheibe, langsam kreisend
 bri = 170
 fx  = 76          # Meteor
@@ -224,3 +232,37 @@ col = [255, 170, 60]
 col2 = [20, 5, 0]
 sx  = 120
 ix  = 220
+
+[modes.woodeye_fox]         # Knüppel links: der Fuchs tanzt – Fuchsrot auf Türkis
+bri = 200
+fx  = 2
+col = [255, 110, 20]
+col2 = [0, 40, 25]
+sx  = 60
+ix  = 150
+
+[modes.woodeye_owl]         # Knüppel rechts: die Eule kreist – warmes Weiß, Kometen
+bri = 190
+fx  = 59
+col = [255, 220, 160]
+col2 = [0, 30, 20]
+sx  = 70
+ix  = 150
+
+[modes.woodeye_both]        # Knüppel oben: beide – Rot und Weiß als Kometen auf Türkis
+bri = 210
+fx  = 59
+col = [255, 110, 20]
+col2 = [0, 40, 25]
+col3 = [255, 220, 160]
+pal = 3
+sx  = 90
+ix  = 160
+
+[modes.woodeye_chorus]      # Startknopf: Froschchor (4 s) – grünes Funkeln
+bri = 230
+fx  = 20
+col = [120, 255, 80]
+col2 = [0, 30, 10]
+sx  = 200
+ix  = 200

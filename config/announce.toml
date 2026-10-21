@@ -49,6 +49,10 @@ news = [
   "Galaktische Nachrichten. Alles erfunden, nichts davon falscher als die echten.",
   "Sender wird aufgebaut. Die Redaktion ist ein Droide mit Fantasie.",
 ]
+woodeye = [
+  "Der Wald öffnet ein Auge. Bitte nicht anstarren, er starrt zurück.",
+  "Das Auge des Waldes erwacht. Die Frösche stimmen schon mal an.",
+]
 hal = [
   "HAL wird geweckt. Bitte nicht erschrecken, er meint es gut. Sagt er.",
   "Zentralrechner online. Er sieht alles. Er beurteilt auch alles.",

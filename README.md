@@ -580,6 +580,26 @@ Glühwürmchen funkeln mit den Höhen. Alle zufälligen Kreaturen (`assets/pond/
 `water`) sind konfigurierbar. Controller `visualizers/scenes/pond.py`, Shader
 `visualizers/shaders/pond/frag.glsl`. Test: `python -m visualizers.engine pond --test-signal --demo`.
 
+**Das Auge des Waldes (Taste 4 im Thema THE POWER OF THE GREEN, `woodeye`):** Das Gegenstück zu HAL 3000
+(`themes.toml` `modes = { hal = "woodeye" }`). Ein uralter Baum bei Nacht (`assets/woodeye/scene.png`), in der
+Rinde ein riesiges Auge (`assets/woodeye/eyes.png`, 8x3: Öffnen in acht Schritten, acht Irisfarben, Blickrichtungen,
+Feuer, Spirale). Jedes Musikmerkmal hat sein eigenes Element: der Bass weitet die Pupille (Linse), lässt die Rinde
+pumpen und die Kamera atmen; jeder Beat schaltet das Myzel in den Wurzeln einen Schritt weiter (Lauflicht 1-2-3-4,
+Muster wechseln alle 25-45 s) und lässt den Mond pulsen; acht Frösche auf den Seerosenblättern
+(`assets/woodeye/figures.png`, Reihen sitzend, Kehlsack, Sprung) sind die acht Frequenzbänder, der dicke
+Ochsenfrosch links der Bass, die kleinen rechts die Höhen: der Kehlsack bläht sich mit der Bandenergie, laute Bänder
+springen, das Auge schaut zum lautesten Frosch; die Mitten wiegen das Kronendach und lassen Pollen steigen; die Höhen
+funkeln als Glühwürmchen und Tautropfen. Beim Drop blinzelt das Auge und brennt, die Iris wechselt die Farbe, eine
+Sporenwolke steigt auf, alle Frösche springen, das Lauflicht wechselt die Richtung und eine Farbwelle läuft durchs
+Myzel. In der Stille schließt sich das Auge langsam, das Myzel glimmt nur noch, die Frösche schlafen. Knüppel links =
+der Fuchs tanzt am Wurzelstock (Pose wechselt mit jedem Beat), rechts = die Eule kreist um den Baum (Flügelschlag auf
+den Beat), oben = beide, nochmal = aus; unten = Kaleidoskop (Spiral-Iris, Farben kreisen). Startknopf = Froschchor
+(Welle durch alle Frösche), Kippschalter AN = Nahaufnahme ins Auge, AUS = zurück. Board: Türkis, Fuchs/Eule/Chor als
+Ereignisprofile (`config/wled.toml` `woodeye_*`). Augenmitte und -größe: `config/visualizer.toml` `[scenes.woodeye]`
+`eye`. Bildmaterial: `scripts/trip_assets.py plate|grid` (Raster-Atlas in Bildreihenfolge). Controller
+`visualizers/scenes/woodeye.py`, Shader `visualizers/shaders/woodeye/frag.glsl`.
+Test: `python -m visualizers.engine woodeye --test-signal --demo`.
+
 **Flug und Ankunft im Navigationscomputer:** Der Startknopf startet den Flug (Kippschalter AN
 zeigt vorher nur SCHARF an). Der Hyperraumflug endet nie von selbst: erst wenn der Pilot den
 Kippschalter umlegt (egal in welche Richtung), kommt die Ankunft. Nur im `--demo` gilt die feste

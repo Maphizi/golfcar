@@ -46,6 +46,12 @@ command = ["{python}", "-m", "visualizers.engine", "pond"]
 cwd = "{root}"
 stop_timeout = 3
 
+[modes.woodeye]
+label = "AUGE DES WALDES"
+command = ["{python}", "-m", "visualizers.engine", "woodeye"]
+cwd = "{root}"
+stop_timeout = 3
+
 [modes.viz_crt]
 label = "ZIELCOMPUTER"
 command = ["{python}", "-m", "visualizers.engine", "crt"]
