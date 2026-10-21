@@ -48,3 +48,20 @@ THEMES = [
         "jackpot": ["SCHWARZES LOCH dreifach. Der Wahnsinn gehört dir.", "Jackpot. Die Pizza ist jetzt dein Chef."],
     },
 ]
+
+# Der Pilzautomat (Thema THE POWER OF THE GREEN, visualizers/scenes/forestslots.py): eigener Bogen, eigene Zeile,
+# nicht Teil der drei Space-Automaten. Letztes Symbol = Jackpot (Lichthirsch).
+FOREST = {
+    "name": "PILZAUTOMAT", "sheet": "forest.png",
+    "title": "DER PILZAUTOMAT", "subtitle": "DER WALD GIBT. DER WALD NIMMT. MEIST NIMMT ER.",
+    "colors": ((0.35, 0.95, 0.70), (0.95, 0.70, 0.25)),
+    "symbols": ["FLIEGENPILZ", "FROSCH", "EULE", "GLUEHWUERMCHEN", "EICHEL", "FARN", "SCHNECKE", "FUCHS", "LICHTHIRSCH"],
+    "lose": ["Verloren. Die Schnecke war schneller als dein Glück.", "Nichts. Die Eule hat es kommen sehen.",
+             "Verlust. Der Fliegenpilz lacht sich die Punkte vom Hut.", "Kein Gewinn. Der Wald behält seine Eicheln.",
+             "Nichts. Der Fuchs hat deinen Einsatz schon vergraben."],
+    "near": ["Fast. Der Farn hat sich im letzten Moment weggedreht.", "Zwei Treffer. Das dritte hängt noch am Ast.",
+             "Knapp. Der Frosch hat gezuckt."],
+    "small": ["Kleiner Gewinn. Eine Handvoll Eicheln.", "Gewonnen. Das Glühwürmchen leuchtet für dich."],
+    "big": ["Drei gleiche. Der Wald rauscht Beifall.", "Gewinn. Die Pilze leuchten in deiner Farbe."],
+    "jackpot": ["LICHTHIRSCH dreifach. Der Wald gehört heute Nacht dir.", "Jackpot. Der Hirsch galoppiert durch den Wald."],
+}

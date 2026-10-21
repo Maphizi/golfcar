@@ -600,6 +600,23 @@ Ereignisprofile (`config/wled.toml` `woodeye_*`). Augenmitte und -größe: `conf
 `visualizers/scenes/woodeye.py`, Shader `visualizers/shaders/woodeye/frag.glsl`.
 Test: `python -m visualizers.engine woodeye --test-signal --demo`.
 
+**Der Pilzautomat (Taste 5 im Thema THE POWER OF THE GREEN, `forestslots`):** Das Gegenstück zur
+Space-Slotmaschine (`themes.toml` `modes = { slots = "forestslots" }`). Ein Baumstumpf im Nachtwald
+(`assets/forestslots/scene.png`) ist der Automat, seine drei ausgehöhlten Fenster sind die Walzen; die Symbole
+(`assets/forestslots/symbols.png`, 3x3: Fliegenpilz, Frosch, Eule, Glühwürmchen, Eichel, Farn, Schnecke, Fuchs,
+Lichthirsch = Jackpot) laufen auf feuchten Holztrommeln. Die Spiellogik ist die der Space-Slotmaschine (Walzen,
+Gewinnplanung, Fast-Gewinn, Nachdrehen, Jackpot, Mega), `visualizers/scenes/forestslots.py` erbt sie. Statt dreier
+Automaten wechselt der Knüppel links/rechts den Einsatz: Eichel (10 CR, x1), Pilz (50 CR, x5), Hirsch (200 CR,
+x20), der Stumpf leuchtet mit dem Einsatz stärker. Startknopf = Hebel ziehen. Musik: der Bass lässt die leuchtenden
+Pilze pulsieren und die Kamera atmen, Beats glimmen im Moos und zucken auf der Gewinnlinie, Höhen funkeln als
+Glühwürmchen und Tautropfen, Mitten lassen den Nebel atmen, Drops schicken eine Sporenwolke und eine Farbwelle über
+die Pilze und die nächste Drehung läuft schneller an. Gewinne: zwei gleiche = Glühwürmchen schwärmen aus den
+Fenstern, drei gleiche = Blätter und Pollen regnen, die Pilze leuchten in Wellen, der Fuchs tanzt am Stumpf
+(Figuren vom Auge des Waldes); Lichthirsch = der ganze Wald leuchtet auf, der Hirsch galoppiert mit Funkenschweif
+durchs Bild, Sporenfeuerwerk, Board in Gold und Grün (`config/wled.toml` `forestslots_*`). Fensterpositionen:
+`config/visualizer.toml` `[scenes.forestslots]` `windows`, `window_y`. Shader
+`visualizers/shaders/forestslots/frag.glsl`. Test: `python -m visualizers.engine forestslots --test-signal`.
+
 **Flug und Ankunft im Navigationscomputer:** Der Startknopf startet den Flug (Kippschalter AN
 zeigt vorher nur SCHARF an). Der Hyperraumflug endet nie von selbst: erst wenn der Pilot den
 Kippschalter umlegt (egal in welche Richtung), kommt die Ankunft. Nur im `--demo` gilt die feste

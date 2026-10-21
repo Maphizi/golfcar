@@ -83,6 +83,14 @@ col2 = [0, 20, 15]
 sx  = 40
 ix  = 150
 
+[modes.forestslots]         # Pilzautomat: Pilzgold auf Moosgrün, pulsierend
+bri = 170
+fx  = 162
+col = [255, 190, 60]
+col2 = [10, 50, 20]
+sx  = 90
+ix  = 140
+
 [modes.blackhole]           # Schwarzes Loch: oranges Glühen der Akkretionsscheibe, langsam kreisend
 bri = 170
 fx  = 76          # Meteor
@@ -266,3 +274,21 @@ col = [120, 255, 80]
 col2 = [0, 30, 10]
 sx  = 200
 ix  = 200
+
+[modes.forestslots_win]     # großer Gewinn (5 s): grün-goldenes Funkeln
+bri = 255
+fx  = 20
+col = [120, 255, 90]
+col2 = [60, 40, 0]
+sx  = 220
+ix  = 220
+
+[modes.forestslots_jackpot] # Lichthirsch (8 s): Feuerwerk in Gold und Grün
+bri = 255
+fx  = 42
+col = [255, 220, 80]
+col2 = [90, 255, 90]
+col3 = [255, 255, 255]
+pal = 3
+sx  = 200
+ix  = 230

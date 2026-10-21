@@ -52,6 +52,12 @@ command = ["{python}", "-m", "visualizers.engine", "woodeye"]
 cwd = "{root}"
 stop_timeout = 3
 
+[modes.forestslots]
+label = "PILZAUTOMAT"
+command = ["{python}", "-m", "visualizers.engine", "forestslots"]
+cwd = "{root}"
+stop_timeout = 3
+
 [modes.viz_crt]
 label = "ZIELCOMPUTER"
 command = ["{python}", "-m", "visualizers.engine", "crt"]

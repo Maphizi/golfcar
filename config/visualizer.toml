@@ -110,3 +110,10 @@ shader = "woodeye"
 controller = "woodeye"     # Das Auge des Waldes (Thema Power of the Green, Gegenstück zu HAL 3000)
 render_scale = 0.6
 eye = [0.511, 0.722, 0.175] # Augenmitte x, y (von unten), Breite (Bildanteile)
+
+[scenes.forestslots]
+shader = "forestslots"
+controller = "forestslots"   # Der Pilzautomat (Thema Power of the Green, Gegenstück zur Space-Slotmaschine)
+render_scale = 0.6
+windows = [[0.335, 0.418], [0.439, 0.528], [0.550, 0.636]]   # x-Bereich der drei Fenster (Bildanteile)
+window_y = [0.447, 0.681]                                     # y-Bereich der Fenster (von unten)

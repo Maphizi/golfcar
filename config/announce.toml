@@ -49,6 +49,10 @@ news = [
   "Galaktische Nachrichten. Alles erfunden, nichts davon falscher als die echten.",
   "Sender wird aufgebaut. Die Redaktion ist ein Droide mit Fantasie.",
 ]
+forestslots = [
+  "Der Pilzautomat. Der Wald gibt, der Wald nimmt. Meist nimmt er.",
+  "Hebel ziehen, Eicheln verlieren. Willkommen am Pilzautomaten.",
+]
 woodeye = [
   "Der Wald öffnet ein Auge. Bitte nicht anstarren, er starrt zurück.",
   "Das Auge des Waldes erwacht. Die Frösche stimmen schon mal an.",

@@ -92,10 +92,10 @@ def build_atlas() -> np.ndarray:
     return img
 
 
-def build_strip(theme: int, reel: int) -> list[int]:
+def build_strip(theme: int, reel: int, themes=art.THEMES) -> list[int]:
     """Feste Symbolfolge je Thema und Walze: Jackpot-Symbol selten, der Rest gleichmäßig gemischt."""
     rng = random.Random(1000 + theme * 10 + reel)
-    n_sym = len(art.THEMES[theme]["symbols"])
+    n_sym = len(themes[theme]["symbols"])
     pool = []
     for s in range(n_sym - 1):
         pool += [s] * 3
@@ -171,8 +171,13 @@ class Controller:
     def __init__(self, scene_cfg: dict, demo: bool = False):
         self.rng = random.Random()
         self.demo = demo
-        self.theme = next_theme_index()
-        self.strips = [build_strip(self.theme, r) for r in range(N_REELS)]
+        self.themes = art.THEMES                          # Unterklassen (Pilzautomat) bringen eigene Automaten mit
+        self.led = ("slots", "slots_win", "slots_jackpot")   # WLED-Profile: Modus, großer Gewinn, Jackpot
+        self.bet = BET
+        self.payout_mult = 1
+        self.strip_row = len(self.themes) * TH            # erste Streifenzeile im Atlas
+        self.theme = self._pick_theme()
+        self.strips = [build_strip(self.theme, r, self.themes) for r in range(N_REELS)]
         self.reels = [Reel() for _ in range(N_REELS)]
         for r in range(N_REELS):
             self.reels[r].pos = float(self.rng.randrange(STRIP_LEN))
@@ -197,9 +202,13 @@ class Controller:
         self.planned_win = WIN_NONE
         self.cfg = scene_cfg
 
+    def _pick_theme(self) -> int:
+        """Automat für diesen Start (zählt den Themenzähler weiter); Unterklassen ohne Wechsel geben 0 zurück."""
+        return next_theme_index()
+
     def _write_strips(self) -> None:
         """Walzenstreifen als Rotwert in die Streifenzeilen des Atlas schreiben (Zeile uStripRow + Walze)."""
-        base = len(art.THEMES) * TH
+        base = self.strip_row
         for r in range(N_REELS):
             self.atlas[base + r, :, :] = 0
             for k, sym in enumerate(self.strips[r]):
@@ -226,7 +235,7 @@ class Controller:
     def _change_theme(self, d: int) -> None:
         if self.state == ST_THEME:
             return
-        self.next_theme = (self.theme + d) % len(art.THEMES)
+        self.next_theme = (self.theme + d) % len(self.themes)
         self._set_state(ST_THEME)
 
     def _positions_of(self, reel: int, sym: int) -> list[int]:
@@ -234,7 +243,7 @@ class Controller:
 
     def _plan(self) -> tuple[int, list[int], int]:
         """Ergebnis vorab würfeln: (Gewinnart, Zielpositionen, Maske der Gewinnwalzen)."""
-        n_sym = len(art.THEMES[self.theme]["symbols"])
+        n_sym = len(self.themes[self.theme]["symbols"])
         jackpot = n_sym - 1
         roll = self.rng.random()
         strips = self.strips
@@ -286,7 +295,7 @@ class Controller:
         if only_reel < 0:
             self.planned_win, targets, self.win_mask_planned = self._plan()
             times = self._stop_pattern()
-            self.credits -= BET
+            self.credits -= self.bet
             self.spins += 1
             for r in range(N_REELS):
                 self.reels[r].start(now, now + times[r], targets[r], self.rng.uniform(5.5, 8.0))
@@ -316,7 +325,7 @@ class Controller:
         return self.strips[reel][(self.reels[reel].target + row_offset) % STRIP_LEN]
 
     def _finish(self) -> None:
-        th = art.THEMES[self.theme]
+        th = self.themes[self.theme]
         vals  = [self._sym_at(r, 0) for r in range(N_REELS)]   # Mittellinie
         diag1 = [self._sym_at(0, -1), self._sym_at(1, 0), self._sym_at(2, +1)]  # ↘
         diag2 = [self._sym_at(0, +1), self._sym_at(1, 0), self._sym_at(2, -1)]  # ↗
@@ -365,11 +374,11 @@ class Controller:
             pool = th["near"] if near else th["lose"]
             self.message_color = (200, 200, 210)
         else:
-            self.credits += PAYOUT[self.win]
+            self.credits += PAYOUT[self.win] * self.payout_mult
             if self.win in (WIN_JACKPOT, WIN_MEGA):
-                wled.apply_mode_async("slots_jackpot")
+                wled.apply_mode_async(self.led[2])
             elif self.win == WIN_BIG:
-                wled.apply_mode_async("slots_win")
+                wled.apply_mode_async(self.led[1])
             mega_msgs = ["MEGA JACKPOT!!!", "ALLE 9 GLEICH!", "UNMÖGLICH!", "DAS UNIVERSUM BEBT!", "WAHNSINN!!!"]
             pool = {WIN_SMALL: th["small"], WIN_BIG: th["big"],
                     WIN_JACKPOT: th["jackpot"], WIN_MEGA: mega_msgs}[self.win]
@@ -404,13 +413,13 @@ class Controller:
                 hold = {WIN_NONE: 1.1, WIN_SMALL: 3.0, WIN_BIG: 5.0, WIN_JACKPOT: 8.0}[self.win]
                 if st_t >= hold:
                     if self.win >= WIN_BIG:
-                        wled.apply_mode_async("slots")          # Board zurück auf Casinolicht
+                        wled.apply_mode_async(self.led[0])      # Board zurück auf das Modusprofil
                     self.idle_len = self.rng.uniform(0.3, 1.0) if self.win == WIN_NONE else self.rng.uniform(0.8, 1.6)
                     self._set_state(ST_IDLE)
         elif self.state == ST_THEME:
             if st_t >= 0.9 and self.theme != self.next_theme:
                 self.theme = self.next_theme
-                self.strips = [build_strip(self.theme, r) for r in range(N_REELS)]
+                self.strips = [build_strip(self.theme, r, self.themes) for r in range(N_REELS)]
                 self._write_strips()
                 for r in range(N_REELS):
                     self.reels[r].pos = float(self.rng.randrange(STRIP_LEN))
@@ -431,7 +440,7 @@ class Controller:
     def uniforms(self, t: float, f) -> dict:
         self._advance()
         now = time.monotonic()
-        th = art.THEMES[self.theme]
+        th = self.themes[self.theme]
         st_t = now - self.state_t0
         fade = 0.0
         if self.state == ST_THEME:
@@ -450,19 +459,19 @@ class Controller:
             "uWinMask": float(self.win_mask),
             "uBlur": tuple(self.blur),
             "uFade": fade,
-            "uStripRow": float(len(art.THEMES) * TH),
+            "uStripRow": float(self.strip_row),
             "uTile": (float(TW), float(TH)),
         }
 
     def overlays(self, t: float):
-        th = art.THEMES[self.theme]
+        th = self.themes[self.theme]
         now = time.monotonic()
         st_t = now - self.state_t0
         dim = 1.0 - 0.4 * max(self.blur)
         out = [
             (th["title"], 0.026, 0.5, 0.962, GOLD, 0.85 * dim),
             (th["subtitle"], 0.016, 0.5, 0.93, (255, 240, 200), 0.6 * dim),
-            (f"GUTHABEN  {self.credits} CR      EINSATZ  {BET} CR", 0.017, 0.5, 0.028, (190, 190, 200), 0.7 * dim),
+            (f"GUTHABEN  {self.credits} CR      EINSATZ  {self.bet} CR", 0.017, 0.5, 0.028, (190, 190, 200), 0.7 * dim),
         ]
         if self.state == ST_RESULT and self.message:
             pulse = 1.0 if self.win == WIN_NONE else 0.8 + 0.2 * math.sin(t * 3.0)

@@ -106,6 +106,17 @@ Stellen des Fotos (Shader erkennt Türkis), Drop -> `uFlash`, `uSporeT`, Auge Fe
 UNTEN Kaleidoskop, ENTER Froschchor (`uChorusT`), SPACE/BACKSPACE Zoom. `[scenes.woodeye] eye = [x, y, Breite]`.
 Test: `python -m visualizers.engine woodeye --test-signal --demo`.
 
+## Pilzautomat (`visualizers/scenes/forestslots.py`, Thema green ersetzt Taste 5 / Slots)
+`themes.toml` `modes = { slots = "forestslots" }`. Erbt `slots.Controller` (Walzen, Planung, Gewinne); Basis ist dafür
+parametrisiert: `self.themes`, `self.led` (WLED-Profile Modus/Gewinn/Jackpot), `self.bet`, `self.payout_mult`,
+`self.strip_row`, `_pick_theme()`. Eigener Atlas: Bogen `assets/forestslots/symbols.png` 3x3 à 384x256 (Schwarz = frei),
+Thema `slots_themes.FOREST` (letztes Symbol = Lichthirsch = Jackpot). Szene `assets/forestslots/scene.png`, Fenster
+`[scenes.forestslots] windows = [[x0,x1],...]`, `window_y = [y0,y1]`. Knüppel links/rechts = Einsatz `STAKES`
+(Eichel/Pilz/Hirsch) statt Automatenwechsel. Shader zeichnet Trommeln in den Fenstern (`drum()`), Pilze im Foto pulsieren
+(helle gesättigte Stellen), `uWin` 1 Glühwürmchen, 2 Blätter + Fuchs (`assets/woodeye/figures.png`), 3/4 Lichthirsch
+galoppiert; Drop `uFlash`/`uSporeT`, nächste Drehung schneller (`drop_boost`).
+Test: `python -m visualizers.engine forestslots --test-signal`.
+
 ## Navigationscomputer (`visualizers/scenes/navcomputer.py`)
 ENTER = Flug starten, Flug endet NUR per Kippschalter (SPACE oder BACKSPACE im Flug = Ankunft), nie von selbst
 (Demo: cruise_seconds). Ereignisse alle 30–60 s (`EVENTS`): Asteroidenfeld, Farbnebel, Sonne, Wurmloch,
