@@ -30,6 +30,12 @@ class Action(str, Enum):
     FORESTSLOTS = "forestslots"   # Pilzautomat (kittctl forestslots)
     HEARTTREE = "hearttree"    # Herzbaum (kittctl hearttree)
     OVERDOSE = "overdose"      # Überdosis (kittctl overdose)
+    NEONRACE = "neonrace"      # Cyber: Neonfahrt
+    CORE = "core"              # Cyber: Der Kern
+    ORACLE = "oracle"          # Cyber: Das Orakel
+    CYBERSLOTS = "cyberslots"  # Cyber: Pachinko
+    ROOFTOP = "rooftop"        # Cyber: Dachterrasse
+    BLACKICE = "blackice"      # Cyber: Black Ice
     TALK = "talk"              # Sprechtaste: bei HAL Musik leise + Mikrofon an/aus (Taste F15 an den Modus)
 
 
@@ -54,6 +60,12 @@ ACTION_TO_MODE = {
     Action.FORESTSLOTS: "forestslots",
     Action.HEARTTREE: "hearttree",
     Action.OVERDOSE: "overdose",
+    Action.NEONRACE: "neonrace",
+    Action.CORE: "core",
+    Action.ORACLE: "oracle",
+    Action.CYBERSLOTS: "cyberslots",
+    Action.ROOFTOP: "rooftop",
+    Action.BLACKICE: "blackice",
     Action.HOME: "home",
 }
 

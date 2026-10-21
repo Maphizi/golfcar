@@ -168,3 +168,77 @@ planeten = [
   "Sternenhimmel über dem Wald. Die Bäume kennen jeden Stern beim Namen. Du keinen.",
 ]
 kitt = []
+
+[themes.cyber]
+voice = "de_DE-kerstin-low"      # die KI: weiblich, kühl, mit kurzem Hall und leichter Modulation
+tts = { pitch_factor = 1.0, length_scale = 0.95, robot = true, robot_freq = 90.0, robot_mix = 0.2, robot_bits = 0, robot_comb_ms = 3.0, echo_ms = 90, echo_mix = 0.18, echo_decay = 0.4 }
+
+[themes.cyber.lines]
+theme = [
+    "Verbindung steht. Willkommen in Sektor 7. Deine Daten sind bereits unterwegs.",
+    "Neon geladen. Regen geladen. Fahrer wird geladen. Bitte warten.",
+    "Cyberpunk aktiv. Der Konzern grüßt. Der Konzern grüßt immer.",
+]
+boot = [
+    "System hochgefahren. Die Stadt schläft nie. Du auch nicht mehr.",
+    "Guten Abend, Fahrer. Dein Puls wurde registriert. Zur Sicherheit.",
+    "Online. Das Netz hat dich gesehen. Es findet dich interessant.",
+]
+home = [
+    "Zurück am Taxistand. Der Regen hat gewartet.",
+    "Sektor 7, Taxistand. Die Neonkatze hat deinen Platz freigehalten.",
+    "Am Stand. Das Taxameter läuft trotzdem.",
+]
+neonrace = [
+    "Neonfahrt. Startknopf, und die Stadt zieht vorbei. Bremsen ist Verhandlungssache.",
+    "Scheibenwischer an, Neon an, Verstand aus. Losfahren.",
+    "Die Straße gehört dir. Die Polizeidrohnen sehen das anders.",
+]
+core = [
+    "Der Kern. Alles, was hineinfällt, wird zu Daten. Auch du, wenn du zu nah kommst.",
+    "Reaktorkern online. Bitte nichts Wertvolles hineinwerfen. Oder doch.",
+    "Der Kern hat Hunger. Füttere ihn mit dem Knüppel.",
+]
+oracle = [
+    "Das Orakel erwacht. Es weiß, was du gleich fragst. Es weiß auch die Antwort. Es sagt sie nicht.",
+    "Hologramm geladen. Die Maske spricht, wenn du den Startknopf drückst. Höflich sein.",
+    "Das Orakel. Acht Tafeln, eine Wahrheit, keine Garantie.",
+]
+cyberslots = [
+    "Pachinko. Der Konzern gewinnt. Die Katze auch. Du nicht.",
+    "Hebel ziehen, Eddies verlieren. Willkommen in Sektor 7.",
+    "Der KI-Kern zahlt aus. Einmal pro Jahrhundert. Dieses nicht.",
+]
+rooftop = [
+    "Dachterrasse. Die Stadt pulst. Nicht anlehnen, das Geländer ist nur Hologramm.",
+    "Über den Dächern. Regen, Neon, und ein Fahrer, der nicht runterschauen sollte.",
+    "Die Stadt von oben. Jedes Fenster ein Leben. Keins davon deins.",
+]
+blackice = [
+    "Einbruch erkannt. Das ICE ist schwarz. Dein Puls auch gleich.",
+    "Du wurdest zurückverfolgt. Der Konzern schickt Grüße. Und Daemonen.",
+    "Black Ice. Jack out, solange du noch kannst. Oder bleib. Das ICE ist geduldig.",
+]
+error = [
+    "Störung im Netz. Ein Daemon hat sich festgesetzt. Er bleibt.",
+]
+gaming = [
+    "Arcade geladen. Deine Highscores gehören dem Konzern.",
+    "Spielhalle Sektor 7. Die Katze führt die Bestenliste.",
+]
+droid = [
+    "Der Bord-Droide wird geweckt. Der Konzern hätte lieber einen Toaster geschickt.",
+]
+news = [
+    "Nachrichten aus Sektor 7. Alles bestätigt. Von niemandem.",
+]
+viz_crt = [
+    "Zielcomputer aus Chrom. Er zielt auf nichts. Die Stadt zielt zurück.",
+]
+viz_eye = [
+    "Scan läuft. Drei Drohnen, zwei Katzen, ein Fahrer. Einer davon verdächtig.",
+]
+planeten = [
+    "Sternenhimmel über der Stadt. Alles Hologramm. Alles schön.",
+]
+kitt = []

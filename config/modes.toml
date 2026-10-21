@@ -70,6 +70,42 @@ command = ["{python}", "-m", "visualizers.engine", "overdose"]
 cwd = "{root}"
 stop_timeout = 3
 
+[modes.neonrace]
+label = "NEONFAHRT"
+command = ["{python}", "-m", "visualizers.engine", "neonrace"]
+cwd = "{root}"
+stop_timeout = 3
+
+[modes.core]
+label = "DER KERN"
+command = ["{python}", "-m", "visualizers.engine", "core"]
+cwd = "{root}"
+stop_timeout = 3
+
+[modes.oracle]
+label = "DAS ORAKEL"
+command = ["{python}", "-m", "visualizers.engine", "oracle"]
+cwd = "{root}"
+stop_timeout = 3
+
+[modes.cyberslots]
+label = "PACHINKO"
+command = ["{python}", "-m", "visualizers.engine", "cyberslots"]
+cwd = "{root}"
+stop_timeout = 3
+
+[modes.rooftop]
+label = "DACHTERRASSE"
+command = ["{python}", "-m", "visualizers.engine", "rooftop"]
+cwd = "{root}"
+stop_timeout = 3
+
+[modes.blackice]
+label = "BLACK ICE"
+command = ["{python}", "-m", "visualizers.engine", "blackice"]
+cwd = "{root}"
+stop_timeout = 3
+
 [modes.viz_crt]
 label = "ZIELCOMPUTER"
 command = ["{python}", "-m", "visualizers.engine", "crt"]

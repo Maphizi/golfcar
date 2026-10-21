@@ -72,7 +72,8 @@ tint = [0.95, 0.6, 0.2]
 
 [[themes]]
 name = "cyber"
-content = "space"
+content = "cyber"
+modes = { viz_psychedelic = "neonrace", blackhole = "core", hal = "oracle", slots = "cyberslots", campfire = "rooftop", error = "blackice" }
 title = "CYBERPUNK"
 tagline = "NEON, REGEN UND EIN FAHRER MIT KABELN"
 dir = "cyber"

@@ -684,6 +684,84 @@ Giftgrün/Violett, Horror rotes Stroboskop, Drop weiß, Blackout fast aus (`conf
 `visualizers/scenes/overdose.py`, Shader `visualizers/shaders/overdose/frag.glsl`.
 Test: `python -m visualizers.engine overdose --test-signal --demo`.
 
+**Thema CYBERPUNK (`cyber`):** Das dritte Thema ersetzt die Tasten 2 bis 7 komplett (`config/themes.toml`
+`modes = { viz_psychedelic = "neonrace", blackhole = "core", hal = "oracle", slots = "cyberslots", campfire = "rooftop",
+error = "blackice" }`), spricht mit eigener Stimme (`de_DE-kerstin-low`, leicht robotisch mit kurzem Hall, Sätze in
+`config/announce.toml` `[themes.cyber]`) und färbt Board und Taxischein in Magenta/Cyan. Alle Bilder kommen vom Bot
+(Prompts und Dateinamen in `docs/cyber_plan.md`, Rohbilder `assets/cyber/raw/`), `scripts/cyber_assets.sh` schneidet
+daraus die Szenenbilder und Atlanten unter `assets/cyber/` (nach neuen Rohbildern erneut ausführen).
+
+**Neonfahrt (Taste 2 im Thema CYBERPUNK, `neonrace`):** Das Gegenstück zum Navigationscomputer. Blick durch die
+Windschutzscheibe auf eine regennasse Neonstraße (`assets/cyber/neonrace_scene.png`). Startknopf = losfahren (Tacho
+steigt, die Straße zieht zum Fluchtpunkt, Lichter strömen), Kippschalter = anhalten (egal welche Richtung). Knüppel
+links/rechts = Spurwechsel (Bild kippt kurz), oben = Hupe (Lichtwelle, Verkehr weicht), unten = Rückspiegel
+(Einblendung oben rechts mit Verfolgern). Hologramm-Werbung (`neonrace_holo.png`, 8x3) schwebt an den Fassaden,
+Verkehr und Flieger (`neonrace_traffic.png`, 8x2) ziehen vorbei. Musik: Bass ist Tempo und Motorbrummen (Bild bebt),
+Beats sind Lichtstöße der Hologramme und Straßenlaternen, Höhen Regen und Wischer, laute Musik zündet Nitro
+(Lichttunnel, Farben kippen, Ränder ziehen). Alle 30 bis 60 Sekunden ein Ereignis: Polizeidrohnen (rot-blau im
+Rückspiegel, Board stroboskopt), Werbeblimp, Regensturm (Wischer auf Anschlag), Tunnel (Lichtstreifen), Konzernturm,
+Straßenmarkt (dichter Verkehr), Kirschblütenallee. Board `neonrace`, `neonrace_start`, `neonrace_nitro`,
+`neonrace_honk`, `neonrace_police`. `config/visualizer.toml` `[scenes.neonrace]` `vanish` (Fluchtpunkt). Controller
+`visualizers/scenes/neonrace.py`, Shader `visualizers/shaders/neonrace/frag.glsl`.
+Test: `python -m visualizers.engine neonrace --test-signal --demo`.
+
+**Der Kern (Taste 3 im Thema CYBERPUNK, `core`):** Das Gegenstück zum Schwarzen Loch. Ein KI-Kern in der Serverhalle
+(`assets/cyber/core_scene.png`) saugt Daten ein: Knüppel links/rechts wirft ein Objekt aus `core_objects.png` (6x4:
+Drohnen, Chips, Decks, Katzen, Köpfe, Koffer) von dieser Seite hinein, es spiralt 40 bis 60 Sekunden lang, löst sich in
+Pixel auf und wird zum Datenstrom. Oben = Drohnenschwarm (Perlenkette, 30 s), unten = Auswurf (der Kern spuckt alles
+rückwärts aus, Blitz und Druckwelle, 8 s), Startknopf = EMP (Bild bricht kurz zusammen, Ringe laufen nach außen),
+Kippschalter AN = Nahaufnahme, AUS = zurück. Musik: Bass lässt den Kern pulsieren und die Halle beben, Beats
+schicken Ringe über die Serverschränke und drehen die Spirale, Höhen sind Datenregen, Drop = Weißblitz und Farbwechsel
+des Kerns. Board `core`, `core_throw`, `core_eject`, `core_emp`. `[scenes.core]` `center`, `radius`. Controller
+`visualizers/scenes/core.py`, Shader `visualizers/shaders/core/frag.glsl`.
+Test: `python -m visualizers.engine core --test-signal --demo`.
+
+**Das Orakel (Taste 4 im Thema CYBERPUNK, `oracle`):** Das Gegenstück zu HAL 3000. Eine Maske im Schrein
+(`assets/cyber/oracle_scene.png`), ihr Gesicht kommt aus `oracle_mask.png` (8x3: Reihe 0 Ausdrücke, 1 Farben, 2
+Glitch) und wacht mit der Musik auf (Stille = schläft, Augen zu). Acht Glyphenpaneele neben der Maske sind die acht
+Spektrumbänder (`oracle_figures.png`, Reihe 2), Lauflicht über die Leuchtzonen des Fotos auf jeden Beat, Datenregen
+in den Höhen. Startknopf = das Orakel spricht (ein Satz wird getippt, Maske leuchtet, Board pulst). Knüppel links =
+Samurai tanzt auf den Beat (Reihe 0), rechts = Katze streunt durchs Bild (Reihe 1), oben = beide, unten =
+Glitch-Modus (Maske zerfällt in Streifen). Kippschalter AN = Nahaufnahme, AUS = zurück. Drop = Lichtstoß und neue
+Maskenfarbe. Board `oracle`, `oracle_samurai`, `oracle_cat`, `oracle_both`, `oracle_speak`. `[scenes.oracle]`
+`frame` (Maske x, y, Breite), `panels` (x0, x7, y, Breite). Controller `visualizers/scenes/oracle.py`, Shader
+`visualizers/shaders/oracle/frag.glsl`. Test: `python -m visualizers.engine oracle --test-signal --demo`.
+
+**Pachinko (Taste 5 im Thema CYBERPUNK, `cyberslots`):** Das Gegenstück zur Slotmaschine, gleiche Spiellogik
+(`visualizers/scenes/slots.py`), eigener Automat (`assets/cyber/cyberslots_scene.png`) und eigene Symbole
+(`cyberslots_symbols.png`, 3x3: Neurochip, Deck, Drohne, Katze, Ramen, Implantat, Eddies, Samurai, KI-Kern =
+Jackpot). Knüppel links/rechts = Einsatz CHIP, DECK, IMPLANT (Gewinne x1, x5, x20), Startknopf = drehen. Neonröhren
+und Werbeschilder im Foto pulsieren zum Bass, Lauflicht auf jeden Beat, Glitch-Flackern in den Höhen, Drop = Blitz und
+die nächste Drehung läuft schneller. Gewinn = Credit-Chips regnen, großer Gewinn = Samurai tanzt, Jackpot = der
+KI-Kern erwacht, Drohne und Koffer fliegen ein. Board `cyberslots`, `cyberslots_win`, `cyberslots_jackpot`.
+`[scenes.cyberslots]` `windows`, `window_y`. Controller `visualizers/scenes/cyberslots.py`, Shader
+`visualizers/shaders/cyberslots/frag.glsl`. Test: `python -m visualizers.engine cyberslots --test-signal`.
+
+**Dachterrasse (Taste 6 im Thema CYBERPUNK, `rooftop`):** Das Gegenstück zum Lagerfeuer. Blick von einem Dach über
+die Skyline (`assets/cyber/rooftop_scene.png`), vier Wetter, die von selbst wechseln (`cycle_minutes`) oder mit
+dem Knüppel links/rechts: Regen, Nebel, Säureregen (grünlich, zischt), Asche. Partikel aus `rooftop_particles.png`
+(8x3: Tropfen und Funken, Blüten und Konfetti, Schnee und Asche). Musik: Bass lässt Wellen durch die Türme laufen
+(Fenster leuchten auf), Beats schalten die Suchscheinwerfer, Mitten sind der Verkehr unten, Höhen Regen und Funken,
+Drop = Blitz über der Stadt. Oben = Feuerwerk (8 s), unten = Stromausfall (die Stadt geht blockweise aus und kommt
+mit den Beats zurück, 14 s), Startknopf = Blitz, Kippschalter AN = Blick nach unten in die Straßenschlucht, AUS =
+zurück. Board `rooftop` und je Wetter `rooftop_rain|fog|acid|ash`, Ereignisse `rooftop_fireworks`,
+`rooftop_blackout`, `rooftop_lightning`. `[scenes.rooftop]` `skyline`, `cycle_minutes`. Controller
+`visualizers/scenes/rooftop.py`, Shader `visualizers/shaders/rooftop/frag.glsl`.
+Test: `python -m visualizers.engine rooftop --test-signal --demo`.
+
+**Black Ice (Taste 7 im Thema CYBERPUNK, `blackice`):** Das Gegenstück zum Systemfehler, aufgebaut wie die Überdosis:
+ein Hack, der schiefgeht, in Wellen. Einbruch (10 s, "INTRUSION DETECTED", Puls und Trace-Anzeige steigen), Trace
+(30 s, Doppelbilder, Farben kippen ins Giftgrün und Magenta, Daemonen aus `assets/cyber/blackice_daemons.png` (4x3)
+lauern am Rand und springen auf Beats), Black Ice (20 s, die Glitch-Maske des Orakels lacht aus der Mitte,
+Negativ-Blitze und Bildsprünge auf den Beat, dein Fahndungsplakat mit Barcode und Fadenkreuz, Flüstertexte), Flatline
+(8 s, Schwarz mit EKG-Linie, dann "REBOOT. NOCH EINMAL."). Musik wie bei der Überdosis: Bass = Puls, Beats =
+Bildsprünge, Höhen = Rauschen, Drop = roter Blitz und alle Daemonen gleichzeitig. Knüppel links/rechts = Gegenmittel
+(Firewall, Proxy, Scrambler, Kill-Switch, Hard-Reset: kurz besser, dann Rückfall), oben = Reboot (Bild rollt, grüne
+Bootzeilen), unten = Stecker ziehen (Dunkel mit atmenden Farbflecken), Startknopf = Fixer-Katze holt dich für fünf
+Sekunden in ein klares Bild, Kippschalter AN = Jack out (klar und kalt), AUS = Rückfall. Board `blackice`,
+`blackice_horror`, `blackice_drop`, `blackice_blackout`, `blackice_help`. Controller `visualizers/scenes/blackice.py`,
+Shader `visualizers/shaders/blackice/frag.glsl`. Test: `python -m visualizers.engine blackice --test-signal --demo`.
+
 **Flug und Ankunft im Navigationscomputer:** Der Startknopf startet den Flug (Kippschalter AN
 zeigt vorher nur SCHARF an). Der Hyperraumflug endet nie von selbst: erst wenn der Pilot den
 Kippschalter umlegt (egal in welche Richtung), kommt die Ankunft. Nur im `--demo` gilt die feste
@@ -963,7 +1041,7 @@ Prüfen: `scripts/setup_cast.sh --status`, anderer Name: `--name NAME`, entferne
 mit `voice` (Piper-Stimme, wird beim Rendern nachgeladen), `tts` (Abweichungen vom KITT-Profil in `kitt.toml`, z. B.
 `pitch_factor`, `length_scale`, `robot = false`, `echo_ms`/`echo_mix`/`echo_decay` für Hall) und `[themes.<name>.lines]`
 mit eigenen Sätzen je Gruppe haben. THE POWER OF THE GREEN spricht als Waldgeist (`de_DE-pavoque-low`, tief, langsam,
-mit Hall) und hat für jeden Modus eigene Sätze; Gruppen, die im Thema fehlen, werden mit den Standardsätzen in der
+mit Hall), CYBERPUNK als Netz-KI (`de_DE-kerstin-low`, leicht robotisch mit kurzem Hall); beide haben für jeden Modus eigene Sätze; Gruppen, die im Thema fehlen, werden mit den Standardsätzen in der
 Themenstimme gesprochen. Der Launcher sagt immer den tatsächlich gestarteten Modus an (im grünen Thema also das Auge
 des Waldes statt HAL), und der Taxistand begrüßt beim Bestätigen eines Themas mit dessen Stimme (Gruppe `theme`).
 Rendern: `scripts/announce_build.sh` (läuft bei jedem `update.sh`; Dateien `models/announce/<thema>__<gruppe>_<hash>.wav`).

@@ -129,3 +129,43 @@ cycle_minutes = 6          # Minuten je Jahreszeit, wenn niemand den Knüppel be
 shader = "overdose"
 controller = "overdose"    # Die Überdosis (Thema Power of the Green, Gegenstück zum Systemfehler)
 render_scale = 0.6
+
+# ── Thema CYBERPUNK (docs/cyber_plan.md) ──────────────────────────────────────
+[scenes.neonrace]
+shader = "neonrace"
+controller = "neonrace"    # Neonfahrt (Cyber-Taste 2)
+render_scale = 0.6
+vanish = [0.5, 0.5]        # Fluchtpunkt der Straße
+
+[scenes.core]
+shader = "core"
+controller = "core"        # Der Kern (Cyber-Taste 3)
+render_scale = 0.6
+center = [0.5, 0.56]       # Kernmitte (Anteile, y von unten)
+radius = 0.13
+
+[scenes.oracle]
+shader = "oracle"
+controller = "oracle"      # Das Orakel (Cyber-Taste 4)
+render_scale = 0.6
+frame = [0.505, 0.73, 0.27]              # Projektionsrahmen x, y, Breite
+panels = [0.264, 0.757, 0.385, 0.052]    # Neontafeln: x erste, x letzte, y, Breite
+
+[scenes.cyberslots]
+shader = "cyberslots"
+controller = "cyberslots"  # Pachinko (Cyber-Taste 5)
+render_scale = 0.6
+windows = [[0.344, 0.427], [0.450, 0.546], [0.570, 0.654]]
+window_y = [0.42, 0.645]
+
+[scenes.rooftop]
+shader = "rooftop"
+controller = "rooftop"     # Dachterrasse (Cyber-Taste 6)
+render_scale = 0.6
+skyline = 0.42             # y, ab der die Stadt beginnt
+cycle_minutes = 5          # Minuten je Wetter
+
+[scenes.blackice]
+shader = "blackice"
+controller = "blackice"    # Black Ice (Cyber-Taste 7)
+render_scale = 0.6

@@ -107,6 +107,56 @@ col2 = [90, 0, 140]
 sx  = 140
 ix  = 200
 
+[modes.neonrace]            # Neonfahrt: Magenta-Cyan-Kometen wie Neonschilder, die vorbeiziehen
+bri = 220
+fx  = 59
+col = [255, 40, 200]
+col2 = [0, 10, 40]
+col3 = [0, 220, 255]
+pal = 3
+sx  = 140
+ix  = 180
+
+[modes.core]                # Der Kern: Cyan-Magenta-Puls
+bri = 190
+fx  = 2
+col = [60, 200, 255]
+col2 = [120, 0, 160]
+sx  = 60
+ix  = 170
+
+[modes.oracle]              # Das Orakel: kühles Hologramm-Blau, atmend
+bri = 180
+fx  = 2
+col = [80, 160, 255]
+col2 = [20, 0, 50]
+sx  = 40
+ix  = 150
+
+[modes.cyberslots]          # Pachinko: Magenta-Pulser
+bri = 190
+fx  = 162
+col = [255, 60, 220]
+col2 = [0, 40, 80]
+sx  = 120
+ix  = 160
+
+[modes.rooftop]             # Dachterrasse: Stadtlichter, kühl (Grundprofil, Wetter unten)
+bri = 160
+fx  = 2
+col = [120, 180, 255]
+col2 = [30, 0, 40]
+sx  = 50
+ix  = 150
+
+[modes.blackice]            # Black Ice: Rot und Cyan, unruhig
+bri = 190
+fx  = 2
+col = [255, 30, 40]
+col2 = [0, 40, 60]
+sx  = 150
+ix  = 200
+
 [modes.blackhole]           # Schwarzes Loch: oranges Glühen der Akkretionsscheibe, langsam kreisend
 bri = 170
 fx  = 76          # Meteor
@@ -386,5 +436,201 @@ bri = 200
 fx  = 2
 col = [255, 230, 170]
 col2 = [40, 20, 0]
+sx  = 70
+ix  = 150
+
+# ── Cyber-Ereignisse ──────────────────────────────────────────────────────────
+[modes.neonrace_start]      # Losfahren (3 s): weißer Scanner
+bri = 230
+fx  = 40
+col = [255, 255, 255]
+col2 = [40, 0, 60]
+sx  = 220
+ix  = 128
+
+[modes.neonrace_nitro]      # Nitro (3 s): gelb-weißes Stroboskop
+bri = 255
+fx  = 23
+col = [255, 255, 160]
+col2 = [255, 40, 200]
+sx  = 220
+ix  = 128
+
+[modes.neonrace_honk]       # Lichthupe (1,5 s): alles weiß
+bri = 255
+fx  = 0
+col = [255, 255, 255]
+
+[modes.neonrace_police]     # Polizeidrohnen (14 s): Rot-Blau-Blinken
+bri = 240
+fx  = 1
+col = [255, 0, 0]
+col2 = [0, 40, 255]
+sx  = 200
+ix  = 128
+
+[modes.core_throw]          # Objekt geworfen (3 s): Cyan-Meteor
+bri = 220
+fx  = 76
+col = [80, 220, 255]
+col2 = [20, 0, 40]
+sx  = 130
+ix  = 220
+
+[modes.core_eject]          # Überlast (8 s): weiß-magenta Stroboskop
+bri = 255
+fx  = 23
+col = [220, 230, 255]
+col2 = [255, 40, 200]
+sx  = 150
+ix  = 128
+
+[modes.core_emp]            # EMP (2,5 s): weiß, dann aus
+bri = 255
+fx  = 12
+col = [255, 255, 255]
+col2 = [0, 0, 0]
+sx  = 40
+ix  = 255
+
+[modes.oracle_samurai]      # Knüppel links: Samurai – Rot auf Blau
+bri = 200
+fx  = 2
+col = [255, 60, 80]
+col2 = [0, 20, 80]
+sx  = 70
+ix  = 160
+
+[modes.oracle_cat]          # Knüppel rechts: Katze – Violett
+bri = 190
+fx  = 2
+col = [180, 60, 255]
+col2 = [0, 20, 60]
+sx  = 60
+ix  = 150
+
+[modes.oracle_both]         # beide: Rot und Violett als Kometen
+bri = 210
+fx  = 59
+col = [255, 60, 80]
+col2 = [0, 20, 60]
+col3 = [180, 60, 255]
+pal = 3
+sx  = 100
+ix  = 160
+
+[modes.oracle_speak]        # Orakel spricht (6 s): weißes Flackern
+bri = 230
+fx  = 20
+col = [220, 240, 255]
+col2 = [20, 0, 80]
+sx  = 200
+ix  = 200
+
+[modes.cyberslots_win]      # großer Gewinn (5 s): Magenta-Cyan-Funkeln
+bri = 255
+fx  = 20
+col = [255, 80, 240]
+col2 = [0, 60, 120]
+sx  = 220
+ix  = 220
+
+[modes.cyberslots_jackpot]  # KI-Kern (8 s): Feuerwerk
+bri = 255
+fx  = 42
+col = [80, 240, 255]
+col2 = [255, 60, 220]
+col3 = [255, 255, 255]
+pal = 3
+sx  = 200
+ix  = 230
+
+[modes.rooftop_rain]        # Regen: kühles Blau, ruhig
+bri = 160
+fx  = 2
+col = [100, 160, 255]
+col2 = [20, 0, 40]
+sx  = 50
+ix  = 150
+
+[modes.rooftop_fog]         # Nebel: gedämpftes Grau-Blau
+bri = 110
+fx  = 2
+col = [150, 170, 200]
+col2 = [20, 20, 40]
+sx  = 30
+ix  = 120
+
+[modes.rooftop_acid]        # Säureregen: Giftgrün
+bri = 170
+fx  = 43
+col = [120, 255, 60]
+col2 = [0, 30, 10]
+sx  = 150
+ix  = 160
+
+[modes.rooftop_ash]         # Asche: warmes Grau mit Glut
+bri = 140
+fx  = 20
+col = [255, 120, 60]
+col2 = [40, 30, 30]
+sx  = 60
+ix  = 100
+
+[modes.rooftop_fireworks]   # Feuerwerk (8 s)
+bri = 255
+fx  = 42
+col = [255, 120, 240]
+col2 = [80, 220, 255]
+col3 = [255, 255, 160]
+pal = 3
+sx  = 200
+ix  = 230
+
+[modes.rooftop_blackout]    # Stromausfall (14 s): fast aus
+bri = 30
+fx  = 2
+col = [40, 0, 60]
+col2 = [0, 0, 0]
+sx  = 30
+ix  = 150
+
+[modes.rooftop_lightning]   # Blitz (1,5 s): weiß
+bri = 255
+fx  = 23
+col = [255, 255, 255]
+col2 = [40, 40, 80]
+sx  = 240
+ix  = 128
+
+[modes.blackice_horror]     # Black ICE (20 s): rotes Stroboskop
+bri = 240
+fx  = 23
+col = [255, 20, 30]
+col2 = [0, 20, 40]
+sx  = 90
+ix  = 128
+
+[modes.blackice_drop]       # Drop (2 s): weißes Stroboskop
+bri = 255
+fx  = 23
+col = [255, 255, 255]
+col2 = [255, 0, 40]
+sx  = 220
+ix  = 128
+
+[modes.blackice_blackout]   # Flatline (8 s): fast aus, rotes Glimmen
+bri = 40
+fx  = 2
+col = [120, 0, 10]
+col2 = [0, 0, 0]
+sx  = 30
+ix  = 150
+
+[modes.blackice_help]       # Fixer (5 s): Violett
+bri = 200
+fx  = 2
+col = [180, 80, 255]
+col2 = [20, 0, 40]
 sx  = 70
 ix  = 150

@@ -152,6 +152,60 @@ springen auf Beats (`lunge_t0`). Beat = `uCut` Bildsprung + Negativ, Drop = `uFl
 WLED `overdose`, `overdose_horror`, `overdose_drop`, `overdose_blackout`, `overdose_help`. `WHISPERS`, `ANTIDOTES`.
 Test: `python -m visualizers.engine overdose --test-signal --demo`.
 
+## Thema CYBERPUNK (`cyber`, ersetzt Tasten 2-7)
+`themes.toml` `modes = { viz_psychedelic = "neonrace", blackhole = "core", hal = "oracle", slots = "cyberslots",
+campfire = "rooftop", error = "blackice" }`, Stimme `de_DE-kerstin-low` (`announce.toml` `[themes.cyber]`, robot + echo).
+Bilder vom Bot nach `assets/cyber/raw/` (Prompts/Dateinamen `docs/cyber_plan.md`), `scripts/cyber_assets.sh` baut daraus
+alle Atlanten unter `assets/cyber/` (plate/slice aus `trip_assets.py`). Alle sechs Modi: `[scenes.<modus>]` in
+`visualizer.toml`, WLED-Profile `<modus>` + Ereignisse in `wled.toml`, Labels in `modes.toml`, Aktionen in `launcher/actions.py`.
+
+### Neonfahrt (`visualizers/scenes/neonrace.py`, Taste 2)
+Fahrmodus wie Navigationscomputer: ENTER = losfahren, SPACE/BACKSPACE = anhalten. LINKS/RECHTS `change_lane` (`uLane`),
+OBEN `honk` (`uHonkT`), UNTEN `toggle_mirror` (`uMirror`). `Mover` (cell, side/lane, z, seed, kind 0 Holo / 1 Auto / 2 Flieger)
+-> `uHolo0..9`, `uCar0..5`, `uFly0..5` (cell, side, z, seed; z < 0 = leer). Hologramme `neonrace_holo.png` 8x3 à 160,
+Verkehr `neonrace_traffic.png` 8x2 à 192. Ereignisse `EVENTS` alle 30-60 s (`uEvent/uEventT/uEventLen`), Nitro bei lauter
+Musik (`uNitro`), `uSpeed/uDist/uDriving`. `[scenes.neonrace] vanish = [x, y]`.
+Test: `python -m visualizers.engine neonrace --test-signal --demo`.
+
+### Der Kern (`visualizers/scenes/core.py`, Taste 3)
+Wie Schwarzes Loch: `Throw` (cell 0-23 aus `core_objects.png` 6x4 à 192, side, swirl, seed, y0, reverse), `SLOTS` 3,
+`THROW_SECONDS` 40-60 -> `uThrow0..2` (Fortschritt, Zelle, Seite, Seed) / `uThrowPar0..2` (swirl, reverse, y0), Pixelauflösung
++ Datenstrom im Shader. OBEN Schwarm `uSwarmT` (30 s), UNTEN Auswurf `uEjectT` (8 s, Burst bei 1.2), ENTER EMP `uEmpT`,
+SPACE/BACKSPACE Zoom. Beat-Ringe `uRing0..5` (Alter), `uSpinT`, `uHue` wechselt beim Drop. `[scenes.core] center`, `radius`.
+Test: `python -m visualizers.engine core --test-signal --demo`.
+
+### Das Orakel (`visualizers/scenes/oracle.py`, Taste 4 / HAL)
+Maske `oracle_mask.png` 8x3 à 192 (Reihe 0 Ausdrücke 0-7, 1 Farben 8-15, 2 Glitch 16-23) über `uMaskA/uMaskB/uMaskMix`,
+`uAwake` folgt der Energie (Stille = schläft). Figuren `oracle_figures.png` 8x3 à 192 (Reihe 0 Samurai 0-7, 1 Katze 8-15,
+2 Glyphenpaneele 16-23). Acht Paneele = Spektrumbänder (`uBands0/1`, `uPeaks0/1`), Lauflicht `uStep/uStepPhase/uPattern`.
+ENTER `speak()` (`ORACLE_LINES` getippt, `uSpeakT`), LINKS Samurai / RECHTS Katze (`uCat` = x, cellA, cellB, dir) / OBEN beide
+(`uFig`, `uSam`), UNTEN `toggle_glitch` (`uGlitch`), SPACE/BACKSPACE Zoom, Drop `uBurstT` + neue Farbe. `[scenes.oracle]
+frame = [x, y, Breite]`, `panels = [x0, x7, y, Breite]`. Test: `python -m visualizers.engine oracle --test-signal --demo`.
+
+### Pachinko (`visualizers/scenes/cyberslots.py`, Taste 5 / Slots)
+Erbt `slots.Controller` wie der Pilzautomat. Thema `CYBER` (Symbole `cyberslots_symbols.png` 3x3 à 384x256, letztes =
+KI-Kern = Jackpot), `STAKES` CHIP 10/x1, DECK 50/x5, IMPLANT 200/x20 (LINKS/RECHTS). Extra-Uniforms `uGlitchT, uStake,
+uStakeT, uSam, uStep, uStepPhase, uStopT`, `uObjTex` = `core_objects.png` (Drohne Zelle 0, Koffer Zelle 20 beim Jackpot),
+`uFigTex` = Samurai tanzt bei großem Gewinn, Chips regnen. Zoom im Shader (center 0.5/0.52, 1.22), Symbolbreite
+`symW = min(1, 1.5*winAspect*1.08)`. `[scenes.cyberslots] windows`, `window_y`.
+Test: `python -m visualizers.engine cyberslots --test-signal`.
+
+### Dachterrasse (`visualizers/scenes/rooftop.py`, Taste 6 / Lagerfeuer)
+`WEATHER` REGEN/NEBEL/SÄUREREGEN/ASCHE als `uWeather` 0..4 fließend (LINKS/RECHTS Ziel, sonst `cycle_minutes`), Partikel
+`rooftop_particles.png` 8x3 à 160 (Reihe 0 Tropfen/Funken, 1 Blüten/Konfetti, 2 Schnee/Asche). Beat-Wellen durch die
+Türme `uPulseA/B`, Suchscheinwerfer `uSearchT`, Verkehr `uTrafficT`. OBEN Feuerwerk (8 s), UNTEN Blackout (14 s, Blöcke
+kommen mit Beats zurück `uBlackBeats`), ENTER Blitz, SPACE/BACKSPACE Blick nach unten `uLook`. WLED je Wetter
+`rooftop_rain|fog|acid|ash` + `rooftop_fireworks|blackout|lightning`. `[scenes.rooftop] skyline`, `cycle_minutes`.
+Test: `python -m visualizers.engine rooftop --test-signal --demo`.
+
+### Black Ice (`visualizers/scenes/blackice.py`, Taste 7 / Systemfehler)
+Abgeleitet von der Überdosis (gleiche Uniform-Namen): Phasen EINBRUCH/TRACE/BLACK ICE/FLATLINE (`PHASE_LEN`), Daemonen
+`blackice_daemons.png` 4x3 à 256 (`uCreN/uCrePN`), `uGodTex` = `oracle_mask.png` (Glitch-Reihe 16-23), `uFaceTex` =
+Fahndungsplakat (Barcode/Fadenkreuz im Shader), `uFigTex` = `oracle_figures.png` Katze (`CAT_CELLS` 8-11 über `uOwl`).
+LINKS/RECHTS `ANTIDOTES` (`uRelief`, Rückfall 4 s), OBEN Reboot `uVomitT` (Bild rollt, Bootzeilen), UNTEN Stecker ziehen
+`uEyes`, ENTER Fixer-Katze `uHelpT`, SPACE/BACKSPACE Jack out `uShock`. Overlay Puls/Trace, Flatline-EKG, `WHISPERS`.
+Test: `python -m visualizers.engine blackice --test-signal --demo`.
+
 ## Navigationscomputer (`visualizers/scenes/navcomputer.py`)
 ENTER = Flug starten, Flug endet NUR per Kippschalter (SPACE oder BACKSPACE im Flug = Ankunft), nie von selbst
 (Demo: cruise_seconds). Ereignisse alle 30–60 s (`EVENTS`): Asteroidenfeld, Farbnebel, Sonne, Wurmloch,
