@@ -617,6 +617,24 @@ durchs Bild, Sporenfeuerwerk, Board in Gold und Grün (`config/wled.toml` `fores
 `config/visualizer.toml` `[scenes.forestslots]` `windows`, `window_y`. Shader
 `visualizers/shaders/forestslots/frag.glsl`. Test: `python -m visualizers.engine forestslots --test-signal`.
 
+**Der Herzbaum (Taste 6 im Thema THE POWER OF THE GREEN, `hearttree`):** Das Gegenstück zum Lagerfeuer
+(`themes.toml` `modes = { campfire = "hearttree" }`). Ein uralter Baum bei Nacht (`assets/hearttree/scene.png`), durch
+Wurzeln, Stamm und Äste laufen Adern aus leuchtendem Saft. Der Shader erkennt die Adern im Foto (Bernstein, Türkis)
+und lässt sie pulsieren: der Bass ist der Herzschlag, bei jedem Schlag läuft ein Lichtimpuls von den Wurzeln durch
+den Stamm in die Krone und der Stamm weitet sich; Beats schieben eine Leuchtwelle durch die Adern (Tempo folgt der
+Musik, Richtung wechselt beim Drop); die Energie der Musik ist das Grundglühen, in der Stille bleibt nur ein langsamer
+Ruhepuls wie bei einem schlafenden Herzen; die Mitten wiegen das Blätterdach und lassen Pollen steigen; die Höhen
+funkeln als Tautropfen und Glühwürmchen. Beim Drop blüht der Baum auf: Sturm aus der Krone, die Adern wechseln die
+Farbe, Lichtblitz aus den Wurzeln. Jahreszeiten (Knüppel links/rechts, wandern sonst von selbst alle
+`cycle_minutes` weiter): Frühling (Laub zartgrün, Blüten, Blütenblätter, Pusteblumen), Sommer (sattgrün,
+Glühwürmchen), Herbst (Krone rot-gold, Laub fällt), Winter (Frost auf dem Laub, Schnee auf den Wurzeln, Adern
+eisblau, Schneeflocken). Fallende Teile aus `assets/hearttree/seasons.png` (8x3, `scripts/trip_assets.py grid`).
+Oben = Sturm von Hand, unten = Wurzeln leuchten und Myzel breitet sich als Ring aus, Startknopf = großer Herzschlag
+(der ganze Baum flackert auf), Kippschalter AN = Nahaufnahme an die Rinde, AUS = zurück. Board je Jahreszeit und für
+Wurzeln/Herzschlag (`config/wled.toml` `hearttree_*`). `config/visualizer.toml` `[scenes.hearttree]`: `trunk`
+(Stammmitte), `cycle_minutes`, `start_season`. Controller `visualizers/scenes/hearttree.py`, Shader
+`visualizers/shaders/hearttree/frag.glsl`. Test: `python -m visualizers.engine hearttree --test-signal --demo`.
+
 **Flug und Ankunft im Navigationscomputer:** Der Startknopf startet den Flug (Kippschalter AN
 zeigt vorher nur SCHARF an). Der Hyperraumflug endet nie von selbst: erst wenn der Pilot den
 Kippschalter umlegt (egal in welche Richtung), kommt die Ankunft. Nur im `--demo` gilt die feste

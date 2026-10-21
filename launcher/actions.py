@@ -28,6 +28,7 @@ class Action(str, Enum):
     POND = "pond"              # Moorsee (kittctl pond)
     WOODEYE = "woodeye"        # Auge des Waldes (kittctl woodeye)
     FORESTSLOTS = "forestslots"   # Pilzautomat (kittctl forestslots)
+    HEARTTREE = "hearttree"    # Herzbaum (kittctl hearttree)
     TALK = "talk"              # Sprechtaste: bei HAL Musik leise + Mikrofon an/aus (Taste F15 an den Modus)
 
 
@@ -50,6 +51,7 @@ ACTION_TO_MODE = {
     Action.POND: "pond",
     Action.WOODEYE: "woodeye",
     Action.FORESTSLOTS: "forestslots",
+    Action.HEARTTREE: "hearttree",
     Action.HOME: "home",
 }
 

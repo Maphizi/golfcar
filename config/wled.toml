@@ -91,6 +91,14 @@ col2 = [10, 50, 20]
 sx  = 90
 ix  = 140
 
+[modes.hearttree]           # Herzbaum: Bernstein atmet wie ein Puls (Grundprofil, Jahreszeiten unten)
+bri = 170
+fx  = 2
+col = [255, 170, 50]
+col2 = [0, 40, 30]
+sx  = 60
+ix  = 160
+
 [modes.blackhole]           # Schwarzes Loch: oranges Glühen der Akkretionsscheibe, langsam kreisend
 bri = 170
 fx  = 76          # Meteor
@@ -292,3 +300,51 @@ col3 = [255, 255, 255]
 pal = 3
 sx  = 200
 ix  = 230
+
+[modes.hearttree_spring]    # Frühling: Blütenrosa und Zartgrün, atmend
+bri = 170
+fx  = 2
+col = [255, 170, 200]
+col2 = [40, 80, 20]
+sx  = 60
+ix  = 160
+
+[modes.hearttree_summer]    # Sommer: Bernstein und Türkis, Puls
+bri = 180
+fx  = 2
+col = [255, 170, 50]
+col2 = [0, 60, 40]
+sx  = 70
+ix  = 170
+
+[modes.hearttree_autumn]    # Herbst: Rot-Gold, langsam
+bri = 170
+fx  = 2
+col = [255, 90, 20]
+col2 = [60, 25, 0]
+sx  = 45
+ix  = 160
+
+[modes.hearttree_winter]    # Winter: Eisblau, ruhiges Funkeln
+bri = 150
+fx  = 20
+col = [170, 210, 255]
+col2 = [0, 10, 40]
+sx  = 60
+ix  = 120
+
+[modes.hearttree_roots]     # Knüppel unten: Wurzeln / Myzel (9 s) – Türkis läuft
+bri = 220
+fx  = 59
+col = [40, 255, 170]
+col2 = [0, 30, 20]
+sx  = 110
+ix  = 180
+
+[modes.hearttree_beat]      # Startknopf: großer Herzschlag (2,5 s) – Bernstein-Blitz
+bri = 255
+fx  = 1
+col = [255, 200, 90]
+col2 = [40, 15, 0]
+sx  = 200
+ix  = 128

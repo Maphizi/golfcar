@@ -32,7 +32,7 @@ tint = [0.95, 0.75, 0.25]
 name = "green"
 content = "green"
 # Modus-Ersatz je Thema: welche Taste in diesem Thema einen anderen Modus startet
-modes = { viz_psychedelic = "trip", blackhole = "pond", hal = "woodeye", slots = "forestslots" }
+modes = { viz_psychedelic = "trip", blackhole = "pond", hal = "woodeye", slots = "forestslots", campfire = "hearttree" }
 title = "THE POWER OF THE GREEN"
 tagline = "MOOS, PILZE UND EIN FAHRER MIT WURZELN"
 dir = "green"

@@ -49,6 +49,10 @@ news = [
   "Galaktische Nachrichten. Alles erfunden, nichts davon falscher als die echten.",
   "Sender wird aufgebaut. Die Redaktion ist ein Droide mit Fantasie.",
 ]
+hearttree = [
+  "Der Herzbaum. Er schlägt im Takt. Deinem, hoffentlich.",
+  "Ein Baum mit Puls. Bitte nicht anlehnen, er merkt das.",
+]
 forestslots = [
   "Der Pilzautomat. Der Wald gibt, der Wald nimmt. Meist nimmt er.",
   "Hebel ziehen, Eicheln verlieren. Willkommen am Pilzautomaten.",

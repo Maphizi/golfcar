@@ -117,6 +117,16 @@ Thema `slots_themes.FOREST` (letztes Symbol = Lichthirsch = Jackpot). Szene `ass
 galoppiert; Drop `uFlash`/`uSporeT`, nächste Drehung schneller (`drop_boost`).
 Test: `python -m visualizers.engine forestslots --test-signal`.
 
+## Herzbaum (`visualizers/scenes/hearttree.py`, Thema green ersetzt Taste 6 / Lagerfeuer)
+`themes.toml` `modes = { campfire = "hearttree" }`. Szene `assets/hearttree/scene.png` (Shader erkennt Adern: Bernstein/Türkis),
+Jahreszeiten-Bogen `seasons.png` (8x3 à 192: Reihe 0 Frühling, 1 Herbst, 2 Winter; `trip_assets.py grid ... 8 3 192`).
+`uSeason` 0..4 fließend (0 Frühling, 1 Sommer, 2 Herbst, 3 Winter), Gewichte `seasonW()`; Knüppel links/rechts = Ziel,
+sonst `cycle_minutes` je Jahreszeit. Herzschläge `uPulseA/B` (Alter der letzten 6 Impulse, Bass-Anstieg oder Beat),
+Flackerwelle `uWaveT` (Richtung wechselt beim Drop), Drop `uFlash` + `uHue` + Sturm, OBEN `uStormT`/`uStormSeed`,
+UNTEN `uRootsT`, ENTER `uBigBeat`, SPACE/BACKSPACE `uZoom` auf `[scenes.hearttree] trunk`. WLED je Jahreszeit
+`hearttree_spring|summer|autumn|winter`, Ereignisse `hearttree_roots`, `hearttree_beat`.
+Test: `python -m visualizers.engine hearttree --test-signal --demo`.
+
 ## Navigationscomputer (`visualizers/scenes/navcomputer.py`)
 ENTER = Flug starten, Flug endet NUR per Kippschalter (SPACE oder BACKSPACE im Flug = Ankunft), nie von selbst
 (Demo: cruise_seconds). Ereignisse alle 30–60 s (`EVENTS`): Asteroidenfeld, Farbnebel, Sonne, Wurmloch,
