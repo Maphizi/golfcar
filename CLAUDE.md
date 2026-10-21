@@ -85,10 +85,12 @@ Vier Themen: `spacetaxi` (default), `green`, `future`, `cyber`; je `dir` unter a
 Themen können Modi ersetzen: `themes.toml` `modes = { viz_psychedelic = "trip" }`, Launcher tauscht in `switch()`.
 Browse (Knüppel links/rechts, ENTER = essen) -> eat -> trip (Kippschalter = zurück; Knüppel = Spiegel/Tempo) -> comedown.
 Wesen `config/trip.toml` (Zelle im Atlas 5x4), Bilder `assets/trip/` (bar, beings, symbols, tex_*, optional face).
-Ereignisse `EVENTS` (alle 16-28 s; `EV_ROOTS` Wurzeln mit optional `assets/trip/roots.png`, `EV_GOD` Waldgott alle 22-28 s
-nur mit `assets/trip/gods.png` 3x2 à 512, `GOD_NAMES`/`GOD_LINES`), Symbolsätze `SYMBOL_SETS` (Zellen im 8x5-Atlas).
+Ereignisse `EVENTS` (alle 20-40 s; `EV_ROOTS` Wurzeln mit optional `assets/trip/roots.png`, `EV_GOD` Waldgott selten:
+`GOD_MIN_GAP` 60 s und nur bei `energy > 0.45`, Chance `GOD_CHANCE_PER_S`; nur mit `assets/trip/gods.png` 3x2 à 512,
+`GOD_NAMES`/`GOD_LINES`), Symbolsätze `SYMBOL_SETS` (Zellen im 8x5-Atlas). Ein Programm für alle Wesen: Profil (mirrors,
+tempo, palette, twist, warp, symbols_key) wird in `_set_phase(PH_TRIP)` gewürfelt, trip.toml-Profile sind unbenutzt.
 Kaleidoskop-Varianten `uVariant` (0 klassisch, 1 Tunnel, 2 Blüte, 3 Zellen; `_next_variant`, Überblendung 3 s), Wanderung
-alle 12-22 s, Beat = Drehstoß. Test: `python -m visualizers.engine trip --demo`.
+alle 15-30 s, Beat = Drehstoß. Test: `python -m visualizers.engine trip --demo`.
 
 ## Moorsee (`visualizers/scenes/pond.py`, Thema green ersetzt Taste 3)
 `themes.toml` `modes = { blackhole = "pond" }`. Waldsee `assets/pond/lake.png` + Seegrund `bottom.png` + Kreaturen-Atlas

@@ -564,10 +564,12 @@ endet nur per Kippschalter: das Bild kehrt an den Tresen zurück und eine Bilanz
 Shader `visualizers/shaders/trip/frag.glsl`. Test: `python -m visualizers.engine trip --test-signal --demo`.
 Die Reise lebt von der Musik: Beats geben einen Drehstoß und einen Zoom-Puls, Bass treibt Tempo und Drehung, Mitten
 verbiegen das Bild, Drops wechseln Palette, Spiegelzahl oder die Kaleidoskop-Variante (klassisch, Tunnel, Blüte,
-Zellen; wechselt auch von selbst alle 18-40 s mit Überblendung) und versetzen die Texturen. Alle 12-22 s wandert
-zufällig etwas (Spiegel, Palette, Textur). Ereignisse kommen alle 16-28 s, neu dabei: Wurzeln, die von allen Seiten
-hereinwachsen und sich in der Mitte verknoten (mit `assets/trip/roots.png` aus echtem Wurzelbild, sonst prozedural).
-Alle 22-28 s erscheint ein Waldgott aus der Mitte (`assets/trip/gods.png`, Atlas 3x2 à 512 aus einem Bogen mit sechs
+Zellen; wechselt auch von selbst alle 25-50 s mit Überblendung) und versetzen die Texturen. Es gibt ein Programm für
+alle Wesen: Spiegelzahl, Tempo, Palette, Verdrehung, Verzerrung und Symbolsatz werden bei jeder Reise neu gewürfelt
+(die Profile in `config/trip.toml` sind nur noch Name, Bild und Wirkung), und alle 15-30 s wandert zufällig etwas
+davon. Ereignisse kommen alle 20-40 s, dabei: Wurzeln, die von allen Seiten hereinwachsen und sich in der Mitte
+verknoten (mit `assets/trip/roots.png` aus echtem Wurzelbild, sonst prozedural). Selten, frühestens nach einer
+Minute und nur wenn die Musik richtig aufdreht, erscheint ein Waldgott aus der Mitte (`assets/trip/gods.png`, Atlas 3x2 à 512 aus einem Bogen mit sechs
 Gesichtern: `scripts/trip_assets.py grid assets/trip/gods.png BOGEN.png 3 2 512`), atmet mit dem Bass, flackert
 mit dem Beat, spricht eine Zeile (`GOD_LINES`) und löst sich wieder auf; ohne das Bild fällt das Ereignis aus.
 

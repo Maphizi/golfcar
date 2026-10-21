@@ -24,9 +24,10 @@ log = logging.getLogger("trip")
 ASSETS = lcfg.ROOT / "assets" / "trip"
 PH_BROWSE, PH_EAT, PH_TRIP, PH_COMEDOWN = 0, 1, 2, 3
 EAT_SECONDS, COMEDOWN_SECONDS = 2.6, 4.0
-EVENT_EVERY = (16.0, 28.0)
-GOD_EVERY = (22.0, 28.0)              # alle ~25 s ein Waldgott (assets/trip/gods.png, Atlas 3x2 à 512)
-VARIANT_EVERY = (18.0, 40.0)          # Kaleidoskop-Variante wechselt von selbst (und bei jedem zweiten Drop)
+EVENT_EVERY = (20.0, 40.0)
+GOD_MIN_GAP = 60.0                    # Waldgötter selten: frühestens nach 60 s, und nur wenn die Musik aufdreht
+GOD_CHANCE_PER_S = 0.025              # ab dann je Sekunde bei lauter Musik (Energie > Schwelle), sonst gar nicht
+VARIANT_EVERY = (25.0, 50.0)          # Kaleidoskop-Variante wechselt von selbst (und bei jedem zweiten Drop)
 N_VARIANTS = 4
 # Ereignisse: (Name, Dauer, HUD-Zeile); Index + 1 = uEvent
 EVENTS = [
@@ -98,6 +99,10 @@ class Controller:
         self.wander_next = 0.0
         self.tex_shift = 0.0
         self.god_next = 0.0
+        self.twist = 0.5
+        self.warp = 0.6
+        self.symbols_key = "mixed"
+        self.last_tick = 0.0
         self.spin_dir = 1.0
         self.phase = PH_BROWSE
         self.phase_t0 = time.monotonic()
@@ -164,15 +169,18 @@ class Controller:
     def _set_phase(self, ph: int) -> None:
         now = time.monotonic()
         if ph == PH_TRIP:
-            b = self.beings[self.idx]
-            self.mirrors = self.mirrors_target = float(b.get("mirrors", 8))
-            self.tempo = float(b.get("tempo", 1.0))
-            self.palette = self.palette_target = float(b.get("palette", 0))
+            # Ein Programm für alle Wesen, jede Reise anders: Profil wird gewürfelt (trip.toml-Profile nur noch Namen/Bild)
+            self.mirrors = self.mirrors_target = float(self.rng.choice((4, 5, 6, 8, 8, 10, 12)))
+            self.tempo = self.rng.uniform(0.55, 0.95)
+            self.palette = self.palette_target = float(self.rng.randrange(6))
+            self.twist = self.rng.uniform(0.2, 0.9)
+            self.warp = self.rng.uniform(0.3, 0.9)
+            self.symbols_key = self.rng.choice(list(SYMBOL_SETS))
             self.trip_t = 0.0
             self.intensity = 0.0
             self.event = None
             self.next_event_at = now + self.rng.uniform(*EVENT_EVERY) * (0.3 if self.demo else 0.6)
-            self.god_next = now + self.rng.uniform(*GOD_EVERY) * (0.4 if self.demo else 1.0)
+            self.god_next = now + GOD_MIN_GAP * (0.25 if self.demo else 1.0)
             self.variant = self.rng.randrange(N_VARIANTS)
             self.variant_prev = self.variant
             self.variant_next = now + self.rng.uniform(*VARIANT_EVERY)
@@ -209,8 +217,8 @@ class Controller:
             self.last_beat = now
             self.beat_pulse = min(1.0, self.beat_pulse + 0.5 + 0.5 * beat)
             if self.phase == PH_TRIP:
-                self.spin += 0.06 * self.spin_dir * (0.5 + beat)          # Drehstoß auf jeden Beat
-                self.trip_t += 0.12 * beat
+                self.spin += 0.035 * self.spin_dir * (0.5 + beat)         # Drehstoß auf jeden Beat
+                self.trip_t += 0.07 * beat
         self.beat_pulse = max(0.0, self.beat_pulse - dt / 0.6)
         # Drop: nach leiser Stelle ein Beat -> Palette oder Spiegel wechseln
         if live and self.energy > 0.03 and e_fast < 0.5 * self.energy:
@@ -238,22 +246,27 @@ class Controller:
         elif self.phase == PH_COMEDOWN and pt >= COMEDOWN_SECONDS:
             self._set_phase(PH_BROWSE)
         if self.phase == PH_TRIP:
-            self.intensity = min(1.0, self.intensity + dt / (12.0 if not self.demo else 4.0))
-            self.trip_t += dt * self.tempo * (1.0 + 1.3 * self.energy + 0.9 * self.bass_s)
-            self.spin += dt * self.tempo * 0.16 * (1.0 + 3.0 * self.bass_s) * self.spin_dir
+            self.intensity = min(1.0, self.intensity + dt / (16.0 if not self.demo else 4.0))
+            self.trip_t += dt * self.tempo * (0.7 + 0.9 * self.energy + 0.6 * self.bass_s)
+            self.spin += dt * self.tempo * 0.1 * (1.0 + 2.0 * self.bass_s) * self.spin_dir
             self.mirrors += (self.mirrors_target - self.mirrors) * min(1.0, dt / 2.0)
             self.palette += (self.palette_target - self.palette) * min(1.0, dt / 3.0)
             if now >= self.variant_next:
                 self._next_variant(now)
             if now >= self.wander_next:                               # zufällige Wanderung: Spiegel, Palette, Texturen
-                self.wander_next = now + self.rng.uniform(12.0, 22.0)
+                self.wander_next = now + self.rng.uniform(15.0, 30.0)
                 pick = self.rng.random()
-                if pick < 0.4:
+                if pick < 0.3:
                     self.mirrors_target = float(self.rng.choice((4, 5, 6, 8, 10, 12, 16)))
-                elif pick < 0.75:
+                elif pick < 0.55:
                     self.palette_target = float(self.rng.randrange(6))
-                else:
+                elif pick < 0.7:
                     self.tex_shift = self.rng.random() * 10.0
+                elif pick < 0.85:
+                    self.twist = self.rng.uniform(0.2, 0.9)
+                    self.warp = self.rng.uniform(0.3, 0.9)
+                else:
+                    self.symbols_key = self.rng.choice(list(SYMBOL_SETS))
                 log.info("Wanderung: Spiegel %d, Palette %d", int(self.mirrors_target), int(self.palette_target))
             self._advance_event(now)
         elif self.phase == PH_COMEDOWN:
@@ -288,11 +301,15 @@ class Controller:
 
     def _advance_event(self, now: float) -> None:
         ev = self.event
-        # Waldgott hat Vorrang: alle ~25 s, verdrängt ein laufendes Ereignis
-        if self.gods is not None and now >= self.god_next and self.intensity > 0.3 and (ev is None or ev["kind"] != EV_GOD):
-            self._start_event(EV_GOD, now)
-            self.god_next = now + self.rng.uniform(*GOD_EVERY) * (0.4 if self.demo else 1.0)
-            return
+        # Waldgott: selten, und nur wenn die Musik aufdreht (hohe Energie); verdrängt ein laufendes Ereignis
+        loud = self.energy > 0.45 or self.demo
+        if self.gods is not None and now >= self.god_next and loud and self.intensity > 0.5 and (ev is None or ev["kind"] != EV_GOD):
+            dt_tick = min(1.0, now - self.last_tick) if self.last_tick else 0.0
+            if self.rng.random() < GOD_CHANCE_PER_S * (4.0 if self.demo else 1.0) * dt_tick * (0.5 + self.energy):
+                self._start_event(EV_GOD, now)
+                self.god_next = now + GOD_MIN_GAP * (0.25 if self.demo else 1.0)
+                return
+        self.last_tick = now
         if ev is None:
             if now >= self.next_event_at and self.intensity > 0.4:
                 choices = [i for i in range(len(EVENTS)) if i != EV_GOD and (i != 6 or self.face is not None)]
@@ -329,7 +346,7 @@ class Controller:
         now = time.monotonic()
         b = self.beings[self.idx]
         slide = self.slide * max(0.0, 1.0 - (now - self.slide_t0) / 0.5)
-        syms = SYMBOL_SETS.get(str(b.get("symbols", "mixed")), SYMBOL_SETS["mixed"])
+        syms = SYMBOL_SETS.get(self.symbols_key, SYMBOL_SETS["mixed"])
         syms = (syms * 3)[:8]
         ev = self.event
         evs = (EVENT_SYMBOLS.get(ev["kind"] + 1, []) * 4)[:4] if ev else [0, 0, 0, 0]
@@ -341,7 +358,7 @@ class Controller:
             "uNumTex": float(len(self.textures)),
             "uPhase": float(self.phase), "uPhaseT": now - self.phase_t0, "uSlide": slide,
             "uCell": float(b.get("cell", 0)),
-            "uProfile": (float(b.get("twist", 0.5)), float(b.get("warp", 0.6)), float(b.get("tempo", 1.0)), float(self.idx)),
+            "uProfile": (self.twist, self.warp, self.tempo, float(self.idx)),
             "uProfile2": (EAT_SECONDS, COMEDOWN_SECONDS, 0.0, 0.0),
             "uSymA": tuple(float(v) for v in syms[:4]), "uSymB": tuple(float(v) for v in syms[4:8]),
             "uTripT": self.trip_t % 1000.0, "uSpin": self.spin % 6.2832, "uMirrors": self.mirrors, "uPalette": self.palette,
