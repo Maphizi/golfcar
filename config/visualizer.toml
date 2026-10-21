@@ -62,9 +62,7 @@ render_scale = 0.35       # Strahlverfolgung, teuer: Pi 5 schafft 0.5 mit 64 Sch
 shader = "taxi"
 controller = "taxi"
 render_scale = 0.8
-# Digitale Lizenz (assets/taxi/driver.png): Augenmitten im Foto (x, y von unten, Anteile) und Augenradius
-eyes = [[0.425, 0.655], [0.573, 0.655]]
-eye_r = 0.03
+# Bildsätze, Augenpositionen und Aufträge je Thema: config/themes.toml
 
 [scenes.hal]
 shader = "hal"

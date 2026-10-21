@@ -1,55 +1,48 @@
-# Themen des ganzen Programms. Ausgewählt wird am Taxistand (Taste 1, D-Pad links/rechts, Start).
-# Die Wahl steht in logs/theme.txt und geht als KITT_THEME an jeden Modus (launcher/theme.py).
-#
-# cover: eigenes Bild (PNG/JPG, Hochformat, ca. 2:3) unter assets/themes/. Fehlt es, zeichnet der
-# Shader ein eigenes Plakat (cover_style). Nur Bilder verwenden, an denen du die Rechte hast;
-# assets/themes/ steht in .gitignore, die Bilder bleiben auf dem Pi.
-# color_a / color_b: Themenfarben (0..1), tint: Duotone-Farbe für das Pilotenporträt.
-# default = true: dieses Thema gilt, solange keines gewählt wurde (oder die Wahl unbekannt ist).
-# content: welche Inhalte die Modi zeigen ("space" = die Weltraum-Programme, wie sie jetzt sind).
-#          Die anderen Themen zeigen vorerst ebenfalls "space" und bekommen später eigene Inhalte.
+# Themen des Taxistands (Taste 1, D-Pad links/rechts, Start). Die Wahl steht in logs/theme.txt und geht
+# als KITT_THEME an jeden Modus (launcher/theme.py). Jedes Thema bringt seinen Bildsatz unter assets/taxi/<dir>/:
+#   mission.png  Logo links (RGBA), sprites.png Figuren-Atlas 8x3 à 96 px (RGBA), driver.png Fahrerfoto (quadratisch)
+#   erzeugen mit: .venv/bin/python scripts/taxi_sprites.py LOGO BOGEN --out assets/taxi/<dir>
+# eyes / eye_r: Augenmitten und -radius im Fahrerfoto (Anteile, y von unten) für die Kreisel beim Beat.
+# color_a: Farbe des Taxischeins, color_b: Zweitfarbe, tint: Duotone-Farbe (nur ohne driver.png).
+# default = true: gilt, solange nichts gewählt wurde. content: Inhaltssatz der Modi (vorerst überall "space").
 
 [[themes]]
 name = "spacetaxi"
 default = true
 content = "space"
-title = "SPACE TAXI"
+title = "PER ANHALTER DURCH DIE GALAXIS"
 tagline = "DER NEUE WETTLAUF ZUM LOCH 19"
-cover = "assets/themes/spacetaxi.png"
-cover_style = 4        # gelbes Taxischild (Standard); 0 wäre die Rakete vor dem Mond
+dir = "space"
+driver_title = "SPACE TAXI DRIVER"
+eyes = [[0.425, 0.655], [0.573, 0.655]]
+eye_r = 0.03
+missions = [
+  "KEINE PANIK. HANDTUCH DABEI.", "42 FAHRGÄSTE BIS LOCH 19", "VOGONEN-LYRIK VERMEIDEN",
+  "ANHALTER AUFNEHMEN, DAUMEN PRÜFEN", "RESTAURANT AM ENDE DES UNIVERSUMS, TISCH FÜR ZWEI",
+  "UNWAHRSCHEINLICHKEIT AUF 1 ZU 2^276709", "DELFINE GRÜSSEN, FISCH NICHT VERGESSEN",
+  "TEE. RICHTIGEN TEE.", "BABELFISCH IM OHR, BESCHWERDEN AUF ALTVOGONISCH",
+]
+cover_style = 4
 color_a = [0.95, 0.80, 0.25]
 color_b = [0.15, 0.45, 0.85]
 tint = [0.95, 0.75, 0.25]
 
 [[themes]]
-name = "imperium"
-content = "space"      # vorerst; eigene Inhalte folgen
-title = "IMPERIUM"
-tagline = "ORDNUNG. DISZIPLIN. ABSCHLAG."
-cover = "assets/themes/imperium.png"
-cover_style = 1        # Festungsplanet unter roter Sonne
-color_a = [0.95, 0.15, 0.12]
-color_b = [0.25, 0.25, 0.35]
-tint = [0.95, 0.25, 0.2]
-
-[[themes]]
-name = "kantine"
-content = "space"      # vorerst; eigene Inhalte folgen
-title = "KANTINE"
-tagline = "WIR BEDIENEN KEINE DROIDEN"
-cover = "assets/themes/kantine.png"
-cover_style = 2        # Neon-Diner auf einem Asteroiden
-color_a = [0.3, 0.95, 0.5]
-color_b = [0.95, 0.4, 0.1]
-tint = [0.35, 0.95, 0.55]
-
-[[themes]]
-name = "retro"
-content = "space"      # vorerst; eigene Inhalte folgen
-title = "RAUMFAHRT RETRO"
-tagline = "SEIT 1957 IN BETRIEB. UNGEFAEHR."
-cover = "assets/themes/retro.png"
-cover_style = 3        # Retro-Rakete, Ringplanet
-color_a = [0.35, 0.85, 1.0]
-color_b = [0.95, 0.35, 0.6]
-tint = [0.4, 0.85, 1.0]
+name = "green"
+content = "space"
+title = "THE POWER OF THE GREEN"
+tagline = "MOOS, PILZE UND EIN FAHRER MIT WURZELN"
+dir = "green"
+driver_title = "WALDFAHRER"
+eyes = [[0.448, 0.742], [0.561, 0.742]]
+eye_r = 0.026
+missions = [
+  "MOOS GIESSEN, PILZE ZÄHLEN", "DEN FUCHS ZUM BAHNHOF, DIE EULE ZUM NACHTDIENST",
+  "SCHNECKE HAT ES EILIG. ANGEBLICH.", "EIN BLATT PRO FAHRGAST, KEIN TRINKGELD",
+  "WOLF SUCHT MITFAHRGELEGENHEIT RICHTUNG MOND", "FARN AUF DEM RÜCKSITZ, BITTE NICHT KNICKEN",
+  "TAU SAMMELN VOR SONNENAUFGANG", "IGEL AN BORD, LANGSAM ÜBER WURZELN",
+]
+cover_style = 2
+color_a = [0.42, 0.62, 0.22]
+color_b = [0.35, 0.22, 0.10]
+tint = [0.45, 0.75, 0.3]

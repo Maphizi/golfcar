@@ -72,13 +72,14 @@ Cinemagraph: Foto `assets/campfire/scene.png` + Flammen-Spritesheet `assets/camp
 `scripts/campfire_assets.py`. Test: `python -m visualizers.engine campfire --test-signal --demo`.
 
 ## Taxistand (`visualizers/scenes/taxi.py`)
-Zwei Elemente: links Missionslogo (`assets/taxi/mission.png`) mit schwebenden Figuren (`assets/taxi/sprites.png` 8x3 à 96 px,
-`scripts/taxi_sprites.py`), rechts der gelbe Taxischein (Themenfarbe) mit dem Fahrerfoto `assets/taxi/driver.png` als
-digitale Lizenz: Beat-Zoom (uBeatZoom), Kreisel in den Augen (`[scenes.taxi] eyes`, `eye_r`), Glitch, Hologramm.
+Zwei Elemente: links Missionslogo (`mission.png`) mit schwebenden Figuren (`sprites.png` 8x3 à 96 px,
+`scripts/taxi_sprites.py`), rechts der Taxischein (Themenfarbe) mit dem Fahrerfoto des Themas als digitale Lizenz: Beat-Zoom (uBeatZoom),
+Kreisel in den Augen (`eyes`, `eye_r` in themes.toml), Glitch, Hologramm. Bildsätze je Thema: `assets/taxi/<dir>/`.
 
 ## Themen (`launcher/theme.py`, `config/themes.toml`)
-Standard: Thema mit `default = true` (SPACE TAXI, gelbes Taxischild, `cover_style = 4`). `theme.content()` liefert
-den Inhaltssatz ("space" = die Weltraum-Programme); die anderen Themen bekommen später eigene Inhalte.
+Zwei Themen: `spacetaxi` (default) und `green`; je `dir` unter assets/taxi/ (mission.png, sprites.png, driver.png),
+`eyes`/`eye_r`, `missions`, `driver_title`, `color_a` = Farbe des Scheins. `theme.content()` liefert den Inhaltssatz
+("space" = die Weltraum-Programme).
 
 ## Navigationscomputer (`visualizers/scenes/navcomputer.py`)
 ENTER = Flug starten, Flug endet NUR per Kippschalter (SPACE oder BACKSPACE im Flug = Ankunft), nie von selbst

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Mission-Logo und schwebende Figuren für den Taxistand vorbereiten.
 
-    .venv/bin/python scripts/taxi_sprites.py LOGO.png FIGURENBOGEN.png [--max 24] [--side 130]
-Schreibt assets/taxi/mission.png (Logo, auf 1024 Breite) und assets/taxi/sprites.png (Atlas 8 x 3
-Zellen à 96 px, RGBA). Der Figurenbogen braucht einen Alphakanal (freigestellt); daraus werden die
+    .venv/bin/python scripts/taxi_sprites.py LOGO.png FIGURENBOGEN.png [--out assets/taxi/space] [--max 24] [--side 130]
+Schreibt <out>/mission.png (Logo, auf 1024 Breite) und <out>/sprites.png (Atlas 8 x 3
+Zellen à 96 px, RGBA). Logo und Bogen dürfen einen Alphakanal haben, einen schwarzen Hintergrund (Logo) oder ein eingebranntes
+Transparenz-Schachbrett (wird herausgerechnet); aus dem Bogen werden die
 Zusammenhangskomponenten genommen, die kleinen (längste Seite <= --side Pixel) bevorzugt, bis --max
 Stück, von unten nach oben. Braucht numpy, pygame, scipy (nur zum Erzeugen).
 """
@@ -15,27 +16,69 @@ import numpy as np
 import pygame
 from scipy import ndimage
 
-OUT = "assets/taxi"
+OUT = "assets/taxi/space"
 COLS, ROWS, CELL = 8, 3, 96
+
+
+def derive_alpha(surf, connected: bool = True) -> tuple[np.ndarray, np.ndarray]:
+    """(rgb HxWx3, alpha HxW 0..255). Nimmt den Alphakanal, wenn er Transparenz hat; sonst: schwarzer
+    Hintergrund -> Alpha aus der Helligkeit; eingebranntes Transparenz-Schachbrett (weiß/hellgrau,
+    neutral) -> alles Neutrale und Helle, das mit dem Rand zusammenhängt, wird Hintergrund."""
+    rgb = pygame.surfarray.array3d(surf).transpose(1, 0, 2).copy()
+    try:
+        alpha = pygame.surfarray.array_alpha(surf).transpose(1, 0).copy()
+    except ValueError:
+        alpha = np.full(rgb.shape[:2], 255, dtype=np.uint8)
+    if alpha.min() < 128:
+        return rgb, alpha
+    a = rgb.astype(int)
+    corner = np.concatenate([a[:8, :8].reshape(-1, 3), a[-8:, -8:].reshape(-1, 3)]).mean(axis=0)
+    if corner.max() < 30:                                              # schwarzer Hintergrund (Logo)
+        lum = a.max(axis=2)
+        al = np.clip((lum - 12) / 50.0, 0.0, 1.0)
+        return rgb, (al * 255).astype(np.uint8)
+    neutral = (np.abs(a[:, :, 0] - a[:, :, 1]) < 12) & (np.abs(a[:, :, 1] - a[:, :, 2]) < 12) & (np.abs(a[:, :, 0] - a[:, :, 2]) < 12)
+    bright = a.min(axis=2) > 192
+    cand = neutral & bright
+    if connected:                                                      # nur Hintergrund, der den Rand berührt
+        lab, n = ndimage.label(cand)
+        border = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]])))
+        border.discard(0)
+        bg = np.isin(lab, list(border))
+    else:                                                              # Logo: Schachbrett auch in Lücken
+        bg = cand
+    bg = ndimage.binary_closing(bg, iterations=1)                        # Lücken im Schachbrett schließen
+    fg = ~bg
+    fg = ndimage.binary_opening(fg, iterations=1)
+    fg = ndimage.binary_erosion(fg, iterations=1)                        # hellen Saum abschneiden
+    al = ndimage.gaussian_filter(fg.astype(np.float32), 0.8)
+    return rgb, (np.clip(al, 0.0, 1.0) * 255).astype(np.uint8)
+
+
+def save_rgba(path: str, rgb: np.ndarray, alpha: np.ndarray, width: int | None = None) -> tuple[int, int]:
+    img = np.dstack([rgb, alpha]).astype(np.uint8)
+    surf = pygame.image.frombuffer(np.ascontiguousarray(img).tobytes(), (img.shape[1], img.shape[0]), "RGBA")
+    if width and surf.get_width() != width:
+        surf = pygame.transform.smoothscale(surf, (width, int(surf.get_height() * width / surf.get_width())))
+    pygame.image.save(surf, path)
+    return surf.get_size()
 
 
 def main() -> int:
     if len(sys.argv) < 3:
         print(__doc__)
         return 2
+    global OUT
+    if "--out" in sys.argv:
+        OUT = sys.argv[sys.argv.index("--out") + 1]
     max_n = int(sys.argv[sys.argv.index("--max") + 1]) if "--max" in sys.argv else COLS * ROWS
     side = int(sys.argv[sys.argv.index("--side") + 1]) if "--side" in sys.argv else 130
     pygame.display.init()
     pygame.display.set_mode((8, 8))
-    logo = pygame.image.load(sys.argv[1])
-    w, h = logo.get_size()
-    logo = pygame.transform.smoothscale(logo, (1024, int(h * 1024 / w)))
-    pygame.image.save(logo, f"{OUT}/mission.png")
-    print("Logo:", logo.get_size())
+    lrgb, lal = derive_alpha(pygame.image.load(sys.argv[1]).convert_alpha(), connected=False)
+    print("Logo:", save_rgba(f"{OUT}/mission.png", lrgb, lal, 1024))
 
-    sheet = pygame.image.load(sys.argv[2]).convert_alpha()
-    rgb = pygame.surfarray.array3d(sheet).transpose(1, 0, 2)
-    alpha = pygame.surfarray.array_alpha(sheet).transpose(1, 0)
+    rgb, alpha = derive_alpha(pygame.image.load(sys.argv[2]).convert_alpha())
     fg = alpha > 40
     fg = ndimage.binary_closing(fg, iterations=2)
     lab, n = ndimage.label(fg)

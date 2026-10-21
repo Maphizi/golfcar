@@ -21,15 +21,22 @@ from launcher import config as lcfg, theme as ltheme, wled
 
 log = logging.getLogger("taxi")
 PHOTO = lcfg.ROOT / "assets" / "pilot.png"
-DRIVER = lcfg.ROOT / "assets" / "taxi" / "driver.png"
-MISSION = lcfg.ROOT / "assets" / "taxi" / "mission.png"
-SPRITES = lcfg.ROOT / "assets" / "taxi" / "sprites.png"
-MISSIONS = [
-    "KEINE PANIK. HANDTUCH DABEI.", "42 FAHRGÄSTE BIS LOCH 19", "VOGONEN-LYRIK VERMEIDEN",
-    "ANHALTER AUFNEHMEN, DAUMEN PRÜFEN", "RESTAURANT AM ENDE DES UNIVERSUMS, TISCH FÜR ZWEI",
-    "UNWAHRSCHEINLICHKEIT AUF 1 ZU 2^276709", "DELFINE GRÜSSEN, FISCH NICHT VERGESSEN",
-    "TEE. RICHTIGEN TEE.", "BABELFISCH IM OHR, BESCHWERDEN AUF ALTVOGONISCH",
-]
+TAXI_ASSETS = lcfg.ROOT / "assets" / "taxi"
+DEFAULT_MISSIONS = ["FAHRGAST ABHOLEN, ZIEL UNBEKANNT", "KEINE FRAGEN, KEINE QUITTUNGEN"]
+
+
+class ThemeSet:
+    """Bildsatz eines Themas: Logo, Figuren, Fahrerfoto, Augen, Aufträge (fehlende Bilder bleiben None)."""
+
+    def __init__(self, th: dict):
+        d = TAXI_ASSETS / str(th.get("dir", "space"))
+        self.mission = _load_rgba(d / "mission.png") if (d / "mission.png").exists() else None
+        self.sprites = _load_rgba(d / "sprites.png") if (d / "sprites.png").exists() else None
+        self.driver = _load_rgba(d / "driver.png") if (d / "driver.png").exists() else None
+        self.eyes = [tuple(float(v) for v in e) for e in th.get("eyes", [[0.425, 0.655], [0.573, 0.655]])]
+        self.eye_r = float(th.get("eye_r", 0.03))
+        self.missions = list(th.get("missions", [])) or DEFAULT_MISSIONS
+        self.driver_title = str(th.get("driver_title", "SPACE TAXI DRIVER")).upper()
 
 GOLD = (255, 214, 10)
 DIM = (150, 140, 90)
@@ -102,17 +109,11 @@ class Controller:
         self.t_last = time.monotonic()
         self.blank = np.zeros((4, 4, 4), dtype=np.uint8)
         self.photo = _load_rgba(PHOTO) if PHOTO.exists() else None
-        if self.photo is None:
-            log.warning("Kein Pilotenfoto unter %s", PHOTO)
         # Digitale Lizenz: neues Fahrerfoto (assets/taxi/driver.png); fehlt es, bleibt das Duotone-Porträt
-        self.driver = _load_rgba(DRIVER) if DRIVER.exists() else None
-        self.mission = _load_rgba(MISSION) if MISSION.exists() else None
-        self.sprites = _load_rgba(SPRITES) if SPRITES.exists() else None
-        self.mission_line = self.rng.choice(MISSIONS)
+        self.sets = [ThemeSet(t) for t in self.themes]
+        self.mission_line = self.rng.choice(self.sets[self.idx].missions)
         self.mission_at = time.monotonic() + self.rng.uniform(20.0, 40.0)
         self.spr_t = 0.0
-        self.eyes = [tuple(float(v) for v in e) for e in scene_cfg.get("eyes", [[0.425, 0.655], [0.573, 0.655]])]
-        self.eye_r = float(scene_cfg.get("eye_r", 0.03))
         self.beat_zoom = 0.0
         self.bass_s = 0.0
         self.energy = 0.0
@@ -148,6 +149,7 @@ class Controller:
         self.slide = float(d)
         self.slide_t0 = time.monotonic()
         self.cover_version += 1
+        self.mission_line = self.rng.choice(self.cur.missions)
 
     def confirm(self) -> None:
         self.chosen = self.idx
@@ -157,13 +159,28 @@ class Controller:
         wled.apply_mode_async("home", [int(c * 255) for c in self.themes[self.idx].get("color_a", [0.95, 0.8, 0.25])])
 
     # -- Schnittstelle zur Engine --------------------------------------------
+    @property
+    def cur(self) -> "ThemeSet":
+        return self.sets[self.idx]
+
+    @property
+    def driver(self): return self.cur.driver
+    @property
+    def mission(self): return self.cur.mission
+    @property
+    def sprites(self): return self.cur.sprites
+    @property
+    def eyes(self): return self.cur.eyes
+    @property
+    def eye_r(self): return self.cur.eye_r
+
     def images(self) -> dict:
         cover = self.covers.get(self.idx, self.blank)
         return {"uPhotoTex": (self.photo if self.photo is not None else self.blank, 1),
                 "uCoverTex": (cover, self.cover_version),
-                "uDriverTex": (self.driver if self.driver is not None else self.blank, 1),
-                "uMissionTex": (self.mission if self.mission is not None else self.blank, 1),
-                "uSpriteTex": (self.sprites if self.sprites is not None else self.blank, 1)}
+                "uDriverTex": (self.driver if self.driver is not None else self.blank, self.cover_version),
+                "uMissionTex": (self.mission if self.mission is not None else self.blank, self.cover_version),
+                "uSpriteTex": (self.sprites if self.sprites is not None else self.blank, self.cover_version)}
 
     def uniform_names(self):
         return ("uPhotoTex", "uCoverTex", "uDriverTex", "uMissionTex", "uSpriteTex", "uMissionOK", "uSpriteOK",
@@ -193,7 +210,7 @@ class Controller:
         self.spin_t += dt * (0.6 + 2.5 * self.bass_s + 2.0 * self.beat_zoom)
         self.spr_t += dt * (0.8 + 0.5 * self.energy)              # Figuren schweben mit der Energie etwas zügiger
         if now >= self.mission_at:
-            self.mission_line = self.rng.choice([m for m in MISSIONS if m != self.mission_line])
+            self.mission_line = self.rng.choice([m for m in self.cur.missions if m != self.mission_line] or self.cur.missions)
             self.mission_at = now + self.rng.uniform(20.0, 40.0)
         if now >= self.radio_at:
             self.radio = self.rng.choice([r for r in RADIO if r != self.radio])
@@ -241,7 +258,7 @@ class Controller:
             (f"THEMA  {self.idx + 1} / {n}   {th.get('title', '').upper()}   {th.get('tagline', '').upper()}" + ("     AKTIV" if chosen else "     START = WÄHLEN"),
              0.014, 0.315, 0.095, col_a if chosen else GREY, 0.9 if chosen else 0.6 + 0.3 * abs(((now * 1.5) % 2.0) - 1.0)),
             # Taxischein rechts (schwarze Schrift auf dem gelben Schild)
-            ("SPACE TAXI DRIVER", 0.018, 0.79, 0.738, (20, 20, 20), 0.95),
+            (self.cur.driver_title, 0.018, 0.79, 0.738, (20, 20, 20), 0.95),
             (self.name, 0.038, 0.805, 0.305, (15, 15, 15), 1.0),
             (f"TAXI NR. {self.taxi_no}   LIZENZ {self.license}", 0.015, 0.805, 0.264, (25, 25, 25), 0.95),
             (f"FAHRTEN {self.rides}   BESCHWERDEN {self.complaints}   TAXAMETER {self.meter:07.2f} CR", 0.011, 0.805, 0.233, (35, 30, 20), 0.9),

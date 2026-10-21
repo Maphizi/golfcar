@@ -329,11 +329,12 @@ void main() {
         vec2 mq = (uv - mc) / (ms * mscale);
         if (uMissionOK > 0.5 && abs(mq.x) < 1.0 && abs(mq.y) < 1.0) {
             vec2 q = mq * 0.5 + 0.5;
-            vec3 logo = bilin(uMissionTex, q, uMissionSize);
+            vec4 logo = bilin4(uMissionTex, q * uMissionSize, uMissionSize, vec2(0.0), uMissionSize - 1.0);
             float sheen = exp(-pow((q.x - q.y * 0.4 - fract(t * 0.07) * 1.9 + 0.5) * 6.0, 2.0));
-            logo *= 1.0 + 0.25 * sheen + 0.15 * uBassS;
-            float edge = smoothstep(1.0, 0.85, abs(mq.x)) * smoothstep(1.0, 0.85, abs(mq.y));
-            col += logo * edge;
+            logo.rgb *= 1.0 + 0.25 * sheen + 0.15 * uBassS;
+            float edge = smoothstep(1.0, 0.9, abs(mq.x)) * smoothstep(1.0, 0.9, abs(mq.y));
+            col = mix(col, logo.rgb, logo.a * edge);
+            col += uColA * logo.a * edge * 0.06 * (0.5 + uBassS);
         }
         // Figuren schweben über das Logo: jede auf eigener Bahn, wippt leicht zur Musik
         if (uSpriteOK > 0.5) {
