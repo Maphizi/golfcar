@@ -128,7 +128,8 @@ void main() {
     }
     bloom = bloom / 8.0;
     float zone = uv.x < 0.36 ? 0.0 : (uv.x < 0.64 ? 1.0 : 2.0);               // Pilzgruppen links, Mitte, rechts
-    float run = (zone == uStep ? 1.0 : 0.0) * (1.0 - 0.7 * uStepPhase);
+    float run = (zone == uStep ? 1.0 : 0.0) * (1.0 - 0.6 * uStepPhase);
+    float offZone = (zone == uStep ? 0.0 : 1.0) * uLive * 0.5;                   // die anderen Gruppen treten zurück
     vec3 glowCol = plate / max(lum, 0.2);                                       // Eigenfarbe des Pilzes, voll gesättigt
     if (uFlash > 0.0) {
         float wave = exp(-pow((uv.x - (1.0 - uFlash) * 1.6 + 0.3) * 6.0, 2.0));
@@ -136,11 +137,12 @@ void main() {
     }
     float stakeGlow = 0.2 + 0.4 * uStake;
     float breathe = 0.5 + 0.5 * sin(t * 1.2 + uv.x * 4.0);                     // ruhiges Atmen, wenn die Musik leise ist
-    float drive = 0.15 * breathe + 1.0 * uBassS + 0.5 * uBeatPulse + 1.2 * run * uLive + stakeGlow * 0.3
+    float drive = 0.15 * breathe + 1.0 * uBassS + 0.5 * uBeatPulse + 2.0 * run * uLive + stakeGlow * 0.3
                 + 1.5 * big * (0.5 + 0.5 * sin(t * 6.0 - uv.x * 12.0)) + 0.4 * uHighS * noise(uv * 80.0 + t * 5.0);
     glowCol = mix(glowCol, hueShift(glowCol, uStep * 2.1 + t * 0.6), run * 0.6);   // Lauflicht färbt die Gruppe um
     // Pilze liegen ohne Musik gedimmt da und flammen mit Bass und Beat auf (deutlicher Hub)
     col = mix(col, col * 0.35, glowMask * uLive * (1.0 - clamp(drive, 0.0, 1.0)));
+    col = mix(col, col * 0.5, glowMask * offZone * (0.5 + 0.5 * uBassS));
     col += glowCol * glowMask * drive * (0.4 + 0.8 * uLive);
     col += glowCol * bloom * drive * 1.1 * (0.3 + 0.7 * uLive);                 // Schein auf Moos und Boden
     col = mix(col, col * vec3(0.8, 0.9, 1.1), (1.0 - uLive) * 0.4);

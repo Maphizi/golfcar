@@ -581,8 +581,11 @@ Oben = Blätterregen: Blätter und Seerosenblätter fallen, landen und drehen si
 Unten = Umkehrung: der See bäumt sich auf, eine Fontäne schleudert Frösche, Kois, Libellen, Seerosen und
 Wesen zurück in die Luft, Wellen laufen zum Ufer, der Nebel reißt auf und kurz liegt der leuchtende
 Seegrund frei (`assets/pond/bottom.png`). Startknopf = ein Stein hüpft über das Wasser (Ringe, Spritzer).
-Kippschalter AN = Nahaufnahme in den Strudel, AUS = zurück. Musik: jeder Beat wirft einen Ring aufs
-Wasser, Drops lassen den See von innen leuchten, der Nebel und die Mondspiegelung atmen mit dem Bass,
+Kippschalter AN = Nahaufnahme in den Strudel, AUS = zurück. Musik: Bass und Beat treiben die Drehung (Drehstoß
+auf jeden Beat), mit Bass greift der Strudel weiter über den See, die drei Schaumarme springen auf jeden Beat ein
+Stück weiter und blitzen im Trichter auf, jeder Beat lässt das Wasser beben (Druckwelle als heller Ring vom Strudel
+über den ganzen See, Zittern der Wasserfläche, kurzes Kamerarütteln) und wirft einen Ring aufs Wasser, Drops lassen
+den See von innen leuchten, der Nebel und die Mondspiegelung atmen mit dem Bass,
 Glühwürmchen funkeln mit den Höhen. Alle zufälligen Kreaturen (`assets/pond/creatures.png`, Atlas 6x4 via
 `scripts/trip_assets.py atlas`) und Positionen (`config/visualizer.toml` `[scenes.pond]` `vortex`,
 `water`) sind konfigurierbar. Controller `visualizers/scenes/pond.py`, Shader

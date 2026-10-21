@@ -14,6 +14,7 @@ uniform sampler2D uLakeTex, uBottomTex, uCreatureTex, uBeingsTex;
 uniform vec2 uLakeSize, uCreatureSize, uBeingsSize, uVortex;
 uniform vec4 uWater;                            // y unten, y oben, x links, x rechts (Bildanteile)
 uniform float uSeed, uBassS, uMidS, uHighS, uEnergy, uSwirlT, uSnakeT, uZoom, uFlash, uLeaf, uLeafSeed, uEjectT, uStone, uStoneSide;
+uniform float uBeatPulse, uBeatStep, uQuakeT;            // Beat: Puls (klingt ab), Zähler 0..7, Sekunden seit dem letzten Beben
 uniform vec4 uRing0, uRing1, uRing2, uRing3, uRing4, uRing5;   // x, y, Alter, aktiv
 uniform vec4 uThrow0, uThrow1;                  // Fortschritt, Zelle, Seite, Seed
 uniform vec4 uThrowPar0, uThrowPar1;            // Spirale, rückwärts
@@ -139,6 +140,9 @@ void main() {
     // Kamera: Nahaufnahme zieht in den Strudel
     vec2 uv = mix(vUv, uVortex + (vUv - uVortex) / 1.6, uZoom);
     uv += vec2(0.003 * sin(t * 0.21), 0.002 * cos(t * 0.17));
+    // Beben: jeder Beat rüttelt die Kamera kurz, das Wasser zittert (nur die Wasserfläche)
+    float quake = uBeatPulse * uBeatPulse * live;
+    uv += vec2(0.004 * sin(t * 60.0), 0.003 * cos(t * 47.0)) * quake;
     vec2 q = vec2((uv.x - uVortex.x) * aspect, uv.y - uVortex.y);   // um den Strudel, isotrop
     float wm = waterMask(uv);
     float r = length(q), a = atan(q.y, q.x);
@@ -146,15 +150,23 @@ void main() {
     float rp = length(qp), ap = atan(qp.y, qp.x);
     // ---- Wasser: Wellen, Strudelverzerrung, Beat-Ringe
     vec2 wuv = uv;
-    float swirlStrength = (0.9 + 1.5 * uBassS * live) * (1.0 + 0.6 * uZoom);
-    float sw = exp(-rp * 6.0) * swirlStrength;
+    float swirlStrength = (0.8 + 2.6 * uBassS * live + 1.2 * uBeatPulse * live) * (1.0 + 0.6 * uZoom);
+    float reach = 6.0 - 2.5 * uBassS * live;                                 // mit Bass greift der Strudel weiter
+    float sw = exp(-rp * reach) * swirlStrength;
     float ejectT = uEjectT;
     float surge = 0.0;
     if (ejectT >= 0.0) surge = ejectT < 1.5 ? ejectT / 1.5 : exp(-(ejectT - 1.5) * 0.6);
     vec2 wq = rot(sw * 2.0) * qp;
     vec2 disp = (wq - qp) * vec2(1.0, FLAT) * 0.5;
     disp += vec2(noise(uv * 40.0 + vec2(t * 0.6, t * 0.3)) - 0.5, noise(uv * 40.0 + vec2(-t * 0.4, t * 0.5)) - 0.5) * 0.004 * (1.0 + 2.0 * uBassS * live);
-    disp -= qp / max(rp, 0.01) * vec2(1.0, FLAT) * exp(-rp * 6.0) * 0.02 * (0.5 + uBassS);   // Sog zur Mitte
+    disp -= qp / max(rp, 0.01) * vec2(1.0, FLAT) * exp(-rp * 6.0) * 0.02 * (0.5 + 1.5 * uBassS + uBeatPulse);   // Sog zur Mitte
+    // Beben: Druckwelle vom Strudel über den ganzen See (verschiebt das Wasserbild), dazu Zittern
+    if (uQuakeT < 1.6) {
+        float qr = uQuakeT * 0.9;
+        float shock = exp(-pow((rp - qr) * 14.0, 2.0)) * (1.0 - uQuakeT / 1.6) * live;
+        disp += qp / max(rp, 0.01) * vec2(1.0, FLAT) * shock * 0.03;
+        disp += vec2(0.0, 0.006) * quake * sin(uv.x * 60.0 + t * 40.0) * smoothstep(0.0, 0.3, rp);
+    }
     for (int i = 0; i < 6; i++) {
         vec4 rg = ringAt(i);
         if (rg.w < 0.5 || rg.z > 4.0) continue;
@@ -174,10 +186,19 @@ void main() {
         col = mix(col, bottomTex(uv), hole);
     }
     // Strudel: dunkle Mitte, Schaumspiralen, Glühen mit dem Bass
-    float foam = pow(0.5 + 0.5 * sin(ap * 3.0 + log(rp + 0.02) * 9.0 - uSwirlT * 3.0), 10.0) * exp(-rp * 5.0);
+    // Schaumspiralen: drei Arme, springen auf jeden Beat ein Stück weiter (uBeatStep) und drehen mit uSwirlT
+    float armJump = uBeatStep * 0.785 + uBeatPulse * 0.4;
+    float foam = pow(0.5 + 0.5 * sin(ap * 3.0 + log(rp + 0.02) * 9.0 - uSwirlT * 3.0 - armJump), 10.0 - 6.0 * uBeatPulse) * exp(-rp * (5.0 - 2.0 * uBassS * live));
+    foam *= 1.0 + 1.1 * uBeatPulse;
     col = mix(col, col * 0.25, smoothstep(0.08, 0.0, rp) * wm);
     col += vec3(0.8, 0.9, 0.95) * foam * wm * (0.4 + 0.5 * uBassS);
-    col += vec3(0.3, 0.9, 0.7) * exp(-rp * 14.0) * wm * (0.2 + 0.8 * uBassS * live) * (1.0 + uZoom);
+    col += vec3(0.3, 0.9, 0.7) * exp(-rp * (14.0 - 5.0 * uBassS * live)) * wm * (0.2 + 0.9 * uBassS * live + 0.6 * uBeatPulse * live) * (1.0 + uZoom);
+    col += hueShift(vec3(0.4, 0.9, 1.0), uBeatStep * 0.5) * exp(-rp * 8.0) * wm * uBeatPulse * 0.5 * live;   // Beat-Blitz im Trichter
+    // Druckwelle als heller Ring über das ganze Wasser
+    if (uQuakeT < 1.6) {
+        float qr = uQuakeT * 0.9;
+        col += vec3(0.6, 0.85, 1.0) * exp(-pow((rp - qr) * 18.0, 2.0)) * (1.0 - uQuakeT / 1.6) * wm * 0.6 * live;
+    }
     // Beat-Ringe als helle Linien
     for (int i = 0; i < 6; i++) {
         vec4 rg = ringAt(i);

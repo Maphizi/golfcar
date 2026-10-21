@@ -109,6 +109,9 @@ class Controller:
         self.zoom_target = 0.0
         self.flash = 0.0
         self.last_beat = 0.0
+        self.beat_pulse = 0.0                # klingt nach jedem Beat ab: Beben, Schaumsprung, Glühen
+        self.beat_step = 0                   # Beat-Zähler: Schaumspiralen springen im Takt weiter
+        self.quake_t0 = -10.0
         self.rings: list[tuple[float, float, float]] = []     # (x, y, t0)
         self.quiet_since: float | None = None
         self.drop_armed = False
@@ -194,7 +197,8 @@ class Controller:
     def uniform_names(self):
         names = ["uLakeTex", "uBottomTex", "uCreatureTex", "uBeingsTex", "uLakeSize", "uCreatureSize", "uBeingsSize",
                  "uSeed", "uVortex", "uWater", "uBassS", "uMidS", "uHighS", "uEnergy", "uSwirlT", "uSnakeT", "uZoom",
-                 "uFlash", "uLeaf", "uLeafSeed", "uEjectT", "uStone", "uStoneSide", "uLeafCells", "uBubbleCells"]
+                 "uFlash", "uLeaf", "uLeafSeed", "uEjectT", "uStone", "uStoneSide", "uLeafCells", "uBubbleCells",
+                 "uBeatPulse", "uBeatStep", "uQuakeT"]
         names += [f"uRing{i}" for i in range(6)]
         for i in range(SLOTS):
             names += [f"uThrow{i}", f"uThrowPar{i}"]
@@ -221,6 +225,10 @@ class Controller:
         if beat > 0.5 and now - self.last_beat > 0.3:
             self.last_beat = now
             self.rings.append((self.vortex[0], self.vortex[1], now))
+            self.beat_pulse = 1.0
+            self.beat_step = (self.beat_step + 1) % 8
+            self.quake_t0 = now
+            self.swirl_t += 0.35 * beat                                  # Drehstoß
         # Drop: Wasser leuchtet auf
         if live and self.energy > 0.03 and e_fast < 0.5 * self.energy:
             self.quiet_since = self.quiet_since or now
@@ -235,8 +243,9 @@ class Controller:
         self.flash = max(0.0, self.flash - dt / 2.5)
         self.rings = [r for r in self.rings if now - r[2] < 4.0][-6:]
         # Strudel und Schlangenwellen
-        self.swirl_t += dt * (0.35 + 1.2 * self.bass_s + 0.3 * self.energy)
-        self.snake_t += dt * (0.3 + 1.0 * self.bass_s)
+        self.beat_pulse = max(0.0, self.beat_pulse - dt / 0.45)
+        self.swirl_t += dt * (0.4 + 2.6 * self.bass_s + 0.6 * self.energy + 1.5 * self.beat_pulse)
+        self.snake_t += dt * (0.3 + 1.6 * self.bass_s + 0.8 * self.beat_pulse)
         self.zoom += (self.zoom_target - self.zoom) * min(1.0, dt / 2.0)
         # Stein: Ringe bei jedem Aufsetzen
         st = now - self.stone_t0
@@ -275,6 +284,7 @@ class Controller:
             "uSeed": self.seed, "uVortex": self.vortex, "uWater": self.water,
             "uBassS": self.bass_s, "uMidS": self.mid_s, "uHighS": self.high_s, "uEnergy": self.energy,
             "uSwirlT": self.swirl_t % 1000.0, "uSnakeT": self.snake_t % 1000.0, "uZoom": self.zoom, "uFlash": self.flash,
+            "uBeatPulse": self.beat_pulse, "uBeatStep": float(self.beat_step), "uQuakeT": min(9.0, now - self.quake_t0),
             "uLeaf": ((now - self.leaf_t0) / LEAF_SECONDS) if self.leaf_t0 is not None else 0.0, "uLeafSeed": self.leaf_seed,
             "uEjectT": eject_t, "uStone": st if 0.0 <= st < 2.4 else -1.0, "uStoneSide": self.stone_side,
             "uLeafCells": tuple(float(v) for v in LEAVES), "uBubbleCells": (float(BUBBLES[0]), float(BUBBLES[1]), float(BUBBLES[2]), float(STONE)),
