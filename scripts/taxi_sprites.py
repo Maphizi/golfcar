@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Mission-Logo und schwebende Figuren für den Taxistand vorbereiten.
 
-    .venv/bin/python scripts/taxi_sprites.py LOGO.png FIGURENBOGEN.png [--out assets/taxi/space] [--max 24] [--side 130] [--split 8]
+    .venv/bin/python scripts/taxi_sprites.py LOGO.png FIGURENBOGEN.png [--out assets/taxi/space] [--max 24] [--side 130] [--split 8] [--prefer-large]
 Schreibt <out>/mission.png (Logo, auf 1024 Breite) und <out>/sprites.png (Atlas 8 x 3
 Zellen à 96 px, RGBA). Logo und Bogen dürfen einen Alphakanal haben, einen schwarzen Hintergrund (Logo) oder ein eingebranntes
 Transparenz-Schachbrett (wird herausgerechnet); aus dem Bogen werden die
@@ -33,9 +33,17 @@ def derive_alpha(surf, connected: bool = True) -> tuple[np.ndarray, np.ndarray]:
         return rgb, alpha
     a = rgb.astype(int)
     corner = np.concatenate([a[:8, :8].reshape(-1, 3), a[-8:, -8:].reshape(-1, 3)]).mean(axis=0)
-    if corner.max() < 30:                                              # schwarzer Hintergrund (Logo)
+    if corner.max() < 30:                                              # schwarzer Hintergrund
         lum = a.max(axis=2)
-        al = np.clip((lum - 12) / 50.0, 0.0, 1.0)
+        if connected:
+            # Bogen: Objekte als gefüllte Flächen (dunkle Teile von Neonobjekten gehören dazu)
+            m = lum > 22
+            m = ndimage.binary_closing(m, iterations=4)
+            m = ndimage.binary_fill_holes(m)
+            m = ndimage.binary_opening(m, iterations=1)
+            al = ndimage.gaussian_filter(m.astype(np.float32), 0.8)
+            return rgb, (np.clip(al, 0.0, 1.0) * 255).astype(np.uint8)
+        al = np.clip((lum - 12) / 50.0, 0.0, 1.0)                       # Logo: Leuchten weich ausblenden
         return rgb, (al * 255).astype(np.uint8)
     neutral = (np.abs(a[:, :, 0] - a[:, :, 1]) < 12) & (np.abs(a[:, :, 1] - a[:, :, 2]) < 12) & (np.abs(a[:, :, 0] - a[:, :, 2]) < 12)
     bright = a.min(axis=2) > 192
@@ -101,7 +109,10 @@ def main() -> int:
             continue
         items.append((max(hh, ww), ys.start, i + 1, sl))
     small = [it for it in items if it[0] <= side]
-    small.sort(key=lambda it: (-it[1], it[0]))                      # unten zuerst
+    if "--prefer-large" in sys.argv:
+        small.sort(key=lambda it: -it[0])                            # größte zuerst
+    else:
+        small.sort(key=lambda it: (-it[1], it[0]))                  # unten zuerst
     chosen = small[:max_n]
     if len(chosen) < max_n:                                           # mit den nächstgrößeren auffüllen
         rest = sorted([it for it in items if it[0] > side], key=lambda it: it[0])

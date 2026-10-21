@@ -324,7 +324,7 @@ void main() {
     // ---- Links: das Missionslogo groß (schwarzer Hintergrund, additiv über Sternen), pulst leicht mit dem Bass
     {
         vec2 mc = vec2(0.315 + uSlide * 0.03, 0.62);
-        vec2 ms = vec2(0.28, 0.28 * aspect / 1.5);            // 3:2
+        vec2 ms = vec2(0.28, 0.28 * aspect * uMissionSize.y / max(uMissionSize.x, 1.0));   // Seitenverhältnis des Logos
         float mscale = 1.0 + 0.025 * uBassS + 0.01 * sin(t * 0.7);
         vec2 mq = (uv - mc) / (ms * mscale);
         if (uMissionOK > 0.5 && abs(mq.x) < 1.0 && abs(mq.y) < 1.0) {

@@ -77,7 +77,7 @@ Zwei Elemente: links Missionslogo (`mission.png`) mit schwebenden Figuren (`spri
 Kreisel in den Augen (`eyes`, `eye_r` in themes.toml), Glitch, Hologramm. Bildsätze je Thema: `assets/taxi/<dir>/`.
 
 ## Themen (`launcher/theme.py`, `config/themes.toml`)
-Drei Themen: `spacetaxi` (default), `green`, `future`; je `dir` unter assets/taxi/ (mission.png, sprites.png, driver.png),
+Vier Themen: `spacetaxi` (default), `green`, `future`, `cyber`; je `dir` unter assets/taxi/ (mission.png, sprites.png, driver.png),
 `eyes`/`eye_r`, `missions`, `driver_title`, `color_a` = Farbe des Scheins. `theme.content()` liefert den Inhaltssatz
 ("space" = die Weltraum-Programme).
 

@@ -66,3 +66,23 @@ cover_style = 3
 color_a = [0.95, 0.55, 0.12]
 color_b = [0.2, 0.4, 0.95]
 tint = [0.95, 0.6, 0.2]
+
+[[themes]]
+name = "cyber"
+content = "space"
+title = "CYBERPUNK"
+tagline = "NEON, REGEN UND EIN FAHRER MIT KABELN"
+dir = "cyber"
+driver_title = "NEON-FAHRER"
+eyes = [[0.415, 0.651], [0.55, 0.651]]
+eye_r = 0.028
+missions = [
+  "FAHRGAST OHNE GESICHT, ZIEL SEKTOR 7", "RAMEN HOLEN, NICHT ANHALTEN LASSEN",
+  "KONZERN-DROHNE IM NACKEN, UMWEG ÜBER DIE DÄCHER", "NEONSCHILD FLACKERT: DAS IST DER TREFFPUNKT",
+  "SPEICHERCHIP IM HANDSCHUHFACH, KEINE FRAGEN", "KEIN SIGNAL. TROTZDEM FAHREN.",
+  "KIRSCHBLÜTEN IM REGEN, TAXAMETER LÄUFT", "GAME OVER IST NUR EIN SCHILD",
+]
+cover_style = 1
+color_a = [0.95, 0.15, 0.65]
+color_b = [0.1, 0.75, 0.95]
+tint = [0.95, 0.2, 0.7]
