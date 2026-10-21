@@ -25,6 +25,7 @@ class Action(str, Enum):
     DROID = "droid"            # Bord-Droide
     HAL = "hal"                # HAL 3000
     TRIP = "trip"              # Waldtresen (kittctl trip)
+    POND = "pond"              # Moorsee (kittctl pond)
     TALK = "talk"              # Sprechtaste: bei HAL Musik leise + Mikrofon an/aus (Taste F15 an den Modus)
 
 
@@ -44,6 +45,7 @@ ACTION_TO_MODE = {
     Action.DROID: "droid",
     Action.HAL: "hal",
     Action.TRIP: "trip",
+    Action.POND: "pond",
     Action.HOME: "home",
 }
 

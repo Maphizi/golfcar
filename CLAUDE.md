@@ -87,6 +87,14 @@ Browse (Knüppel links/rechts, ENTER = essen) -> eat -> trip (Kippschalter = zur
 Wesen `config/trip.toml` (Zelle im Atlas 5x4), Bilder `assets/trip/` (bar, beings, symbols, tex_*, optional face).
 Ereignisse `EVENTS`, Symbolsätze `SYMBOL_SETS` (Zellen im 8x5-Atlas). Test: `python -m visualizers.engine trip --demo`.
 
+## Moorsee (`visualizers/scenes/pond.py`, Thema green ersetzt Taste 3)
+`themes.toml` `modes = { blackhole = "pond" }`. Waldsee `assets/pond/lake.png` + Seegrund `bottom.png` + Kreaturen-Atlas
+`creatures.png` (6x4 à 160, `scripts/trip_assets.py atlas`), Wesen aus `assets/trip/beings.png`/`config/trip.toml`.
+`[scenes.pond] vortex = [x, y]`, `water = [y0, y1, x0, x1]` (Wassermaske). LINKS/RECHTS = Wesen werfen (Band im
+Strudel, ~40-60 s), OBEN = Blätterregen, UNTEN = Umkehrung (Fontäne, Seegrund), ENTER = Stein hüpft, SPACE/BACKSPACE =
+Zoom. Beat = Ring, Drop = `uFlash`. Wasserebene perspektivisch: Shader-Konstante `FLAT` (y gestaucht).
+Test: `python -m visualizers.engine pond --test-signal --demo`.
+
 ## Navigationscomputer (`visualizers/scenes/navcomputer.py`)
 ENTER = Flug starten, Flug endet NUR per Kippschalter (SPACE oder BACKSPACE im Flug = Ankunft), nie von selbst
 (Demo: cruise_seconds). Ereignisse alle 30–60 s (`EVENTS`): Asteroidenfeld, Farbnebel, Sonne, Wurmloch,

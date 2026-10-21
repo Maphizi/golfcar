@@ -563,6 +563,23 @@ endet nur per Kippschalter: das Bild kehrt an den Tresen zurück und eine Bilanz
 `scripts/trip_assets.py beings|symbols|texture|bar`. Controller `visualizers/scenes/trip.py`,
 Shader `visualizers/shaders/trip/frag.glsl`. Test: `python -m visualizers.engine trip --test-signal --demo`.
 
+**Moorsee (Taste 3 im Thema THE POWER OF THE GREEN, `pond`):** Das Gegenstück zum Schwarzen Loch
+(`themes.toml` `modes = { blackhole = "pond" }`). Ein Waldsee bei Nacht (`assets/pond/lake.png`) mit einem
+Strudel in der Mitte, der sich mit dem Bass dreht. Knüppel links/rechts wirft ein Wesen der Speisekarte
+(`assets/trip/beings.png`, `config/trip.toml`) von dieser Seite in den See: Platscher, kurzes Treiben, dann
+zieht der Strudel es über etwa eine Minute in Spiralen nach innen und streckt es zu einem immer längeren
+Band, das schlangenförmig zur Musik wogt, bis es im Trichter verschwindet (Luftblasen steigen auf).
+Oben = Blätterregen: Blätter und Seerosenblätter fallen, landen und drehen sich im Strudel zur Spirale.
+Unten = Umkehrung: der See bäumt sich auf, eine Fontäne schleudert Frösche, Kois, Libellen, Seerosen und
+Wesen zurück in die Luft, Wellen laufen zum Ufer, der Nebel reißt auf und kurz liegt der leuchtende
+Seegrund frei (`assets/pond/bottom.png`). Startknopf = ein Stein hüpft über das Wasser (Ringe, Spritzer).
+Kippschalter AN = Nahaufnahme in den Strudel, AUS = zurück. Musik: jeder Beat wirft einen Ring aufs
+Wasser, Drops lassen den See von innen leuchten, der Nebel und die Mondspiegelung atmen mit dem Bass,
+Glühwürmchen funkeln mit den Höhen. Alle zufälligen Kreaturen (`assets/pond/creatures.png`, Atlas 6x4 via
+`scripts/trip_assets.py atlas`) und Positionen (`config/visualizer.toml` `[scenes.pond]` `vortex`,
+`water`) sind konfigurierbar. Controller `visualizers/scenes/pond.py`, Shader
+`visualizers/shaders/pond/frag.glsl`. Test: `python -m visualizers.engine pond --test-signal --demo`.
+
 **Flug und Ankunft im Navigationscomputer:** Der Startknopf startet den Flug (Kippschalter AN
 zeigt vorher nur SCHARF an). Der Hyperraumflug endet nie von selbst: erst wenn der Pilot den
 Kippschalter umlegt (egal in welche Richtung), kommt die Ankunft. Nur im `--demo` gilt die feste

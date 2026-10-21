@@ -63,6 +63,13 @@ shader = "trip"
 controller = "trip"        # Waldtresen: Wesen essen, psychedelische Reise (Thema Power of the Green)
 render_scale = 0.6
 
+[scenes.pond]
+shader = "pond"
+controller = "pond"        # Moorsee (Thema Power of the Green, Gegenstück zum Schwarzen Loch)
+render_scale = 0.6
+vortex = [0.56, 0.30]      # Strudelmitte im Bild (Anteile, y von unten)
+water = [0.14, 0.52, 0.18, 0.92]   # Wasserfläche: y unten, y oben, x links, x rechts
+
 [scenes.taxi]
 shader = "taxi"
 controller = "taxi"

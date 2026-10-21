@@ -5,6 +5,8 @@
     .venv/bin/python scripts/trip_assets.py symbols BOGEN.png       -> assets/trip/symbols.png (Atlas 8x5 à 128 px, RGBA)
     .venv/bin/python scripts/trip_assets.py texture NAME BILD.png   -> assets/trip/tex_NAME.png (1024 breit)
     .venv/bin/python scripts/trip_assets.py bar BILD.png            -> assets/trip/bar.png (max. 1920 breit)
+    .venv/bin/python scripts/trip_assets.py atlas AUS.png BOGEN.png SPALTEN REIHEN ZELLE [SPLIT]   (beliebiger Bogen, z. B. Moorsee)
+    .venv/bin/python scripts/trip_assets.py plate AUS.png BILD.png  (Vollbild, max. 1920 breit)
 Wesen-Bogen: 5 Spalten x 4 Reihen auf Schwarz, jede Zelle wird einzeln freigestellt (gefüllte Fläche).
 Symbol-Bogen: viele kleine Objekte auf Schwarz, Zusammenhangskomponenten, größte zuerst.
 Braucht numpy, pygame, scipy (nur zum Erzeugen).
@@ -108,6 +110,32 @@ def symbols(path: str, cols: int = 8, rows: int = 5, cell: int = 128, split: int
     print(f"Symbole: {min(len(items), cols * rows)} von {len(items)} in {cols}x{rows} Zellen à {cell} px")
 
 
+def atlas(out_path: str, path: str, cols: int, rows: int, cell: int, split: int = 5, max_side: int = 100000) -> None:
+    """Beliebiger Bogen auf Schwarz -> Atlas cols x rows à cell px, größte Objekte zuerst (auch für andere Modi)."""
+    rgb, alpha = derive_alpha(pygame.image.load(path).convert_alpha())
+    lab, items = _components(alpha, split)
+    items = [it for it in items if it["side"] <= max_side]
+    items.sort(key=lambda it: -it["area"])
+    out = np.zeros((rows * cell, cols * cell, 4), dtype=np.uint8)
+    for k, it in enumerate(items[:cols * rows]):
+        sl = it["sl"]
+        mask = lab[sl] == it["idx"]
+        arr, al = fit_cell(rgb[sl], (alpha[sl] * mask).astype(np.uint8), cell)
+        place(out, arr, al, k // cols, k % cols, cell)
+    surf = pygame.image.frombuffer(out.tobytes(), (cols * cell, rows * cell), "RGBA")
+    pygame.image.save(surf, out_path)
+    print(f"Atlas {out_path}: {min(len(items), cols * rows)} von {len(items)} in {cols}x{rows} à {cell} px")
+
+
+def plate(out_path: str, path: str, width: int = 1920) -> None:
+    surf = pygame.image.load(path)
+    w, h = surf.get_size()
+    if w > width:
+        surf = pygame.transform.smoothscale(surf, (width, int(h * width / w)))
+    pygame.image.save(surf, out_path)
+    print("Bild", out_path, surf.get_size())
+
+
 def texture(name: str, path: str, width: int = 1024) -> None:
     surf = pygame.image.load(path)
     w, h = surf.get_size()
@@ -140,6 +168,10 @@ def main() -> int:
         texture(sys.argv[2], sys.argv[3])
     elif cmd == "bar":
         bar(sys.argv[2])
+    elif cmd == "atlas":        # atlas AUSGABE.png BOGEN.png SPALTEN REIHEN ZELLE [SPLIT]
+        atlas(sys.argv[2], sys.argv[3], int(sys.argv[4]), int(sys.argv[5]), int(sys.argv[6]), int(sys.argv[7]) if len(sys.argv) > 7 else 5)
+    elif cmd == "plate":        # plate AUSGABE.png BILD.png
+        plate(sys.argv[2], sys.argv[3])
     else:
         print(__doc__)
         return 2

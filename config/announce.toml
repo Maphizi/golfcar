@@ -15,6 +15,10 @@ gaming = [
   "Spielkonsole aktiviert. Deine Reflexe werden ab jetzt protokolliert.",
   "Simulationsdeck geladen. Ich dachte, wir wären hier zum Golfen.",
 ]
+pond = [
+  "Der Moorsee. Bitte nichts hineinwerfen, was man noch braucht.",
+  "Stiller See, hungriger Strudel.",
+]
 trip = [
   "Waldtresen geöffnet. Bitte nur essen, was leuchtet.",
   "Die Speisekarte des Waldes. Alles auf eigene Gefahr.",

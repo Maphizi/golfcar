@@ -67,6 +67,14 @@ col2 = [160, 40, 220]
 sx  = 40
 ix  = 160
 
+[modes.pond]                # Moorsee: tiefes Blaugrün, langsam atmend
+bri = 160
+fx  = 2
+col = [40, 160, 120]
+col2 = [5, 20, 40]
+sx  = 35
+ix  = 150
+
 [modes.blackhole]           # Schwarzes Loch: oranges Glühen der Akkretionsscheibe, langsam kreisend
 bri = 170
 fx  = 76          # Meteor
