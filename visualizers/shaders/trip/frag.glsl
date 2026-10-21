@@ -238,11 +238,11 @@ vec3 tripEvent(vec3 col, vec2 uv, float t, float aspect) {
             float reach = grow * (0.85 + 0.15 * hash12(vec2(fi, 2.0))) + pull * 0.3;
             if (along > reach) continue;
             float wob = 0.03 * sin(d.x * 9.0 + t * 1.5 + fi) + 0.015 * sin(d.x * 23.0 - t * 2.0);
-            float thick = (0.07 - 0.05 * along) * (1.0 + 0.3 * uBassS);
+            float thick = (uRootOK > 0.5 ? 0.11 - 0.06 * along : 0.07 - 0.05 * along) * (1.0 + 0.3 * uBassS);
             float dist = abs(d.y - wob);
             float body, glowv;
             if (uRootOK > 0.5) {
-                vec2 rc = vec2(fract(along * 1.0 + fi * 0.17), clamp((d.y - wob) / (thick * 2.0) + 0.5, 0.0, 1.0));
+                vec2 rc = vec2(clamp(along / max(reach, 0.05), 0.0, 1.0), clamp((d.y - wob) / (thick * 2.6) + 0.5, 0.0, 1.0));   // dickes Ende am Rand, Spitze wächst voran
                 vec4 rs = bilin(uRootTex, rc * uRootSize, uRootSize, vec2(0.0), uRootSize - 1.0);
                 body = rs.a * step(dist, thick);
                 col = mix(col, rs.rgb * (0.6 + 0.4 * uPulse), body * env);
