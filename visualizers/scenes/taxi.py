@@ -163,6 +163,12 @@ class Controller:
         self.confirm_t0 = time.monotonic()
         log.info("Thema gewählt: %s", self.themes[self.idx].get("name"))
         self._board_color()
+        try:                                                   # Begrüßung in der Stimme des neuen Themas
+            from kitt import announce
+            target = lcfg._load("audio.toml").get("output", {}).get("target", "")
+            announce.play("theme", target, self.themes[self.idx].get("name", ""))
+        except Exception as exc:
+            log.debug("Themen-Ansage: %s", exc)
 
     # -- Schnittstelle zur Engine --------------------------------------------
     @property

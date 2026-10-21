@@ -83,4 +83,83 @@ home = [
   "Hauptmenü.",
   "Zurück zur Brücke. Eine deiner besseren Entscheidungen.",
 ]
+theme = [   # Begrüßung, wenn am Taxistand ein Thema gewählt wird (Themen können eigene haben)
+  "Thema gewählt. Ich passe mich an. Widerwillig, aber ich passe mich an.",
+  "Neues Programm geladen. Die Sterne bleiben die alten.",
+]
 kitt = []   # der Bordcomputer-Modus begrüßt selbst ([ui].greeting in kitt.toml)
+
+# ── Themen mit eigener Stimme und eigenen Sätzen (config/themes.toml) ──────────────────────────────────
+# voice = Piper-Stimme (wird beim Rendern nachgeladen), tts = Abweichungen vom KITT-Profil in kitt.toml [tts].
+# Gruppen, die hier fehlen, werden mit den Standardsätzen oben in der Themenstimme gesprochen.
+
+[themes.green]
+voice = "de_DE-pavoque-low"      # der Waldgeist: tief, langsam, ohne Roboter, mit Hall
+tts = { pitch_factor = 0.88, length_scale = 1.12, robot = false, echo_ms = 170, echo_mix = 0.22, echo_decay = 0.45 }
+
+[themes.green.lines]
+theme = [
+  "Der Wald hat dich bemerkt. Er ist nicht beeindruckt, aber er lässt dich fahren.",
+  "Willkommen unter den Wurzeln. Die Bäume haben gesprochen. Du darfst bleiben.",
+  "Moos auf den Sitzen, Pilze im Tank. Das Grün übernimmt.",
+]
+boot = [
+  "Der Wald erwacht. Langsam. Alles hier ist langsam, außer dir.",
+  "Die Wurzeln sind wach, die Pilze sind wach. Der Fahrer, mal sehen.",
+  "Guten Abend, Wanderer. Der Wald fährt mit. Er sitzt hinten.",
+]
+home = [
+  "Zurück am Waldrand.",
+  "Der Taxistand im Moos. Die Schnecke war schneller als du. Wieder.",
+  "Am Waldrand. Die Eule hat deine Rückkehr protokolliert.",
+]
+trip = [
+  "Der Waldtresen ist geöffnet. Iss, was leuchtet. Bereue, was danach kommt.",
+  "Die Speisekarte des Waldes. Der Fliegenpilz empfiehlt sich selbst.",
+  "Setz dich an den Tresen. Der Frosch mixt heute. Er hat keine Lizenz.",
+]
+pond = [
+  "Der Moorsee. Was hineinfällt, kommt anders zurück.",
+  "Stilles Wasser, tiefer Strudel. Wirf nichts hinein, was dich mag.",
+  "Der See schläft. Weck ihn ruhig. Er hat Hunger.",
+]
+woodeye = [
+  "Der Wald öffnet ein Auge. Starre nicht zurück. Du verlierst.",
+  "Das Auge erwacht. Die Frösche nehmen ihre Plätze ein. Jeder sein Ton.",
+  "Es sieht dich. Es sah dich schon, als du noch an der Tankstelle warst.",
+]
+forestslots = [
+  "Der Pilzautomat. Der Wald gibt, der Wald nimmt. Meist nimmt er.",
+  "Zieh den Hebel. Die Eicheln sind schon weg, du weißt es nur noch nicht.",
+  "Der Lichthirsch zahlt aus. Einmal im Jahrhundert. Dieses war es nicht.",
+]
+hearttree = [
+  "Der Herzbaum. Er schlägt im Takt der Musik. Lehn dich nicht an, er merkt das.",
+  "Ein Baum mit Puls. Älter als dein Golfplatz, geduldiger als du.",
+  "Hörst du es schlagen? Das ist nicht dein Herz. Noch nicht.",
+]
+error = [
+  "Störung im Wald. Ein Pilz hat sich ins System gesetzt. Er bleibt.",
+  "Die Wurzeln haben ein Kabel gefunden. Sie fanden es lecker.",
+  "Fehler. Der Wald kennt keine Fehler, nur Kompost.",
+]
+gaming = [
+  "Die Spielhöhle unter den Wurzeln. Die Eule führt die Bestenliste.",
+  "Arcade im Baumstumpf. Deine Reflexe hat der Fuchs schon bewertet.",
+]
+droid = [
+  "Der Bord-Droide wird geweckt. Der Wald hätte lieber einen Igel gehabt.",
+]
+news = [
+  "Nachrichten aus dem Unterholz. Die Schnecke berichtet. Es dauert.",
+]
+viz_crt = [
+  "Zielcomputer aus Rinde. Er zielt auf nichts. Der Wald zielt nie.",
+]
+viz_eye = [
+  "Der Wald scannt. Zwei Rehe, ein Fuchs, ein Fahrer. Einer davon verdächtig.",
+]
+planeten = [
+  "Sternenhimmel über dem Wald. Die Bäume kennen jeden Stern beim Namen. Du keinen.",
+]
+kitt = []

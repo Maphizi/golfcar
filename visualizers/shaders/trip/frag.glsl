@@ -8,8 +8,10 @@ uniform float iTime;
 uniform vec2 iResolution;
 uniform float uRms, uBass, uMid, uHigh, uBeat, uSilent;
 uniform sampler2D uAudioTex;
-uniform sampler2D uBarTex, uBeingsTex, uSymbolTex, uFaceTex, uTex0, uTex1, uTex2;
-uniform vec2 uBarSize, uBeingsSize, uSymbolSize, uFaceSize, uTexSize;
+uniform sampler2D uBarTex, uBeingsTex, uSymbolTex, uFaceTex, uTex0, uTex1, uTex2, uGodTex, uRootTex;
+uniform vec2 uBarSize, uBeingsSize, uSymbolSize, uFaceSize, uTexSize, uGodSize, uRootSize;
+uniform float uGodOK, uRootOK;
+uniform vec4 uVariant;                                    // Variante, vorige, Überblendung, Texturversatz
 uniform float uNumTex, uPhase, uPhaseT, uSlide, uCell, uTripT, uSpin, uMirrors, uPalette, uIntensity;
 uniform float uBassS, uMidS, uHighS, uEnergy, uPulse, uEvent, uEventT, uEventLen, uEventSeed, uFaceOK;
 uniform vec4 uProfile, uProfile2, uSymA, uSymB, uEvSym;   // Profil: twist, warp, tempo, idx; Zeiten: eat, comedown
@@ -75,11 +77,11 @@ vec4 symbol(float idx, vec2 p, vec2 c, float sz, float ang) {
 float symIdx(int i) { return i < 4 ? uSymA[i] : uSymB[i - 4]; }
 
 // ---- Kaleidoskop-Reise
-vec3 tripImage(vec2 uv, float t, float inten) {
+vec3 tripImage(vec2 uv, float t, float inten, float variant) {
     float twist = uProfile.x, warp = uProfile.y;
     vec2 p = uv;
-    // Atmen mit dem Bass, langsame Drehung
-    p *= 1.0 - 0.08 * uBassS * inten - 0.03 * sin(t * 0.7) * inten;
+    // Atmen mit dem Bass, Beat-Stoß, langsame Drehung
+    p *= 1.0 - 0.1 * uBassS * inten - 0.04 * uPulse * inten - 0.03 * sin(t * 0.7) * inten;
     float r = length(p), a = atan(p.y, p.x) + uSpin;
     // Spiralverdrehung: Winkel hängt vom Radius ab
     a += twist * inten * (1.5 * sin(r * 3.0 - t * 0.6) + 0.8 * r);
@@ -88,14 +90,25 @@ vec3 tripImage(vec2 uv, float t, float inten) {
     float seg = 2.0 * PI / m;
     float af = mod(a, seg);
     af = min(af, seg - af);
-    vec2 q = vec2(cos(af), sin(af)) * r;
-    // Domain-Warp mit Rauschen, Stärke aus Profil und Intensität
+    vec2 q;
+    if (variant < 0.5) {                                                      // 0 klassisch
+        q = vec2(cos(af), sin(af)) * r;
+    } else if (variant < 1.5) {                                               // 1 Tunnel: log-polar, zieht nach innen
+        q = vec2(af / seg * 1.6 - 0.8, log(r + 0.06) * 1.3 - t * 0.35 * (0.6 + 0.8 * uBassS));
+    } else if (variant < 2.5) {                                               // 2 Blüte: Radius gefaltet, Blütenblätter
+        float rf = abs(fract(r * 1.5 - t * 0.06 - 0.3 * uBassS * inten) - 0.5) * 2.0;
+        q = vec2(cos(af), sin(af)) * (0.25 + rf * 0.9);
+    } else {                                                                  // 3 Zellen: Spiegel-Raster über dem Kaleidoskop
+        q = vec2(cos(af), sin(af)) * r;
+        q = abs(fract(q * 1.4 + t * 0.03) - 0.5) * 2.0;
+    }
+    // Domain-Warp mit Rauschen, Stärke aus Profil und Intensität (und Mitten)
     vec2 w = vec2(fbm(q * 2.0 + t * 0.15), fbm(q * 2.0 - t * 0.12 + 7.0)) - 0.5;
-    q += w * 0.35 * warp * inten;
-    // Texturkoordinaten: Zoom pulst, Texturen überblenden alle ~20 s
-    float zoom = 0.9 + 0.25 * sin(t * 0.21) + 0.1 * uPulse;
-    vec2 tc = q * zoom + vec2(t * 0.02, -t * 0.015);
-    float cyc = t * 0.05;
+    q += w * (0.35 + 0.3 * uMidS) * warp * inten;
+    // Texturkoordinaten: Zoom pulst, Texturen überblenden alle ~20 s, Drop versetzt
+    float zoom = 0.9 + 0.25 * sin(t * 0.21) + 0.15 * uPulse;
+    vec2 tc = q * zoom + vec2(t * 0.02, -t * 0.015) + uVariant.w * 0.37;
+    float cyc = t * 0.05 + uVariant.w;
     float which = mod(floor(cyc), max(1.0, uNumTex));
     float nextw = mod(which + 1.0, max(1.0, uNumTex));
     float blend = smoothstep(0.7, 1.0, fract(cyc));
@@ -212,6 +225,60 @@ vec3 tripEvent(vec3 col, vec2 uv, float t, float aspect) {
         vec4 s = symbol(uEvSym[0], uv, vec2(0.0, -0.05), 0.55 + 0.03 * sin(uEventT * 2.0), 0.0);
         col = mix(col, s.rgb + vec3(0.3, 0.25, 0.1) * uBassS, s.a * env);
         col += vec3(1.0, 0.9, 0.6) * s.a * env * 0.3 * (0.5 + 0.5 * sin(uEventT * 3.0));
+    } else if (ev == 8) {                                                    // Wurzeln wachsen von außen durch dich hindurch
+        float grow = smoothstep(0.0, 0.45, k);                                 // Länge der Wurzeln
+        float pull = smoothstep(0.5, 0.9, k);                                  // dann ziehen sie durch die Mitte
+        float n = 6.0;
+        for (int i = 0; i < 6; i++) {
+            float fi = float(i);
+            float ang = fi * 2.0 * PI / n + uEventSeed * 6.28 + 0.15 * sin(t * 0.3 + fi) + pull * 0.6 * sin(t * 0.8 + fi);
+            vec2 d = rot(-ang) * uv;                                           // Wurzel läuft entlang +x von außen (1.3) zur Mitte
+            float along = 1.0 - (d.x + 0.1) / 1.4;                             // 0 am Rand, 1 in der Mitte
+            if (d.x < -0.1 || d.x > 1.35) continue;
+            float reach = grow * (0.85 + 0.15 * hash12(vec2(fi, 2.0))) + pull * 0.3;
+            if (along > reach) continue;
+            float wob = 0.03 * sin(d.x * 9.0 + t * 1.5 + fi) + 0.015 * sin(d.x * 23.0 - t * 2.0);
+            float thick = (0.07 - 0.05 * along) * (1.0 + 0.3 * uBassS);
+            float dist = abs(d.y - wob);
+            float body, glowv;
+            if (uRootOK > 0.5) {
+                vec2 rc = vec2(fract(along * 1.0 + fi * 0.17), clamp((d.y - wob) / (thick * 2.0) + 0.5, 0.0, 1.0));
+                vec4 rs = bilin(uRootTex, rc * uRootSize, uRootSize, vec2(0.0), uRootSize - 1.0);
+                body = rs.a * step(dist, thick);
+                col = mix(col, rs.rgb * (0.6 + 0.4 * uPulse), body * env);
+            } else {
+                body = smoothstep(thick, thick * 0.6, dist);
+                vec3 bark = vec3(0.25, 0.16, 0.08) * (0.7 + 0.5 * noise(vec2(d.x * 30.0, d.y * 60.0)));
+                col = mix(col, bark, body * env);
+            }
+            glowv = smoothstep(thick * 1.5, thick * 0.9, dist) * (0.5 + 0.5 * sin(along * 20.0 - t * 4.0 - uEventT * 2.0));
+            col += palMix(along + t * 0.1) * glowv * env * (0.3 + 0.7 * uBassS);
+        }
+        // in der Mitte verknoten sie sich: Sog
+        col = mix(col, col * 0.6 + palMix(t * 0.2) * 0.4, pull * env * exp(-r * 4.0));
+    } else if (ev == 9 && uGodOK > 0.5) {                                    // Waldgott: Gesicht aus der Mitte, atmet, löst sich auf
+        float g = floor(uEventSeed * 6.0);
+        vec2 lo = vec2(mod(g, 3.0) * 512.0, (1.0 - floor(g / 3.0)) * 512.0);
+        float appear = smoothstep(0.0, 0.3, k);
+        float gone = smoothstep(0.82, 1.0, k);
+        float sc = mix(0.3, 0.8, appear) * (1.0 + 0.04 * uBassS + 0.02 * uPulse);
+        vec2 d = uv / sc;
+        d.x += 0.02 * sin(d.y * 5.0 + uEventT * 1.1) * appear;
+        d.y += 0.015 * sin(d.x * 4.0 - uEventT * 0.9) * appear;
+        vec2 q = d * 0.5 + 0.5;
+        if (q.x > 0.0 && q.x < 1.0 && q.y > 0.0 && q.y < 1.0) {
+            vec4 s = bilin(uGodTex, lo + q * 512.0, uGodSize, lo, lo + 511.0);
+            float dissolve = step(gone, noise(q * 40.0 + uEventSeed * 10.0));
+            vec3 fc = s.rgb * (0.85 + 0.3 * uBassS);
+            fc = mix(fc, hueShift(fc, sin(uEventT * 0.7) * 0.8), 0.35);
+            col = mix(col, fc, s.a * appear * dissolve * 0.95);
+            col += fc * s.a * appear * 0.25 * uPulse;                         // flackert mit dem Beat
+        }
+        // Lichtkranz und Strahlen hinter dem Gesicht
+        float ang = atan(uv.y, uv.x);
+        float rays = pow(0.5 + 0.5 * sin(ang * 16.0 - uEventT * 1.2), 6.0) * exp(-r * 1.2) * appear * (1.0 - gone);
+        col += palMix(t * 0.1 + 0.3) * rays * 0.45 * (0.5 + 0.5 * uBassS);
+        col += palMix(t * 0.15) * exp(-pow((r - 0.62 * sc) * 10.0, 2.0)) * appear * (1.0 - gone) * 0.5;
     } else if (ev == 7 && uFaceOK > 0.5) {                                   // Dein Gesicht: riesig, verzerrt, atmend
         vec2 d = uv * (1.0 - 0.06 * uBassS);
         d.x += 0.05 * sin(d.y * 6.0 + uEventT * 1.5) * env;
@@ -281,7 +348,8 @@ void main() {
     float inten = uIntensity;
     if (phase == 2 || phase == 3) {
         float tripMix = phase == 2 ? smoothstep(0.0, 2.0, pt) : 1.0 - smoothstep(0.0, uProfile2.y, pt);
-        vec3 trip = tripImage(uv, uTripT, max(inten, 0.15));
+        vec3 trip = tripImage(uv, uTripT, max(inten, 0.15), uVariant.x);
+        if (uVariant.z < 0.999) trip = mix(tripImage(uv, uTripT, max(inten, 0.15), uVariant.y), trip, smoothstep(0.0, 1.0, uVariant.z));
         trip = tripSymbols(trip, uv, uTripT, max(inten, 0.2));
         trip = tripEvent(trip, uv, uTripT, aspect);
         // Rand atmet

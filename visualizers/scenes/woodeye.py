@@ -32,8 +32,11 @@ log = logging.getLogger("woodeye")
 
 ASSETS = Path(__file__).resolve().parents[2] / "assets" / "woodeye"
 # Frösche: (x, y, Größe) im Bild (Anteile, y von unten); Band 0 = Bass (links, groß) .. Band 7 = Höhen (rechts, klein)
-FROGS = [(0.095, 0.335, 0.135), (0.157, 0.150, 0.105), (0.287, 0.150, 0.100), (0.428, 0.150, 0.095),
-         (0.571, 0.150, 0.090), (0.712, 0.150, 0.085), (0.849, 0.150, 0.080), (0.935, 0.270, 0.075)]
+FROGS = [(0.072, 0.118, 0.100), (0.157, 0.150, 0.100), (0.287, 0.150, 0.097), (0.428, 0.150, 0.094),
+         (0.571, 0.150, 0.091), (0.712, 0.150, 0.088), (0.849, 0.150, 0.085), (0.930, 0.118, 0.085)]
+SWIMMERS = (0, 7)                     # Frösche im Wasser (halb untergetaucht) statt auf dem Blatt
+PH_SIT, PH_DIVE, PH_UNDER, PH_EMERGE = 0, 1, 2, 3
+DIVE_SECONDS, EMERGE_SECONDS = 0.6, 0.7
 EYE_OPEN, EYE_LEFT, EYE_RIGHT, EYE_UP, EYE_DOWN, EYE_FIRE, EYE_SPIRAL = 7, 16, 18, 19, 20, 22, 23
 EYE_COLORS = list(range(8, 16))
 FOX_CELLS, OWL_CELLS = (24, 25, 26, 27), (28, 29, 30, 31)
@@ -73,6 +76,11 @@ class Controller:
         self.bands = [0.0] * 8
         self.jump_t0 = [-10.0] * 8
         self.jump_arm = [True] * 8
+        self.phase = [PH_SIT] * 8             # Tauchen: sitzt -> springt ins Wasser -> unter Wasser -> taucht auf
+        self.phase_t0 = [0.0] * 8
+        self.under_beats = [0] * 8
+        self.last_dive = -10.0
+        self.hue_burst = 0.0
         # Beat-Zähler / Lauflicht
         self.step = 0
         self.step_t0 = 0.0
@@ -138,8 +146,9 @@ class Controller:
         if now - self.chorus_t0 < CHORUS_SECONDS:
             return
         self.chorus_t0 = now
-        for i in range(8):
-            self.jump_t0[i] = now + 0.6 + i * 0.18
+        for i in range(8):                   # Welle: alle tauchen nacheinander ab und kommen wieder hoch
+            self._set_phase(i, PH_DIVE, now + 0.4 + i * 0.16)
+            self.under_beats[i] = 2
         self._led_event("woodeye_chorus", now + CHORUS_SECONDS)
         log.info("Froschchor")
 
@@ -165,8 +174,48 @@ class Controller:
         self.color_cell = self.rng.choice([c for c in EYE_COLORS if c != self.color_cell])
         self.color_until = now + 7.0
         for i in range(8):
-            self.jump_t0[i] = now + 0.05 * i
+            if self.phase[i] == PH_UNDER:
+                self._set_phase(i, PH_EMERGE, now + 0.05 * i)
+            else:
+                self.jump_t0[i] = now + 0.05 * i
+        self.hue_burst = 1.0
         log.info("Drop: Auge brennt, Sporen, Frösche springen")
+
+    def _set_phase(self, i: int, ph: int, t0: float) -> None:
+        self.phase[i] = ph
+        self.phase_t0[i] = t0
+
+    def _frogs_tick(self, now: float, on_beat: bool, live: float) -> None:
+        """Tauchspiel im Takt: auf Beats springen einzelne Frösche ins Wasser, bleiben ein paar Beats unten und
+        kommen auf einem Beat wieder hoch. Ohne Musik langsam nach Uhr."""
+        under = sum(1 for p in self.phase if p != PH_SIT)
+        for i in range(8):
+            ph, t0 = self.phase[i], self.phase_t0[i]
+            if ph == PH_DIVE and now - t0 >= DIVE_SECONDS:
+                self._set_phase(i, PH_UNDER, now)
+            elif ph == PH_EMERGE and now - t0 >= EMERGE_SECONDS:
+                self._set_phase(i, PH_SIT, now)
+            elif ph == PH_UNDER:
+                if on_beat and now - t0 > 0.3:
+                    self.under_beats[i] -= 1
+                    if self.under_beats[i] <= 0:
+                        self._set_phase(i, PH_EMERGE, now)
+                elif live < 0.3 and now - t0 > 3.5:
+                    self._set_phase(i, PH_EMERGE, now)
+        if on_beat and live > 0.3 and under < 4 and now - self.last_dive > 0.5:
+            p = 0.10 + 0.35 * self.energy + 0.2 * self.bass_s
+            if self.rng.random() < p:
+                cands = [i for i in range(8) if self.phase[i] == PH_SIT and now - self.phase_t0[i] > 1.5]
+                if cands:
+                    i = self.rng.choice(cands)
+                    self._set_phase(i, PH_DIVE, now)
+                    self.under_beats[i] = self.rng.choice((2, 2, 3, 4, 6))
+                    self.last_dive = now
+        elif live < 0.3 and now - self.last_dive > 6.0 and under == 0:
+            i = self.rng.randrange(8)
+            self._set_phase(i, PH_DIVE, now)
+            self.under_beats[i] = 99
+            self.last_dive = now
 
     def handle_event(self, ev) -> None:
         if ev.type != pygame.KEYDOWN:
@@ -198,6 +247,8 @@ class Controller:
                  "uFlash", "uSporeT", "uZoom", "uKaleido", "uChorusT", "uBlink", "uEyeA", "uEyeB", "uEyeMix",
                  "uFig", "uOwl", "uBands0", "uBands1", "uHueT"]
         names += [f"uFrog{i}" for i in range(8)]
+        names += [f"uFrogPh{i}" for i in range(8)]
+        names.append("uHueBurst")
         return tuple(names)
 
     def uniforms(self, t: float, f) -> dict:
@@ -234,8 +285,11 @@ class Controller:
         else:
             for i in range(8):
                 self.bands[i] += (0.0 - self.bands[i]) * min(1.0, dt / 0.6)
-        # Beat: Lauflicht einen Schritt weiter, Puls
-        if beat > 0.5 and now - self.last_beat > 0.25:
+        # Beat: Lauflicht einen Schritt weiter, Puls, Frösche tauchen
+        on_beat = beat > 0.5 and now - self.last_beat > 0.25
+        self._frogs_tick(now, on_beat, self.live_s)
+        self.hue_burst = max(0.0, self.hue_burst - dt / 3.0)
+        if on_beat:
             self.last_beat = now
             self.step = (self.step + self.step_dir) % 4
             self.step_t0 = now
@@ -312,10 +366,16 @@ class Controller:
             "uOwl": (self.owl_t % 1000.0, float(OWL_CELLS[int(flap) % 4]), float(OWL_CELLS[(int(flap) + 1) % 4]), flap - int(flap)),
             "uBands0": tuple(self.bands[0:4]), "uBands1": tuple(self.bands[4:8]), "uHueT": (t * 0.15) % 1000.0,
         }
+        out["uHueBurst"] = self.hue_burst
         for i, (x, y, s) in enumerate(FROGS):
             jt = now - self.jump_t0[i]
-            hop = jt / 0.55 if 0.0 <= jt < 0.55 else -1.0
+            hop = jt / 0.55 if 0.0 <= jt < 0.55 and self.phase[i] == PH_SIT else -1.0
             out[f"uFrog{i}"] = (x, y, s, hop)
+            ph = self.phase[i]
+            pt = max(0.0, now - self.phase_t0[i])
+            prog = pt / DIVE_SECONDS if ph == PH_DIVE else (pt / EMERGE_SECONDS if ph == PH_EMERGE else pt)
+            out[f"uFrogPh{i}"] = (float(ph), min(prog, 1.0) if ph in (PH_DIVE, PH_EMERGE) else prog,
+                                  1.0 if i in SWIMMERS else 0.0, 0.0)
         return out
 
     def overlays(self, t: float):

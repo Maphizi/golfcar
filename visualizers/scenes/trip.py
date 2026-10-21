@@ -24,7 +24,10 @@ log = logging.getLogger("trip")
 ASSETS = lcfg.ROOT / "assets" / "trip"
 PH_BROWSE, PH_EAT, PH_TRIP, PH_COMEDOWN = 0, 1, 2, 3
 EAT_SECONDS, COMEDOWN_SECONDS = 2.6, 4.0
-EVENT_EVERY = (30.0, 60.0)
+EVENT_EVERY = (16.0, 28.0)
+GOD_EVERY = (22.0, 28.0)              # alle ~25 s ein Waldgott (assets/trip/gods.png, Atlas 3x2 à 512)
+VARIANT_EVERY = (18.0, 40.0)          # Kaleidoskop-Variante wechselt von selbst (und bei jedem zweiten Drop)
+N_VARIANTS = 4
 # Ereignisse: (Name, Dauer, HUD-Zeile); Index + 1 = uEvent
 EVENTS = [
     ("FROSCHKONZERT", 14.0, "DIE FRÖSCHE SINGEN IM TAKT"),
@@ -34,6 +37,16 @@ EVENTS = [
     ("POLLENSTURM", 10.0, "ALLES LEUCHTET VON INNEN"),
     ("LICHTHIRSCH", 12.0, "EIN GEWEIH AUS LICHT"),
     ("DEIN GESICHT", 10.0, "DU BIST AUCH HIER"),
+    ("WURZELN", 12.0, "WURZELN WACHSEN DURCH DICH HINDURCH"),
+    ("WALDGOTT", 11.0, ""),
+]
+GOD_NAMES = ["MOOSVATER", "DER GEWEIHTE", "PILZMUTTER", "WURZELFRAU", "EULENGEIST", "RINDENGESICHT"]
+GOD_LINES = [
+    "DU HAST DEN FARN NICHT GEGOSSEN.", "DEINE FAHRT IST EINE ILLUSION. DAS TAXAMETER NICHT.",
+    "DER WALD HAT DICH SCHON VERGESSEN. ICH NOCH NICHT.", "ISS WENIGER PILZE. SAGT DER PILZ.",
+    "DU BIST NUR EIN BLATT. EIN LAUTES.", "DIE SCHNECKE WAR VOR DIR HIER. SIE WARTET NOCH.",
+    "DEIN HANDICAP IST DEM MOOS EGAL.", "ATME. DAS MACHT DER BAUM AUCH. SEIT 400 JAHREN.",
+    "ICH SEHE DEINE WURZELN. SIE SIND KURZ.", "KEHR UM. ODER AUCH NICHT. DER WALD WÄCHST ÜBERALL.",
 ]
 # Symbolzellen im Atlas assets/trip/symbols.png (8 x 5, Index = Reihe*8 + Spalte)
 SYMBOL_SETS = {
@@ -41,7 +54,9 @@ SYMBOL_SETS = {
     "ferns": [7, 23, 33], "shells": [9, 12, 25, 34], "feathers": [0, 15, 17, 18], "mushrooms": [36, 35, 38],
     "orbs": [35, 38, 10], "mixed": [1, 6, 9, 14, 23, 26, 35, 0],
 }
-EVENT_SYMBOLS = {1: [26, 27, 29, 31], 2: [36, 35, 38, 22], 3: [1, 2, 3, 4], 4: [6, 13, 28, 32, 37], 5: [35, 38, 10], 6: [30], 7: []}
+EVENT_SYMBOLS = {1: [26, 27, 29, 31], 2: [36, 35, 38, 22], 3: [1, 2, 3, 4], 4: [6, 13, 28, 32, 37], 5: [35, 38, 10], 6: [30], 7: [],
+                 8: [11, 14, 16, 19], 9: [1, 2, 3, 4]}
+EV_ROOTS, EV_GOD = 7, 8               # Indizes in EVENTS
 RETURN_LINES = [
     "DER FUCHS HAT DEIN TAXI BEWACHT.", "DIE SCHNECKE HAT NICHTS GEMERKT.", "DU HAST MIT EINEM FARN GEREDET. ER FAND DICH NETT.",
     "DEIN TAXAMETER LIEF WEITER. NATÜRLICH.", "DIE PILZE SAGEN: BIS BALD.", "DU WARST KURZ EIN FROSCH. STEHT DIR.",
@@ -74,6 +89,16 @@ class Controller:
         self.symbols = _load_rgba(ASSETS / "symbols.png")
         self.textures = [t for t in (_load_rgba(ASSETS / f"tex_{n}.png") for n in ("canopy", "frog", "amanita")) if t is not None]
         self.face = _load_rgba(ASSETS / "face.png") if (ASSETS / "face.png").exists() else None
+        self.gods = _load_rgba(ASSETS / "gods.png") if (ASSETS / "gods.png").exists() else None
+        self.roots = _load_rgba(ASSETS / "roots.png") if (ASSETS / "roots.png").exists() else None
+        self.variant = 0
+        self.variant_prev = 0
+        self.variant_t0 = 0.0
+        self.variant_next = 0.0
+        self.wander_next = 0.0
+        self.tex_shift = 0.0
+        self.god_next = 0.0
+        self.spin_dir = 1.0
         self.phase = PH_BROWSE
         self.phase_t0 = time.monotonic()
         self.slide = 0.0
@@ -102,8 +127,9 @@ class Controller:
         self.return_line = ""
         self.return_until = 0.0
         self.demo_next = time.monotonic() + 3.0
-        log.info("Waldtresen: %d Wesen, Tresen %s, Texturen %d, Gesicht %s", len(self.beings), "ok" if self.bar is not None else "fehlt",
-                 len(self.textures), "ok" if self.face is not None else "fehlt")
+        log.info("Waldtresen: %d Wesen, Tresen %s, Texturen %d, Gesicht %s, Waldgötter %s, Wurzeln %s", len(self.beings),
+                 "ok" if self.bar is not None else "fehlt", len(self.textures), "ok" if self.face is not None else "fehlt",
+                 "ok" if self.gods is not None else "fehlt (assets/trip/gods.png)", "ok" if self.roots is not None else "prozedural")
 
     # -- Eingabe -----------------------------------------------------------
     def handle_event(self, ev) -> None:
@@ -146,6 +172,12 @@ class Controller:
             self.intensity = 0.0
             self.event = None
             self.next_event_at = now + self.rng.uniform(*EVENT_EVERY) * (0.3 if self.demo else 0.6)
+            self.god_next = now + self.rng.uniform(*GOD_EVERY) * (0.4 if self.demo else 1.0)
+            self.variant = self.rng.randrange(N_VARIANTS)
+            self.variant_prev = self.variant
+            self.variant_next = now + self.rng.uniform(*VARIANT_EVERY)
+            self.wander_next = now + self.rng.uniform(12.0, 22.0)
+            self.spin_dir = self.rng.choice((-1.0, 1.0))
             self.trip_started = now
             log.info("Reise beginnt: %s", b.get("name"))
         elif ph == PH_COMEDOWN and self.phase == PH_TRIP:
@@ -176,6 +208,9 @@ class Controller:
         if beat > 0.5 and now - self.last_beat > 0.25:
             self.last_beat = now
             self.beat_pulse = min(1.0, self.beat_pulse + 0.5 + 0.5 * beat)
+            if self.phase == PH_TRIP:
+                self.spin += 0.06 * self.spin_dir * (0.5 + beat)          # Drehstoß auf jeden Beat
+                self.trip_t += 0.12 * beat
         self.beat_pulse = max(0.0, self.beat_pulse - dt / 0.6)
         # Drop: nach leiser Stelle ein Beat -> Palette oder Spiegel wechseln
         if live and self.energy > 0.03 and e_fast < 0.5 * self.energy:
@@ -187,22 +222,39 @@ class Controller:
         if self.drop_armed and beat > 0.5 and e_fast > 1.05 * self.energy and now - self.last_drop > 12.0 and self.phase == PH_TRIP:
             self.drop_armed = False
             self.last_drop = now
-            if self.rng.random() < 0.5:
+            roll = self.rng.random()
+            if roll < 0.35:
                 self.palette_target = float((int(self.palette_target) + self.rng.randrange(1, 6)) % 6)
+            elif roll < 0.65:
+                self.mirrors_target = float(self.rng.choice((4, 6, 8, 10, 12, 16)))
             else:
-                self.mirrors_target = float(self.rng.choice((4, 6, 8, 10, 12)))
-            log.info("Drop: Palette %d, Spiegel %d", int(self.palette_target), int(self.mirrors_target))
+                self._next_variant(now)
+            self.tex_shift = self.rng.random() * 10.0
+            self.spin_dir = -self.spin_dir
+            log.info("Drop: Palette %d, Spiegel %d, Variante %d", int(self.palette_target), int(self.mirrors_target), self.variant)
         pt = now - self.phase_t0
         if self.phase == PH_EAT and pt >= EAT_SECONDS:
             self._set_phase(PH_TRIP)
         elif self.phase == PH_COMEDOWN and pt >= COMEDOWN_SECONDS:
             self._set_phase(PH_BROWSE)
         if self.phase == PH_TRIP:
-            self.intensity = min(1.0, self.intensity + dt / (25.0 if not self.demo else 4.0))
-            self.trip_t += dt * self.tempo * (0.6 + 0.6 * self.energy + 0.3 * self.bass_s)
-            self.spin += dt * self.tempo * 0.08 * (1.0 + 2.0 * self.bass_s) * (1.0 if int(self.idx) % 2 == 0 else -1.0)
-            self.mirrors += (self.mirrors_target - self.mirrors) * min(1.0, dt / 3.0)
-            self.palette += (self.palette_target - self.palette) * min(1.0, dt / 4.0)
+            self.intensity = min(1.0, self.intensity + dt / (12.0 if not self.demo else 4.0))
+            self.trip_t += dt * self.tempo * (1.0 + 1.3 * self.energy + 0.9 * self.bass_s)
+            self.spin += dt * self.tempo * 0.16 * (1.0 + 3.0 * self.bass_s) * self.spin_dir
+            self.mirrors += (self.mirrors_target - self.mirrors) * min(1.0, dt / 2.0)
+            self.palette += (self.palette_target - self.palette) * min(1.0, dt / 3.0)
+            if now >= self.variant_next:
+                self._next_variant(now)
+            if now >= self.wander_next:                               # zufällige Wanderung: Spiegel, Palette, Texturen
+                self.wander_next = now + self.rng.uniform(12.0, 22.0)
+                pick = self.rng.random()
+                if pick < 0.4:
+                    self.mirrors_target = float(self.rng.choice((4, 5, 6, 8, 10, 12, 16)))
+                elif pick < 0.75:
+                    self.palette_target = float(self.rng.randrange(6))
+                else:
+                    self.tex_shift = self.rng.random() * 10.0
+                log.info("Wanderung: Spiegel %d, Palette %d", int(self.mirrors_target), int(self.palette_target))
             self._advance_event(now)
         elif self.phase == PH_COMEDOWN:
             self.intensity = max(0.0, 1.0 - pt / COMEDOWN_SECONDS)
@@ -218,14 +270,34 @@ class Controller:
                 self._set_phase(PH_COMEDOWN)
                 self.demo_next = now + 8.0
 
+    def _next_variant(self, now: float) -> None:
+        self.variant_prev = self.variant
+        self.variant = (self.variant + self.rng.randrange(1, N_VARIANTS)) % N_VARIANTS
+        self.variant_t0 = now
+        self.variant_next = now + self.rng.uniform(*VARIANT_EVERY)
+        log.info("Kaleidoskop-Variante %d", self.variant)
+
+    def _start_event(self, kind: int, now: float) -> None:
+        self.event = {"kind": kind, "t0": now, "len": EVENTS[kind][1], "seed": self.rng.random(), "line": "", "name": EVENTS[kind][0]}
+        if kind == EV_GOD:
+            g = self.rng.randrange(6)
+            self.event["seed"] = (g + 0.5) / 6.0
+            self.event["name"] = f"WALDGOTT  {GOD_NAMES[g]}"
+            self.event["line"] = self.rng.choice(GOD_LINES)
+        log.info("Ereignis: %s %s", self.event["name"], self.event["line"])
+
     def _advance_event(self, now: float) -> None:
         ev = self.event
+        # Waldgott hat Vorrang: alle ~25 s, verdrängt ein laufendes Ereignis
+        if self.gods is not None and now >= self.god_next and self.intensity > 0.3 and (ev is None or ev["kind"] != EV_GOD):
+            self._start_event(EV_GOD, now)
+            self.god_next = now + self.rng.uniform(*GOD_EVERY) * (0.4 if self.demo else 1.0)
+            return
         if ev is None:
-            if now >= self.next_event_at and self.intensity > 0.5:
-                choices = [i for i in range(len(EVENTS)) if i != 6 or self.face is not None]
-                kind = self.rng.choice(choices)
-                self.event = {"kind": kind, "t0": now, "len": EVENTS[kind][1], "seed": self.rng.random()}
-                log.info("Ereignis: %s", EVENTS[kind][0])
+            if now >= self.next_event_at and self.intensity > 0.4:
+                choices = [i for i in range(len(EVENTS)) if i != EV_GOD and (i != 6 or self.face is not None)]
+                choices += [EV_ROOTS]                                     # Wurzeln etwas häufiger
+                self._start_event(self.rng.choice(choices), now)
             return
         if now - ev["t0"] >= ev["len"]:
             self.event = None
@@ -238,6 +310,8 @@ class Controller:
             "uBeingsTex": (self.beings_tex if self.beings_tex is not None else self.blank, 1),
             "uSymbolTex": (self.symbols if self.symbols is not None else self.blank, 1),
             "uFaceTex": (self.face if self.face is not None else self.blank, 1),
+            "uGodTex": (self.gods if self.gods is not None else self.blank, 1),
+            "uRootTex": (self.roots if self.roots is not None else self.blank, 1),
         }
         for i in range(3):
             out[f"uTex{i}"] = (self.textures[i % max(1, len(self.textures))] if self.textures else self.blank, 1)
@@ -247,7 +321,8 @@ class Controller:
         return ("uBarTex", "uBeingsTex", "uSymbolTex", "uFaceTex", "uTex0", "uTex1", "uTex2", "uBarSize", "uBeingsSize",
                 "uSymbolSize", "uFaceSize", "uTexSize", "uNumTex", "uPhase", "uPhaseT", "uSlide", "uCell", "uProfile",
                 "uProfile2", "uSymA", "uSymB", "uTripT", "uSpin", "uMirrors", "uPalette", "uIntensity", "uBassS", "uMidS",
-                "uHighS", "uEnergy", "uPulse", "uEvent", "uEventT", "uEventLen", "uEventSeed", "uEvSym", "uFaceOK")
+                "uHighS", "uEnergy", "uPulse", "uEvent", "uEventT", "uEventLen", "uEventSeed", "uEvSym", "uFaceOK",
+                "uGodTex", "uRootTex", "uGodSize", "uRootSize", "uGodOK", "uRootOK", "uVariant")
 
     def uniforms(self, t: float, f) -> dict:
         self._advance(f)
@@ -275,6 +350,9 @@ class Controller:
             "uEvent": float(ev["kind"] + 1) if ev else 0.0, "uEventT": (now - ev["t0"]) if ev else 0.0,
             "uEventLen": ev["len"] if ev else 1.0, "uEventSeed": ev["seed"] if ev else 0.0,
             "uEvSym": tuple(float(v) for v in evs), "uFaceOK": 1.0 if self.face is not None else 0.0,
+            "uGodSize": size(self.gods), "uRootSize": size(self.roots), "uGodOK": 1.0 if self.gods is not None else 0.0,
+            "uRootOK": 1.0 if self.roots is not None else 0.0,
+            "uVariant": (float(self.variant), float(self.variant_prev), min(1.0, (now - self.variant_t0) / 3.0), self.tex_shift),
         }
 
     def overlays(self, t: float):
@@ -303,6 +381,8 @@ class Controller:
             out.append(("KNÜPPEL  LINKS/RECHTS SPIEGEL   OBEN/UNTEN TEMPO", 0.015, 0.5, 0.025, DIM, 0.35))
             if self.event:
                 name, length, line = EVENTS[self.event["kind"]]
+                name = self.event.get("name") or name
+                line = self.event.get("line") or line
                 k = (now - self.event["t0"]) / length
                 a = min(1.0, k * 6.0) * min(1.0, (1.0 - k) * 6.0)
                 out.append((name, 0.03, 0.5, 0.9, GREEN, 0.9 * a))

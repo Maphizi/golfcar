@@ -152,15 +152,22 @@ class Launcher:
             pass
 
     # -- Modi ------------------------------------------------------------
-    def switch(self, mode: str) -> None:
-        # Themen können Modi ersetzen (themes.toml: modes = { viz_psychedelic = "trip" })
+    def effective_mode(self, mode: str) -> str:
+        """Themen können Modi ersetzen (themes.toml: modes = { viz_psychedelic = "trip" })."""
         repl = theme.current().get("modes", {})
         if isinstance(repl, dict) and repl.get(mode) in self.pm.modes:
-            log.info("Thema %s: Modus %s -> %s", theme.current_name() or "standard", mode, repl[mode])
-            mode = str(repl[mode])
+            return str(repl[mode])
+        return mode
+
+    def switch(self, mode: str) -> str:
+        """Startet den Modus (bzw. seinen Ersatz im aktuellen Thema) und gibt den tatsächlichen Modusnamen zurück."""
+        eff = self.effective_mode(mode)
+        if eff != mode:
+            log.info("Thema %s: Modus %s -> %s", theme.current_name() or "standard", mode, eff)
+        mode = eff
         if self.pm.current and self.pm.current.name == mode and self.pm.is_running():
             log.info("Modus %s läuft bereits, ignoriert", mode)
-            return
+            return mode
         if self.pm.is_running():
             self.pm.stop()
         ok = self.pm.start(mode, {"KITT_THEME": theme.current_name()})
@@ -179,6 +186,7 @@ class Launcher:
                 pxn_led.apply_mode_async(mode)
         except Exception as exc:
             log.debug("WLED-Fehler: %s", exc)
+        return mode
 
     def go_home(self) -> None:
         # Crash-Loop-Schutz: 3 schnelle Abstürze -> 10 s Pause
@@ -212,10 +220,11 @@ class Launcher:
         mode = ACTION_TO_MODE.get(action)
         if mode:
             log.info("Action %s -> Modus %s", action.value, mode)
-            already = self.pm.current and self.pm.current.name == mode and self.pm.is_running()
+            eff = self.effective_mode(mode)
+            already = self.pm.current and self.pm.current.name == eff and self.pm.is_running()
             self.switch(mode)
             if not already:
-                self.announce(mode)
+                self.announce(eff)             # Ansage des tatsächlich gestarteten Modus in der Themenstimme
 
     # -- Hauptschleife ---------------------------------------------------
     def run(self) -> None:

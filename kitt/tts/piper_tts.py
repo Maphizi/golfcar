@@ -19,6 +19,21 @@ import numpy as np
 log = logging.getLogger("tts")
 
 
+def echoize(pcm: np.ndarray, rate: int, ms: float, mix: float = 0.25, decay: float = 0.5, taps: int = 4) -> np.ndarray:
+    """Weicher Hall: mehrere abklingende Echos (Wald, Höhle). Verlängert das Signal um die Echos."""
+    d = max(1, int(rate * ms / 1000.0))
+    out = np.zeros(len(pcm) + d * taps, dtype=np.float32)
+    out[:len(pcm)] = pcm
+    g = mix
+    for k in range(1, taps + 1):
+        out[k * d:k * d + len(pcm)] += pcm * g
+        g *= decay
+    peak = float(np.max(np.abs(out))) if len(out) else 0.0
+    if peak > 0.98:
+        out *= 0.98 / peak
+    return out.astype(np.float32)
+
+
 def robotize(pcm: np.ndarray, rate: int, freq: float = 60.0, mix: float = 0.55, bits: int = 0, comb_ms: float = 6.0) -> np.ndarray:
     """Roboter-/Droiden-Stimme: Ringmodulation (metallisch), kurzer Kammfilter (blechern),
     optionale Bit-Reduktion (digital), weiche Begrenzung. Bleibt verständlich."""
@@ -112,6 +127,9 @@ class PiperTTS:
         self.robot_mix = float(cfg.get("robot_mix", 0.55))
         self.robot_bits = int(cfg.get("robot_bits", 0))
         self.robot_comb_ms = float(cfg.get("robot_comb_ms", 6.0))
+        self.echo_ms = float(cfg.get("echo_ms", 0.0))               # Hall/Echo (Waldgeist): Verzögerung in ms, 0 = aus
+        self.echo_mix = float(cfg.get("echo_mix", 0.25))
+        self.echo_decay = float(cfg.get("echo_decay", 0.5))
         self.player_kind = cfg.get("player", "auto")
         self.output_target = output_target
         self.voice = None
@@ -146,6 +164,8 @@ class PiperTTS:
             pcm = np.interp(np.linspace(0, len(pcm) - 1, n), np.arange(len(pcm)), pcm).astype(np.float32)
         if self.robot and len(pcm):
             pcm = robotize(pcm, self.rate, self.robot_freq, self.robot_mix, self.robot_bits, self.robot_comb_ms)
+        if self.echo_ms > 0 and len(pcm):
+            pcm = echoize(pcm, self.rate, self.echo_ms, self.echo_mix, self.echo_decay)
         if self.sentence_silence > 0:
             pcm = np.concatenate((pcm, np.zeros(int(self.rate * self.sentence_silence), dtype=np.float32)))
         vol = voice_volume()

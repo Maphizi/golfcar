@@ -562,6 +562,14 @@ endet nur per Kippschalter: das Bild kehrt an den Tresen zurück und eine Bilanz
 4 min 12 s weg. Der Fuchs hat dein Taxi bewacht."). Bildmaterial vorbereiten:
 `scripts/trip_assets.py beings|symbols|texture|bar`. Controller `visualizers/scenes/trip.py`,
 Shader `visualizers/shaders/trip/frag.glsl`. Test: `python -m visualizers.engine trip --test-signal --demo`.
+Die Reise lebt von der Musik: Beats geben einen Drehstoß und einen Zoom-Puls, Bass treibt Tempo und Drehung, Mitten
+verbiegen das Bild, Drops wechseln Palette, Spiegelzahl oder die Kaleidoskop-Variante (klassisch, Tunnel, Blüte,
+Zellen; wechselt auch von selbst alle 18-40 s mit Überblendung) und versetzen die Texturen. Alle 12-22 s wandert
+zufällig etwas (Spiegel, Palette, Textur). Ereignisse kommen alle 16-28 s, neu dabei: Wurzeln, die von allen Seiten
+hereinwachsen und sich in der Mitte verknoten (mit `assets/trip/roots.png` aus echtem Wurzelbild, sonst prozedural).
+Alle 22-28 s erscheint ein Waldgott aus der Mitte (`assets/trip/gods.png`, Atlas 3x2 à 512 aus einem Bogen mit sechs
+Gesichtern: `scripts/trip_assets.py grid assets/trip/gods.png BOGEN.png 3 2 512`), atmet mit dem Bass, flackert
+mit dem Beat, spricht eine Zeile (`GOD_LINES`) und löst sich wieder auf; ohne das Bild fällt das Ereignis aus.
 
 **Moorsee (Taste 3 im Thema THE POWER OF THE GREEN, `pond`):** Das Gegenstück zum Schwarzen Loch
 (`themes.toml` `modes = { blackhole = "pond" }`). Ein Waldsee bei Nacht (`assets/pond/lake.png`) mit einem
@@ -588,7 +596,10 @@ pumpen und die Kamera atmen; jeder Beat schaltet das Myzel in den Wurzeln einen 
 Muster wechseln alle 25-45 s) und lässt den Mond pulsen; acht Frösche auf den Seerosenblättern
 (`assets/woodeye/figures.png`, Reihen sitzend, Kehlsack, Sprung) sind die acht Frequenzbänder, der dicke
 Ochsenfrosch links der Bass, die kleinen rechts die Höhen: der Kehlsack bläht sich mit der Bandenergie, laute Bänder
-springen, das Auge schaut zum lautesten Frosch; die Mitten wiegen das Kronendach und lassen Pollen steigen; die Höhen
+springen, das Auge schaut zum lautesten Frosch; dazu das Tauchspiel im Takt: auf Beats springt immer mal ein Frosch
+ins Wasser (Spritzer, Ringe, psychedelische Nachbilder), wabert als bunter Schatten unter der Oberfläche und taucht
+ein paar Beats später wieder auf; zwei Frösche schwimmen links und rechts halb untergetaucht im Wasser statt auf
+Felsen zu sitzen; die Mitten wiegen das Kronendach und lassen Pollen steigen; die Höhen
 funkeln als Glühwürmchen und Tautropfen. Beim Drop blinzelt das Auge und brennt, die Iris wechselt die Farbe, eine
 Sporenwolke steigt auf, alle Frösche springen, das Lauflicht wechselt die Richtung und eine Farbwelle läuft durchs
 Myzel. In der Stille schließt sich das Auge langsam, das Myzel glimmt nur noch, die Frösche schlafen. Knüppel links =
@@ -909,6 +920,16 @@ Einen echten Chromecast-Empfänger gibt es für den Pi nicht (Google-Protokoll);
 die Bluetooth-Senke (`scripts/setup_bluetooth.sh`). Die Lautstärke von Spotify und AirPlay regelt das Handy, der
 Musik-Drehknopf nur mpv. Der laufende Spotify-Titel steht in `logs/now_playing.txt` (`scripts/spotify_event.sh`).
 Prüfen: `scripts/setup_cast.sh --status`, anderer Name: `--name NAME`, entfernen: `--undo`.
+
+**Eigene Stimme und eigene Sätze je Thema:** `config/announce.toml` kann je Thema einen Block `[themes.<name>]`
+mit `voice` (Piper-Stimme, wird beim Rendern nachgeladen), `tts` (Abweichungen vom KITT-Profil in `kitt.toml`, z. B.
+`pitch_factor`, `length_scale`, `robot = false`, `echo_ms`/`echo_mix`/`echo_decay` für Hall) und `[themes.<name>.lines]`
+mit eigenen Sätzen je Gruppe haben. THE POWER OF THE GREEN spricht als Waldgeist (`de_DE-pavoque-low`, tief, langsam,
+mit Hall) und hat für jeden Modus eigene Sätze; Gruppen, die im Thema fehlen, werden mit den Standardsätzen in der
+Themenstimme gesprochen. Der Launcher sagt immer den tatsächlich gestarteten Modus an (im grünen Thema also das Auge
+des Waldes statt HAL), und der Taxistand begrüßt beim Bestätigen eines Themas mit dessen Stimme (Gruppe `theme`).
+Rendern: `scripts/announce_build.sh` (läuft bei jedem `update.sh`; Dateien `models/announce/<thema>__<gruppe>_<hash>.wav`).
+Test: `python -m kitt.announce --play woodeye green`.
 
 **Spielstatistik für KITT:** `scripts/configure_gaming.sh` installiert zwei RetroPie-Hooks
 (`runcommand-onstart.sh`, `runcommand-onend.sh`), die jeden Spielstart und jedes Spielende nach

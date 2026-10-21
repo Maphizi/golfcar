@@ -85,7 +85,10 @@ Vier Themen: `spacetaxi` (default), `green`, `future`, `cyber`; je `dir` unter a
 Themen können Modi ersetzen: `themes.toml` `modes = { viz_psychedelic = "trip" }`, Launcher tauscht in `switch()`.
 Browse (Knüppel links/rechts, ENTER = essen) -> eat -> trip (Kippschalter = zurück; Knüppel = Spiegel/Tempo) -> comedown.
 Wesen `config/trip.toml` (Zelle im Atlas 5x4), Bilder `assets/trip/` (bar, beings, symbols, tex_*, optional face).
-Ereignisse `EVENTS`, Symbolsätze `SYMBOL_SETS` (Zellen im 8x5-Atlas). Test: `python -m visualizers.engine trip --demo`.
+Ereignisse `EVENTS` (alle 16-28 s; `EV_ROOTS` Wurzeln mit optional `assets/trip/roots.png`, `EV_GOD` Waldgott alle 22-28 s
+nur mit `assets/trip/gods.png` 3x2 à 512, `GOD_NAMES`/`GOD_LINES`), Symbolsätze `SYMBOL_SETS` (Zellen im 8x5-Atlas).
+Kaleidoskop-Varianten `uVariant` (0 klassisch, 1 Tunnel, 2 Blüte, 3 Zellen; `_next_variant`, Überblendung 3 s), Wanderung
+alle 12-22 s, Beat = Drehstoß. Test: `python -m visualizers.engine trip --demo`.
 
 ## Moorsee (`visualizers/scenes/pond.py`, Thema green ersetzt Taste 3)
 `themes.toml` `modes = { blackhole = "pond" }`. Waldsee `assets/pond/lake.png` + Seegrund `bottom.png` + Kreaturen-Atlas
@@ -103,7 +106,9 @@ Figuren `figures.png` (8x4 à 192: Reihe 0 Frösche sitzend, 1 Kehlsack, 2 Sprun
 Position/Größe im Controller, `uBands0/1`, `uFrogN.w` Sprungphase). Beat -> `uStep`/`uPattern` Lauflicht auf den türkisen
 Stellen des Fotos (Shader erkennt Türkis), Drop -> `uFlash`, `uSporeT`, Auge Feuer + neue Irisfarbe. Auge über `uBlink`
 (Öffnung, Reihe 0) und `uEyeA/uEyeB/uEyeMix` (Blickzelle). Knüppel LINKS Fuchs / RECHTS Eule / OBEN beide (`uFig`, `uOwl`),
-UNTEN Kaleidoskop, ENTER Froschchor (`uChorusT`), SPACE/BACKSPACE Zoom. `[scenes.woodeye] eye = [x, y, Breite]`.
+UNTEN Kaleidoskop, ENTER Froschchor (`uChorusT`, Tauchwelle), SPACE/BACKSPACE Zoom. `[scenes.woodeye] eye = [x, y, Breite]`.
+Tauchspiel: `phase[i]` (sit/dive/under/emerge, `_frogs_tick` auf Beats), Shader `uFrogPhN` = (Phase, Fortschritt, Schwimmer);
+`SWIMMERS` (0, 7) sitzen halb im Wasser. Nachbilder und Spritzer im Shader (`frog()`).
 Test: `python -m visualizers.engine woodeye --test-signal --demo`.
 
 ## Pilzautomat (`visualizers/scenes/forestslots.py`, Thema green ersetzt Taste 5 / Slots)
@@ -159,6 +164,12 @@ Sternenhimmel mit Warp-Flug-Modus.
 | SPACE / ENTER | Warp-Flug starten |
 | BACKSPACE | Warp-Flug stoppen (zurück zu Drift) |
 | ESC | Beenden |
+
+## Ansagen und Themenstimmen (`kitt/announce.py`, `config/announce.toml`)
+`[lines]` Standardsätze je Gruppe (Modusname, boot, home, theme). `[themes.<name>]` `voice`, `tts` (Overrides, u. a. `echo_ms`
+Hall in `PiperTTS`), `[themes.<name>.lines]`. Build rendert je Thema mit eigener Stimme alle Gruppen (`<thema>__<gruppe>_<hash>.wav`),
+lädt fehlende Stimmen per `piper.download_voices` nach. `play(group, target, theme=None)` nimmt das gewählte Thema.
+Launcher: `switch()` gibt den effektiven Modus zurück, `announce(eff)`; Taxistand spielt `theme` beim Bestätigen.
 
 ## Musik vom Handy (`scripts/setup_cast.sh`)
 Spotify Connect (`kitt-spotify`, librespot/raspotify, Premium nötig) und AirPlay (`kitt-airplay`, shairport-sync) als
