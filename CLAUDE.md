@@ -95,8 +95,11 @@ alle 15-30 s, Beat = Drehstoß. Test: `python -m visualizers.engine trip --demo`
 ## Moorsee (`visualizers/scenes/pond.py`, Thema green ersetzt Taste 3)
 `themes.toml` `modes = { blackhole = "pond" }`. Waldsee `assets/pond/lake.png` + Seegrund `bottom.png` + Kreaturen-Atlas
 `creatures.png` (6x4 à 160, `scripts/trip_assets.py atlas`), Wesen aus `assets/trip/beings.png`/`config/trip.toml`.
-`[scenes.pond] vortex = [x, y]`, `water = [y0, y1, x0, x1]` (Wassermaske). LINKS/RECHTS = Wesen werfen (Band im
-Strudel, ~40-60 s), OBEN = Blätterregen, UNTEN = Umkehrung (Fontäne, Seegrund), ENTER = Stein hüpft, SPACE/BACKSPACE =
+`[scenes.pond] vortex = [x, y]`, `water = [y0, y1, x0, x1]` (Wassermaske). Uferleben: `assets/pond/shore.png` (4x6 à 192,
+`trip_assets.py slice ... 4 6 192`; Spalte = Stufe, Reihe = Art), Plätze `SHORE` (x, Fußlinie, Größe, Seite, im Wasser),
+`plant_stage` 0..3 fließend (`_plants_tick`: Wachstum mit Energie, voll hält, welkt; Stille welkt alles; Drop = alles blüht),
+Shader `uPlantN`/`uPlantSN`, Sporen `uSporeT`. LINKS/RECHTS = `sprout(side)`. Wesen fallen nur noch von selbst (`AUTO_THROW`,
+nur bei Energie > 0.3; Band im Strudel ~40-60 s), OBEN = Blätterregen, UNTEN = Umkehrung (Fontäne, Seegrund), ENTER = Stein hüpft, SPACE/BACKSPACE =
 Zoom. Beat = Ring, Drop = `uFlash`. Wasserebene perspektivisch: Shader-Konstante `FLAT` (y gestaucht).
 Test: `python -m visualizers.engine pond --test-signal --demo`.
 

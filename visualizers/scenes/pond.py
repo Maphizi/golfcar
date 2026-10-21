@@ -30,7 +30,15 @@ SLOTS = 2
 THROW_SECONDS = (40.0, 60.0)
 EJECT_SECONDS = 9.0
 EJECT_BURST_AT = 1.5
-LEAF_SECONDS = 45.0
+LEAF_SECONDS = 45
+# Uferleben: assets/pond/shore.png (4x6 à 192: Spalte = Stufe Keim/jung/voll/verwelkt, Reihe = Art: 0 Fliegenpilze, 1 Farn,
+# 2 Leuchtpilze, 3 Lotus, 4 Schilf mit Libelle, 5 Fleischfresser). Plätze: (x, Fußlinie y, Größe, Seite -1/1, im Wasser)
+SHORE = [(0.07, 0.30, 0.16, -1, 0), (0.12, 0.19, 0.14, -1, 0), (0.05, 0.42, 0.13, -1, 0), (0.17, 0.12, 0.15, -1, 0),
+         (0.30, 0.17, 0.12, -1, 1), (0.87, 0.30, 0.16, 1, 0), (0.83, 0.19, 0.14, 1, 0), (0.91, 0.41, 0.13, 1, 0),
+         (0.77, 0.12, 0.15, 1, 0), (0.72, 0.17, 0.12, 1, 1)]
+N_SHORE = len(SHORE)
+WATER_SPECIES, BANK_SPECIES = (3, 4), (0, 1, 2, 5)
+AUTO_THROW = (50.0, 100.0)            # Wesen fallen nur noch selten von selbst in den Strudel.0
 # Zellen im Atlas assets/pond/creatures.png (6 x 4, Index = Reihe*6 + Spalte)
 LEAVES = [13, 3, 2, 13]
 STONE = 6
@@ -118,6 +126,15 @@ class Controller:
         self.last_drop = 0.0
         self.throws: list[Throw | None] = [None] * SLOTS
         self.last_names: list[str] = []
+        self.shore_tex = _load_rgba(ASSETS / "shore.png")
+        self.plant_species = [0] * N_SHORE
+        self.plant_stage = [0.0] * N_SHORE         # 0 Keim .. 2 voll .. 3 verwelkt; -1 = leer
+        self.plant_alive = [False] * N_SHORE
+        self.plant_seed = [self.rng.random() for _ in range(N_SHORE)]
+        self.plant_rate = [1.0] * N_SHORE
+        self.plant_next = time.monotonic() + 2.0
+        self.spore_t0 = -10.0
+        self.auto_throw_at = time.monotonic() + self.rng.uniform(*AUTO_THROW)
         self.leaf_t0: float | None = None
         self.leaf_seed = 0.0
         self.eject_t0: float | None = None
@@ -144,6 +161,57 @@ class Controller:
         self.throws[slot] = Throw(self.rng, being, side, now)
         self.rings.append((self.vortex[0] + self.throws[slot].side * 0.22, self.vortex[1] + 0.05, now + 0.7))
         log.info("Geworfen: %s von %s", self.throws[slot].name, side)
+
+    def sprout(self, side: int) -> None:
+        """Knüppel: auf dieser Seite sprießt etwas Neues (leerer Platz, sonst der am weitesten verwelkte)."""
+        now = time.monotonic()
+        cands = [i for i in range(N_SHORE) if SHORE[i][3] == side and not self.plant_alive[i]]
+        if not cands:
+            cands = [i for i in range(N_SHORE) if SHORE[i][3] == side and self.plant_stage[i] > 2.3]
+        if not cands:
+            cands = [i for i in range(N_SHORE) if SHORE[i][3] == side]
+            i = min(cands, key=lambda k: self.plant_stage[k])
+            if self.plant_stage[i] < 2.0:
+                self.plant_stage[i] = max(self.plant_stage[i], 1.6)   # ein Schub statt neu
+                return
+        else:
+            i = self.rng.choice(cands)
+        self._plant_start(i, now)
+        log.info("Es sprießt: %s %s", ("Fliegenpilze", "Farn", "Leuchtpilze", "Lotus", "Schilf", "Fleischfresser")[self.plant_species[i]],
+                 "links" if side < 0 else "rechts")
+
+    def _plant_start(self, i: int, now: float) -> None:
+        pool = WATER_SPECIES if SHORE[i][4] else BANK_SPECIES
+        self.plant_species[i] = self.rng.choice(pool)
+        self.plant_stage[i] = 0.0
+        self.plant_alive[i] = True
+        self.plant_seed[i] = self.rng.random()
+        self.plant_rate[i] = self.rng.uniform(0.7, 1.4)
+
+    def _plants_tick(self, now: float, dt: float, live: float, on_beat: bool) -> None:
+        """Pflanzen wachsen mit der Energie der Musik, stehen voll da, verwelken; in der Stille welkt alles langsam."""
+        alive = [i for i in range(N_SHORE) if self.plant_alive[i]]
+        grow = 0.03 + 0.22 * self.energy + 0.08 * self.bass_s
+        for i in alive:
+            st = self.plant_stage[i]
+            r = self.plant_rate[i]
+            if live < 0.3:
+                self.plant_stage[i] = min(3.0, st + dt * 0.08 * r) if st >= 2.0 else st + dt * 0.03 * r
+            elif st < 2.0:
+                self.plant_stage[i] = min(2.0, st + dt * grow * r)
+            else:                                                     # voll: hält, welkt dann langsam
+                hold = 12.0 + 20.0 * self.energy
+                self.plant_stage[i] = min(3.0, st + dt * r / hold)
+            if self.plant_stage[i] >= 3.0:
+                self.plant_alive[i] = False
+        # neue Keime: je lauter, desto öfter
+        if live > 0.3 and now >= self.plant_next and len(alive) < N_SHORE:
+            self.plant_next = now + self.rng.uniform(1.2, 5.0) / (0.4 + 1.6 * self.energy)
+            empty = [i for i in range(N_SHORE) if not self.plant_alive[i]]
+            if empty and self.rng.random() < 0.3 + 0.7 * self.energy:
+                self._plant_start(self.rng.choice(empty), now)
+        if on_beat and self.rng.random() < 0.2 + 0.4 * self.bass_s:
+            self.spore_t0 = now
 
     def leaf_rain(self) -> None:
         now = time.monotonic()
@@ -173,9 +241,9 @@ class Controller:
         if ev.type != pygame.KEYDOWN:
             return
         if ev.key in (pygame.K_LEFT, pygame.K_a):
-            self.throw("left")
+            self.sprout(-1)
         elif ev.key in (pygame.K_RIGHT, pygame.K_d):
-            self.throw("right")
+            self.sprout(1)
         elif ev.key in (pygame.K_UP, pygame.K_w):
             self.leaf_rain()
         elif ev.key in (pygame.K_DOWN, pygame.K_s):
@@ -192,13 +260,16 @@ class Controller:
         return {"uLakeTex": (self.lake if self.lake is not None else self.blank, 1),
                 "uBottomTex": (self.bottom if self.bottom is not None else self.blank, 1),
                 "uCreatureTex": (self.creatures if self.creatures is not None else self.blank, 1),
-                "uBeingsTex": (self.beings_tex if self.beings_tex is not None else self.blank, 1)}
+                "uBeingsTex": (self.beings_tex if self.beings_tex is not None else self.blank, 1),
+                "uShoreTex": (self.shore_tex if self.shore_tex is not None else self.blank, 1)}
 
     def uniform_names(self):
         names = ["uLakeTex", "uBottomTex", "uCreatureTex", "uBeingsTex", "uLakeSize", "uCreatureSize", "uBeingsSize",
                  "uSeed", "uVortex", "uWater", "uBassS", "uMidS", "uHighS", "uEnergy", "uSwirlT", "uSnakeT", "uZoom",
                  "uFlash", "uLeaf", "uLeafSeed", "uEjectT", "uStone", "uStoneSide", "uLeafCells", "uBubbleCells",
-                 "uBeatPulse", "uBeatStep", "uQuakeT"]
+                 "uBeatPulse", "uBeatStep", "uQuakeT", "uShoreTex", "uShoreSize", "uSporeT"]
+        names += [f"uPlant{i}" for i in range(N_SHORE)]
+        names += [f"uPlantS{i}" for i in range(N_SHORE)]
         names += [f"uRing{i}" for i in range(6)]
         for i in range(SLOTS):
             names += [f"uThrow{i}", f"uThrowPar{i}"]
@@ -240,10 +311,22 @@ class Controller:
             self.drop_armed = False
             self.last_drop = now
             self.flash = 1.0
+            for i in range(N_SHORE):                                  # Drop: das ganze Ufer blüht
+                if not self.plant_alive[i]:
+                    self._plant_start(i, now)
+                    self.plant_stage[i] = 1.2
+                elif self.plant_stage[i] < 2.0:
+                    self.plant_stage[i] = 1.8
+            self.spore_t0 = now
         self.flash = max(0.0, self.flash - dt / 2.5)
         self.rings = [r for r in self.rings if now - r[2] < 4.0][-6:]
         # Strudel und Schlangenwellen
         self.beat_pulse = max(0.0, self.beat_pulse - dt / 0.45)
+        self._plants_tick(now, dt, live, beat > 0.5 and now - self.last_beat < 0.05)
+        if now >= self.auto_throw_at:                                  # selten fällt ein Wesen von selbst hinein
+            self.auto_throw_at = now + self.rng.uniform(*AUTO_THROW)
+            if live and self.energy > 0.3:
+                self.throw(self.rng.choice(("left", "right")))
         self.swirl_t += dt * (0.4 + 2.6 * self.bass_s + 0.6 * self.energy + 1.5 * self.beat_pulse)
         self.snake_t += dt * (0.3 + 1.6 * self.bass_s + 0.8 * self.beat_pulse)
         self.zoom += (self.zoom_target - self.zoom) * min(1.0, dt / 2.0)
@@ -274,8 +357,8 @@ class Controller:
         if self.leaf_t0 is not None and now - self.leaf_t0 > LEAF_SECONDS:
             self.leaf_t0 = None
         if self.demo and now >= self.demo_next:
-            pick = self.rng.choice(("left", "right", "leaf", "eject", "stone"))
-            {"left": lambda: self.throw("left"), "right": lambda: self.throw("right"), "leaf": self.leaf_rain,
+            pick = self.rng.choice(("left", "right", "leaf", "eject", "stone", "throw"))
+            {"left": lambda: self.sprout(-1), "right": lambda: self.sprout(1), "leaf": self.leaf_rain, "throw": lambda: self.throw("left"),
              "eject": self.eject, "stone": self.skip_stone}[pick]()
             self.demo_next = now + 10.0
         size = lambda a: (float(a.shape[1]), float(a.shape[0])) if a is not None else (1.0, 1.0)
@@ -288,7 +371,11 @@ class Controller:
             "uLeaf": ((now - self.leaf_t0) / LEAF_SECONDS) if self.leaf_t0 is not None else 0.0, "uLeafSeed": self.leaf_seed,
             "uEjectT": eject_t, "uStone": st if 0.0 <= st < 2.4 else -1.0, "uStoneSide": self.stone_side,
             "uLeafCells": tuple(float(v) for v in LEAVES), "uBubbleCells": (float(BUBBLES[0]), float(BUBBLES[1]), float(BUBBLES[2]), float(STONE)),
+            "uShoreSize": size(self.shore_tex), "uSporeT": min(5.0, now - self.spore_t0),
         }
+        for i, (x, y, sz, side, water) in enumerate(SHORE):
+            out[f"uPlant{i}"] = (x, y, sz, float(self.plant_species[i]))
+            out[f"uPlantS{i}"] = (self.plant_stage[i] if self.plant_alive[i] else -1.0, float(side), self.plant_seed[i], float(water))
         for i in range(6):
             if i < len(self.rings):
                 x, y, t0 = self.rings[i]

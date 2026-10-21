@@ -575,10 +575,16 @@ mit dem Beat, spricht eine Zeile (`GOD_LINES`) und löst sich wieder auf; ohne d
 
 **Moorsee (Taste 3 im Thema THE POWER OF THE GREEN, `pond`):** Das Gegenstück zum Schwarzen Loch
 (`themes.toml` `modes = { blackhole = "pond" }`). Ein Waldsee bei Nacht (`assets/pond/lake.png`) mit einem
-Strudel in der Mitte, der sich mit dem Bass dreht. Knüppel links/rechts wirft ein Wesen der Speisekarte
-(`assets/trip/beings.png`, `config/trip.toml`) von dieser Seite in den See: Platscher, kurzes Treiben, dann
-zieht der Strudel es über etwa eine Minute in Spiralen nach innen und streckt es zu einem immer längeren
-Band, das schlangenförmig zur Musik wogt, bis es im Trichter verschwindet (Luftblasen steigen auf).
+Strudel in der Mitte, der sich mit dem Bass dreht. An beiden Ufern lebt es zur Musik: auf zehn Plätzen
+(`SHORE` im Controller, zwei davon im Wasser) keimen Pflanzen aus `assets/pond/shore.png` (Fliegenpilze, Farn,
+Leuchtpilze, Lotus, Schilf mit Libelle, Fleischfresser; je vier Stufen Keim, jung, voll, verwelkt, fließend
+überblendet), wachsen mit der Energie der Musik, stehen voll da und pulsieren mit dem Bass, platzen auf Beats Sporen
+und Pollen ab, wiegen sich mit den Mitten und verwelken wieder; je lauter, desto öfter keimt etwas Neues, beim Drop
+blüht das ganze Ufer, in der Stille welkt alles langsam. Knüppel links/rechts lässt auf dieser Seite gezielt etwas
+sprießen. Selten (alle 50-100 s, nur bei lauter Musik) fällt von selbst ein Wesen der Speisekarte
+(`assets/trip/beings.png`, `config/trip.toml`) in den See: Platscher, kurzes Treiben, dann zieht der Strudel es
+über etwa eine Minute in Spiralen nach innen und streckt es zu einem immer längeren Band, das schlangenförmig zur
+Musik wogt, bis es im Trichter verschwindet (Luftblasen steigen auf).
 Oben = Blätterregen: Blätter und Seerosenblätter fallen, landen und drehen sich im Strudel zur Spirale.
 Unten = Umkehrung: der See bäumt sich auf, eine Fontäne schleudert Frösche, Kois, Libellen, Seerosen und
 Wesen zurück in die Luft, Wellen laufen zum Ufer, der Nebel reißt auf und kurz liegt der leuchtende

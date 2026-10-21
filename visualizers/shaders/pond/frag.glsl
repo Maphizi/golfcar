@@ -15,6 +15,11 @@ uniform vec2 uLakeSize, uCreatureSize, uBeingsSize, uVortex;
 uniform vec4 uWater;                            // y unten, y oben, x links, x rechts (Bildanteile)
 uniform float uSeed, uBassS, uMidS, uHighS, uEnergy, uSwirlT, uSnakeT, uZoom, uFlash, uLeaf, uLeafSeed, uEjectT, uStone, uStoneSide;
 uniform float uBeatPulse, uBeatStep, uQuakeT;            // Beat: Puls (klingt ab), Zähler 0..7, Sekunden seit dem letzten Beben
+uniform sampler2D uShoreTex;                              // Uferleben 4x6 à 192 (Spalte = Stufe, Reihe = Art)
+uniform vec2 uShoreSize;
+uniform float uSporeT;                                    // Sekunden seit dem letzten Sporenstoß (Beat)
+uniform vec4 uPlant0, uPlant1, uPlant2, uPlant3, uPlant4, uPlant5, uPlant6, uPlant7, uPlant8, uPlant9;       // x, Fußlinie, Größe, Art
+uniform vec4 uPlantS0, uPlantS1, uPlantS2, uPlantS3, uPlantS4, uPlantS5, uPlantS6, uPlantS7, uPlantS8, uPlantS9; // Stufe 0..3 (-1 leer), Seite, Seed, im Wasser
 uniform vec4 uRing0, uRing1, uRing2, uRing3, uRing4, uRing5;   // x, y, Alter, aktiv
 uniform vec4 uThrow0, uThrow1;                  // Fortschritt, Zelle, Seite, Seed
 uniform vec4 uThrowPar0, uThrowPar1;            // Spirale, rückwärts
@@ -54,6 +59,56 @@ vec4 creature(float idx, vec2 p, vec2 c, float sz, float ang) {
     float ci = mod(idx, 6.0), ri = floor(idx / 6.0);
     vec2 lo = vec2(ci * 160.0, (3.0 - ri) * 160.0);
     return bilin(uCreatureTex, lo + (d * 0.5 + 0.5) * 160.0, uCreatureSize, lo, lo + 159.0);
+}
+vec4 plantAt(int i) { return i == 0 ? uPlant0 : (i == 1 ? uPlant1 : (i == 2 ? uPlant2 : (i == 3 ? uPlant3 : (i == 4 ? uPlant4 : (i == 5 ? uPlant5 : (i == 6 ? uPlant6 : (i == 7 ? uPlant7 : (i == 8 ? uPlant8 : uPlant9)))))))); }
+vec4 plantSAt(int i) { return i == 0 ? uPlantS0 : (i == 1 ? uPlantS1 : (i == 2 ? uPlantS2 : (i == 3 ? uPlantS3 : (i == 4 ? uPlantS4 : (i == 5 ? uPlantS5 : (i == 6 ? uPlantS6 : (i == 7 ? uPlantS7 : (i == 8 ? uPlantS8 : uPlantS9)))))))); }
+vec4 shoreCell(float species, float stage, vec2 d) {
+    if (abs(d.x) >= 1.0 || abs(d.y) >= 1.0) return vec4(0.0);
+    vec2 lo = vec2(stage * 192.0, (5.0 - species) * 192.0);
+    return bilin(uShoreTex, lo + (d * 0.5 + 0.5) * 192.0, uShoreSize, lo, lo + 191.0);
+}
+// Pflanze i am Ufer: Stufe fließend (Keim -> jung -> voll -> verwelkt) als Überblendung mit Wachstumsskalierung,
+// voll = pulst mit dem Bass und leuchtet, Beat = Sporen/Pollen steigen auf, Wind mit den Mitten
+vec3 plant(vec3 col, vec2 uv, float aspect, float t, int i, float live) {
+    vec4 p = plantAt(i), st = plantSAt(i);
+    float stage = st.x;
+    if (stage < 0.0) return col;
+    float hw = p.z * aspect * 0.5;
+    if (abs(uv.x - p.x) * aspect > hw * 1.2 || uv.y < p.y - hw * 0.3 || uv.y > p.y + hw * 2.3) return col;
+    float fi = float(i), seed = st.z;
+    float full = smoothstep(1.6, 2.0, stage) * (1.0 - smoothstep(2.0, 2.6, stage));
+    float wither = smoothstep(2.0, 3.0, stage);
+    // Größe wächst mit der Stufe (Keim klein), verwelkt sackt zusammen
+    float grow = 0.45 + 0.55 * smoothstep(0.0, 2.0, stage);
+    grow *= 1.0 - 0.25 * wither;
+    grow *= 1.0 + 0.06 * uBassS * full * live + 0.02 * sin(t * 1.7 + fi);
+    vec2 d = (uv - vec2(p.x, p.y)) * vec2(aspect, 1.0) / (hw * grow);
+    d.x *= st.y;                                                            // rechtes Ufer gespiegelt
+    d.x += 0.04 * sin(d.y * 3.0 + t * 1.1 + fi) * (0.3 + 1.2 * uMidS * live) * smoothstep(-0.9, 0.5, d.y);   // Wind
+    vec2 l = vec2(d.x, d.y - 1.0 + 0.04);
+    float sa = clamp(stage, 0.0, 3.0);
+    float ca = floor(min(sa, 2.999)), cb = min(ca + 1.0, 3.0);
+    float mixv = smoothstep(0.25, 0.75, sa - ca);
+    vec4 s = mix(shoreCell(p.w, ca, l), shoreCell(p.w, cb, l), mixv);
+    if (s.a < 0.01) return col;
+    // Leuchten: voll entwickelt glüht mit dem Bass, Drop-Flash, Leuchtpilze und Lotus stärker
+    float glowy = (p.w == 2.0 || p.w == 3.0 || p.w == 5.0) ? 1.0 : 0.5;
+    s.rgb *= 0.7 + 0.3 * live + full * (0.35 * uBassS + 0.3 * uBeatPulse + 0.6 * uFlash) * glowy;
+    s.rgb = mix(s.rgb, s.rgb * vec3(0.7, 0.6, 0.5), wither * 0.5);
+    col = mix(col, s.rgb, s.a);
+    col += s.rgb * s.a * full * glowy * 0.25 * uBassS * live;
+    // Sporen / Pollen steigen von vollen Pflanzen auf (Beat), Libelle flattert über dem Schilf
+    if (full > 0.0 && uSporeT < 2.5) {
+        for (int k = 0; k < 6; k++) {
+            float hk = hash12(vec2(float(k), seed * 90.0 + fi));
+            float age = uSporeT + hk * 0.4;
+            vec2 sp = vec2(p.x + (hk - 0.5) * p.z * 0.8, p.y + p.z * 0.7 + age * (0.03 + 0.05 * hk));
+            sp.x += 0.01 * sin(age * 6.0 + fi + float(k));
+            float g = smoothstep(0.004, 0.0, length((uv - sp) * vec2(aspect, 1.0))) * (1.0 - age / 2.9);
+            col += (p.w == 2.0 ? vec3(0.4, 1.0, 0.9) : (p.w == 5.0 ? vec3(1.0, 0.4, 0.6) : vec3(1.0, 0.9, 0.5))) * g * full * 1.2;
+        }
+    }
+    return col;
 }
 vec4 ringAt(int i) { return i == 0 ? uRing0 : (i == 1 ? uRing1 : (i == 2 ? uRing2 : (i == 3 ? uRing3 : (i == 4 ? uRing4 : uRing5)))); }
 float fountainCell(int i) { int g = i / 4, k = i - g * 4; vec4 v = g == 0 ? uFountain0 : (g == 1 ? uFountain1 : (g == 2 ? uFountain2 : uFountain3)); return v[k]; }
@@ -241,6 +296,8 @@ void main() {
             col = mix(col, s.rgb, s.a * fadeEnd);
         }
     }
+    // ---- Uferleben: Pflanzen wachsen und vergehen zur Musik
+    for (int i = 0; i < 10; i++) col = plant(col, uv, aspect, t, i, live);
     // ---- Geworfene Wesen
     col = throwFx(col, q, aspect, uThrow0, uThrowPar0, live);
     col = throwFx(col, q, aspect, uThrow1, uThrowPar1, live);
