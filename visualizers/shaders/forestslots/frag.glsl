@@ -16,6 +16,8 @@ uniform float uTheme, uState, uStateT, uWin, uWinMask, uWinLine, uFade, uStripRo
 uniform vec3 uColA, uColB, uReel, uSpeed, uBlur;
 uniform float uSeed, uBassS, uMidS, uHighS, uEnergy, uLive, uBeatPulse, uFlash, uSporeT, uStake, uStakeT;
 uniform vec4 uFox;                                       // Zelle A, Zelle B, Mischung
+uniform float uStep, uStepPhase;                         // Beat-Lauflicht durch die Pilzgruppen 0..2
+uniform vec3 uStopT;                                     // Sekunden seit dem Stopp jeder Walze
 const float PI = 3.14159265;
 const float STRIP = 32.0;
 const float CELL = 0.333;                                // Fensterhöhe = 3 Zellen
@@ -38,6 +40,13 @@ vec4 bilin(sampler2D tex, vec2 px, vec2 size, vec2 lo, vec2 hi) {
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 vec3 scene(vec2 uv) { return bilin(uSceneTex, clamp(uv, 0.0, 1.0) * uSceneSize, uSceneSize, vec2(0.0), uSceneSize - 1.0).rgb; }
+// Leuchtmaske: helle, gesättigte Stellen im Foto (Pilze, Lichter) unterhalb des Stumpfrandes
+float glowAt(vec2 uv) {
+    vec3 c = scene(uv);
+    float lum = max(c.r, max(c.g, c.b));
+    float sat = lum - min(c.r, min(c.g, c.b));
+    return smoothstep(0.32, 0.65, lum) * smoothstep(0.12, 0.35, sat) * smoothstep(0.8, 0.5, uv.y);
+}
 vec4 figCell(float idx, vec2 d) {
     if (abs(d.x) >= 1.0 || abs(d.y) >= 1.0) return vec4(0.0);
     float ci = mod(idx, 8.0), ri = floor(idx / 8.0);
@@ -97,26 +106,44 @@ void main() {
     float aspect = iResolution.x / iResolution.y;
     float t = iTime;
     vec2 uv = vUv;
-    // Kamera atmet mit dem Bass, Jackpot wackelt
-    vec2 center = vec2(0.5, 0.5);
-    uv = center + (uv - center) * (1.0 - 0.02 * uBassS);
+    // Kamera: näher am Automaten, atmet mit dem Bass, ruckt auf den Beat, Jackpot wackelt
+    vec2 center = vec2(0.5, 0.47);
+    uv = center + (uv - center) / 1.28;
+    uv = center + (uv - center) * (1.0 - 0.025 * uBassS - 0.01 * uBeatPulse);
+    uv.y -= 0.003 * uBeatPulse;
     float resultT = uState == 2.0 ? uStateT : -1.0;
     float big = (uWin >= 2.0 && resultT >= 0.0) ? 1.0 : 0.0;
     float jackpot = (uWin >= 3.0 && resultT >= 0.0) ? 1.0 : 0.0;
     uv += vec2(0.003, 0.002) * jackpot * sin(t * 30.0) * exp(-resultT * 0.6);
     vec3 plate = scene(uv);
     vec3 col = plate;
-    // ---- leuchtende Pilze und Lichter im Foto pulsieren mit dem Bass, Farbwelle beim Drop
+    // ---- Pilz-Lichtshow: Pilze und Lichter im Foto leuchten mit dem Bass, Lauflicht durch die drei Gruppen auf den
+    //      Beat, Bloom-Schein drumherum, Farbwelle beim Drop, Gewinne lassen sie in Wellen laufen
     float lum = max(plate.r, max(plate.g, plate.b));
-    float sat = lum - min(plate.r, min(plate.g, plate.b));
-    float glowMask = smoothstep(0.35, 0.7, lum) * smoothstep(0.15, 0.4, sat) * smoothstep(0.8, 0.45, uv.y);
-    vec3 glowCol = plate;
+    float glowMask = glowAt(uv);
+    float bloom = 0.0;                                                        // weicher Schein: Nachbarn abtasten
+    for (int k = 0; k < 8; k++) {
+        float a = float(k) * PI * 0.25;
+        bloom += glowAt(uv + vec2(cos(a) / aspect, sin(a)) * 0.038);
+    }
+    bloom = bloom / 8.0;
+    float zone = uv.x < 0.36 ? 0.0 : (uv.x < 0.64 ? 1.0 : 2.0);               // Pilzgruppen links, Mitte, rechts
+    float run = (zone == uStep ? 1.0 : 0.0) * (1.0 - 0.7 * uStepPhase);
+    vec3 glowCol = plate / max(lum, 0.2);                                       // Eigenfarbe des Pilzes, voll gesättigt
     if (uFlash > 0.0) {
         float wave = exp(-pow((uv.x - (1.0 - uFlash) * 1.6 + 0.3) * 6.0, 2.0));
         glowCol = mix(glowCol, hueShift(glowCol, 2.0 + uv.x * 3.0), wave * uFlash);
     }
     float stakeGlow = 0.2 + 0.4 * uStake;
-    col += glowCol * glowMask * (0.1 + 0.6 * uBassS + 0.3 * uBeatPulse + stakeGlow * 0.3 + 1.2 * big * (0.5 + 0.5 * sin(t * 6.0 - uv.x * 12.0)));
+    float breathe = 0.5 + 0.5 * sin(t * 1.2 + uv.x * 4.0);                     // ruhiges Atmen, wenn die Musik leise ist
+    float drive = 0.15 * breathe + 1.0 * uBassS + 0.5 * uBeatPulse + 1.2 * run * uLive + stakeGlow * 0.3
+                + 1.5 * big * (0.5 + 0.5 * sin(t * 6.0 - uv.x * 12.0)) + 0.4 * uHighS * noise(uv * 80.0 + t * 5.0);
+    glowCol = mix(glowCol, hueShift(glowCol, uStep * 2.1 + t * 0.6), run * 0.6);   // Lauflicht färbt die Gruppe um
+    // Pilze liegen ohne Musik gedimmt da und flammen mit Bass und Beat auf (deutlicher Hub)
+    col = mix(col, col * 0.35, glowMask * uLive * (1.0 - clamp(drive, 0.0, 1.0)));
+    col += glowCol * glowMask * drive * (0.4 + 0.8 * uLive);
+    col += glowCol * bloom * drive * 1.1 * (0.3 + 0.7 * uLive);                 // Schein auf Moos und Boden
+    col = mix(col, col * vec3(0.8, 0.9, 1.1), (1.0 - uLive) * 0.4);
     // Moos glimmt mit dem Beat (dunkle grüne Stellen)
     float moss = smoothstep(0.08, 0.0, abs(plate.g - 0.3)) * smoothstep(0.1, 0.0, plate.r - plate.g * 0.6) * smoothstep(0.75, 0.3, uv.y);
     col += vec3(0.3, 0.9, 0.4) * moss * (0.08 * uBeatPulse + 0.04 * uMidS + 0.5 * jackpot * exp(-resultT * 0.5));
@@ -142,6 +169,22 @@ void main() {
             d += vec3(0.6, 1.0, 0.7) * ll * (0.25 + 0.25 * sin(t * 8.0)) * (uWin >= 2.0 ? 1.4 : 0.7);
         }
         col = mix(col, d, 0.98);
+    }
+    // ---- Staubwölkchen, wenn eine Walze einrastet; Hebelknauf glüht beim Drehen
+    for (int i = 0; i < 3; i++) {
+        float st = uStopT[i];
+        if (st < 0.0 || st > 1.2) continue;
+        vec2 wx = winX(i);
+        vec2 c = vec2((wx.x + wx.y) * 0.5, uWinY.x - 0.01);
+        vec2 d = (uv - c) * vec2(aspect, 1.0);
+        float puff = smoothstep(0.08 * st + 0.02, 0.0, length(d - vec2(0.0, st * 0.03))) * (1.0 - st / 1.2) * noise(d * 60.0 + st * 4.0);
+        col += vec3(0.7, 0.6, 0.45) * puff * 0.8;
+    }
+    {
+        vec2 knob = vec2(0.792, 0.875);
+        float spinAll = clamp((uSpeed[0] + uSpeed[1] + uSpeed[2]) / 20.0, 0.0, 1.0);
+        float kd = length((uv - knob) * vec2(aspect, 1.0));
+        col += vec3(1.0, 0.75, 0.4) * exp(-kd * 35.0) * (0.3 * spinAll * (0.7 + 0.3 * sin(t * 25.0)) + 0.4 * uBeatPulse * spinAll);
     }
     // ---- Fenster-Innenlicht fällt auf die Rinde (beim Drehen warm, bei Gewinn grün)
     for (int i = 0; i < 3; i++) {

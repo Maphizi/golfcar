@@ -108,6 +108,10 @@ class Controller(slots.Controller):
         self.spore_t0 = -100.0
         self.drop_boost = 0.0
         self.fox_t0 = 0.0
+        self.step = 0                        # Beat-Zähler: Lauflicht durch die Pilzgruppen (links, Mitte, rechts)
+        self.step_t0 = 0.0
+        self.stop_t0 = [-10.0] * 3           # wann jede Walze zuletzt stehen blieb (Staubwölkchen)
+        self.was_spinning = [False] * 3
         self.fox_pose = 0
         self.fox_prev = 0
         self.stake_t0 = -10.0
@@ -148,7 +152,7 @@ class Controller(slots.Controller):
         return ("uSpriteTex", "uSceneTex", "uFigTex", "uAtlasSize", "uSceneSize", "uFigSize", "uTheme", "uColA", "uColB",
                 "uReel", "uSpeed", "uState", "uStateT", "uWin", "uWinMask", "uWinLine", "uBlur", "uFade", "uStripRow",
                 "uTile", "uWin0", "uWin1", "uWin2", "uWinY", "uSeed", "uBassS", "uMidS", "uHighS", "uEnergy", "uLive",
-                "uBeatPulse", "uFlash", "uSporeT", "uStake", "uStakeT", "uFox")
+                "uBeatPulse", "uFlash", "uSporeT", "uStake", "uStakeT", "uFox", "uStep", "uStepPhase", "uStopT")
 
     def uniforms(self, t: float, f) -> dict:
         out = super().uniforms(t, f)
@@ -171,6 +175,8 @@ class Controller(slots.Controller):
         if beat > 0.5 and now - self.last_beat > 0.25:
             self.last_beat = now
             self.beat_pulse = 1.0
+            self.step = (self.step + 1) % 3
+            self.step_t0 = now
             self.fox_prev, self.fox_pose, self.fox_t0 = self.fox_pose, (self.fox_pose + 1) % 4, now
         self.beat_pulse = max(0.0, self.beat_pulse - dt / 0.45)
         if live and self.energy > 0.03 and e_fast < 0.5 * self.energy:
@@ -187,6 +193,10 @@ class Controller(slots.Controller):
             self.drop_boost = 1.0
             log.info("Drop: Sporen, nächste Drehung schneller")
         self.flash = max(0.0, self.flash - dt / 2.0)
+        for i, r in enumerate(self.reels):
+            if self.was_spinning[i] and not r.spinning:
+                self.stop_t0[i] = now
+            self.was_spinning[i] = r.spinning
         if self.state == slots.ST_RESULT and not self.result_logged and self.message:
             self.result_logged = True
             log.info("%s: %s", {0: "Niete", 1: "kleiner Gewinn", 2: "Gewinn", 3: "JACKPOT", 4: "MEGA"}[self.win], self.message)
@@ -200,6 +210,8 @@ class Controller(slots.Controller):
             "uSporeT": (now - self.spore_t0) if now - self.spore_t0 < 4.0 else -1.0,
             "uStake": float(self.stake), "uStakeT": now - self.stake_t0,
             "uFox": (float(FOX_CELLS[self.fox_prev]), float(FOX_CELLS[self.fox_pose]), min(1.0, (now - self.fox_t0) / 0.12), 0.0),
+            "uStep": float(self.step), "uStepPhase": min(1.0, (now - self.step_t0) / 0.5),
+            "uStopT": tuple(min(9.0, now - st) for st in self.stop_t0),
         })
         return out
 

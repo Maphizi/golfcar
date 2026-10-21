@@ -618,8 +618,11 @@ Space-Slotmaschine (`themes.toml` `modes = { slots = "forestslots" }`). Ein Baum
 Lichthirsch = Jackpot) laufen auf feuchten Holztrommeln. Die Spiellogik ist die der Space-Slotmaschine (Walzen,
 Gewinnplanung, Fast-Gewinn, Nachdrehen, Jackpot, Mega), `visualizers/scenes/forestslots.py` erbt sie. Statt dreier
 Automaten wechselt der Knüppel links/rechts den Einsatz: Eichel (10 CR, x1), Pilz (50 CR, x5), Hirsch (200 CR,
-x20), der Stumpf leuchtet mit dem Einsatz stärker. Startknopf = Hebel ziehen. Musik: der Bass lässt die leuchtenden
-Pilze pulsieren und die Kamera atmen, Beats glimmen im Moos und zucken auf der Gewinnlinie, Höhen funkeln als
+x20), der Stumpf leuchtet mit dem Einsatz stärker. Startknopf = Hebel ziehen. Die Kamera steht nah am Automaten.
+Musik: die Pilze sind die Lichtshow: ohne Bass gedimmt, mit Bass und Beat flammen sie mit weichem Schein auf, ein
+Lauflicht wandert auf den Beat durch die drei Pilzgruppen (links, Mitte, rechts) und färbt sie um, die Kamera atmet und
+ruckt auf den Beat; Beats glimmen im Moos und zucken auf der Gewinnlinie, einrastende Walzen stauben, der Hebelknauf
+glüht beim Drehen, Höhen funkeln als
 Glühwürmchen und Tautropfen, Mitten lassen den Nebel atmen, Drops schicken eine Sporenwolke und eine Farbwelle über
 die Pilze und die nächste Drehung läuft schneller an. Gewinne: zwei gleiche = Glühwürmchen schwärmen aus den
 Fenstern, drei gleiche = Blätter und Pollen regnen, die Pilze leuchten in Wellen, der Fuchs tanzt am Stumpf
