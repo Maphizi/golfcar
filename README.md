@@ -652,6 +652,25 @@ Wurzeln/Herzschlag (`config/wled.toml` `hearttree_*`). `config/visualizer.toml` 
 (Stammmitte), `cycle_minutes`, `start_season`. Controller `visualizers/scenes/hearttree.py`, Shader
 `visualizers/shaders/hearttree/frag.glsl`. Test: `python -m visualizers.engine hearttree --test-signal --demo`.
 
+**Die Überdosis (Taste 7 im Thema THE POWER OF THE GREEN, `overdose`):** Das Gegenstück zum Systemfehler
+(`themes.toml` `modes = { error = "overdose" }`). Kein Bluescreen, sondern der Trip, der kippt: zu viel am Waldtresen
+gegessen. Albtraumwald (`assets/overdose/scene.png`) in Wellen, die sich wiederholen und jedes Mal etwas anders sind:
+Warnung (10 s, das Bild atmet, Ranken kriechen herein, "ZU VIEL GEGESSEN" flackert, der Puls oben links steigt),
+Vergiftung (30 s, Doppelbilder, Farben kippen ins Giftgrün und Violett, verzerrte Wesen aus
+`assets/overdose/creatures.png` lauern an den Rändern und rücken auf jeden Beat näher, Fliegen schwärmen, Tunnelblick
+auf jeden Bassschlag), Horror (20 s, Waldgott mit glühenden Augen lacht aus der Mitte, Negativ-Blitze und Bildsprünge
+auf den Beat, dein Gesicht mit Pilzen, die daraus wachsen, Flüstertexte, Wesen springen an die Kamera), Blackout
+(8 s, Schwarz mit Nachbildern, nur der Puls, dann "DU WACHST AUF. NOCH EINMAL."). Musik: Bass ist Herzschlag und
+Tunnelblick, Beats sind Negativflackern und Bildsprünge, Höhen Fliegen und Rauschen, Mitten verbiegen die Ränder, laute
+Musik vergiftet schneller. Drop = Schrei-Blitz in Rot-Schwarz, alle Wesen springen gleichzeitig ins Bild. Stille =
+schweres Atmen, Dunkelheit kriecht. Knüppel links/rechts = Gegengift (Wasser, Kohle, Salz, Moos kauen, Froschtee):
+kurz besser, dann schlimmer. Oben = Erbrechen (Bild kippt, grüne Schleimwelle, etwas Gift weg). Unten = Augen zu
+(Dunkelheit mit atmenden Farbflecken, die Geräusche bleiben; nochmal = auf). Startknopf = Hilferuf, die Eule holt dich
+für fünf Sekunden in ein klares Bild. Kippschalter AN = Kaltwasserschock (klar und kalt), AUS = Rückfall. Board:
+Giftgrün/Violett, Horror rotes Stroboskop, Drop weiß, Blackout fast aus (`config/wled.toml` `overdose_*`). Controller
+`visualizers/scenes/overdose.py`, Shader `visualizers/shaders/overdose/frag.glsl`.
+Test: `python -m visualizers.engine overdose --test-signal --demo`.
+
 **Flug und Ankunft im Navigationscomputer:** Der Startknopf startet den Flug (Kippschalter AN
 zeigt vorher nur SCHARF an). Der Hyperraumflug endet nie von selbst: erst wenn der Pilot den
 Kippschalter umlegt (egal in welche Richtung), kommt die Ankunft. Nur im `--demo` gilt die feste

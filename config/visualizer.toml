@@ -124,3 +124,8 @@ controller = "hearttree"   # Der Herzbaum (Thema Power of the Green, Gegenstück
 render_scale = 0.6
 trunk = [0.52, 0.42]       # Stammmitte (Atmen, Nahaufnahme)
 cycle_minutes = 6          # Minuten je Jahreszeit, wenn niemand den Knüppel bewegt
+
+[scenes.overdose]
+shader = "overdose"
+controller = "overdose"    # Die Überdosis (Thema Power of the Green, Gegenstück zum Systemfehler)
+render_scale = 0.6

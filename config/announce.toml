@@ -138,6 +138,11 @@ hearttree = [
   "Ein Baum mit Puls. Älter als dein Golfplatz, geduldiger als du.",
   "Hörst du es schlagen? Das ist nicht dein Herz. Noch nicht.",
 ]
+overdose = [
+  "Zu viel gegessen. Der Wald dreht sich jetzt mit dir. Halt dich an nichts fest, es hat Augen.",
+  "Überdosis. Die Schnecke ruft den Notdienst. Sie ist langsam.",
+  "Das war der falsche Pilz. Oder der richtige. Das weiß man erst nachher.",
+]
 error = [
   "Störung im Wald. Ein Pilz hat sich ins System gesetzt. Er bleibt.",
   "Die Wurzeln haben ein Kabel gefunden. Sie fanden es lecker.",

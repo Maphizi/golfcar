@@ -132,6 +132,16 @@ UNTEN `uRootsT`, ENTER `uBigBeat`, SPACE/BACKSPACE `uZoom` auf `[scenes.hearttre
 `hearttree_spring|summer|autumn|winter`, Ereignisse `hearttree_roots`, `hearttree_beat`.
 Test: `python -m visualizers.engine hearttree --test-signal --demo`.
 
+## Überdosis (`visualizers/scenes/overdose.py`, Thema green ersetzt Taste 7 / Systemfehler)
+`themes.toml` `modes = { error = "overdose" }`. Szene `assets/overdose/scene.png`, Wesen `creatures.png` (4x3 à 256,
+`trip_assets.py grid ... 4 3 256 1`), dazu `assets/trip/gods.png` (Horror-Gott), `assets/trip/face.png`, Eule aus
+`assets/woodeye/figures.png`. Phasen `PH_WARN/POISON/HORROR/BLACKOUT` in Wellen (`PHASE_LEN`), `uPoison` 0..1 steuert
+Doppelbild/Giftfarbe/Tunnel/Ranken (prozedural). Wesen `uCreN` (x, y, Größe, Zelle) / `uCrePN` (Alter, Sprung, Hue, Spiegel),
+springen auf Beats (`lunge_t0`). Beat = `uCut` Bildsprung + Negativ, Drop = `uFlash` + alle Wesen. Knüppel L/R Gegengift
+(`uRelief`, Rückfall nach 4 s), OBEN `uVomitT`, UNTEN `uEyes`, ENTER `uHelpT` (Eule), SPACE/BACKSPACE `uShock`.
+WLED `overdose`, `overdose_horror`, `overdose_drop`, `overdose_blackout`, `overdose_help`. `WHISPERS`, `ANTIDOTES`.
+Test: `python -m visualizers.engine overdose --test-signal --demo`.
+
 ## Navigationscomputer (`visualizers/scenes/navcomputer.py`)
 ENTER = Flug starten, Flug endet NUR per Kippschalter (SPACE oder BACKSPACE im Flug = Ankunft), nie von selbst
 (Demo: cruise_seconds). Ereignisse alle 30–60 s (`EVENTS`): Asteroidenfeld, Farbnebel, Sonne, Wurmloch,

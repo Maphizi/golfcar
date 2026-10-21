@@ -99,6 +99,14 @@ col2 = [0, 40, 30]
 sx  = 60
 ix  = 160
 
+[modes.overdose]            # Überdosis: Giftgrün und Violett, unruhig atmend
+bri = 180
+fx  = 2
+col = [120, 255, 60]
+col2 = [90, 0, 140]
+sx  = 140
+ix  = 200
+
 [modes.blackhole]           # Schwarzes Loch: oranges Glühen der Akkretionsscheibe, langsam kreisend
 bri = 170
 fx  = 76          # Meteor
@@ -348,3 +356,35 @@ col = [255, 200, 90]
 col2 = [40, 15, 0]
 sx  = 200
 ix  = 128
+
+[modes.overdose_horror]     # Horrorphase (20 s): rotes Stroboskop, langsam
+bri = 230
+fx  = 23
+col = [255, 20, 40]
+col2 = [40, 0, 60]
+sx  = 90
+ix  = 128
+
+[modes.overdose_drop]       # Drop (2 s): weißes Stroboskop
+bri = 255
+fx  = 23
+col = [255, 255, 255]
+col2 = [120, 0, 40]
+sx  = 220
+ix  = 128
+
+[modes.overdose_blackout]   # Blackout (8 s): fast aus, violettes Glimmen
+bri = 40
+fx  = 2
+col = [80, 0, 120]
+col2 = [0, 0, 0]
+sx  = 30
+ix  = 150
+
+[modes.overdose_help]       # Hilferuf (5 s): warmes Eulen-Weiß
+bri = 200
+fx  = 2
+col = [255, 230, 170]
+col2 = [40, 20, 0]
+sx  = 70
+ix  = 150

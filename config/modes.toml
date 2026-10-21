@@ -64,6 +64,12 @@ command = ["{python}", "-m", "visualizers.engine", "hearttree"]
 cwd = "{root}"
 stop_timeout = 3
 
+[modes.overdose]
+label = "ÜBERDOSIS"
+command = ["{python}", "-m", "visualizers.engine", "overdose"]
+cwd = "{root}"
+stop_timeout = 3
+
 [modes.viz_crt]
 label = "ZIELCOMPUTER"
 command = ["{python}", "-m", "visualizers.engine", "crt"]
