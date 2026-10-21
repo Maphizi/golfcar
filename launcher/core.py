@@ -153,6 +153,11 @@ class Launcher:
 
     # -- Modi ------------------------------------------------------------
     def switch(self, mode: str) -> None:
+        # Themen können Modi ersetzen (themes.toml: modes = { viz_psychedelic = "trip" })
+        repl = theme.current().get("modes", {})
+        if isinstance(repl, dict) and repl.get(mode) in self.pm.modes:
+            log.info("Thema %s: Modus %s -> %s", theme.current_name() or "standard", mode, repl[mode])
+            mode = str(repl[mode])
         if self.pm.current and self.pm.current.name == mode and self.pm.is_running():
             log.info("Modus %s läuft bereits, ignoriert", mode)
             return

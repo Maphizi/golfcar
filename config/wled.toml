@@ -59,6 +59,14 @@ col2 = [0, 0, 30]
 sx  = 150
 ix  = 160
 
+[modes.trip]                # Waldtresen / Reise: grün-violett wandernd
+bri = 200
+fx  = 9           # Rainbow
+col = [90, 255, 60]
+col2 = [160, 40, 220]
+sx  = 40
+ix  = 160
+
 [modes.blackhole]           # Schwarzes Loch: oranges Glühen der Akkretionsscheibe, langsam kreisend
 bri = 170
 fx  = 76          # Meteor

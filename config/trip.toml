@@ -1,0 +1,246 @@
+# Waldtresen (Taste 2 im Thema THE POWER OF THE GREEN): Speisekarte der psychedelischen Wesen.
+# cell: Zelle im Atlas assets/trip/beings.png (5 Spalten x 4 Reihen, Index = Reihe*5 + Spalte).
+# origin: real | fiction. Reiseprofil: palette 0..5 (Farbwelt), tempo 0.4..1.6 (Geschwindigkeit),
+# mirrors 4..12 (Kaleidoskop-Segmente), twist 0..1 (Spiralverdrehung), symbols: Symbolsatz
+# (eyes, frogs, butterflies, leaves, ferns, shells, feathers, mushrooms, orbs, mixed), warp 0..1 (Verzerrung).
+# Der Reise-Hintergrund mischt die Texturen assets/trip/tex_*.png (canopy, frog, amanita wenn vorhanden).
+
+[[beings]]
+cell = 0
+name = "Fliegenpilz"
+origin = "real"
+effect = "Zeitlupe, Riesenwuchs, Mückenfreundschaft"
+palette = 0
+tempo = 0.6
+mirrors = 6
+twist = 0.5
+symbols = "mushrooms"
+warp = 0.6
+
+[[beings]]
+cell = 1
+name = "Psilocybe"
+origin = "real"
+effect = "Atmende Wände, Fraktalfarne, Kichern"
+palette = 2
+tempo = 0.9
+mirrors = 8
+twist = 0.7
+symbols = "ferns"
+warp = 0.9
+
+[[beings]]
+cell = 2
+name = "Blauer Lotus"
+origin = "real"
+effect = "Sanftes Schweben, Wasserlicht, Nilträume"
+palette = 3
+tempo = 0.5
+mirrors = 10
+twist = 0.2
+symbols = "orbs"
+warp = 0.4
+
+[[beings]]
+cell = 3
+name = "Peyote"
+origin = "real"
+effect = "Wüstenfarben, Geometrie, lange Nacht"
+palette = 1
+tempo = 0.7
+mirrors = 8
+twist = 0.4
+symbols = "eyes"
+warp = 0.7
+
+[[beings]]
+cell = 4
+name = "Salvia"
+origin = "real"
+effect = "Kurz und heftig, die Welt klappt zusammen"
+palette = 4
+tempo = 1.6
+mirrors = 4
+twist = 1.0
+symbols = "leaves"
+warp = 1.0
+
+[[beings]]
+cell = 5
+name = "Bufo-Kröte"
+origin = "real"
+effect = "Alles auf einmal, dann Stille"
+palette = 5
+tempo = 1.4
+mirrors = 12
+twist = 0.8
+symbols = "frogs"
+warp = 0.9
+
+[[beings]]
+cell = 6
+name = "Kugelfisch"
+origin = "real"
+effect = "Kribbeln, Taubheit, Meeresrauschen"
+palette = 3
+tempo = 0.8
+mirrors = 6
+twist = 0.3
+symbols = "shells"
+warp = 0.5
+
+[[beings]]
+cell = 7
+name = "Laubfrosch"
+origin = "real"
+effect = "Froschkonzert, grünes Glück"
+palette = 2
+tempo = 1.0
+mirrors = 8
+twist = 0.5
+symbols = "frogs"
+warp = 0.6
+
+[[beings]]
+cell = 8
+name = "Pfeilgiftfrosch"
+origin = "real"
+effect = "Nur anschauen. Wirklich nur anschauen."
+palette = 1
+tempo = 1.3
+mirrors = 10
+twist = 0.9
+symbols = "butterflies"
+warp = 0.8
+
+[[beings]]
+cell = 9
+name = "Bananenschnecke"
+origin = "real"
+effect = "Alles wird langsam und klebrig"
+palette = 0
+tempo = 0.4
+mirrors = 5
+twist = 0.2
+symbols = "shells"
+warp = 0.5
+
+[[beings]]
+cell = 10
+name = "Kristallpilz"
+origin = "fiction"
+effect = "Glasklare Gedanken, Lichtadern im Wald"
+palette = 3
+tempo = 0.8
+mirrors = 12
+twist = 0.3
+symbols = "orbs"
+warp = 0.5
+
+[[beings]]
+cell = 11
+name = "Flüsterfarn"
+origin = "fiction"
+effect = "Die Blätter sprechen, du hörst zu"
+palette = 2
+tempo = 0.7
+mirrors = 7
+twist = 0.8
+symbols = "ferns"
+warp = 0.8
+
+[[beings]]
+cell = 12
+name = "Spiegelbeere"
+origin = "fiction"
+effect = "Du siehst dich überall, alle lächeln"
+palette = 4
+tempo = 1.0
+mirrors = 12
+twist = 0.4
+symbols = "eyes"
+warp = 0.6
+
+[[beings]]
+cell = 13
+name = "Mondmoos"
+origin = "fiction"
+effect = "Kühles blaues Leuchten, Zeit steht"
+palette = 3
+tempo = 0.45
+mirrors = 8
+twist = 0.1
+symbols = "orbs"
+warp = 0.3
+
+[[beings]]
+cell = 14
+name = "Zimtwurm"
+origin = "fiction"
+effect = "Warm, würzig, Ringe in Ringen"
+palette = 0
+tempo = 0.9
+mirrors = 6
+twist = 0.9
+symbols = "shells"
+warp = 0.7
+
+[[beings]]
+cell = 15
+name = "Regenbogenlurch"
+origin = "fiction"
+effect = "Jede Farbe gleichzeitig, auch die neuen"
+palette = 5
+tempo = 1.2
+mirrors = 10
+twist = 0.6
+symbols = "butterflies"
+warp = 0.9
+
+[[beings]]
+cell = 16
+name = "Nebelqualle"
+origin = "fiction"
+effect = "Schweben im Nebel, Tentakel aus Licht"
+palette = 4
+tempo = 0.5
+mirrors = 9
+twist = 0.5
+symbols = "feathers"
+warp = 0.6
+
+[[beings]]
+cell = 17
+name = "Augenblume"
+origin = "fiction"
+effect = "Der Wald schaut zurück"
+palette = 1
+tempo = 0.8
+mirrors = 8
+twist = 0.6
+symbols = "eyes"
+warp = 0.7
+
+[[beings]]
+cell = 18
+name = "Spiralschnecke"
+origin = "fiction"
+effect = "Alles dreht sich nach innen"
+palette = 5
+tempo = 0.7
+mirrors = 6
+twist = 1.0
+symbols = "shells"
+warp = 0.8
+
+[[beings]]
+cell = 19
+name = "Honigschleim"
+origin = "fiction"
+effect = "Goldenes Fließen, süße Schwere"
+palette = 0
+tempo = 0.5
+mirrors = 7
+twist = 0.3
+symbols = "orbs"
+warp = 0.5

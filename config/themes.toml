@@ -4,7 +4,8 @@
 #   erzeugen mit: .venv/bin/python scripts/taxi_sprites.py LOGO BOGEN --out assets/taxi/<dir>
 # eyes / eye_r: Augenmitten und -radius im Fahrerfoto (Anteile, y von unten) für die Kreisel beim Beat.
 # color_a: Farbe des Taxischeins, color_b: Zweitfarbe, tint: Duotone-Farbe (nur ohne driver.png).
-# default = true: gilt, solange nichts gewählt wurde. content: Inhaltssatz der Modi (vorerst überall "space").
+# default = true: gilt, solange nichts gewählt wurde. content: Inhaltssatz der Modi.
+# modes = { <modus> = "<ersatz>" }: in diesem Thema startet die Taste des Modus stattdessen den Ersatzmodus.
 
 [[themes]]
 name = "spacetaxi"
@@ -29,7 +30,9 @@ tint = [0.95, 0.75, 0.25]
 
 [[themes]]
 name = "green"
-content = "space"
+content = "green"
+# Modus-Ersatz je Thema: welche Taste in diesem Thema einen anderen Modus startet
+modes = { viz_psychedelic = "trip" }
 title = "THE POWER OF THE GREEN"
 tagline = "MOOS, PILZE UND EIN FAHRER MIT WURZELN"
 dir = "green"

@@ -81,6 +81,12 @@ Vier Themen: `spacetaxi` (default), `green`, `future`, `cyber`; je `dir` unter a
 `eyes`/`eye_r`, `missions`, `driver_title`, `color_a` = Farbe des Scheins. `theme.content()` liefert den Inhaltssatz
 ("space" = die Weltraum-Programme).
 
+## Waldtresen (`visualizers/scenes/trip.py`, Thema green ersetzt Taste 2)
+Themen können Modi ersetzen: `themes.toml` `modes = { viz_psychedelic = "trip" }`, Launcher tauscht in `switch()`.
+Browse (Knüppel links/rechts, ENTER = essen) -> eat -> trip (Kippschalter = zurück; Knüppel = Spiegel/Tempo) -> comedown.
+Wesen `config/trip.toml` (Zelle im Atlas 5x4), Bilder `assets/trip/` (bar, beings, symbols, tex_*, optional face).
+Ereignisse `EVENTS`, Symbolsätze `SYMBOL_SETS` (Zellen im 8x5-Atlas). Test: `python -m visualizers.engine trip --demo`.
+
 ## Navigationscomputer (`visualizers/scenes/navcomputer.py`)
 ENTER = Flug starten, Flug endet NUR per Kippschalter (SPACE oder BACKSPACE im Flug = Ankunft), nie von selbst
 (Demo: cruise_seconds). Ereignisse alle 30–60 s (`EVENTS`): Asteroidenfeld, Farbnebel, Sonne, Wurmloch,

@@ -538,6 +538,31 @@ bekommen aber keine Werte mehr. Die Texte im Navigationscomputer verwackeln ganz
 (wenige Pixel bei Bass und Beat). Schiffswinkel werden auf
 0 bis 2π reduziert, weil große Winkelwerte auf der GPU ungenaue Sinus-Werte liefern.
 
+**Waldtresen (Taste 2 im Thema THE POWER OF THE GREEN, `trip`):** Im grünen Thema ersetzt der
+Waldtresen den Navigationscomputer (`config/themes.toml` `modes = { viz_psychedelic = "trip" }`; der
+Launcher tauscht den Modus beim Umschalten). Ein Tresen aus Moos und Wurzeln (`assets/trip/bar.png`,
+vom Piloten erzeugt) mit Glühwürmchen und atmendem Kerzenlicht, auf dem Holzteller das gewählte
+Wesen aus der Speisekarte (`config/trip.toml`, 20 Stück, echt und erdacht: Fliegenpilz, Psilocybe,
+Blauer Lotus, Peyote, Salvia, Bufo-Kröte, Kugelfisch, Laubfrosch, Pfeilgiftfrosch, Bananenschnecke,
+Kristallpilz, Flüsterfarn, Spiegelbeere, Mondmoos, Zimtwurm, Regenbogenlurch, Nebelqualle,
+Augenblume, Spiralschnecke, Honigschleim; Bilder `assets/trip/beings.png`). Knüppel links/rechts
+blättert, Name, Herkunft und Wirkung stehen links. Startknopf = essen: das Wesen fliegt auf die
+Kamera zu, Biss-Blitz, die Augenlider schließen sich, dann beginnt die Reise. Jedes Wesen hat ein
+Profil (Farbwelt, Tempo, Spiegelzahl, Verdrehung, Symbolsatz, Verzerrung): ein Kaleidoskop aus den
+Naturtexturen (`assets/trip/tex_*.png`: Blätterdach, Frosch auf Lotus, Fliegenpilz-Haut) mit
+Spiralverdrehung, Rauschverzerrung, wandernden Farben, Lichtadern, Tunnelringen, das über etwa 25
+Sekunden an Intensität gewinnt; Symbole aus `assets/trip/symbols.png` (Augenblüten, Frösche,
+Schmetterlinge, Blätter, Farne, Schnecken, Federn, Pilze, Pollen) kreisen im Kaleidoskop und ziehen
+frei durchs Bild. Musik: Bass lässt alles atmen, Beats pulsen Zoom und Lichtadern, Höhen funkeln,
+Drops wechseln Palette oder Spiegelzahl. Ereignisse alle 30 bis 60 Sekunden: Froschkonzert mit
+Schallringen, Pilzregen, der Wald schaut (Augen öffnen sich und blinzeln), Schmetterlingsschwarm,
+Pollensturm, Lichthirsch, und wenn `assets/trip/face.png` vorhanden ist, das eigene Gesicht riesig
+und wabernd. Während der Reise: Knüppel links/rechts = Spiegelzahl, oben/unten = Tempo. Die Reise
+endet nur per Kippschalter: das Bild kehrt an den Tresen zurück und eine Bilanz erscheint ("Du warst
+4 min 12 s weg. Der Fuchs hat dein Taxi bewacht."). Bildmaterial vorbereiten:
+`scripts/trip_assets.py beings|symbols|texture|bar`. Controller `visualizers/scenes/trip.py`,
+Shader `visualizers/shaders/trip/frag.glsl`. Test: `python -m visualizers.engine trip --test-signal --demo`.
+
 **Flug und Ankunft im Navigationscomputer:** Der Startknopf startet den Flug (Kippschalter AN
 zeigt vorher nur SCHARF an). Der Hyperraumflug endet nie von selbst: erst wenn der Pilot den
 Kippschalter umlegt (egal in welche Richtung), kommt die Ankunft. Nur im `--demo` gilt die feste

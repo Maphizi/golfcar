@@ -58,6 +58,11 @@ shader = "blackhole"
 controller = "blackhole"
 render_scale = 0.35       # Strahlverfolgung, teuer: Pi 5 schafft 0.5 mit 64 Schritten nur 9 fps
 
+[scenes.trip]
+shader = "trip"
+controller = "trip"        # Waldtresen: Wesen essen, psychedelische Reise (Thema Power of the Green)
+render_scale = 0.6
+
 [scenes.taxi]
 shader = "taxi"
 controller = "taxi"

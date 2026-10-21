@@ -34,6 +34,12 @@ command = ["{python}", "-m", "visualizers.engine", "psychedelic"]
 cwd = "{root}"
 stop_timeout = 3
 
+[modes.trip]
+label = "WALDTRESEN"
+command = ["{python}", "-m", "visualizers.engine", "trip"]
+cwd = "{root}"
+stop_timeout = 3
+
 [modes.viz_crt]
 label = "ZIELCOMPUTER"
 command = ["{python}", "-m", "visualizers.engine", "crt"]
