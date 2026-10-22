@@ -50,7 +50,7 @@ render_scale = 0.6
 
 [scenes.slots]
 shader = "slots"
-controller = "slots"
+controller = "slots"            # ORBIT, COMIC, WAHNSINN (3 Walzen); Rahmen assets/slots/space_frame.png optional, sonst Blende
 render_scale = 0.6
 
 [scenes.blackhole]
@@ -112,11 +112,10 @@ render_scale = 0.6
 eye = [0.511, 0.722, 0.175] # Augenmitte x, y (von unten), Breite (Bildanteile)
 
 [scenes.forestslots]
-shader = "forestslots"
-controller = "forestslots"   # Der Pilzautomat (Thema Power of the Green, Gegenstück zur Space-Slotmaschine)
+shader = "slots"
+controller = "forestslots"   # Pilzautomat, Tiere des Waldes, Waldgeister (Thema Power of the Green), gemeinsamer Shader "slots"
 render_scale = 0.6
-windows = [[0.335, 0.418], [0.439, 0.528], [0.550, 0.636]]   # x-Bereich der drei Fenster (Bildanteile)
-window_y = [0.447, 0.681]                                     # y-Bereich der Fenster (von unten)
+# area = [0.10, 0.075, 0.90, 0.925]   # Walzenfläche x0, y0, x1, y1 (Bildanteile, von unten); Standard: mit Rahmen die Schwarzfläche
 
 [scenes.hearttree]
 shader = "hearttree"
@@ -152,11 +151,9 @@ frame = [0.505, 0.73, 0.27]              # Projektionsrahmen x, y, Breite
 panels = [0.264, 0.757, 0.385, 0.052]    # Neontafeln: x erste, x letzte, y, Breite
 
 [scenes.cyberslots]
-shader = "cyberslots"
-controller = "cyberslots"  # Pachinko (Cyber-Taste 5)
+shader = "slots"
+controller = "cyberslots"  # Pachinko, Konzern, Netzgeister (Cyber-Taste 5), gemeinsamer Shader "slots", Rahmen assets/slots/cyber_frame.png
 render_scale = 0.6
-windows = [[0.344, 0.427], [0.450, 0.546], [0.570, 0.654]]
-window_y = [0.42, 0.645]
 
 [scenes.rooftop]
 shader = "rooftop"
@@ -195,11 +192,9 @@ windows = [0.186, 0.613, 0.268, 0.044]   # Schaufenster: x erste, x letzte (8 vo
 cable = [0.714, 0.764, 0.922, 0.463]     # Kabel Turm -> Laterne: x0, y0, x1, y1
 
 [scenes.almanacslots]
-shader = "almanacslots"
-controller = "almanacslots"   # Almanach (Zukunft-Taste 5)
+shader = "slots"
+controller = "almanacslots"   # Almanach, Wilder Westen, Zukunft 2015 (Zukunft-Taste 5), gemeinsamer Shader "slots", Rahmen future_frame.png
 render_scale = 0.6
-windows = [[0.316, 0.412], [0.447, 0.546], [0.581, 0.678]]
-window_y = [0.414, 0.666]
 
 [scenes.square]
 shader = "square"
