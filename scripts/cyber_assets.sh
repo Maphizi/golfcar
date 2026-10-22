@@ -39,10 +39,27 @@ echo "== Runde 2 =="
 slice neonrace_obstacles neonrace_obstacles.png 8 2 192
 slice oracle_heads oracle_heads.png 8 3 192
 for i in 1 2 3 4 5 6; do plate rooftop_light_$i rooftop_light_$i.png; done
-# Bildschirminhalte: Raster 8x4, jede Kachel voll gefüllt -> auf 2048x1024 skalieren (Zellen 256x256)
+# Bildschirminhalte: Raster mit dünnen schwarzen Stegen (geliefert 4x4) -> Kacheln erkennen, je 512x288, Atlas 4x4
 s=$(f blackice_screens); [ -n "$s" ] && $PY - "$s" "$OUT/blackice_screens.png" <<'PYEOF' 2>/dev/null
-import sys, pygame
+import sys, pygame, numpy as np
 pygame.init()
-im = pygame.image.load(sys.argv[1]); im = pygame.transform.smoothscale(im, (2048, 1024)); pygame.image.save(im, sys.argv[2]); print("Bildschirme", im.get_size())
+im = pygame.image.load(sys.argv[1]).convert(24)
+a = pygame.surfarray.array3d(im).transpose(1, 0, 2).max(axis=2)
+def bands(prof):
+    gaps = [i for i, v in enumerate(prof) if v < 0.01]
+    groups = []
+    for g in gaps:
+        if groups and g - groups[-1][-1] <= 2: groups[-1].append(g)
+        else: groups.append([g])
+    cuts = [0] + [int(np.mean(g)) for g in groups if len(g) >= 3 and 0 < g[0] < len(prof) - 1] + [len(prof)]
+    return [(cuts[i], cuts[i + 1]) for i in range(len(cuts) - 1) if cuts[i + 1] - cuts[i] > 40]
+rows = bands((a > 20).mean(axis=1)); cols = bands((a > 20).mean(axis=0))
+TW, TH = 512, 288
+out = pygame.Surface((TW * len(cols), TH * len(rows)))
+for r, (y0, y1) in enumerate(rows):
+    for c, (x0, x1) in enumerate(cols):
+        tile = im.subsurface(pygame.Rect(x0 + 4, y0 + 4, x1 - x0 - 8, y1 - y0 - 8))
+        out.blit(pygame.transform.smoothscale(tile, (TW, TH)), (c * TW, r * TH))
+pygame.image.save(out, sys.argv[2]); print("Bildschirme", len(cols), "x", len(rows), "Kacheln à", TW, "x", TH)
 PYEOF
 ls -la "$OUT" | grep -v raw
