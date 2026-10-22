@@ -237,3 +237,32 @@ Erzeuge die 19 Bilder oben mit den Prompts, speichere sie als PNG unter `assets/
 in Fettschrift, ohne Endung im Prompt-Titel) und committe sie auf den Branch `claude/new-session-3cbx1m`. Szenen 16:9
 mit mindestens 1600 Pixel Breite, Bögen mit exakt der genannten Spalten- und Reihenzahl auf reinem Schwarz
 (`square_particles` gern transparent). Fehlt ein Bild, läuft der Modus trotzdem, nur leer.
+
+---
+
+## Nachbesserungen (zweite Runde, gleiche Dateinamen, ersetzen die alten in `assets/future/raw/`)
+
+Nach dem Ablegen: `scripts/future_assets.sh` erneut ausführen. Der Code kommt mit den alten Bildern zurecht, die neuen
+machen Figuren und Cockpit sauberer.
+
+**clocktower_figures** – der alte Bogen hat ungleich große Zellen (Zeitmaschine mal halb so groß, Reste der Nachbarzellen).
+```
+Sprite sheet, exactly 8 columns and 3 rows, 24 cells of identical size in a strict grid, pure black background, every figure
+fully inside its own cell with clear black margin around it, nothing touching or crossing cell borders, all figures standing
+on the bottom line of their cell. Row 1: a mad scientist with wild white hair and a white lab coat in eight poses, all the
+same height (hanging from a bar with both hands, climbing, pointing upward, cheering with both arms up, frightened,
+pulling a thick cable, waving, slipping). Row 2: the same silver stainless steel sports car with gullwing doors in eight
+side views, exactly the same size in every cell, driving from left to right, lights on, the last two with fire trails behind
+the wheels. Row 3: a 1950s couple (girl in red polka dot dress, boy in leather jacket) in eight dance poses, all the same
+height. No text, no borders, no grid lines
+```
+
+**timejump_cockpit** – im alten Bild ist auch das Armaturenbrett oberhalb der Instrumente schwarz, daher musste die
+Scheibenkante im Code hochgesetzt werden.
+```
+Photorealistic first-person view from the driver seat of a stainless steel time machine sports car at night, the dashboard
+and door frames fill only the lower 40 percent of the image and are clearly lit in warm amber and grey metal with toggle
+switches, cables, vacuum tubes and a time circuit box with three dark empty digital displays, the entire windshield above
+the dashboard is one large solid pure black area with nothing visible through it, no black parts anywhere on the dashboard
+itself, gullwing door frames only at the far left and right edges, cinematic, 16:9
+```
