@@ -35,4 +35,14 @@ slice rooftop_particles rooftop_particles.png 8 3 160
 echo "== Black Ice =="
 plate blackice_scene blackice_scene.png
 slice blackice_daemons blackice_daemons.png 4 3 256
+echo "== Runde 2 =="
+slice neonrace_obstacles neonrace_obstacles.png 8 2 192
+slice oracle_heads oracle_heads.png 8 3 192
+for i in 1 2 3 4 5 6; do plate rooftop_light_$i rooftop_light_$i.png; done
+# Bildschirminhalte: Raster 8x4, jede Kachel voll gefüllt -> auf 2048x1024 skalieren (Zellen 256x256)
+s=$(f blackice_screens); [ -n "$s" ] && $PY - "$s" "$OUT/blackice_screens.png" <<'PYEOF' 2>/dev/null
+import sys, pygame
+pygame.init()
+im = pygame.image.load(sys.argv[1]); im = pygame.transform.smoothscale(im, (2048, 1024)); pygame.image.save(im, sys.argv[2]); print("Bildschirme", im.get_size())
+PYEOF
 ls -la "$OUT" | grep -v raw
