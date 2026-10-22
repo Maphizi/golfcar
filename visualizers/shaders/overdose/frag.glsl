@@ -73,12 +73,20 @@ void main() {
     float edge = smoothstep(0.2, 0.5, length(vUv - 0.5));
     uv += vec2(sin(uv.y * 12.0 + t * 1.3), cos(uv.x * 10.0 - t * 1.1)) * 0.012 * (uMidS * 0.6 + 0.4 * poison) * edge;
     uv += (vec2(fbm(uv * 3.0 + t * 0.2), fbm(uv * 3.0 - t * 0.17 + 5.0)) - 0.5) * 0.03 * poison;
+    // ---- Verschwimmen: alles schmiert in eine langsam kreisende Richtung, stärker mit der Vergiftung und dem Bass
+    float smear = poison * (0.5 + 0.5 * sin(t * 0.23 + uSeed)) * (0.6 + 0.6 * heart) * live + 0.15 * poison;
+    vec2 sdir = vec2(cos(t * 0.31 + uSeed), sin(t * 0.27)) * 0.018 * smear;
     vec3 col = scene(uv);
-    // ---- Doppelbild: zweites, verschobenes und umgefärbtes Bild
+    col = (col + scene(uv + sdir) + scene(uv - sdir) + scene(uv + sdir * 2.0) + scene(uv - sdir * 2.0)) * 0.2;
+    // ---- Geisterbilder: drei verschobene, umgefärbte Bilder, die auseinanderdriften
     float dbl = poison * (0.6 + 0.4 * sin(t * 0.7));
     vec2 off = vec2(0.012 + 0.02 * uMidS, 0.006) * dbl;
     vec3 ghost = scene(uv + off);
+    vec3 ghost2 = scene(uv - off * 1.6 + vec2(0.0, 0.01 * sin(t * 0.5)) * dbl);
     col = mix(col, max(col, hueShift(ghost, 1.5)), 0.5 * dbl);
+    col = mix(col, max(col, hueShift(ghost2, 3.6)), 0.3 * dbl);
+    // Das Bild schmilzt: langsame Wellen ziehen alles nach unten
+    col = mix(col, scene(uv + vec2(0.0, -0.02 * poison * (0.5 + 0.5 * sin(uv.x * 7.0 + t * 0.6)))), 0.35 * poison);
     // ---- Giftfarben: Grün/Violett kippt mit der Vergiftung, Drop = Rot-Schwarz-Negativ
     float lum = dot(col, vec3(0.3, 0.55, 0.15));
     vec3 toxic = mix(vec3(0.3, 1.0, 0.4), vec3(0.8, 0.3, 1.0), 0.5 + 0.5 * sin(t * 0.4 + uv.y * 3.0 + uBeatStep * 0.4));
@@ -95,9 +103,9 @@ void main() {
         float age = p.x;
         float fade = smoothstep(0.0, 1.2, age) * (1.0 - smoothstep(0.0, 0.3, -1.0));
         float lunge = p.y;
-        float sz = c.z * (1.0 + 1.2 * lunge + 0.08 * uBassS) * aspect * 0.5;
+        float sz = c.z * (1.0 + 0.35 * lunge + 0.04 * uBassS) * aspect * 0.5;
         vec2 pos = vec2(c.x, c.y);
-        pos = mix(pos, vec2(0.5, 0.5), 0.35 * lunge);                        // Sprung Richtung Kamera
+        pos = mix(pos, vec2(0.5, 0.5), 0.12 * lunge);                        // kleiner Ruck Richtung Kamera
         pos += vec2(0.004 * sin(t * 9.0 + age), 0.003 * cos(t * 7.0)) * (poison + horror);
         vec2 d = (uv - pos) * vec2(aspect, 1.0) / sz;
         if (mod(p.w, 2.0) >= 1.0) d.x = -d.x;
@@ -105,13 +113,13 @@ void main() {
         vec4 s = creature(c.w, d);
         vec3 sc = hueShift(s.rgb, p.z * poison * 0.6 + 0.4 * sin(t * 2.0 + age));
         sc = mix(sc, 1.0 - sc, horror * uBeatPulse * 0.6);
-        sc *= 0.6 + 0.6 * uBassS + 0.5 * lunge;
-        col = mix(col, sc, s.a * fade * (0.75 + 0.25 * lunge));
+        sc *= 0.7 + 0.25 * uBassS + 0.2 * lunge;
+        col = mix(col, sc, s.a * fade * (0.6 + 0.2 * lunge));
         // Spiegelkopie bei Horror (Kaleidoskop der Angst)
         if (horror > 0.0) {
             vec2 dm = (vec2(1.0 - uv.x, uv.y) - pos) * vec2(aspect, 1.0) / sz;
             vec4 sm = creature(c.w, dm);
-            col = mix(col, 1.0 - sm.rgb * 0.8, sm.a * horror * 0.5 * fade);
+            col = mix(col, 1.0 - sm.rgb * 0.8, sm.a * horror * 0.2 * fade);
         }
     }
     // ---- Horror: Waldgott mit hohlen Augen aus der Mitte, dein Gesicht mit Pilzen

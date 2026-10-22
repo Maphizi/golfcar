@@ -200,106 +200,61 @@ Sprite sheet, 4 columns and 3 rows, each cell one creature centered on pure blac
 
 ---
 
+# Runde 2 – Überarbeitung (mehr Musik, mehr Automatik, neue Bilder)
+
+Rückmeldung nach dem ersten Test: zu wenig passiert von selbst, zu wenig auf den Beat. Je Taste:
+
+| Taste | Modus | Änderung | neue Bilder |
+|---|---|---|---|
+| 2 | Neonfahrt | Auto fährt von selbst und weicht Hindernissen aus (Spurwechsel automatisch, Tempo aus der Musik), Schilder wechseln Farben zur Musik, Beat = Lichtstöße, Hupe/Spiegel bleiben | `neonrace_obstacles` |
+| 3 | Der Kern | Ringe/Wellen auf jeden Beat, Objekte fliegen von selbst hinein (Energie steuert die Rate), Kern wechselt Farbe bei Beats/Drops, Schwarm und Auswurf auch automatisch | keine |
+| 4 | Das Orakel | Die acht Tafeln gehen strikt auf den Beat an und aus (Muster wechseln), statt Samurai/Katze: viele verschiedene Köpfe, die auf Beats und Drops wechseln (Knüppel links/rechts blättert, oben = Automatik schnell, unten = Glitch bleibt) | `oracle_heads` |
+| 6 | Dachterrasse | Stromausfall = die Stadt spielt verrückt: mehrere Lichtzustände derselben Ansicht werden auf den Beat geschnitten (aus, Alarm rot, Säuregrün, alles gleißend, nur Werbung, Blitz), dazu EMP (Startknopf: Welle vom Zentrum, alles aus, kommt blockweise mit den Beats zurück) | `rooftop_light_1..6` |
+| 7 | Black Ice | Die Bildschirme der Kammer werden maskiert und zeigen wechselnde Inhalte auf den Beat (digitale Augen, Schädel, Warnungen, Radar, Rauschen …), Augen blinzeln und schauen umher, keine Daemonen mehr im Raum | `blackice_scene` (neu, Schirme schwarz), `blackice_screens` |
+
+Die Bilder legt der Bot wieder unter `assets/cyber/raw/` ab, `scripts/cyber_assets.sh` schneidet sie.
+
 ## Prompts Runde 2
 
-Neue und ersetzte Bilder; gleiche Regeln wie Runde 1 (fotorealistisch, kein lesbarer Text,
-16:9 mind. 1600 px breit, Bögen exakt mit Spalten- und Reihenzahl, gleiche Zellgröße,
-Schwarz als Hintergrund). blackice_screens: 8×4-Raster mit dünnen schwarzen Rändern, jede
-Kachel bis zum Rand gefüllt. rooftop_light_*: identische Ansicht wie rooftop_scene.png,
-nur andere Beleuchtung/Wetter (Vorlage per Bild-zu-Bild nutzen).
-
-**neonrace_obstacles**
+**neonrace_obstacles** (8x2 Bogen, schwarz)
 ```
-Sprite sheet, 8 columns and 2 rows, pure black background, same scale, centered.
-Obstacles and events during a neon city night drive.
-Row 1: police hover drone with flashing lights, advertising blimp with glowing panels,
-thunderstorm cloud with lightning bolt, neon tunnel arch entrance, glowing corporate
-skyscraper facade segment, neon-lit street market stall, blooming cherry blossom tree
-at night, holographic road barrier cone.
-Row 2: burst of water from puddle splash, police spotlight beam cone, street food vendor
-cart with neon sign, hover motorcycle gang silhouette, heavy rain wall curtain, scattered
-road debris and broken glass, graffiti-covered concrete overpass section, neon traffic
-signal pole.
-No text, no borders.
+Sprite sheet, exactly 8 columns and 2 rows, 16 cells of identical size, pure black background, each object centered in its cell with black margin, same scale, seen from behind at a slight angle at night with neon reflections. Row 1 road obstacles: concrete barrier with warning stripes, wooden crate, broken delivery drone on the ground, traffic cone, holographic road sign without text, pile of trash bags, oil barrel, stalled hover car. Row 2 crossing hazards: pedestrian with umbrella, cyber cat running, street vendor cart, police drone landing, puddle splash, neon advertising pillar, scooter rider, cargo robot. No text, no borders
 ```
 
-**oracle_heads**
+**oracle_heads** (8x3 Bogen, schwarz, 24 Köpfe)
 ```
-Sprite sheet, 8 columns and 2 rows, pure black background, same scale, centered.
-Close-up cyberpunk AI and android head portraits, frontal, glowing eyes.
-Row 1: male android with chrome jaw implants, female android with full visor over eyes,
-samurai warrior android with kabuto helmet, holographic geisha face glowing cyan,
-corporate executive android with smooth chrome face, hacker face with neural port tattoos,
-boxy retro robot head with round glowing eye lenses, alien AI construct head with
-fiber-optic tendrils.
-Row 2: each of the same eight heads with heavy glitch effects (pixel corruption blocks,
-horizontal scanlines, half dissolved into static, color channel separation, geometry
-fragmentation, image doubling, wireframe mesh visible, dissolving into cascading data
-streams).
-No text, no borders.
+Sprite sheet, exactly 8 columns and 3 rows, 24 cells of identical size, pure black background, every head centered and the same size, frontal view, glowing like holograms, no body below the neck. 24 different cyberpunk heads: holographic geisha mask, red oni demon mask, chrome android face, skull made of neon wires, cyber cat head with visor, kitsune fox mask, golden buddha hologram, VR helmet with glowing visor, wireframe human face, female face with circuit tattoos, male face half robot, gas mask with neon filters, samurai kabuto helmet, jellyfish-like alien head, pixelated 8-bit face, mannequin head with cracks, octopus-headed AI, child-like doll face, old man with data goggles, lion mask with neon mane, hooded figure with glowing eyes, glass head with brain of light, skull with rose, smiling porcelain mask. Cyan, magenta and gold neon tones. No text, no borders
 ```
 
-**blackice_scene** _(ersetzt das alte)_
+**rooftop_light_1 … rooftop_light_6** (je 16:9, exakt dieselbe Ansicht wie `rooftop_scene`, nur andere Lichter; wenn der
+Bot Bild-zu-Bild kann: `rooftop_scene.png` als Vorlage nehmen und nur die Beleuchtung ändern)
+Gemeinsamer Anfang aller sechs Prompts:
 ```
-Photorealistic dark hacker den at night, a wall of many screens and cables in front of
-the viewer, all screens showing only pure solid black with no image, red warning lights
-casting faint red glow, cold neon light filtering through window blinds, a neural
-interface cable lying across the desk, cinematic, 16:9
+Photorealistic view from a rooftop terrace at night over a neon megacity in light rain, a wet metal railing in the foreground, towers with thousands of windows and large advertising panels without text, flying lights between the buildings, fog, a neon sign on the roof at the left, an antenna at the right, cinematic, 16:9, identical composition and camera to a reference shot.
+```
+dann je Datei der Zusatz:
+- `rooftop_light_1`: `Lighting state: total blackout, every window and every advertising panel is dark, only a few red emergency lights and the headlights of flying vehicles, the city is a dark silhouette.`
+- `rooftop_light_2`: `Lighting state: red alert, all windows and panels glow deep red, red searchlights sweep the sky, red fog.`
+- `rooftop_light_3`: `Lighting state: acid green, all panels and windows glow toxic green, green fog, green reflections on the wet railing.`
+- `rooftop_light_4`: `Lighting state: overload, every window blazing white and gold, panels pure white, lens flares everywhere, overexposed.`
+- `rooftop_light_5`: `Lighting state: only the advertising panels are lit in magenta and cyan, all windows dark, the panels reflect on the wet towers.`
+- `rooftop_light_6`: `Lighting state: a huge lightning bolt strikes the tallest tower, the whole city lit blue-white for an instant, hard shadows.`
+
+**blackice_scene** (16:9, ersetzt das alte Bild: Bildschirme reines Schwarz)
+```
+Photorealistic dark hacker den at night, a wall of many monitors of different sizes in front of the viewer, every monitor screen is a solid pure black rectangle with nothing on it, cables everywhere, red warning lights, neon light through window blinds, a neural interface cable lying across the desk, no text, cinematic, 16:9
 ```
 
-**blackice_screens**
+**blackice_screens** (8x4 Raster, 32 Bildschirminhalte, Kacheln ohne Rand)
 ```
-Rectangular grid of 8 columns and 4 rows of screen tiles, thin black borders between
-every tile, each tile fully filled edge-to-edge, no empty space, no outer border.
-Row 1: green cascading terminal characters (abstract glyphs), network topology node graph,
-CPU spike waveform monitor, horizontal glitch static bands.
-Row 2: dark city grid satellite view with amber lights, empty grey room security camera,
-flatlined EKG heartrate trace, rotating radar sweep arc.
-Row 3: fiber optic green data streams, corrupted red pixel data blocks, circuit board
-trace diagram, pulsing cyan energy core sphere.
-Row 4: cascading red error code columns (abstract glyphs), rotating encryption wheel,
-neural network node graph, audio spectrum waveform bars.
-No readable text, tile borders are plain black lines only.
+A strict grid of exactly 8 columns and 4 rows of equally sized square tiles separated by thin pure black gaps, each tile a full-bleed cyberpunk computer screen image in cyan, magenta, red and green on black. Row 1: eight states of the same digital eye (open looking straight, looking left, looking right, half closed, closed, wide open angry red, glitched, pixel-dissolved). Row 2: skull hologram, warning triangle, radar sweep, target crosshair, fingerprint scan, padlock, spiked virus sphere, wireframe face. Row 3: audio waveform, heartbeat line, world map with blinking dots, barcode, countdown digits made of blocks, matrix-like falling glyph rain, circuit board, spiral hypnosis pattern. Row 4: static noise, test pattern color bars, binary blocks, DNA helix, brain scan, city map, chrome hand, red eye close-up. No readable text, no borders
 ```
 
-**rooftop_light_1** _(Referenz: rooftop_scene.png)_
-```
-Same rooftop terrace over the neon megacity, clear night sky, no rain, sharp crisp city
-lights and vivid neon reflections on the dry railing and pavement below, stars faintly
-visible above the towers, calm clear atmosphere, photorealistic, 16:9
-```
+## Anweisung an den Bot (Runde 2)
 
-**rooftop_light_2** _(Referenz: rooftop_scene.png)_
-```
-Same rooftop terrace over the neon megacity, heavy downpour, dense rain streaks blurring
-the view, neon lights bleeding into heavy raindrops on the railing and glass, puddles
-pooling on the terrace floor, dark storm sky, photorealistic, 16:9
-```
-
-**rooftop_light_3** _(Referenz: rooftop_scene.png)_
-```
-Same rooftop terrace over the neon megacity, dense grey fog rolling in over the city,
-towers half hidden in thick mist, neon halos glowing softly through the fog, diffused
-light, eerie quiet atmosphere, photorealistic, 16:9
-```
-
-**rooftop_light_4** _(Referenz: rooftop_scene.png)_
-```
-Same rooftop terrace over the neon megacity, acid rain with a sickly green atmospheric
-tint, green-hued neon reflections in toxic puddles on the terrace, chemical haze over
-the city, dystopian oppressive mood, photorealistic, 16:9
-```
-
-**rooftop_light_5** _(Referenz: rooftop_scene.png)_
-```
-Same rooftop terrace over the neon megacity, snow and white ash falling gently, cold
-blue-white light, snowflakes settling on the railing, tower tops dusted white, quieter
-calmer atmosphere, photorealistic, 16:9
-```
-
-**rooftop_light_6** _(Referenz: rooftop_scene.png)_
-```
-Same rooftop terrace over the neon megacity, violent thunderstorm, a bright lightning
-bolt forking across the dark sky above the towers, dramatic flash illuminating the clouds
-from within, charged electrified atmosphere, photorealistic, 16:9
-```
+Erzeuge die Bilder aus `docs/cyber_plan.md`, Abschnitt "Prompts Runde 2": `neonrace_obstacles`, `oracle_heads`,
+`rooftop_light_1` bis `rooftop_light_6`, `blackice_scene` (ersetzt das alte), `blackice_screens`. Speichere sie als PNG unter
+`assets/cyber/raw/<name>.png`. Szenen 16:9, mindestens 1600 Pixel breit; Bögen exakt mit der genannten Spalten- und
+Reihenzahl, gleich große Zellen, reines Schwarz als Hintergrund; `blackice_screens` als Raster mit dünnen schwarzen Rändern,
+jede Kachel bis zum Rand gefüllt. Die sechs `rooftop_light_*` sollen dieselbe Ansicht wie `rooftop_scene.png` zeigen (bei
+Bild-zu-Bild-Fähigkeit diese als Vorlage nehmen). Kein lesbarer Text. Danach auf `claude/new-session-3cbx1m` committen.

@@ -37,7 +37,10 @@ WOODEYE_ASSETS = ASSETS.parent / "woodeye"
 PH_WARN, PH_POISON, PH_HORROR, PH_BLACKOUT = 0, 1, 2, 3
 PHASE_LEN = {PH_WARN: 10.0, PH_POISON: 30.0, PH_HORROR: 20.0, PH_BLACKOUT: 8.0}
 PHASE_NAMES = {PH_WARN: "WARNUNG", PH_POISON: "VERGIFTUNG", PH_HORROR: "HORROR", PH_BLACKOUT: "BLACKOUT"}
-N_CRE = 5
+N_CRE = 5                 # Uniform-Slots
+MAX_CRE = 2               # gleichzeitig sichtbare Wesen (klein, am Rand, selten)
+AUTO_EVENT = (18.0, 40.0) # von selbst: Erbrechen, Augen zu, Hilfe, Schock, Gegengift (Sekunden Abstand)
+PHASE_JITTER = (0.7, 1.5) # Phasenlängen je Welle zufällig gestreckt
 N_CELLS = 12
 WHISPERS = [
     "DU HAST ES GEWUSST.", "DER WALD VERGISST NICHT.", "ZU VIEL. VIEL ZU VIEL.", "DEIN HERZ GEHÖRT JETZT DEN PILZEN.",
@@ -66,12 +69,12 @@ class Creature:
     def __init__(self, rng: random.Random, now: float, horror: bool, cell: int | None = None):
         self.cell = rng.randrange(N_CELLS) if cell is None else cell
         side = rng.choice((-1.0, 1.0))
-        self.x = 0.5 + side * rng.uniform(0.28, 0.46)
-        self.y = rng.uniform(0.18, 0.72)
+        self.x = 0.5 + side * rng.uniform(0.34, 0.47)
+        self.y = rng.uniform(0.12, 0.7)
         self.t0 = now
         self.life = rng.uniform(6.0, 12.0) if not horror else rng.uniform(3.0, 6.0)
-        self.size = rng.uniform(0.12, 0.22) * (1.4 if horror else 1.0)
-        self.approach = rng.uniform(0.3, 0.8) * (2.0 if horror else 1.0)
+        self.size = rng.uniform(0.05, 0.09) * (1.3 if horror else 1.0)
+        self.approach = rng.uniform(0.1, 0.35) * (1.6 if horror else 1.0)
         self.hue = rng.uniform(0.0, 6.28)
         self.lunge_t0 = -10.0
         self.mirror = rng.random() < 0.5
@@ -131,6 +134,9 @@ class Controller:
         self.flap_t = 0.0
         self.led_back_at: float | None = None
         self.demo_next = self.last + 5.0
+        self.phase_len = PHASE_LEN[PH_WARN]
+        self.auto_next = self.last + self.rng.uniform(*AUTO_EVENT)
+        self.last_key = -100.0
         log.info("Überdosis: Szene %s, Wesen %s, Gesicht %s, Götter %s, Eule %s", "ok" if self.scene is not None else "fehlt",
                  "ok" if self.creatures_tex is not None else "fehlt", "ok" if self.face is not None else "fehlt",
                  "ok" if self.gods is not None else "fehlt", "ok" if self.figs is not None else "fehlt")
@@ -181,7 +187,8 @@ class Controller:
 
     def _drop(self, now: float) -> None:
         self.flash = 1.0
-        self.creatures = [Creature(self.rng, now, True, cell=c) for c in self.rng.sample(range(N_CELLS), N_CRE)]
+        self.creatures = [Creature(self.rng, now, True, cell=c) for c in self.rng.sample(range(N_CELLS), MAX_CRE)]
+        self.creatures[1].x = 1.0 - self.creatures[0].x
         for c in self.creatures:
             c.size *= 1.4
             c.lunge_t0 = now
@@ -192,6 +199,7 @@ class Controller:
     def _set_phase(self, ph: int, now: float) -> None:
         self.phase = ph
         self.phase_t0 = now
+        self.phase_len = PHASE_LEN[ph] * self.rng.uniform(*PHASE_JITTER)
         if ph == PH_WARN:
             self.wave += 1
             self.seed = self.rng.uniform(1.0, 100.0)
@@ -211,6 +219,7 @@ class Controller:
     def handle_event(self, ev) -> None:
         if ev.type != pygame.KEYDOWN:
             return
+        self.last_key = time.monotonic()
         if ev.key in (pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_d):
             self.antidote()
         elif ev.key in (pygame.K_UP, pygame.K_w):
@@ -266,8 +275,8 @@ class Controller:
             self.flap_t += 1.0
             if self.phase == PH_HORROR or self.poison > 0.75:
                 self.cut = (self.rng.uniform(-0.03, 0.03), self.rng.uniform(-0.02, 0.02))
-            for c in self.creatures:                                      # Wesen springen auf den Beat näher
-                if self.phase == PH_HORROR or self.rng.random() < 0.35:
+            for c in self.creatures:                                      # Wesen zucken nur selten auf den Beat
+                if self.rng.random() < (0.25 if self.phase == PH_HORROR else 0.08):
                     c.lunge_t0 = now
         self.beat_pulse = max(0.0, self.beat_pulse - dt / 0.4)
         self.flap_t += dt * (1.5 + 4.0 * self.bass_s)
@@ -285,7 +294,7 @@ class Controller:
         self.flash = max(0.0, self.flash - dt / 1.5)
         # Phasen in Wellen
         pt = now - self.phase_t0
-        if pt >= PHASE_LEN[self.phase]:
+        if pt >= self.phase_len:
             self._set_phase((self.phase + 1) % 4, now)
             pt = 0.0
         target = {PH_WARN: 0.35, PH_POISON: 0.75, PH_HORROR: 1.0, PH_BLACKOUT: 0.2}[self.phase]
@@ -301,9 +310,11 @@ class Controller:
         self.shock += ((1.0 if self.shock_on else 0.0) - self.shock) * min(1.0, dt / 1.0)
         # Wesen: lauern, rücken näher, verschwinden; in der Horrorphase mehr und größer
         self.creatures = [c for c in self.creatures if not c.done(now)]
-        if self.phase in (PH_POISON, PH_HORROR) and now >= self.next_spawn and len(self.creatures) < N_CRE:
-            self.creatures.append(Creature(self.rng, now, self.phase == PH_HORROR))
-            self.next_spawn = now + self.rng.uniform(1.5, 4.0) * (0.5 if self.phase == PH_HORROR else 1.0)
+        if self.phase in (PH_POISON, PH_HORROR) and now >= self.next_spawn and len(self.creatures) < MAX_CRE:
+            cand = Creature(self.rng, now, self.phase == PH_HORROR)
+            if all(abs(cand.x - c.x) > 0.25 or abs(cand.y - c.y) > 0.3 for c in self.creatures):   # nicht überlagern
+                self.creatures.append(cand)
+            self.next_spawn = now + self.rng.uniform(6.0, 14.0) * (0.6 if self.phase == PH_HORROR else 1.0)
         # Flüstern
         if self.phase == PH_HORROR and now >= self.next_whisper:
             self.whisper = self.rng.choice(WHISPERS)
@@ -326,13 +337,37 @@ class Controller:
                 pass
         if self.eyes_closed and self.demo and now - self.demo_next > -0.5 and self.rng.random() < 0.02:
             self.toggle_eyes()
+        # Von selbst: der Trip macht, was er will (nur wenn zuletzt niemand gedrückt hat und Musik läuft)
+        if not self.demo and now >= self.auto_next:
+            self.auto_next = now + self.rng.uniform(*AUTO_EVENT) * (0.6 if self.energy > 0.5 else 1.0)
+            if now - self.last_key > 12.0 and live and self.phase != PH_BLACKOUT:
+                if self.eyes_closed:
+                    self.toggle_eyes()
+                else:
+                    pick = self.rng.choices(("vomit", "eyes", "help", "shock", "antidote"), weights=(3, 2, 1, 2, 3))[0]
+                    log.info("Von selbst: %s", pick)
+                    if pick == "vomit":
+                        self.vomit()
+                    elif pick == "eyes":
+                        self.toggle_eyes()
+                        self.auto_next = now + self.rng.uniform(3.0, 6.0)
+                    elif pick == "help":
+                        self.call_help()
+                    elif pick == "shock":
+                        self.set_shock(True)
+                        self.shock_off_at = now + self.rng.uniform(2.0, 4.0)
+                    else:
+                        self.antidote()
+        if getattr(self, "shock_off_at", None) is not None and now >= self.shock_off_at:
+            self.shock_off_at = None
+            self.set_shock(False)
         size = lambda a: (float(a.shape[1]), float(a.shape[0])) if a is not None else (1.0, 1.0)
         flap = self.flap_t % 4.0
         out = {
             "uSceneSize": size(self.scene), "uCreatureSize": size(self.creatures_tex), "uFaceSize": size(self.face),
             "uGodSize": size(self.gods), "uFigSize": size(self.figs), "uFaceOK": 1.0 if self.face is not None else 0.0,
             "uGodOK": 1.0 if self.gods is not None else 0.0, "uFigOK": 1.0 if self.figs is not None else 0.0,
-            "uSeed": self.seed, "uPhase": float(self.phase), "uPhaseT": pt, "uPhaseLen": PHASE_LEN[self.phase],
+            "uSeed": self.seed, "uPhase": float(self.phase), "uPhaseT": pt, "uPhaseLen": self.phase_len,
             "uWave": float(self.wave), "uPoison": self.poison, "uRelief": self.relief,
             "uVomitT": (now - self.vomit_t0) if now - self.vomit_t0 < 3.0 else -1.0, "uEyes": self.eyes,
             "uHelpT": (now - self.help_t0) if now - self.help_t0 < 5.0 else -1.0, "uShock": self.shock,
