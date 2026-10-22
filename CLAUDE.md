@@ -163,27 +163,34 @@ alle Atlanten unter `assets/cyber/` (plate/slice aus `trip_assets.py`). Alle sec
 `visualizer.toml`, WLED-Profile `<modus>` + Ereignisse in `wled.toml`, Labels in `modes.toml`, Aktionen in `launcher/actions.py`.
 
 ### Neonfahrt (`visualizers/scenes/neonrace.py`, Taste 2)
-Fahrmodus wie Navigationscomputer: ENTER = losfahren, SPACE/BACKSPACE = anhalten. LINKS/RECHTS `change_lane` (`uLane`),
-OBEN `honk` (`uHonkT`), UNTEN `toggle_mirror` (`uMirror`). `Mover` (cell, side/lane, z, seed, kind 0 Holo / 1 Auto / 2 Flieger)
--> `uHolo0..9`, `uCar0..5`, `uFly0..5` (cell, side, z, seed; z < 0 = leer). Hologramme `neonrace_holo.png` 8x3 à 160,
-Verkehr `neonrace_traffic.png` 8x2 à 192. Ereignisse `EVENTS` alle 30-60 s (`uEvent/uEventT/uEventLen`), Nitro bei lauter
-Musik (`uNitro`), `uSpeed/uDist/uDriving`. `[scenes.neonrace] vanish = [x, y]`.
+Autopilot: nach `AUTO_START` 5 s fährt der Wagen von selbst (ENTER sofort, SPACE/BACKSPACE = anhalten, Wiederanfahrt nach
+Pause). Tempo `uSpeed` = Energie + Beat-Schub `uBoost` + Nitro. Spur `uLane` fließend -1..1, `_best_lane()` weicht Verkehr und
+Hindernissen aus (`_arm_reaction`: bei hohem Tempo gelegentlich zu spät = BEINAHE), Knüppel LINKS/RECHTS überstimmt 4 s
+(MANUELL), OBEN Hupe `uHonkT`, UNTEN Rückspiegel `uMirror`. `Mover` kinds 0 Holo / 1 Auto / 2 Flieger / 3 Hindernis / 4 Querung
+-> `uHolo0..9`, `uCar0..5`, `uFly0..5`, `uObs0..5` (+ `uObsTex` `neonrace_obstacles.png` 8x2 à 192: Reihe 0 steht auf der
+Straße, Reihe 1 quert; `OBS_NAMES`). Schilder: je Hologramm eigener Hue-Versatz, springt je Beat (`uBeatStep`), Drop alle;
+Lauflicht `uStep/uStepPhase/uPattern` durch die Fassaden. `EVENTS` alle 30-60 s. `[scenes.neonrace] vanish`, `auto_start`.
 Test: `python -m visualizers.engine neonrace --test-signal --demo`.
 
 ### Der Kern (`visualizers/scenes/core.py`, Taste 3)
-Wie Schwarzes Loch: `Throw` (cell 0-23 aus `core_objects.png` 6x4 à 192, side, swirl, seed, y0, reverse), `SLOTS` 3,
-`THROW_SECONDS` 40-60 -> `uThrow0..2` (Fortschritt, Zelle, Seite, Seed) / `uThrowPar0..2` (swirl, reverse, y0), Pixelauflösung
-+ Datenstrom im Shader. OBEN Schwarm `uSwarmT` (30 s), UNTEN Auswurf `uEjectT` (8 s, Burst bei 1.2), ENTER EMP `uEmpT`,
-SPACE/BACKSPACE Zoom. Beat-Ringe `uRing0..5` (Alter), `uSpinT`, `uHue` wechselt beim Drop. `[scenes.core] center`, `radius`.
+Wie Schwarzes Loch: `Throw` (cell 0-23 aus `core_objects.png` 6x4 à 192), `SLOTS` 3, `THROW_SECONDS` 40-60 -> `uThrow0..2` /
+`uThrowPar0..2`. Automatik: `AUTO_THROW` 8-20 s (Energie > 0.3), `AUTO_SWARM` 60-120 s (Energie > 0.5), `AUTO_EJECT` 120-240 s,
+EMP bei jedem Drop (Config `auto_throw`, `auto_swarm`, `auto_eject`). Beat = Ring `uRing0..5` durch die ganze Halle
+(Schränke leuchten, Boden unter `FLOOR_Y` hebt sich), Bass-Schlag > `SHOCK_BASS` = Druckwelle `uShock0..2`, Lauflicht
+`uStep/uStepPhase/uPattern` (Zonen links/rechts/oben/unten). Farbe `uHue` + `HUE_STEP` alle 8 Beats, Drop = Sprung + `uHallT`
+(Halle komplementär), `uHue2` Datenströme. `uVariant` = (Variante, vorige, Mix): 0 Plasma, 1 Datenwürfel, 2 Blitzkugel,
+Wechsel alle 30-60 s. OBEN `uSwarmT`, UNTEN `uEjectT`, ENTER `uEmpT`, SPACE/BACKSPACE Zoom. `[scenes.core] center`, `radius`.
 Test: `python -m visualizers.engine core --test-signal --demo`.
 
 ### Das Orakel (`visualizers/scenes/oracle.py`, Taste 4 / HAL)
-Maske `oracle_mask.png` 8x3 à 192 (Reihe 0 Ausdrücke 0-7, 1 Farben 8-15, 2 Glitch 16-23) über `uMaskA/uMaskB/uMaskMix`,
-`uAwake` folgt der Energie (Stille = schläft). Figuren `oracle_figures.png` 8x3 à 192 (Reihe 0 Samurai 0-7, 1 Katze 8-15,
-2 Glyphenpaneele 16-23). Acht Paneele = Spektrumbänder (`uBands0/1`, `uPeaks0/1`), Lauflicht `uStep/uStepPhase/uPattern`.
-ENTER `speak()` (`ORACLE_LINES` getippt, `uSpeakT`), LINKS Samurai / RECHTS Katze (`uCat` = x, cellA, cellB, dir) / OBEN beide
-(`uFig`, `uSam`), UNTEN `toggle_glitch` (`uGlitch`), SPACE/BACKSPACE Zoom, Drop `uBurstT` + neue Farbe. `[scenes.oracle]
-frame = [x, y, Breite]`, `panels = [x0, x7, y, Breite]`. Test: `python -m visualizers.engine oracle --test-signal --demo`.
+Köpfe `oracle_heads.png` 8x3 à 192 (24 verschiedene, `HEAD_NAMES`) im Rahmen `frame` über `uHeadA/uHeadB/uHeadMix/uHeadGlitch`
+(Glitch-Übergang prozedural), `uHue`, `uAwake` (Stille = Drahtgitter-Schemen). Wechsel von selbst: jeder 4. Beat, bei Energie
+> 0.45 jeder 2., Drop sofort; `random_head()` meidet die letzten `HEAD_MEMORY` 10. LINKS/RECHTS blättern, OBEN `fast()` (`uFast`,
+jeder Beat ein Kopf, 20 s), UNTEN `toggle_glitch` (`uGlitch`), ENTER `speak()` (`ORACLE_LINES`, `uSpeakT`), SPACE/BACKSPACE
+Zoom. Tafeln `panels`: `_pattern_mask()` mit 8 Mustern (`PATTERN_NAMES`), hart an/aus je Beat -> `uPanelOn0/1` (Nachglühen
+`AFTERGLOW`), Füllhöhe aus `uBands0/1`, Schrankzonen `uZoneOn`. Automatik alle `auto_event` 20-40 s: `burst()` (`uBurstT`),
+Salve (`salvo()`), Scanner `uScanT`, Glitch 4 s, Spruch. `oracle_mask.png` unbenutzt, `oracle_figures.png` nur Reihe 2 (Glyphen).
+Test: `python -m visualizers.engine oracle --test-signal --demo`.
 
 ### Pachinko (`visualizers/scenes/cyberslots.py`, Taste 5 / Slots)
 Erbt `slots.Controller` wie der Pilzautomat. Thema `CYBER` (Symbole `cyberslots_symbols.png` 3x3 à 384x256, letztes =
@@ -194,20 +201,30 @@ uStakeT, uSam, uStep, uStepPhase, uStopT`, `uObjTex` = `core_objects.png` (Drohn
 Test: `python -m visualizers.engine cyberslots --test-signal`.
 
 ### Dachterrasse (`visualizers/scenes/rooftop.py`, Taste 6 / Lagerfeuer)
-`WEATHER` REGEN/NEBEL/SÄUREREGEN/ASCHE als `uWeather` 0..4 fließend (LINKS/RECHTS Ziel, sonst `cycle_minutes`), Partikel
-`rooftop_particles.png` 8x3 à 160 (Reihe 0 Tropfen/Funken, 1 Blüten/Konfetti, 2 Schnee/Asche). Beat-Wellen durch die
-Türme `uPulseA/B`, Suchscheinwerfer `uSearchT`, Verkehr `uTrafficT`. OBEN Feuerwerk (8 s), UNTEN Blackout (14 s, Blöcke
-kommen mit Beats zurück `uBlackBeats`), ENTER Blitz, SPACE/BACKSPACE Blick nach unten `uLook`. WLED je Wetter
-`rooftop_rain|fog|acid|ash` + `rooftop_fireworks|blackout|lightning`. `[scenes.rooftop] skyline`, `cycle_minutes`.
+Lichtzustände `LIGHT_NAMES`: 0 Grundbild `uSceneTex` (per `uBaseFit`/`BASE_FIT` auf die Lichtbilder gelegt), 1-6
+`rooftop_light_1..6.png` als `uLight0..5Tex` (BLACKOUT, ROTER ALARM, SÄURE, ÜBERLAST, NUR WERBUNG, BLITZSCHLAG). Shader liest
+je Pixel höchstens drei Bilder (`state(idx, uv)`). `WEATHER` REGEN/NEBEL/SÄUREREGEN/ASCHE (`uWeather`, LINKS/RECHTS,
+`cycle_minutes`) mit Heimzuständen `WEATHER_HOME = [5, 1, 3, 2]` / `WEATHER_HOME_MIX` (`uLightA`, `uGroundMix`). Beat-Schnitte:
+`uLightB`, `uLightMix` 0/1 (60 ms Rampe), `uCutT`; Energie > 0.45 jeder Beat, mittel 55 % für 1-3 Beats, ruhig jeder 2.,
+Stille keiner. UNTEN Stromausfall `uBlackT`/`uBlackBeats` (Basis 1, Blöcke 9x5 aus Zuständen 2-6, Knall = 4), ENTER EMP
+`uEmpT/uEmpBeats/uEmpSeed` (Ring, Basis 1, Blöcke 12x7, auch von selbst `emp_auto` 90-180 s bei `emp_min_energy`), Drop = Blitz
+`uLightT/uLightX` + Feuerwerk `uFireT` + 2 Beats Zustand 6, OBEN Feuerwerk, SPACE/BACKSPACE `uLook`. Partikel
+`rooftop_particles.png` 8x3 à 160. WLED `rooftop`, je Wetter `rooftop_rain|fog|acid|ash`, `rooftop_fireworks|blackout|lightning`.
+`[scenes.rooftop] skyline`, `cycle_minutes`, `base_fit`, `home_mix`, `emp_auto`, `emp_min_energy`.
 Test: `python -m visualizers.engine rooftop --test-signal --demo`.
 
 ### Black Ice (`visualizers/scenes/blackice.py`, Taste 7 / Systemfehler)
-Abgeleitet von der Überdosis (gleiche Uniform-Namen): Phasen EINBRUCH/TRACE/BLACK ICE/FLATLINE (`PHASE_LEN`), Daemonen
-`blackice_daemons.png` 4x3 à 256 (`uCreN/uCrePN`), `uGodTex` = `oracle_mask.png` (Glitch-Reihe 16-23), `uFaceTex` =
-Fahndungsplakat (Barcode/Fadenkreuz im Shader), `uFigTex` = `oracle_figures.png` Katze (`CAT_CELLS` 8-11 über `uOwl`).
-LINKS/RECHTS `ANTIDOTES` (`uRelief`, Rückfall 4 s), OBEN Reboot `uVomitT` (Bild rollt, Bootzeilen), UNTEN Stecker ziehen
-`uEyes`, ENTER Fixer-Katze `uHelpT`, SPACE/BACKSPACE Jack out `uShock`. Overlay Puls/Trace, Flatline-EKG, `WHISPERS`.
-Test: `python -m visualizers.engine blackice --test-signal --demo`.
+Phasen EINBRUCH/TRACE/BLACK ICE/FLATLINE (`PHASE_LEN` x `PHASE_STRETCH` 0.7-1.5). Bildschirme: `_find_screens()` erkennt beim
+Start die schwarzen Monitore in `blackice_scene.png` (luma < `screen_black`, Erosion, Komponenten >= `screen_min_area`,
+Rechteckfüllung >= 80 %) -> `uScr0..11` (x0, y0, x1, y1), `uNScr`, Maske als Alpha im Szenenbild. Inhalte `uScrC0..11` = (Typ,
+Variante, Startzeit, Seed): 0 Atlaskachel `blackice_screens.png` 8x4 à 384x216 (`uScreenTex`, Zelle = Spalte + 8*Reihe, je Kachel
+eigene Animation), 1 Auge prozedural (`uEyeLook`, `uEyeBlink`), 2 Countdown, 3 Warnung, 4 Rauschen/Testbild, 5 Fadenkreuz,
+6 Barcode, 7 Fahndungsfoto (`uFaceTex`), 8 EKG, 9 aus, 10 Daemon (`blackice_daemons.png`), 11 Glitch-Maske (`uGodTex`), 12
+Fixer-Katze (`uFigTex`/`uOwl`), 13 Bootzeilen, 14 Standby, 15 Atlas-Auge (Reihe 0, blinzelt 0->3->4->3->0, Blick 1/2, Horror
+5/6/7). Je Beat wechseln 1-3 Schirme (Drop alle, 80 ms Schwarz), Gewichte je Phase, Stille = Standby. `EVENTS` alle 15-30 s
+(`uEvent`: Augen-Salve, Countdown überall, Rauschsturm, Reboot). LINKS/RECHTS `ANTIDOTES` (`uRelief`/`uReliefT`), OBEN Reboot
+`uVomitT`, UNTEN Stecker ziehen `uEyes`/`uEyesT`, ENTER `uHelpT`, SPACE/BACKSPACE `uShock`. Keine Wesen im Raum mehr.
+`KITT_BLACKICE_PHASE=0..3` = Startphase. Test: `python -m visualizers.engine blackice --test-signal --demo`.
 
 ## Thema ZURÜCK IN DIE ZUKUNFT (`future`, ersetzt Tasten 2-7)
 `themes.toml` `modes = { viz_psychedelic = "timejump", blackhole = "flux", hal = "clocktower", slots = "almanacslots",

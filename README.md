@@ -692,40 +692,44 @@ error = "blackice" }`), spricht mit eigener Stimme (`de_DE-kerstin-low`, leicht 
 daraus die Szenenbilder und Atlanten unter `assets/cyber/` (nach neuen Rohbildern erneut ausführen).
 
 **Neonfahrt (Taste 2 im Thema CYBERPUNK, `neonrace`):** Das Gegenstück zum Navigationscomputer. Blick durch die
-Windschutzscheibe auf eine regennasse Neonstraße (`assets/cyber/neonrace_scene.png`). Startknopf = losfahren (Tacho
-steigt, die Straße zieht zum Fluchtpunkt, Lichter strömen), Kippschalter = anhalten (egal welche Richtung). Knüppel
-links/rechts = Spurwechsel (Bild kippt kurz), oben = Hupe (Lichtwelle, Verkehr weicht), unten = Rückspiegel
-(Einblendung oben rechts mit Verfolgern). Hologramm-Werbung (`neonrace_holo.png`, 8x3) schwebt an den Fassaden,
-Verkehr und Flieger (`neonrace_traffic.png`, 8x2) ziehen vorbei. Musik: Bass ist Tempo und Motorbrummen (Bild bebt),
-Beats sind Lichtstöße der Hologramme und Straßenlaternen, Höhen Regen und Wischer, laute Musik zündet Nitro
-(Lichttunnel, Farben kippen, Ränder ziehen). Alle 30 bis 60 Sekunden ein Ereignis: Polizeidrohnen (rot-blau im
-Rückspiegel, Board stroboskopt), Werbeblimp, Regensturm (Wischer auf Anschlag), Tunnel (Lichtstreifen), Konzernturm,
-Straßenmarkt (dichter Verkehr), Kirschblütenallee. Board `neonrace`, `neonrace_start`, `neonrace_nitro`,
-`neonrace_honk`, `neonrace_police`. `config/visualizer.toml` `[scenes.neonrace]` `vanish` (Fluchtpunkt). Controller
-`visualizers/scenes/neonrace.py`, Shader `visualizers/shaders/neonrace/frag.glsl`.
-Test: `python -m visualizers.engine neonrace --test-signal --demo`.
+Windschutzscheibe auf eine regennasse Neonstraße (`assets/cyber/neonrace_scene.png`). Der Wagen fährt nach fünf
+Sekunden von selbst los (AUTOPILOT), Startknopf startet sofort, Kippschalter hält an. Das Tempo folgt der Energie der
+Musik, Beats geben einen Schub, Drops zünden Nitro. Der Autopilot wählt die Spur fließend und weicht Verkehr und
+Hindernissen aus (`neonrace_obstacles.png`, 8x2: Barriere, Kiste, Hütchen, Fass, Pannenwagen, dazu querende Fußgänger,
+Katzen, Händlerkarren, Roller), knapp vorbeiziehende Objekte rucken, bei hohem Tempo reagiert er gelegentlich zu spät
+(BEINAHE). Knüppel links/rechts überstimmt ihn vier Sekunden, oben = Lichthupe, unten = Rückspiegel. Hologramme und
+Neonschilder wechseln ihre Farbe auf jeden Beat, beim Drop alle zusammen, Lauflicht durch die Fassaden, Höhen lassen
+die Hologramme flackern. Alle 30 bis 60 Sekunden ein Ereignis (Polizeidrohnen, Werbeblimp, Regensturm, Tunnel,
+Konzernturm, Straßenmarkt, Kirschblütenallee). Board `neonrace`, `neonrace_start`, `neonrace_nitro`, `neonrace_honk`,
+`neonrace_police`. `config/visualizer.toml` `[scenes.neonrace]` `vanish`. Controller `visualizers/scenes/neonrace.py`,
+Shader `visualizers/shaders/neonrace/frag.glsl`. Test: `python -m visualizers.engine neonrace --test-signal --demo`.
 
 **Der Kern (Taste 3 im Thema CYBERPUNK, `core`):** Das Gegenstück zum Schwarzen Loch. Ein KI-Kern in der Serverhalle
-(`assets/cyber/core_scene.png`) saugt Daten ein: Knüppel links/rechts wirft ein Objekt aus `core_objects.png` (6x4:
-Drohnen, Chips, Decks, Katzen, Köpfe, Koffer) von dieser Seite hinein, es spiralt 40 bis 60 Sekunden lang, löst sich in
-Pixel auf und wird zum Datenstrom. Oben = Drohnenschwarm (Perlenkette, 30 s), unten = Auswurf (der Kern spuckt alles
-rückwärts aus, Blitz und Druckwelle, 8 s), Startknopf = EMP (Bild bricht kurz zusammen, Ringe laufen nach außen),
-Kippschalter AN = Nahaufnahme, AUS = zurück. Musik: Bass lässt den Kern pulsieren und die Halle beben, Beats
-schicken Ringe über die Serverschränke und drehen die Spirale, Höhen sind Datenregen, Drop = Weißblitz und Farbwechsel
-des Kerns. Board `core`, `core_throw`, `core_eject`, `core_emp`. `[scenes.core]` `center`, `radius`. Controller
-`visualizers/scenes/core.py`, Shader `visualizers/shaders/core/frag.glsl`.
-Test: `python -m visualizers.engine core --test-signal --demo`.
+(`assets/cyber/core_scene.png`) saugt Daten ein. Jeder Beat schickt eine Welle durch die Halle (Serverschränke leuchten
+auf, das Bodengitter hebt sich), harte Bassschläge werden zur Druckwelle, Lauflicht über die Schrankreihen. Objekte aus
+`core_objects.png` (6x4: Drohnen, Chips, Decks, Katzen, Köpfe, Koffer) fliegen von selbst hinein (bei lauter Musik
+öfter) oder per Knüppel links/rechts, spiralen 40 bis 60 Sekunden, lösen sich in Pixel auf und werden zum Datenstrom.
+Oben = Drohnenschwarm (kommt auch von selbst), unten = Auswurf, Startknopf = EMP (bei jedem Drop auch von selbst),
+Kippschalter AN = Nahaufnahme, AUS = zurück. Die Kernfarbe wandert alle acht Beats und springt beim Drop mit
+komplementärer Halle, drei Darstellungen (Plasma, Datenwürfel, Blitzkugel) wechseln alle 30 bis 60 Sekunden. Stille =
+der Kern atmet, die Halle wird dunkel. Board `core`, `core_throw`, `core_eject`, `core_emp`. `[scenes.core]` `center`,
+`radius`, `auto_throw`, `auto_swarm`, `auto_eject`. Controller `visualizers/scenes/core.py`, Shader
+`visualizers/shaders/core/frag.glsl`. Test: `python -m visualizers.engine core --test-signal --demo`.
 
-**Das Orakel (Taste 4 im Thema CYBERPUNK, `oracle`):** Das Gegenstück zu HAL 3000. Eine Maske im Schrein
-(`assets/cyber/oracle_scene.png`), ihr Gesicht kommt aus `oracle_mask.png` (8x3: Reihe 0 Ausdrücke, 1 Farben, 2
-Glitch) und wacht mit der Musik auf (Stille = schläft, Augen zu). Acht Glyphenpaneele neben der Maske sind die acht
-Spektrumbänder (`oracle_figures.png`, Reihe 2), Lauflicht über die Leuchtzonen des Fotos auf jeden Beat, Datenregen
-in den Höhen. Startknopf = das Orakel spricht (ein Satz wird getippt, Maske leuchtet, Board pulst). Knüppel links =
-Samurai tanzt auf den Beat (Reihe 0), rechts = Katze streunt durchs Bild (Reihe 1), oben = beide, unten =
-Glitch-Modus (Maske zerfällt in Streifen). Kippschalter AN = Nahaufnahme, AUS = zurück. Drop = Lichtstoß und neue
-Maskenfarbe. Board `oracle`, `oracle_samurai`, `oracle_cat`, `oracle_both`, `oracle_speak`. `[scenes.oracle]`
-`frame` (Maske x, y, Breite), `panels` (x0, x7, y, Breite). Controller `visualizers/scenes/oracle.py`, Shader
-`visualizers/shaders/oracle/frag.glsl`. Test: `python -m visualizers.engine oracle --test-signal --demo`.
+**Das Orakel (Taste 4 im Thema CYBERPUNK, `oracle`):** Das Gegenstück zu HAL 3000. Im Projektionsrahmen des Schreins
+(`assets/cyber/oracle_scene.png`) schwebt ein Hologramm-Kopf aus `oracle_heads.png` (8x3: Geisha, Oni, Android,
+Neonschädel, Cyberkatze, Kitsune, Buddha, VR-Helm, Drahtgitter, Gasmaske, Samurai, Qualle, Pixelgesicht, Oktopus,
+Löwe, Porzellanmaske und mehr). Der Kopf wechselt von selbst: jeder vierte Beat, bei lauter Musik jeder zweite, beim
+Drop sofort mit Glitch-Übergang (Streifen reißen, Blöcke springen, Farbkanäle trennen sich). Bass = der Kopf atmet,
+Mitten = er dreht sich leicht, Höhen = Funkenregen, Stille = nur ein Drahtgitter-Schemen. Die acht Neontafeln gehen auf
+jeden Beat hart an und aus nach wechselnden Mustern (Lauflicht, außen nach innen, gerade/ungerade, Paare, alle an),
+die Füllhöhe ist das Spektrumband, die Schranklichter blinken mit. Knüppel links/rechts = voriger/nächster Kopf, oben =
+Automatik schnell (jeder Beat ein Kopf, 20 s), unten = Glitch-Modus, Startknopf = das Orakel spricht, Kippschalter AN =
+Nahaufnahme, AUS = zurück. Alle 20 bis 40 Sekunden von selbst ein Ereignis: Datenexplosion, Kopf-Salve, Scanner-Welle
+durch die Halle, kurzer Glitch oder ein Spruch. Board `oracle`, `oracle_speak`, `oracle_both` (Drop), `oracle_samurai`/
+`oracle_cat` beim Kopfwechsel. `[scenes.oracle]` `frame`, `panels`, `auto_event`. Controller
+`visualizers/scenes/oracle.py`, Shader `visualizers/shaders/oracle/frag.glsl`.
+Test: `python -m visualizers.engine oracle --test-signal --demo`.
 
 **Pachinko (Taste 5 im Thema CYBERPUNK, `cyberslots`):** Das Gegenstück zur Slotmaschine, gleiche Spiellogik
 (`visualizers/scenes/slots.py`), eigener Automat (`assets/cyber/cyberslots_scene.png`) und eigene Symbole
@@ -738,29 +742,38 @@ KI-Kern erwacht, Drohne und Koffer fliegen ein. Board `cyberslots`, `cyberslots_
 `visualizers/shaders/cyberslots/frag.glsl`. Test: `python -m visualizers.engine cyberslots --test-signal`.
 
 **Dachterrasse (Taste 6 im Thema CYBERPUNK, `rooftop`):** Das Gegenstück zum Lagerfeuer. Blick von einem Dach über
-die Skyline (`assets/cyber/rooftop_scene.png`), vier Wetter, die von selbst wechseln (`cycle_minutes`) oder mit
-dem Knüppel links/rechts: Regen, Nebel, Säureregen (grünlich, zischt), Asche. Partikel aus `rooftop_particles.png`
-(8x3: Tropfen und Funken, Blüten und Konfetti, Schnee und Asche). Musik: Bass lässt Wellen durch die Türme laufen
-(Fenster leuchten auf), Beats schalten die Suchscheinwerfer, Mitten sind der Verkehr unten, Höhen Regen und Funken,
-Drop = Blitz über der Stadt. Oben = Feuerwerk (8 s), unten = Stromausfall (die Stadt geht blockweise aus und kommt
-mit den Beats zurück, 14 s), Startknopf = Blitz, Kippschalter AN = Blick nach unten in die Straßenschlucht, AUS =
-zurück. Board `rooftop` und je Wetter `rooftop_rain|fog|acid|ash`, Ereignisse `rooftop_fireworks`,
-`rooftop_blackout`, `rooftop_lightning`. `[scenes.rooftop]` `skyline`, `cycle_minutes`. Controller
-`visualizers/scenes/rooftop.py`, Shader `visualizers/shaders/rooftop/frag.glsl`.
+die Skyline (`assets/cyber/rooftop_scene.png`) und sechs Lichtzustände derselben Stadt (`rooftop_light_1..6.png`:
+Blackout, roter Alarm, Säuregrün, Überlast, nur Werbung, Blitzschlag). Die Stadt spielt verrückt: auf Beats schneidet
+sie hart in einen anderen Zustand und zurück, bei lauter Musik auf jedem Beat ein neuer, bei Stille nur das Grundbild
+mit flackernden Werbeflächen. Vier Wetter (Regen, Nebel, Säureregen, Asche; Knüppel links/rechts, sonst
+`cycle_minutes`) haben je einen Heimzustand. Unten = Stromausfall (14 s): die Stadt geht aus, Beats holen Blöcke
+zurück, jeder Block mit einem anderen Lichtzustand, am Ende ein Überlast-Knall. Startknopf = EMP (10 s): Ring vom
+Stadtzentrum nach außen, dahinter alles aus, Blöcke flackern und kommen mit den Beats zurück; kommt auch von selbst
+alle 90 bis 180 Sekunden. Oben = Feuerwerk, Kippschalter AN = Blick nach unten, AUS = zurück. Drop = Blitz in den
+höchsten Turm plus Feuerwerk. Bass = Werbeflächen, Mitten = Verkehr und Suchscheinwerfer, Höhen = Regen und Funken
+(`rooftop_particles.png`). Board `rooftop`, je Wetter `rooftop_rain|fog|acid|ash`, `rooftop_fireworks`,
+`rooftop_blackout`, `rooftop_lightning`. `[scenes.rooftop]` `skyline`, `cycle_minutes`, `base_fit`, `home_mix`,
+`emp_auto`, `emp_min_energy`. Controller `visualizers/scenes/rooftop.py`, Shader `visualizers/shaders/rooftop/frag.glsl`.
 Test: `python -m visualizers.engine rooftop --test-signal --demo`.
 
-**Black Ice (Taste 7 im Thema CYBERPUNK, `blackice`):** Das Gegenstück zum Systemfehler, aufgebaut wie die Überdosis:
-ein Hack, der schiefgeht, in Wellen. Einbruch (10 s, "INTRUSION DETECTED", Puls und Trace-Anzeige steigen), Trace
-(30 s, Doppelbilder, Farben kippen ins Giftgrün und Magenta, Daemonen aus `assets/cyber/blackice_daemons.png` (4x3)
-lauern am Rand und springen auf Beats), Black Ice (20 s, die Glitch-Maske des Orakels lacht aus der Mitte,
-Negativ-Blitze und Bildsprünge auf den Beat, dein Fahndungsplakat mit Barcode und Fadenkreuz, Flüstertexte), Flatline
-(8 s, Schwarz mit EKG-Linie, dann "REBOOT. NOCH EINMAL."). Musik wie bei der Überdosis: Bass = Puls, Beats =
-Bildsprünge, Höhen = Rauschen, Drop = roter Blitz und alle Daemonen gleichzeitig. Knüppel links/rechts = Gegenmittel
-(Firewall, Proxy, Scrambler, Kill-Switch, Hard-Reset: kurz besser, dann Rückfall), oben = Reboot (Bild rollt, grüne
-Bootzeilen), unten = Stecker ziehen (Dunkel mit atmenden Farbflecken), Startknopf = Fixer-Katze holt dich für fünf
-Sekunden in ein klares Bild, Kippschalter AN = Jack out (klar und kalt), AUS = Rückfall. Board `blackice`,
-`blackice_horror`, `blackice_drop`, `blackice_blackout`, `blackice_help`. Controller `visualizers/scenes/blackice.py`,
-Shader `visualizers/shaders/blackice/frag.glsl`. Test: `python -m visualizers.engine blackice --test-signal --demo`.
+**Black Ice (Taste 7 im Thema CYBERPUNK, `blackice`):** Das Gegenstück zum Systemfehler: ein Hack, der schiefgeht, in
+Wellen (Einbruch, Trace, Black Ice, Flatline, Phasenlängen zufällig). Alles passiert auf den Bildschirmen der
+Hacker-Kammer (`assets/cyber/blackice_scene.png`): die schwarzen Monitore werden beim Start erkannt und zeigen
+wechselnde Inhalte aus `blackice_screens.png` (8x4: acht Zustände eines digitalen Auges, Schädel, Warndreieck, Radar,
+Fadenkreuz, Fingerabdruck, Schloss, Virus, Wellenform, Herzlinie, Weltkarte, Barcode, Countdown, Glyphenregen, Platine,
+Spirale, Rauschen, Testbild, DNA, Gehirnscan, Chromhand, rotes Auge), jede Kachel animiert (Glyphenregen läuft mit dem
+Bass, die Wellenform ist die echte Musik, Radar dreht, Fadenkreuz rastet auf den Beat ein), dazu prozedurale Augen,
+Countdown, Rauschen, dein Fahndungsplakat, EKG, Daemonen, die Glitch-Maske, Bootzeilen. Auf jedem Beat wechseln ein bis
+drei Schirme, beim Drop alle, in der Black-Ice-Phase schauen viele Augen zum Betrachter, Stille = Standby mit blinkendem
+Cursor. Alle 15 bis 30 Sekunden von selbst ein Ereignis (Augen-Salve, Countdown überall, Rauschsturm, kurzer Reboot).
+Raum: Doppelbild, Farbkippen, Bildsprung auf den Beat, rote Warnlampen pulsen zum Bass. Knüppel links/rechts =
+Gegenmaßnahme (alle Schirme kurz Schloss "OK", dann Rückfall), oben = Reboot (Bootzeilen auf allen Schirmen), unten =
+Stecker ziehen (Raum dunkel, Augen öffnen sich langsam im Dunkeln), Startknopf = Fixer-Katze auf allen Schirmen,
+Kippschalter AN = Jack out (klar), AUS = Rückfall. Flatline = Raum fast aus, EKG auf allen Schirmen wird flach. Board
+`blackice`, `blackice_horror`, `blackice_drop`, `blackice_blackout`, `blackice_help`. `[scenes.blackice]` optional
+`screen_min_area`, `screen_black`. Controller `visualizers/scenes/blackice.py`, Shader
+`visualizers/shaders/blackice/frag.glsl`. Test: `python -m visualizers.engine blackice --test-signal --demo`
+(`KITT_BLACKICE_PHASE=0..3` = Startphase).
 
 **Thema ZURÜCK IN DIE ZUKUNFT (`future`):** Das vierte Thema ersetzt die Tasten 2 bis 7 (`config/themes.toml`
 `modes = { viz_psychedelic = "timejump", blackhole = "flux", hal = "clocktower", slots = "almanacslots",
