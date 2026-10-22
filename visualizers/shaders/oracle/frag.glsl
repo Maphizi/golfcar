@@ -1,6 +1,9 @@
 #version 140
-// Das Orakel: Serverhallen-Foto (uSceneTex) mit schwebendem Hologramm-Kopf (uHeadTex 8x3 à 192: 24 Köpfe, Reihenzahl
-// aus uHeadSize) im Rahmen uFrame (x, y, Breite). Acht Neontafeln (uPanels: x0, x7, y, Breite) zeigen
+// Das Orakel: Serverhallen-Foto (uSceneTex) mit EINEM Hologramm-Kopf in 32 Gesten (uHeadTex 8x4 à 256x288, gleiche Lage in
+// jeder Zelle) im Rahmen uFrame (x, y, Breite); Geste uHeadA -> uHeadB mit uHeadMix. Maske uMaskTex (8x2 à 256) über dem
+// Gesicht (uMaskP = Index, Einblendung, Alter; uMaskFit = dx, dy, Größe in Kopf-Einheiten), Wackeln/Nicken uWobble (Maske, Beat-
+// Nicken, Puls). Übergeben: Schwall aus dem Mund uMouth (Kopf-Einheiten) solange uVomitT >= 0, Datenmüll-Teile uGarb0..15
+// (x, y in Kopf-Einheiten, Zelle aus uGarbTex 8x2 à 128, Drehung). Acht Neontafeln (uPanels: x0, x7, y, Breite) zeigen
 // die Glyphen (uFigTex Reihe 2) und gehen hart auf den Beat an/aus (uPanelOn0/1 mit Nachglühen); innerhalb einer an-Tafel
 // ist das Band (uBands/uPeaks) die Füllhöhe. Serverlichter blinken je Zone (uZoneOn). Bass = Kopf atmet, Mitten = Kopf
 // dreht (Parallaxe), Höhen = Funkenregen im Rahmen; Kopfwechsel uHeadA/uHeadB/uHeadMix mit prozeduralem Glitch
@@ -12,14 +15,17 @@ uniform float iTime;
 uniform vec2 iResolution;
 uniform float uRms, uBass, uMid, uHigh, uBeat, uSilent;
 uniform sampler2D uAudioTex;
-uniform sampler2D uSceneTex, uHeadTex, uFigTex;
-uniform vec2 uSceneSize, uHeadSize, uFigSize;
-uniform vec3 uFrame;
+uniform sampler2D uSceneTex, uHeadTex, uFigTex, uMaskTex, uGarbTex;
+uniform vec2 uSceneSize, uHeadSize, uFigSize, uMaskSize, uGarbSize, uMouth;
+uniform vec3 uFrame, uMaskFit, uWobble;
+uniform vec4 uMaskP, uGarb0, uGarb1, uGarb2, uGarb3, uGarb4, uGarb5, uGarb6, uGarb7, uGarb8, uGarb9, uGarb10, uGarb11, uGarb12, uGarb13, uGarb14, uGarb15;
+uniform float uVomitT, uNGarb;
 uniform vec4 uPanels, uBands0, uBands1, uPeaks0, uPeaks1, uPanelOn0, uPanelOn1, uZoneOn;
 uniform float uSeed, uBassS, uMidS, uHighS, uEnergy, uLive, uBeatPulse, uBeatStep, uStep, uStepPhase, uPattern, uFlash;
 uniform float uBurstT, uAwake, uHeadA, uHeadB, uHeadMix, uHeadGlitch, uHue, uSpeakT, uScanT, uFast, uGlitch, uZoom;
 const float PI = 3.14159265;
 const float CELL = 192.0;
+const vec2 HCELL = vec2(256.0, 288.0);   // Gesten-Zelle (Kopf)
 
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 float noise(vec2 p) {
@@ -38,13 +44,31 @@ vec4 bilin(sampler2D tex, vec2 px, vec2 size, vec2 lo, vec2 hi) {
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
 vec3 scene(vec2 uv) { return bilin(uSceneTex, clamp(uv, 0.0, 1.0) * uSceneSize, uSceneSize, vec2(0.0), uSceneSize - 1.0).rgb; }
-// Kopf-Zelle: d in -1..1 über die Zelle, Reihenzahl aus der Atlasgröße (Bild steht im Speicher auf dem Kopf)
+// Gesten-Zelle: d in -1..1 über die Zelle (256x288), 8x4 (Bild steht im Speicher auf dem Kopf)
 vec4 headCell(float idx, vec2 d) {
     if (abs(d.x) >= 1.0 || abs(d.y) >= 1.0) return vec4(0.0);
-    float rows = max(1.0, floor(uHeadSize.y / CELL + 0.5));
+    float rows = max(1.0, floor(uHeadSize.y / HCELL.y + 0.5));
     float ci = mod(idx, 8.0), ri = floor(idx / 8.0);
-    vec2 lo = vec2(ci * CELL, (rows - 1.0 - ri) * CELL);
-    return bilin(uHeadTex, lo + (d * 0.5 + 0.5) * CELL, uHeadSize, lo, lo + CELL - 1.0);
+    vec2 lo = vec2(ci * HCELL.x, (rows - 1.0 - ri) * HCELL.y);
+    return bilin(uHeadTex, lo + (d * 0.5 + 0.5) * HCELL, uHeadSize, lo, lo + HCELL - 1.0);
+}
+vec4 maskCell(float idx, vec2 d) {
+    if (abs(d.x) >= 1.0 || abs(d.y) >= 1.0) return vec4(0.0);
+    float ci = mod(idx, 8.0), ri = floor(idx / 8.0);
+    vec2 lo = vec2(ci * 256.0, (1.0 - ri) * 256.0);
+    return bilin(uMaskTex, lo + (d * 0.5 + 0.5) * 256.0, uMaskSize, lo, lo + 255.0);
+}
+vec4 garbCell(float idx, vec2 d) {
+    if (abs(d.x) >= 1.0 || abs(d.y) >= 1.0) return vec4(0.0);
+    float ci = mod(idx, 8.0), ri = floor(idx / 8.0);
+    vec2 lo = vec2(ci * 128.0, (1.0 - ri) * 128.0);
+    return bilin(uGarbTex, lo + (d * 0.5 + 0.5) * 128.0, uGarbSize, lo, lo + 127.0);
+}
+vec4 garbAt(int i) {
+    if (i == 0) return uGarb0; if (i == 1) return uGarb1; if (i == 2) return uGarb2; if (i == 3) return uGarb3;
+    if (i == 4) return uGarb4; if (i == 5) return uGarb5; if (i == 6) return uGarb6; if (i == 7) return uGarb7;
+    if (i == 8) return uGarb8; if (i == 9) return uGarb9; if (i == 10) return uGarb10; if (i == 11) return uGarb11;
+    if (i == 12) return uGarb12; if (i == 13) return uGarb13; if (i == 14) return uGarb14; return uGarb15;
 }
 vec4 figCell(float idx, vec2 d) {
     if (abs(d.x) >= 1.0 || abs(d.y) >= 1.0) return vec4(0.0);
@@ -123,12 +147,24 @@ void main() {
         col += vec3(1.0) * pkLine * 0.6 * live;
     }
     // ---- Kopf im Projektionsrahmen: Hologramm (Scanlinien, Flackern), atmet mit dem Bass, dreht mit den Mitten,
-    //      Wechsel mit prozeduralem Glitch, bei Stille nur Drahtgitter/Scanlinien-Schemen
+    //      Gestenwechsel mit kurzem Glitch, Maske beim Drop (wackelt im Takt), bei Stille Drahtgitter-Schemen
+    vec2 dHead;
+    float wHead;
     {
         float breathe = 1.0 + 0.05 * uBassS * live + 0.025 * uBeatPulse;
-        float w = uFrame.z * aspect * 0.5 * 1.15 * breathe;                            // Kopf füllt den Rahmen (Zelle hat schwarzen Rand)
-        vec2 d = (uv - (fr - vec2(0.0, 0.015))) * vec2(aspect, 1.0) / w;
+        float w = uFrame.z * aspect * 0.5 * 1.0 * breathe;                             // Kopf füllt den Rahmen
+        vec2 wh = vec2(w, w * HCELL.y / HCELL.x);
+        vec2 d = (uv - (fr - vec2(0.0, 0.035))) * vec2(aspect, 1.0) / wh;
         d.y += 0.02 * sin(t * 1.1) * uAwake;
+        // Beat-Nicken (uWobble.y) und Masken-Wackeln (uWobble.x): Versatz + Drehung, im Takt
+        d.y += 0.05 * uWobble.y * uAwake;
+        float wob = uWobble.x;
+        if (wob > 0.001) {
+            d += vec2(0.07 * sin(t * 31.0), 0.045 * cos(t * 23.0)) * wob;
+            d = rot(0.14 * wob * sin(t * 19.0)) * d;
+        }
+        dHead = d;
+        wHead = w;
         // Mitten: leichte Drehung = horizontale Stauchung + Parallaxe (Schichten verschieben sich gegen die Tiefe)
         float turn = sin(t * 0.9 + uSeed) * (0.15 + 0.5 * uMidS) * uAwake;
         d.x = d.x / (1.0 - 0.12 * abs(turn)) + turn * 0.08 * (d.y + 0.3);
@@ -159,6 +195,19 @@ void main() {
         hm.rgb *= 1.0 - dropRow * 0.9;                                                // ausgefallene Zeilen dunkel
         hm.rgb = mix(hm.rgb, mix(vec3(0.2, 0.9, 1.0), vec3(1.0, 0.2, 0.8), hash12(dg * 90.0 + t)) * (0.5 + 0.5 * hash12(dg * 70.0 - t)), nz * step(0.05, hm.a));
         hm.rgb += vec3(0.3, 1.0, 0.9) * dropRow * 0.15 * step(1.0 - 0.2 * g, hash12(vec2(floor(d.y * 60.0), 3.0)));
+        // Maske über dem Gesicht (eigene Zelle, zusätzliches Zittern beim Aufsetzen)
+        if (uMaskP.y > 0.01) {
+            float k = uMaskP.y;
+            vec2 md = (dg - uMaskFit.xy) / uMaskFit.z;
+            md += vec2(0.03 * sin(t * 47.0), 0.02 * cos(t * 37.0)) * (1.0 - k) * 2.0;
+            vec4 mk = maskCell(uMaskP.x, md);
+            float on = mk.a * smoothstep(0.0, 1.0, k);
+            float settle = exp(max(-uMaskP.z * 2.0, -60.0));                                 // beim Aufsetzen hell aufblitzen
+            mk.rgb *= 1.0 + 0.8 * settle + 0.25 * uBeatPulse;
+            hm.rgb = mix(hm.rgb, mk.rgb, on);
+            hm.a = max(hm.a, on);
+        }
+        hm.a *= smoothstep(-0.8, -0.42, dg.y + 0.03 * sin(dg.x * 40.0 + t * 6.0));          // Schultern lösen sich unten auf (Hologramm)
         vec4 m = hm;
         hm.rgb = hueShift(hm.rgb, uHue);
         float scan = 0.85 + 0.15 * sin(uv.y * 700.0 + t * 30.0);
@@ -195,6 +244,35 @@ void main() {
         float cone = smoothstep(0.0, 1.0, 1.0 - abs(d.x) / (0.3 + 1.2 * (1.0 - (d.y * 0.5 + 0.5)))) * smoothstep(1.2, -1.0, d.y) * step(-1.3, d.y);
         col += vec3(0.2, 0.6, 1.0) * cone * 0.05 * (0.5 + uBassS + 0.5 * uFast) * uAwake;
         col += vec3(0.3, 0.7, 1.0) * cone * 0.04 * uAwake * uBeatPulse * uFast;
+    }
+    // ---- Übergeben: Schwall aus dem Mund (Bogen nach vorn/unten, cyan/magenta, Pixelblöcke) und Datenmüll-Teile
+    if (uVomitT >= 0.0) {
+        float len = min(1.5, uVomitT * 1.6);
+        float fade = 1.0 - smoothstep(2.6, 3.2, uVomitT);
+        float best = 9.0, bs = 0.0;
+        for (int i = 0; i <= 24; i++) {
+            float ss = float(i) / 24.0 * len;
+            vec2 p = uMouth + vec2(0.22 * ss + 0.04 * sin(t * 9.0 + ss * 7.0), -0.3 * ss - 1.1 * ss * ss);
+            float dd = length((dHead - p) * vec2(1.0, 0.9));
+            if (dd < best) { best = dd; bs = ss; }
+        }
+        float thick = 0.05 + 0.06 * bs;
+        float jet = smoothstep(thick, thick * 0.3, best) * fade;
+        float blocks = step(0.45, hash12(floor((dHead + vec2(0.0, t * 2.5)) * 22.0)));
+        vec3 jc = mix(vec3(0.2, 1.0, 0.9), vec3(1.0, 0.3, 0.9), blocks);
+        col = mix(col, jc, jet * (0.6 + 0.4 * blocks));
+        col += jc * smoothstep(thick * 3.0, 0.0, best) * 0.25 * fade;
+    }
+    for (int i = 0; i < 16; i++) {
+        if (float(i) >= uNGarb) break;
+        vec4 g = garbAt(i);
+        if (g.y < -50.0) continue;
+        vec2 dd = rot(-g.w) * (dHead - g.xy) / 0.2;
+        vec4 gc = garbCell(g.z, dd);
+        if (gc.a > 0.01) {
+            col = mix(col, gc.rgb * (1.0 + 0.3 * uBeatPulse), gc.a * 0.95);
+            col += gc.rgb * gc.a * 0.3;
+        }
     }
     // ---- Scanner-Welle durch die Halle: helle Linie läuft von links nach rechts, hebt Kanten des Fotos hervor
     if (uScanT >= 0.0) {

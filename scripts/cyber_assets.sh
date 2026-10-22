@@ -10,6 +10,8 @@ OUT=assets/cyber
 T="$PY scripts/trip_assets.py"
 f() { [ -s "$RAW/$1.png" ] && echo "$RAW/$1.png" || { [ -s "$RAW/$1.webp" ] && echo "$RAW/$1.webp"; }; }
 plate() { s=$(f "$1"); [ -n "$s" ] && $T plate "$OUT/$2" "$s" 2>/dev/null | tail -1 || echo "  fehlt: $1"; }
+cut() { s=$(f "$1"); [ -n "$s" ] && $T cut "$OUT/$2" "$s" $3 $4 $5 $6 $7 $8 2>/dev/null | tail -1 || echo "  fehlt: $1"; }
+grid() { s=$(f "$1"); [ -n "$s" ] && $T grid "$OUT/$2" "$s" $3 $4 $5 $6 2>/dev/null | tail -1 || echo "  fehlt: $1"; }
 slice() { s=$(f "$1"); [ -n "$s" ] && $T slice "$OUT/$2" "$s" $3 $4 $5 2>/dev/null | tail -1 || echo "  fehlt: $1"; }
 echo "== Neonfahrt =="
 plate neonrace_scene neonrace_scene.png
@@ -38,9 +40,9 @@ slice blackice_daemons blackice_daemons.png 4 3 256
 echo "== Runde 2 =="
 slice neonrace_obstacles neonrace_obstacles.png 8 2 192
 slice oracle_heads oracle_heads.png 8 3 192
-slice oracle_main oracle_main.png 8 4 256
-slice oracle_masks oracle_masks.png 8 2 256
-slice oracle_garbage oracle_garbage.png 8 2 128
+cut oracle_main oracle_main.png 8 4 256 288 0 fill
+grid oracle_masks oracle_masks.png 8 2 256 12
+cut oracle_garbage oracle_garbage.png 8 2 128 128 1 glow
 for i in 1 2 3 4 5 6; do plate rooftop_light_$i rooftop_light_$i.png; done
 # Bildschirminhalte: Raster mit dünnen schwarzen Stegen (8x4) -> Kacheln erkennen, je 384x216
 s=$(f blackice_screens); [ -n "$s" ] && $PY - "$s" "$OUT/blackice_screens.png" <<'PYEOF' 2>/dev/null

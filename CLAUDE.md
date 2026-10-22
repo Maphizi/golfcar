@@ -221,13 +221,24 @@ Wechsel alle 30-60 s. OBEN `uSwarmT`, UNTEN `uEjectT`, ENTER `uEmpT`, SPACE/BACK
 Test: `python -m visualizers.engine core --test-signal --demo`.
 
 ### Das Orakel (`visualizers/scenes/oracle.py`, Taste 4 / HAL)
-Köpfe `oracle_heads.png` 8x3 à 192 (24 verschiedene, `HEAD_NAMES`) im Rahmen `frame` über `uHeadA/uHeadB/uHeadMix/uHeadGlitch`
-(Glitch-Übergang prozedural), `uHue`, `uAwake` (Stille = Drahtgitter-Schemen). Wechsel von selbst: jeder 4. Beat, bei Energie
-> 0.45 jeder 2., Drop sofort; `random_head()` meidet die letzten `HEAD_MEMORY` 10. LINKS/RECHTS blättern, OBEN `fast()` (`uFast`,
-jeder Beat ein Kopf, 20 s), UNTEN `toggle_glitch` (`uGlitch`), ENTER `speak()` (`ORACLE_LINES`, `uSpeakT`), SPACE/BACKSPACE
-Zoom. Tafeln `panels`: `_pattern_mask()` mit 8 Mustern (`PATTERN_NAMES`), hart an/aus je Beat -> `uPanelOn0/1` (Nachglühen
-`AFTERGLOW`), Füllhöhe aus `uBands0/1`, Schrankzonen `uZoneOn`. Automatik alle `auto_event` 20-40 s: `burst()` (`uBurstT`),
-Salve (`salvo()`), Scanner `uScanT`, Glitch 4 s, Spruch. `oracle_mask.png` unbenutzt, `oracle_figures.png` nur Reihe 2 (Glyphen).
+EIN Kopf mit 32 Gesten `oracle_main.png` 8x4 à 256x288 (`scripts/trip_assets.py cut ... 8 4 256 288 0 fill`: ganzer
+Zellenausschnitt, gefüllte Silhouette, gleiche Lage in jeder Zelle; `GESTURE_NAMES`) im Rahmen `frame` über
+`uHeadA/uHeadB/uHeadMix/uHeadGlitch` (Geste A -> B, kurze Überblendung `set_pose`), `uHue`, `uAwake` (Stille = Geste SCHLAF +
+Drahtgitter), Schultern lösen sich im Shader unten auf. Gestensätze: `G_LEFT/G_RIGHT/G_UP/G_DOWN` (Knüppel, `gesture_dir`,
+hält `MANUAL_HOLD` 2,2 s, nochmal = nächste), `IDLE_CALM/MID/WILD` nach Energie (Wechsel `_beat`: ruhig jeder 4., mittel
+jeder 2., wild jeder Beat), `SPEAK_CYCLE` (ENTER, 7 Hz), Blinzeln `next_blink` 3-6 s (SCHLAF/ZWINKERN 0,14 s). Beat-Nicken
+`uWobble.y`. Maske: `mask_on` beim Drop (und `_auto_event` "mask", wenn `MASK_AUTO_AFTER` 120 s kein Drop), `oracle_masks.png`
+8x2 à 256 (`grid ... 8 2 256 12`, `MASK_NAMES`), `uMaskP` = (Index, Einblendung `mask_k`, Alter), Lage `[scenes.oracle]
+mask_fit` = (dx, dy, Größe in Kopf-Einheiten), Wackeln `uWobble.x` (jeder Beat neu), Gesten `MASK_GESTURES`, ab nach
+`MASK_BEATS` 8-16 Beats (`mask_off_beat`). Übergeben `vomit()` (SPACE / Kippschalter AN, `_auto_event` "vomit" bei Energie >
+0.3 alle `AUTO_VOMIT_GAP` 90 s): `VOMIT_SEQ` Würgen 0,7 s -> Mund auf 0,5 -> Schwall 2,6 -> Wischen 1,3; Schwall `uVomitT`
+ab `uMouth` (`[scenes.oracle] mouth`, Kopf-Einheiten) als Bogen im Shader, Teilchen `Garbage` (bis `N_GARB` 16, Schwerkraft
+`GARB_GRAVITY`, weg unter `GARB_FLOOR`) -> `uGarb0..15` = (x, y, Zelle, Drehung) aus `oracle_garbage.png` 8x2 à 128 (`cut
+... 128 128 1 glow`). BACKSPACE = Zoom zurück (Maske zoomt leicht). Tafeln `panels`: `_pattern_mask()` mit 8 Mustern
+(`PATTERN_NAMES`), hart an/aus je Beat -> `uPanelOn0/1` (Nachglühen `AFTERGLOW`), Füllhöhe aus `uBands0/1`, Schrankzonen
+`uZoneOn`. Automatik alle `auto_event` 20-40 s: `burst()` (`uBurstT`), Gesten-Salve (`salvo()`), Scanner `uScanT`, Glitch
+4 s (`G`-Taste schaltet den Glitch-Modus), Spruch, Übergeben, Maske. WLED `oracle_mask`, `oracle_vomit`. `oracle_heads.png`
+(alte 24 Köpfe) und `oracle_mask.png` unbenutzt, `oracle_figures.png` nur Reihe 2 (Glyphen).
 Test: `python -m visualizers.engine oracle --test-signal --demo`.
 
 ### Pachinko (`visualizers/scenes/cyberslots.py`, Taste 5 / Slots)

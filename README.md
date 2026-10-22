@@ -713,17 +713,24 @@ der Kern atmet, die Halle wird dunkel. Board `core`, `core_throw`, `core_eject`,
 `visualizers/shaders/core/frag.glsl`. Test: `python -m visualizers.engine core --test-signal --demo`.
 
 **Das Orakel (Taste 4 im Thema CYBERPUNK, `oracle`):** Das Gegenstück zu HAL 3000. Im Projektionsrahmen des Schreins
-(`assets/cyber/oracle_scene.png`) schwebt ein Hologramm-Kopf aus `oracle_heads.png` (8x3: Geisha, Oni, Android,
-Neonschädel, Cyberkatze, Kitsune, Buddha, VR-Helm, Drahtgitter, Gasmaske, Samurai, Qualle, Pixelgesicht, Oktopus,
-Löwe, Porzellanmaske und mehr). Der Kopf wechselt von selbst: jeder vierte Beat, bei lauter Musik jeder zweite, beim
-Drop sofort mit Glitch-Übergang (Streifen reißen, Blöcke springen, Farbkanäle trennen sich). Bass = der Kopf atmet,
-Mitten = er dreht sich leicht, Höhen = Funkenregen, Stille = nur ein Drahtgitter-Schemen. Die acht Neontafeln gehen auf
-jeden Beat hart an und aus nach wechselnden Mustern (Lauflicht, außen nach innen, gerade/ungerade, Paare, alle an),
-die Füllhöhe ist das Spektrumband, die Schranklichter blinken mit. Knüppel links/rechts = voriger/nächster Kopf, oben =
-Automatik schnell (jeder Beat ein Kopf, 20 s), unten = Glitch-Modus, Startknopf = das Orakel spricht, Kippschalter AN =
-Nahaufnahme, AUS = zurück. Alle 20 bis 40 Sekunden von selbst ein Ereignis: Datenexplosion, Kopf-Salve, Scanner-Welle
-durch die Halle, kurzer Glitch oder ein Spruch. Board `oracle`, `oracle_speak`, `oracle_both` (Drop), `oracle_samurai`/
-`oracle_cat` beim Kopfwechsel. `[scenes.oracle]` `frame`, `panels`, `auto_event`. Controller
+(`assets/cyber/oracle_scene.png`) schwebt EIN Hologramm-Kopf, eine Android-Orakelfrau mit 32 Gesten
+(`oracle_main.png`, 8x4: Blick links/rechts/oben/unten, Kopfneigungen, Halbprofile, Kinn hoch, Lauern, Schlaf, Zwinkern,
+Braue, Schreck, Lächeln, Grinsen, Lachen, Zorn, Schrei, zwei Sprechmünder, Zunge, Backen, Schwindel, Glitch, Nicken,
+Würgen, Übergeben, Schwall, Wischen, Brüllen). Sie wechselt die Geste im Takt: ruhig jeder vierte Beat, mittel jeder
+zweite, wild jeder Beat, blinzelt alle paar Sekunden, nickt auf den Beat, atmet mit dem Bass, dreht sich leicht mit den
+Mitten, Höhen = Funkenregen, Stille = sie schläft als Drahtgitter-Schemen. Beim Drop setzt sie sich eine von 16 Masken auf
+(`oracle_masks.png`: Oni, Kitsune, Gasmaske, VR-Visier, Porzellan, Chromschädel, Mempo, Hockey, Pestdoktor, Neonkatze,
+Clown, Glitchmaske, Goldene Totenmaske, Geisha, Drahtgitter, Schweißer) und wackelt damit 8 bis 16 Beats heftig im Takt,
+mit wilden Gesten, dann nimmt sie sie ab. Die acht Neontafeln gehen auf jeden Beat hart an und aus nach wechselnden
+Mustern, die Füllhöhe ist das Spektrumband, die Schranklichter blinken mit. Knüppel links/rechts/oben/unten = sie
+schaut, dreht oder neigt sich dorthin (nochmal drücken = die nächste Geste der Richtung), Startknopf = das Orakel
+spricht (Sprechmünder, Spruch wird getippt), Kippschalter AN = sie übergibt sich: Würgen, Mund auf, ein Schwall aus
+Datenmüll (`oracle_garbage.png`: Pixelwürfel, kaputte Glyphen, Fehlerdreieck, Kabel, Chip, Diskette, Skull-Emojis,
+Icons, Zahnrad, Pixelauge, Pixelherz), der über die Tafeln fällt, dann wischt sie sich den Mund; Kippschalter AUS =
+Nahaufnahme zurück. Alle 20 bis 40 Sekunden von selbst ein Ereignis: Datenexplosion, Gesten-Salve, Scanner-Welle,
+kurzer Glitch, Spruch, selten Übergeben, und eine Maske auch ohne Drop, wenn lange keiner kam. Board `oracle`,
+`oracle_speak`, `oracle_both` (Explosion), `oracle_mask`, `oracle_vomit`. `[scenes.oracle]` `frame`, `panels`,
+`mask_fit` (Lage/Größe der Maske auf dem Gesicht), `mouth` (Mund für den Schwall), `auto_event`. Controller
 `visualizers/scenes/oracle.py`, Shader `visualizers/shaders/oracle/frag.glsl`.
 Test: `python -m visualizers.engine oracle --test-signal --demo`.
 

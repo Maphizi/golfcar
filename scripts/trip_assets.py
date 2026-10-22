@@ -154,6 +154,58 @@ def slice_sheet(out_path: str, path: str, cols: int, rows: int, cell: int, pad: 
     print(f"Schnitt {out_path}: {cols}x{rows} Zellen à {cell} px")
 
 
+def fill_alpha(rgb: np.ndarray, thr: int = 3, close: int = 6) -> np.ndarray:
+    """Alpha als gefüllte Silhouette auf reinem Schwarz: alles > thr ist Objekt, Lücken (schwarzes Haar, dunkle Lippen)
+    werden geschlossen und gefüllt, damit dunkle Teile innerhalb der Figur nicht durchsichtig werden."""
+    lum = rgb.astype(int).max(axis=2)
+    m = lum > thr
+    m = ndimage.binary_closing(m, iterations=close)
+    m = ndimage.binary_fill_holes(m)
+    m = ndimage.binary_opening(m, iterations=1)
+    al = ndimage.gaussian_filter(m.astype(np.float32), 0.8)
+    return (np.clip(al, 0.0, 1.0) * 255).astype(np.uint8)
+
+
+def cut_sheet(out_path: str, path: str, cols: int, rows: int, cw: int, ch: int, trim: int = 0, mode: str = "fill",
+              pad: int = 4) -> None:
+    """Bogen in gleich große Zellen schneiden, Zielzelle cw x ch (auch rechteckig). trim=0: der ganze Zellenausschnitt
+    wird nur skaliert (gleiche Lage/Größe in allen Zellen, z. B. ein Kopf in vielen Gesten); trim=1: Inhalt freistellen
+    und zentriert einpassen (Masken, Teile). mode "fill" = gefüllte Silhouette (Köpfe, Masken), "glow" = Alpha aus der
+    Helligkeit (Neonteile mit Lücken)."""
+    surf = pygame.image.load(path).convert_alpha()
+    W, H = surf.get_size()
+    sw, sh = W / cols, H / rows
+    atlas = np.zeros((rows * ch, cols * cw, 4), dtype=np.uint8)
+    for r in range(rows):
+        for c in range(cols):
+            sub = surf.subsurface((int(c * sw), int(r * sh), int(sw), int(sh))).copy()
+            if mode == "fill":
+                rgb = pygame.surfarray.array3d(sub).transpose(1, 0, 2).copy()
+                alpha = fill_alpha(rgb)
+            else:
+                rgb, alpha = derive_alpha(sub, connected=False)
+            if trim:
+                ys, xs = np.where(alpha > 16)
+                if len(ys) == 0:
+                    continue
+                y0, y1, x0, x1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+                rgb, alpha = rgb[y0:y1, x0:x1], alpha[y0:y1, x0:x1]
+                sc = min((cw - pad) / rgb.shape[1], (ch - pad) / rgb.shape[0])
+            else:
+                sc = min(cw / rgb.shape[1], ch / rgb.shape[0])
+            img = np.dstack([rgb, alpha]).astype(np.uint8)
+            s2 = pygame.image.frombuffer(np.ascontiguousarray(img).tobytes(), (img.shape[1], img.shape[0]), "RGBA")
+            s2 = pygame.transform.smoothscale(s2, (max(1, int(img.shape[1] * sc)), max(1, int(img.shape[0] * sc))))
+            arr = pygame.surfarray.pixels3d(s2).transpose(1, 0, 2).copy()
+            al = pygame.surfarray.pixels_alpha(s2).transpose(1, 0).copy()
+            oy, ox = r * ch + (ch - arr.shape[0]) // 2, c * cw + (cw - arr.shape[1]) // 2
+            atlas[oy:oy + arr.shape[0], ox:ox + arr.shape[1], :3] = arr
+            atlas[oy:oy + arr.shape[0], ox:ox + arr.shape[1], 3] = al
+    out = pygame.image.frombuffer(atlas.tobytes(), (cols * cw, rows * ch), "RGBA")
+    pygame.image.save(out, out_path)
+    print(f"Zellen {out_path}: {cols}x{rows} à {cw}x{ch} px ({'freigestellt' if trim else 'ganzer Ausschnitt'})")
+
+
 def symbols(path: str, cols: int = 8, rows: int = 5, cell: int = 128, split: int = 5) -> None:
     rgb, alpha = derive_alpha(pygame.image.load(path).convert_alpha())
     lab, items = _components(alpha, split)
@@ -226,6 +278,9 @@ def main() -> int:
         symbols(sys.argv[2])
     elif cmd == "slice":        # slice AUSGABE.png BOGEN.png SPALTEN REIHEN ZELLE  (gleich große Zellen, unten bündig)
         slice_sheet(sys.argv[2], sys.argv[3], int(sys.argv[4]), int(sys.argv[5]), int(sys.argv[6]))
+    elif cmd == "cut":
+        cut_sheet(sys.argv[2], sys.argv[3], int(sys.argv[4]), int(sys.argv[5]), int(sys.argv[6]), int(sys.argv[7]),
+                  int(sys.argv[8]) if len(sys.argv) > 8 else 0, sys.argv[9] if len(sys.argv) > 9 else "fill")
     elif cmd == "grid":
         grid(sys.argv[2], sys.argv[3], int(sys.argv[4]), int(sys.argv[5]), int(sys.argv[6]), int(sys.argv[7]) if len(sys.argv) > 7 else 5)
     elif cmd == "texture":

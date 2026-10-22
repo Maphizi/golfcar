@@ -150,6 +150,8 @@ controller = "oracle"      # Das Orakel (Cyber-Taste 4)
 render_scale = 0.6
 frame = [0.505, 0.73, 0.27]              # Projektionsrahmen x, y, Breite
 panels = [0.264, 0.757, 0.385, 0.052]    # Neontafeln: x erste, x letzte, y, Breite
+mask_fit = [0.0, 0.08, 0.58]             # Maske über dem Gesicht: dx, dy, Größe (Kopf-Einheiten -1..1)
+mouth = [-0.05, -0.36]                   # Mund für den Datenmüll-Schwall (Kopf-Einheiten)
 
 [scenes.cyberslots]
 shader = "slots"

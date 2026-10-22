@@ -1,20 +1,22 @@
 """Das Orakel (Taste 4 im Thema CYBERPUNK, Gegenstück zu HAL 3000 / Auge des Waldes).
 
-Serverhalle (assets/cyber/oracle_scene.png) mit einem schwebenden Hologramm-Kopf im Projektionsrahmen
-(assets/cyber/oracle_heads.png, 8x3 à 192: 24 verschiedene Köpfe, HEAD_NAMES; der Glitch-Übergang ist rein prozedural).
+Serverhalle (assets/cyber/oracle_scene.png) mit EINEM Hologramm-Kopf im Projektionsrahmen, der 32 Gesten kann
+(assets/cyber/oracle_main.png, 8x4 à 256x288, immer dieselbe Figur, gleiche Lage in jeder Zelle; GESTURE_NAMES).
 Jedes Musikmerkmal hat sein Element:
-  Beat      die acht Neontafeln gehen hart an/aus nach Mustern (uPanelOn, uPattern), Serverlichter in Zonen blinken mit,
-            jeder 4. Beat ein neuer Kopf (bei hoher Energie jeder 2., Automatik schnell: jeder Beat)
+  Beat      Tafeln hart an/aus nach Mustern (uPanelOn, uPattern), Serverlichter in Zonen, der Kopf nickt (uWobble.yz)
+            und wechselt die Geste (ruhig jeder 4. Beat, mittel jeder 2., wild jeder Beat), Blinzeln alle 3-6 s
   Bass      Kopf atmet/pulst, Hologramm flackert, Serverlichter glühen
   Mitten    Kopf dreht sich leicht (Parallaxe), Datenregen im Hintergrund
   Höhen     Funkenregen im Rahmen, Funken an den Kabeln
   Spektrum  Bandenergie = Füllhöhe/Helligkeit innerhalb einer AN-Tafel (uBands/uPeaks)
-  Drop      Datenexplosion, neuer Kopf mit Glitch-Übergang, neues Tafelmuster, neuer Farbton
-  Stille    der Kopf erlischt zum Drahtgitter/Scanlinien-Schemen (uAwake)
-Von selbst alle 20-40 s ein Ereignis: Datenexplosion, Kopf-Salve (4 Köpfe in 2 s), Scanner-Welle durch die Halle,
-kurzer Glitch-Modus, Orakelspruch. Knüppel LINKS/RECHTS = voriger/nächster Kopf, OBEN = Automatik schnell (20 s),
-UNTEN = Glitch-Modus (Bild zerfällt in Blöcke, Farbkanäle laufen auseinander). Startknopf = das Orakel spricht
-(Spruch wird getippt, Kopf glitcht zum Text). Kippschalter = Nahaufnahme.
+  Drop      Datenexplosion, MASKE AUF (assets/cyber/oracle_masks.png 8x2 à 256, MASK_NAMES) für MASK_BEATS Beats, dabei
+            wackelt der Kopf heftig im Takt (uWobble.x), Gesten wild; neues Tafelmuster, neuer Farbton
+  Stille    der Kopf schläft (Geste SCHLAF) und erlischt zum Drahtgitter-Schemen (uAwake)
+Knüppel LINKS/RECHTS/OBEN/UNTEN = der Kopf schaut/dreht/neigt sich dorthin (je Richtung ein Satz Gesten, G_LEFT ...),
+Startknopf = das Orakel spricht (Sprechmünder, Spruch wird getippt), Kippschalter AN = ÜBERGEBEN: Würgen -> Mund auf ->
+Schwall aus Datenmüll (assets/cyber/oracle_garbage.png 8x2 à 128, Teilchen uGarb0..15 fallen über die Tafeln) -> Wischen;
+Kippschalter AUS = Nahaufnahme aus. Von selbst alle 20-40 s ein Ereignis: Datenexplosion, Gesten-Salve, Scanner-Welle,
+kurzer Glitch-Modus, Spruch, selten Übergeben; Maske auch ohne Drop, wenn lange keiner kam.
 """
 from __future__ import annotations
 
@@ -33,27 +35,49 @@ from launcher import wled
 
 log = logging.getLogger("oracle")
 ASSETS = Path(__file__).resolve().parents[2] / "assets" / "cyber"
-HEAD_CELL = 192
-HEADS = 24
-HEAD_NAMES = ["GEISHA", "ONI", "ANDROID", "NEONSCHÄDEL", "CYBERKATZE", "KITSUNE", "BUDDHA", "VR-HELM",
-              "DRAHTGITTER", "TATTOO", "HALBROBOTER", "GASMASKE", "SAMURAI", "QUALLE", "PIXEL", "MANNEQUIN",
-              "OKTOPUS", "PUPPE", "DATENBRILLE", "LÖWE", "KAPUZE", "GLASKOPF", "ROSENSCHÄDEL", "PORZELLAN"]
-HEAD_MEMORY = 10        # so viele zuletzt gezeigte Köpfe werden beim Würfeln gemieden
+HEAD_CW, HEAD_CH = 256, 288
+N_GESTURES = 32
+GESTURE_NAMES = ["NEUTRAL", "BLICK RECHTS", "BLICK LINKS", "BLICK OBEN", "BLICK UNTEN", "NEIGUNG RECHTS", "NEIGUNG LINKS",
+                 "PROFIL LINKS", "PROFIL RECHTS", "KINN HOCH", "LAUERN", "SCHLAF", "ZWINKERN", "BRAUE", "SCHRECK", "LÄCHELN",
+                 "GRINSEN", "LACHEN", "ZORN", "SCHREI", "SPRECHEN", "SPRECHEN O", "ZUNGE", "BACKEN",
+                 "SCHWINDEL", "GLITCH", "NICKEN", "WÜRGEN", "ÜBERGEBEN", "SCHWALL", "WISCHEN", "BRÜLLEN"]
+G_SLEEP, G_WINK, G_NEUTRAL = 11, 12, 0
+G_LEFT = (2, 7, 6)                      # Gesichter, die nach links im Bild zeigen
+G_RIGHT = (1, 8, 5)
+G_UP = (3, 9, 31, 17)
+G_DOWN = (4, 10, 26)
+IDLE_CALM = (0, 0, 11, 12, 15, 1, 2, 3, 4, 5, 6, 13)
+IDLE_MID = IDLE_CALM + (7, 8, 9, 10, 14, 16, 20, 21, 23)
+IDLE_WILD = IDLE_MID + (17, 18, 19, 22, 24, 31, 25)
+MASK_GESTURES = (24, 19, 25, 31, 18, 14, 17)
+SPEAK_CYCLE = (20, 21, 0, 20, 21, 15, 20, 21)
+VOMIT_SEQ = ((27, 0.7), (28, 0.5), (29, 2.6), (30, 1.3))     # Geste, Dauer: Würgen, Mund auf, Schwall, Wischen
+VOMIT_STREAM = (1.2, 3.8)               # Sekunden ab Start, in denen der Schwall fließt
+MANUAL_HOLD = 2.2                       # s, die eine Knüppel-Geste gehalten wird
+N_MASKS = 16
+MASK_NAMES = ["ONI", "KITSUNE", "GASMASKE", "VR-VISIER", "PORZELLAN", "CHROMSCHÄDEL", "MEMPO", "HOCKEY",
+              "PESTDOKTOR", "NEONKATZE", "CLOWN", "GLITCHMASKE", "GOLDENE TOTENMASKE", "GEISHA", "DRAHTGITTER", "SCHWEISSER"]
+MASK_BEATS = (8, 16)
+MASK_MEMORY = 6
+MASK_AUTO_AFTER = 120.0                 # s ohne Drop: Maske kommt auch von selbst (bei Energie > 0.4)
+N_GARB = 16
+GARB_GRAVITY = 3.2                      # in Kopf-Einheiten je s²
+GARB_FLOOR = -2.9                       # unterhalb (Kopf-Einheiten) verschwinden die Teile
 N_PATTERNS = 8          # Lauflicht l->r, r->l, außen->innen, gerade/ungerade, zufällig, alle an jeden 4., Spiegel, Paare
 PATTERN_NAMES = ["LAUFLICHT", "RÜCKLAUF", "AUSSEN-INNEN", "WECHSEL", "ZUFALL", "VOLLBILD", "SPIEGEL", "PAARE"]
 SPEAK_SECONDS = 6.0
-FAST_SECONDS = 20.0
 SALVO_SECONDS = 2.0
 SCAN_SECONDS = 2.4
 AUTO_GLITCH_SECONDS = 4.0
 AFTERGLOW = 0.1         # Nachglühen einer aus-Tafel (s)
 AUTO_EVENT = (20.0, 40.0)
+AUTO_VOMIT_GAP = 90.0   # Übergeben von selbst frühestens alle 90 s
 ORACLE_LINES = [
     "DEINE DATEN SIND SCHON VERKAUFT.", "DER REGEN HÖRT NIE AUF. DU GEWÖHNST DICH.", "ICH SEHE 4.096 VERSIONEN VON DIR.",
     "DAS TAXI FÄHRT. DAS TAXAMETER AUCH.", "FRAG NICHT NACH DEM PREIS. FRAG NACH DER WÄHRUNG.", "DU BIST OFFLINE. ICH NICHT.",
     "DIE STADT TRÄUMT IN NEON. DU BIST EIN PIXEL.", "DEIN HANDICAP IST DEM KONZERN BEKANNT.", "NOCH EIN UPDATE. DANN BIST DU FREI.",
     "DIE KATZE WEISS MEHR ALS DU.", "VERTRAU KEINEM HOLOGRAMM. AUCH MIR NICHT.", "LOCH 19 LIEGT IM SEKTOR 7.",
-    "ICH HABE ACHT GESICHTER. KEINES IST MEINS.", "DER SAMURAI WARTET SEIT 1999 AUF EIN UPDATE.",
+    "ICH HABE 32 GESICHTER. KEINES IST MEINS.", "DER SAMURAI WARTET SEIT 1999 AUF EIN UPDATE.", "MIR IST SCHLECHT. ZU VIELE PAKETE.",
 ]
 
 
@@ -88,16 +112,35 @@ def _pattern_mask(pattern: int, step: int, rnd: random.Random) -> list[bool]:
     return [i // 2 == pair for i in range(8)]
 
 
+class Garbage:
+    """Ein Datenmüll-Teil aus dem Mund: Lage/Geschwindigkeit in Kopf-Einheiten (d-Raum des Shaders, y nach oben)."""
+    __slots__ = ("x", "y", "vx", "vy", "cell", "rot", "spin", "age", "alive")
+
+    def __init__(self, rng: random.Random, mouth: tuple[float, float]):
+        self.x, self.y = mouth[0] + rng.uniform(-0.04, 0.04), mouth[1] + rng.uniform(-0.03, 0.03)
+        self.vx = rng.uniform(-0.9, 0.9) + rng.choice((-0.3, 0.3))
+        self.vy = rng.uniform(-1.4, -0.2)
+        self.cell = rng.randrange(16)
+        self.rot = rng.uniform(0.0, 6.28)
+        self.spin = rng.uniform(-6.0, 6.0)
+        self.age = 0.0
+        self.alive = True
+
+
 class Controller:
     def __init__(self, scene_cfg: dict, demo: bool = False):
         self.rng = random.Random()
         self.demo = demo
         self.blank = np.zeros((4, 4, 4), dtype=np.uint8)
         self.scene = _load_rgba(ASSETS / "oracle_scene.png")
-        self.heads = _load_rgba(ASSETS / "oracle_heads.png")
+        self.heads = _load_rgba(ASSETS / "oracle_main.png")
+        self.masks = _load_rgba(ASSETS / "oracle_masks.png")
+        self.garb_tex = _load_rgba(ASSETS / "oracle_garbage.png")
         self.figs = _load_rgba(ASSETS / "oracle_figures.png")
         self.frame = tuple(float(v) for v in scene_cfg.get("frame", [0.505, 0.73, 0.27]))      # x, y, Breite
         self.panels = tuple(float(v) for v in scene_cfg.get("panels", [0.264, 0.757, 0.385, 0.052]))   # x0, x7, y, Breite
+        self.mask_fit = tuple(float(v) for v in scene_cfg.get("mask_fit", [0.0, 0.08, 0.62]))  # dx, dy, Größe (Kopf-Einheiten)
+        self.mouth = tuple(float(v) for v in scene_cfg.get("mouth", [-0.05, -0.36]))           # Mund (Kopf-Einheiten)
         self.auto_event = tuple(float(v) for v in scene_cfg.get("auto_event", AUTO_EVENT))
         self.seed = self.rng.uniform(1.0, 100.0)
         now = time.monotonic()
@@ -124,30 +167,45 @@ class Controller:
         self.last_drop = -100.0
         self.flash = 0.0
         self.burst_t0 = -100.0
-        # Kopf
-        self.head = self.rng.randrange(HEADS)
-        self.head_prev = self.head
-        self.recent = [self.head]                      # zuletzt gezeigte Köpfe (nicht zu oft dieselben)
-        self.head_t0 = -10.0
-        self.head_len = 0.3                            # Dauer des Übergangs
-        self.head_glitch = 0.3                         # Stärke des Glitch-Übergangs 0..1
-        self.head_beats = 0                            # Beats seit dem letzten Wechsel
+        # Kopf / Gesten
+        self.pose = G_NEUTRAL
+        self.pose_prev = G_NEUTRAL
+        self.pose_t0 = -10.0
+        self.pose_len = 0.15                           # Dauer der Überblendung
+        self.pose_glitch = 0.1                         # Stärke des Glitch-Übergangs 0..1
+        self.pose_beats = 0                            # Beats seit dem letzten Wechsel
+        self.manual_until = -1.0                       # bis hierhin hält die Knüppel-Geste
+        self.manual_set: tuple[int, ...] = ()
+        self.manual_i = 0
+        self.next_blink = now + 3.0
+        self.blink_back_at = -1.0
+        self.blink_from = G_NEUTRAL
         self.hue = 0.0
         self.hue_target = 0.0
         self.awake = 0.0
+        self.bob = 0.0
         self.speak_t0 = -100.0
         self.line = ""
         self.line_t0 = -10.0
+        # Maske
+        self.mask = -1
+        self.mask_k = 0.0
+        self.mask_t0 = -100.0
+        self.mask_off_beat = -1
+        self.mask_recent: list[int] = []
+        self.wobble = 0.0
+        # Übergeben
+        self.vomit_t0 = -100.0
+        self.last_vomit = -100.0
+        self.garbage: list[Garbage] = []
+        self.garb_acc = 0.0
         # Automatik
-        self.fast_until = -1.0
         self.salvo_until = -1.0
         self.salvo_next = 0.0
         self.scan_t0 = -100.0
         self.auto_glitch_until = -1.0
         self.auto_next = now + self.rng.uniform(*self.auto_event)
         self.last_key = -100.0
-        self.last_head_led = -100.0
-        self.head_led_toggle = False
         # Glitch-Modus / Zoom
         self.glitch_mode = False
         self.glitch_k = 0.0
@@ -156,58 +214,61 @@ class Controller:
         self.led_back_at: float | None = None
         self.demo_next = now + 4.0
         self.demo_drop_next = now + 9.0
-        log.info("Das Orakel: Szene %s, Köpfe %s, Glyphen %s", "ok" if self.scene is not None else "fehlt",
-                 "ok" if self.heads is not None else "fehlt", "ok" if self.figs is not None else "fehlt")
+        log.info("Das Orakel: Szene %s, Gesten %s, Masken %s, Datenmüll %s, Glyphen %s",
+                 *("ok" if a is not None else "fehlt" for a in (self.scene, self.heads, self.masks, self.garb_tex, self.figs)))
 
-    # -- Aktionen ----------------------------------------------------------
-    def set_head(self, idx: int, glitch: float = 0.3, length: float = 0.3, manual: bool = False) -> None:
-        """Neuen Kopf einblenden; glitch = Stärke der Glitch-Zwischenphase (Drop = 1.0)."""
-        now = time.monotonic()
-        idx %= HEADS
-        if idx == self.head:
+    # -- Gesten ------------------------------------------------------------
+    def set_pose(self, idx: int, glitch: float = 0.1, length: float = 0.15) -> None:
+        """Neue Geste einblenden; glitch = Stärke der Glitch-Zwischenphase (Drop/Maske = 1.0)."""
+        idx %= N_GESTURES
+        if idx == self.pose:
             return
-        self.head_prev = self.head
-        self.head = idx
-        self.head_t0 = now
-        self.head_len = length
-        self.head_glitch = glitch
-        self.head_beats = 0
-        self.recent.append(idx)
-        del self.recent[:-HEAD_MEMORY]
-        if self.rng.random() < 0.35:
-            self.hue_target = self.rng.choice((0.0, 0.0, 0.6, -0.6, 1.2, 2.4))
-        if manual or now - self.last_head_led > 3.0:
-            self.last_head_led = now
-            self.head_led_toggle = not self.head_led_toggle
-            if self.led_back_at is None or now >= self.led_back_at:
-                self._led_event("oracle_samurai" if self.head_led_toggle else "oracle_cat", now + 1.0)
+        now = time.monotonic()
+        self.pose_prev = self.pose
+        self.pose = idx
+        self.pose_t0 = now
+        self.pose_len = length
+        self.pose_glitch = glitch
+        self.pose_beats = 0
 
-    def next_head(self, direction: int) -> None:
-        self.last_key = time.monotonic()
-        self.set_head(self.head + direction, glitch=0.5, length=0.25, manual=True)
-        log.info("Kopf von Hand: %s", HEAD_NAMES[self.head])
+    def _busy(self, now: float) -> bool:
+        """Übergeben oder Sprechen laufen: die Automatik lässt die Geste in Ruhe."""
+        return now - self.vomit_t0 < sum(d for _, d in VOMIT_SEQ) or now - self.speak_t0 < SPEAK_SECONDS
 
-    def random_head(self, glitch: float = 0.3, length: float = 0.3) -> None:
-        """Zufälliger Kopf, nie derselbe und keiner der zuletzt gezeigten (HEAD_MEMORY)."""
-        pool = [i for i in range(HEADS) if i != self.head and i not in self.recent]
-        self.set_head(self.rng.choice(pool or [i for i in range(HEADS) if i != self.head]), glitch, length)
-
-    def fast(self) -> None:
+    def gesture_dir(self, gset: tuple[int, ...], name: str) -> None:
+        """Knüppel: Geste aus dem Richtungssatz, bei wiederholtem Druck die nächste; hält MANUAL_HOLD Sekunden."""
         now = time.monotonic()
         self.last_key = now
-        if now < self.fast_until:
-            self.fast_until = -1.0
-            log.info("Automatik schnell aus")
+        if now - self.vomit_t0 < sum(d for _, d in VOMIT_SEQ):
             return
-        self.fast_until = now + FAST_SECONDS
-        self.random_head(0.5, 0.2)
-        log.info("Automatik schnell: jeder Beat ein Kopf (%.0f s)", FAST_SECONDS)
+        if self.manual_set == gset and now < self.manual_until:
+            self.manual_i = (self.manual_i + 1) % len(gset)
+        else:
+            self.manual_set = gset
+            self.manual_i = 0
+        self.manual_until = now + MANUAL_HOLD
+        self.set_pose(gset[self.manual_i], glitch=0.25, length=0.14)
+        self.bob = 1.0
+        log.info("Geste %s: %s", name, GESTURE_NAMES[self.pose])
+
+    def _idle_pool(self) -> tuple[int, ...]:
+        if self.mask >= 0:
+            return MASK_GESTURES
+        if self.energy > 0.45:
+            return IDLE_WILD
+        if self.energy > 0.2:
+            return IDLE_MID
+        return IDLE_CALM
+
+    def random_pose(self, glitch: float = 0.1, length: float = 0.15) -> None:
+        pool = [g for g in self._idle_pool() if g != self.pose]
+        self.set_pose(self.rng.choice(pool), glitch, length)
 
     def salvo(self) -> None:
         now = time.monotonic()
         self.salvo_until = now + SALVO_SECONDS
         self.salvo_next = now
-        log.info("Kopf-Salve")
+        log.info("Gesten-Salve")
 
     def scan(self) -> None:
         self.scan_t0 = time.monotonic()
@@ -221,20 +282,83 @@ class Controller:
         log.info("Datenexplosion")
 
     def toggle_glitch(self) -> None:
-        self.last_key = time.monotonic()
         self.glitch_mode = not self.glitch_mode
         self.auto_glitch_until = -1.0
         log.info("Glitch-Modus %s", "an" if self.glitch_mode else "aus")
 
     def speak(self) -> None:
         now = time.monotonic()
-        if now - self.speak_t0 < SPEAK_SECONDS:
+        if now - self.speak_t0 < SPEAK_SECONDS or now - self.vomit_t0 < sum(d for _, d in VOMIT_SEQ):
             return
         self.speak_t0 = now
         self.line = self.rng.choice(ORACLE_LINES)
         self.line_t0 = now + 0.4
         self._led_event("oracle_speak", now + SPEAK_SECONDS)
         log.info("Orakel: %s", self.line)
+
+    # -- Maske / Übergeben -------------------------------------------------
+    def mask_on(self, now: float, reason: str) -> None:
+        if self.masks is None:
+            return
+        pool = [i for i in range(N_MASKS) if i not in self.mask_recent]
+        self.mask = self.rng.choice(pool or list(range(N_MASKS)))
+        self.mask_recent.append(self.mask)
+        del self.mask_recent[:-MASK_MEMORY]
+        self.mask_t0 = now
+        self.mask_off_beat = self.beat_count + self.rng.randint(*MASK_BEATS)
+        self.wobble = 1.0
+        self.set_pose(self.rng.choice(MASK_GESTURES), glitch=1.0, length=0.5)
+        self._led_event("oracle_mask", now + 4.0)
+        log.info("Maske auf (%s): %s für %d Beats", reason, MASK_NAMES[self.mask], self.mask_off_beat - self.beat_count)
+
+    def mask_off(self) -> None:
+        if self.mask < 0:
+            return
+        log.info("Maske ab: %s", MASK_NAMES[self.mask])
+        self.mask = -1
+        self.mask_off_beat = -1
+        self.set_pose(self.rng.choice((0, 30, 24, 15)), glitch=0.6, length=0.3)
+
+    def vomit(self) -> None:
+        now = time.monotonic()
+        if now - self.vomit_t0 < sum(d for _, d in VOMIT_SEQ) + 1.0:
+            return
+        self.vomit_t0 = now
+        self.last_vomit = now
+        self.garbage = []
+        self.garb_acc = 0.0
+        if self.mask >= 0:
+            self.mask_off()
+        self.set_pose(VOMIT_SEQ[0][0], glitch=0.2, length=0.2)
+        self._led_event("oracle_vomit", now + sum(d for _, d in VOMIT_SEQ))
+        log.info("Übergeben: Datenmüll")
+
+    def _vomit_tick(self, now: float, dt: float) -> None:
+        k = now - self.vomit_t0
+        total = sum(d for _, d in VOMIT_SEQ)
+        if k < total:
+            acc = 0.0
+            for g, d in VOMIT_SEQ:
+                acc += d
+                if k < acc:
+                    if self.pose != g and now - self.pose_t0 > 0.1:
+                        self.set_pose(g, glitch=0.15, length=0.18)
+                    break
+            if VOMIT_STREAM[0] <= k < VOMIT_STREAM[1]:
+                self.garb_acc += dt * (10.0 + 10.0 * self.energy)
+                while self.garb_acc >= 1.0 and len(self.garbage) < N_GARB:
+                    self.garb_acc -= 1.0
+                    self.garbage.append(Garbage(self.rng, self.mouth))
+                self.garb_acc = min(self.garb_acc, 1.0)
+        for p in self.garbage:
+            p.age += dt
+            p.vy -= GARB_GRAVITY * dt
+            p.x += p.vx * dt
+            p.y += p.vy * dt
+            p.rot += p.spin * dt
+            if p.y < GARB_FLOOR:
+                p.alive = False
+        self.garbage = [p for p in self.garbage if p.alive]
 
     def _led_event(self, profile: str, back_at: float) -> None:
         wled.apply_mode_async(profile)
@@ -249,13 +373,15 @@ class Controller:
         self.flash = 1.0
         self.burst_t0 = now
         self._new_pattern()
-        self.random_head(1.0, 0.6)
         self.hue_target = self.rng.choice((0.6, -0.6, 1.2, -1.2, 2.4, 3.6))
-        self._led_event("oracle_both", now + 3.0)
-        log.info("Drop: Datenexplosion, Kopf %s, Muster %s", HEAD_NAMES[self.head], PATTERN_NAMES[self.pattern])
+        if now - self.vomit_t0 >= sum(d for _, d in VOMIT_SEQ):
+            self.mask_on(now, "Drop")
+        else:
+            self.set_pose(19, glitch=1.0, length=0.5)
+        log.info("Drop: Datenexplosion, Muster %s", PATTERN_NAMES[self.pattern])
 
     def _beat(self, now: float) -> None:
-        """Ein Beat: Tafelmuster weiterschalten, Kopf nach Zählung wechseln."""
+        """Ein Beat: Tafelmuster weiterschalten, Kopf nickt, Geste nach Zählung wechseln, Maske wackelt / fällt ab."""
         self.last_beat = now
         self.beat_pulse = 1.0
         self.beat_count += 1
@@ -266,15 +392,24 @@ class Controller:
         if self.pattern_beats >= self.pattern_len:
             self._new_pattern()
         self.panel_on = _pattern_mask(self.pattern, self.step, self.rng)
-        self.head_beats += 1
-        if now < self.salvo_until:
+        self.pose_beats += 1
+        self.bob = max(self.bob, 0.6 + 0.4 * self.bass_s)
+        if self.mask >= 0:
+            self.wobble = 1.0
+            if self.beat_count >= self.mask_off_beat:
+                self.mask_off()
+                return
+        if now < self.salvo_until or now < self.manual_until or self._busy(now):
             return
-        period = 1 if now < self.fast_until else (2 if self.energy > 0.45 else 4)
-        if self.head_beats >= period and now - self.head_t0 > 0.35:
-            self.random_head(0.5 if now < self.fast_until else 0.3, 0.2 if now < self.fast_until else 0.3)
+        if self.mask >= 0:
+            period = 1 if self.energy > 0.3 else 2
+        else:
+            period = 1 if self.energy > 0.55 else (2 if self.energy > 0.3 else 4)
+        if self.pose_beats >= period and now - self.pose_t0 > 0.25:
+            self.random_pose(0.1 if self.mask < 0 else 0.4, 0.15)
 
     def _auto_event(self, now: float) -> None:
-        pick = self.rng.choice(("burst", "salvo", "scan", "scan", "glitch", "speak", "salvo"))
+        pick = self.rng.choice(("burst", "salvo", "scan", "scan", "glitch", "speak", "salvo", "vomit", "mask"))
         if pick == "burst":
             self.burst()
         elif pick == "salvo":
@@ -285,6 +420,16 @@ class Controller:
             if not self.glitch_mode:
                 self.auto_glitch_until = now + AUTO_GLITCH_SECONDS
                 log.info("Kurzer Glitch-Modus")
+        elif pick == "vomit":
+            if self.energy > 0.3 and now - self.last_vomit > AUTO_VOMIT_GAP:
+                self.vomit()
+            else:
+                self.salvo()
+        elif pick == "mask":
+            if self.mask < 0 and self.energy > 0.4 and now - self.last_drop > MASK_AUTO_AFTER:
+                self.mask_on(now, "von selbst")
+            else:
+                self.scan()
         else:
             self.speak()
 
@@ -292,32 +437,42 @@ class Controller:
         if ev.type != pygame.KEYDOWN:
             return
         if ev.key in (pygame.K_LEFT, pygame.K_a):
-            self.next_head(-1)
+            self.gesture_dir(G_LEFT, "links")
         elif ev.key in (pygame.K_RIGHT, pygame.K_d):
-            self.next_head(1)
+            self.gesture_dir(G_RIGHT, "rechts")
         elif ev.key in (pygame.K_UP, pygame.K_w):
-            self.fast()
+            self.gesture_dir(G_UP, "oben")
         elif ev.key in (pygame.K_DOWN, pygame.K_s):
-            self.toggle_glitch()
+            self.gesture_dir(G_DOWN, "unten")
         elif ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
             self.last_key = time.monotonic()
             self.speak()
         elif ev.key == pygame.K_SPACE:
+            self.last_key = time.monotonic()
+            self.vomit()
             self.zoom_target = 1.0
         elif ev.key == pygame.K_BACKSPACE:
             self.zoom_target = 0.0
+        elif ev.key == pygame.K_g:
+            self.toggle_glitch()
 
     # -- Engine ------------------------------------------------------------
     def images(self) -> dict:
         return {"uSceneTex": (self.scene if self.scene is not None else self.blank, 1),
                 "uHeadTex": (self.heads if self.heads is not None else self.blank, 1),
+                "uMaskTex": (self.masks if self.masks is not None else self.blank, 1),
+                "uGarbTex": (self.garb_tex if self.garb_tex is not None else self.blank, 1),
                 "uFigTex": (self.figs if self.figs is not None else self.blank, 1)}
 
     def uniform_names(self):
-        return ("uSceneTex", "uHeadTex", "uFigTex", "uSceneSize", "uHeadSize", "uFigSize", "uSeed", "uFrame", "uPanels",
-                "uBassS", "uMidS", "uHighS", "uEnergy", "uLive", "uBeatPulse", "uBeatStep", "uStep", "uStepPhase", "uPattern",
-                "uPanelOn0", "uPanelOn1", "uZoneOn", "uFlash", "uBurstT", "uAwake", "uHeadA", "uHeadB", "uHeadMix", "uHeadGlitch",
-                "uHue", "uSpeakT", "uScanT", "uFast", "uGlitch", "uZoom", "uBands0", "uBands1", "uPeaks0", "uPeaks1")
+        names = ["uSceneTex", "uHeadTex", "uMaskTex", "uGarbTex", "uFigTex", "uSceneSize", "uHeadSize", "uMaskSize", "uGarbSize",
+                 "uFigSize", "uSeed", "uFrame", "uPanels", "uBassS", "uMidS", "uHighS", "uEnergy", "uLive", "uBeatPulse",
+                 "uBeatStep", "uStep", "uStepPhase", "uPattern", "uPanelOn0", "uPanelOn1", "uZoneOn", "uFlash", "uBurstT",
+                 "uAwake", "uHeadA", "uHeadB", "uHeadMix", "uHeadGlitch", "uHue", "uSpeakT", "uScanT", "uFast", "uGlitch",
+                 "uZoom", "uBands0", "uBands1", "uPeaks0", "uPeaks1", "uMaskP", "uMaskFit", "uWobble", "uMouth", "uVomitT",
+                 "uNGarb"]
+        names += [f"uGarb{i}" for i in range(N_GARB)]
+        return tuple(names)
 
     def uniforms(self, t: float, f) -> dict:
         now = time.monotonic()
@@ -348,13 +503,14 @@ class Controller:
             for i in range(8):
                 self.bands[i] += (0.0 - self.bands[i]) * min(1.0, dt / 0.6)
                 self.band_peak[i] = max(0.0, self.band_peak[i] - dt * 0.6)
-        # Beat: echter Beat, sonst (Musik ohne erkannten Beat) ein weicher Takt alle 0.6 s, bei Stille nichts
+        # Beat: echter Beat, sonst (Musik ohne erkannten Beat) ein weicher Takt alle 1.4 s, bei Stille nichts
         on_beat = beat > 0.5 and now - self.last_beat > 0.25
         if not on_beat and live and self.energy > 0.08 and now - self.last_beat > 1.4:
             on_beat = True
         if on_beat:
             self._beat(now)
         self.beat_pulse = max(0.0, self.beat_pulse - dt / 0.45)
+        self.bob = max(0.0, self.bob - dt / 0.35)
         # Tafeln: an = 1, aus fällt in AFTERGLOW auf 0; bei Stille alles aus
         for i in range(8):
             target = 1.0 if (self.panel_on[i] and live) else 0.0
@@ -373,13 +529,38 @@ class Controller:
             self.last_drop = now
             self._drop(now)
         self.flash = max(0.0, self.flash - dt / 2.0)
-        # Kopf: wach mit Musik, Salve, Farbton gleitet
-        self.awake += ((1.0 if self.live_s > 0.3 else 0.0) - self.awake) * min(1.0, dt / (0.8 if self.live_s > 0.3 else 3.0))
-        if now < self.salvo_until and now >= self.salvo_next:
-            self.salvo_next = now + SALVO_SECONDS / 4.0
-            self.random_head(0.7, 0.18)
-        self.hue += (self.hue_target - self.hue) * min(1.0, dt / 1.5)
+        # Kopf: wach mit Musik (Stille = Schlaf), Salve, Blinzeln, Sprechmünder, Farbton gleitet
+        awake_target = 1.0 if self.live_s > 0.3 else 0.0
+        self.awake += (awake_target - self.awake) * min(1.0, dt / (0.8 if awake_target else 3.0))
+        busy = self._busy(now)
+        if awake_target == 0.0 and self.pose != G_SLEEP and not busy:
+            self.set_pose(G_SLEEP, glitch=0.2, length=0.6)
+        if now < self.salvo_until and now >= self.salvo_next and not busy:
+            self.salvo_next = now + SALVO_SECONDS / 6.0
+            self.random_pose(0.5, 0.12)
         speaking = now - self.speak_t0 < SPEAK_SECONDS
+        if speaking:
+            k = now - self.speak_t0
+            want = SPEAK_CYCLE[int(k * 7.0) % len(SPEAK_CYCLE)] if k < SPEAK_SECONDS - 0.8 else 15
+            if want != self.pose and now - self.pose_t0 > 0.08:
+                self.set_pose(want, glitch=0.05, length=0.08)
+        elif awake_target and not busy and now >= self.next_blink and now >= self.manual_until and self.mask < 0:
+            self.next_blink = now + self.rng.uniform(3.0, 6.0)
+            if self.pose not in (G_SLEEP, G_WINK, 24, 25):
+                self.blink_from = self.pose
+                self.blink_back_at = now + 0.14
+                self.set_pose(G_SLEEP if self.rng.random() < 0.7 else G_WINK, glitch=0.0, length=0.06)
+        if self.blink_back_at > 0 and now >= self.blink_back_at:
+            self.blink_back_at = -1.0
+            if self.pose in (G_SLEEP, G_WINK) and awake_target:
+                self.set_pose(self.blink_from, glitch=0.0, length=0.06)
+        if now - self.vomit_t0 < sum(d for _, d in VOMIT_SEQ) + 6.0:
+            self._vomit_tick(now, dt)
+        if self.mask >= 0 and not live and now - self.mask_t0 > 4.0:
+            self.mask_off()
+        self.mask_k += ((1.0 if self.mask >= 0 else 0.0) - self.mask_k) * min(1.0, dt / 0.22)
+        self.wobble = max(0.0, self.wobble - dt / 0.5) if self.mask >= 0 else max(0.0, self.wobble - dt / 0.25)
+        self.hue += (self.hue_target - self.hue) * min(1.0, dt / 1.5)
         # Automatik: Ereignis von selbst, wenn 6 s keine Taste
         if now >= self.auto_next:
             self.auto_next = now + self.rng.uniform(*self.auto_event)
@@ -387,40 +568,56 @@ class Controller:
                 self._auto_event(now)
         glitch_on = self.glitch_mode or now < self.auto_glitch_until
         self.glitch_k += ((1.0 if glitch_on else 0.0) - self.glitch_k) * min(1.0, dt / 0.6)
-        self.zoom += (self.zoom_target - self.zoom) * min(1.0, dt / 1.8)
+        zoom_target = max(self.zoom_target, 0.35 * self.mask_k)
+        self.zoom += (zoom_target - self.zoom) * min(1.0, dt / 1.8)
         if self.led_back_at is not None and now >= self.led_back_at:
             self.led_back_at = None
             wled.apply_mode_async("oracle")
         if self.demo:
             if now >= self.demo_next:
                 self.demo_next = now + 7.0
-                self.rng.choice((self.burst, self.salvo, self.scan, self.speak, self.fast, self.toggle_glitch))()
+                self.rng.choice((self.burst, self.salvo, self.scan, self.speak, self.vomit, lambda: self.gesture_dir(G_LEFT, "links"),
+                                 lambda: self.gesture_dir(G_UP, "oben")))()
                 self.last_key = -100.0
             if now >= self.demo_drop_next:
                 self.demo_drop_next = now + 14.0
                 self._drop(now)
-        # Übergang des Kopfes: Mischung 0..1, Glitch-Anteil als Buckel in der Mitte (+ Puls beim Sprechen)
-        mix = min(1.0, (now - self.head_t0) / max(0.05, self.head_len))
-        hg = self.head_glitch * math.sin(mix * math.pi)
+        # Übergang der Geste: Mischung 0..1, Glitch-Anteil als Buckel in der Mitte (+ Puls beim Sprechen)
+        mix = min(1.0, (now - self.pose_t0) / max(0.05, self.pose_len))
+        hg = self.pose_glitch * math.sin(mix * math.pi)
         if speaking:
-            hg = max(hg, 0.35 * abs(math.sin((now - self.speak_t0) * 14.0)))
+            hg = max(hg, 0.15 * abs(math.sin((now - self.speak_t0) * 14.0)))
         size = lambda a: (float(a.shape[1]), float(a.shape[0])) if a is not None else (1.0, 1.0)
         zone_on = [1.0 if (self.panel_lvl[2 * z] > 0.5 or self.panel_lvl[2 * z + 1] > 0.5) else 0.0 for z in range(4)]
-        return {
-            "uSceneSize": size(self.scene), "uHeadSize": size(self.heads), "uFigSize": size(self.figs), "uSeed": self.seed,
+        vk = now - self.vomit_t0
+        out = {
+            "uSceneSize": size(self.scene), "uHeadSize": size(self.heads), "uMaskSize": size(self.masks), "uGarbSize": size(self.garb_tex),
+            "uFigSize": size(self.figs), "uSeed": self.seed,
             "uFrame": self.frame, "uPanels": self.panels, "uBassS": self.bass_s, "uMidS": self.mid_s, "uHighS": self.high_s,
             "uEnergy": self.energy, "uLive": self.live_s, "uBeatPulse": self.beat_pulse, "uBeatStep": float(self.beat_step),
             "uStep": float(self.step), "uStepPhase": min(1.0, (now - self.step_t0) / 0.6), "uPattern": float(self.pattern),
             "uPanelOn0": tuple(self.panel_lvl[0:4]), "uPanelOn1": tuple(self.panel_lvl[4:8]), "uZoneOn": tuple(zone_on),
             "uFlash": self.flash, "uBurstT": (now - self.burst_t0) if now - self.burst_t0 < 3.0 else -1.0, "uAwake": self.awake,
-            "uHeadA": float(self.head_prev), "uHeadB": float(self.head), "uHeadMix": mix, "uHeadGlitch": hg, "uHue": self.hue,
+            "uHeadA": float(self.pose_prev), "uHeadB": float(self.pose), "uHeadMix": mix, "uHeadGlitch": hg, "uHue": self.hue,
             "uSpeakT": (now - self.speak_t0) if speaking else -1.0,
             "uScanT": (now - self.scan_t0) if now - self.scan_t0 < SCAN_SECONDS else -1.0,
-            "uFast": 1.0 if (now < self.fast_until or now < self.salvo_until) else 0.0,
+            "uFast": 1.0 if now < self.salvo_until else 0.0,
             "uGlitch": self.glitch_k, "uZoom": self.zoom,
             "uBands0": tuple(self.bands[0:4]), "uBands1": tuple(self.bands[4:8]),
             "uPeaks0": tuple(self.band_peak[0:4]), "uPeaks1": tuple(self.band_peak[4:8]),
+            "uMaskP": (float(self.mask if self.mask >= 0 else self.mask_recent[-1] if self.mask_recent else 0), self.mask_k,
+                       min(9.0, now - self.mask_t0), 0.0),
+            "uMaskFit": self.mask_fit, "uWobble": (self.wobble, self.bob, self.beat_pulse), "uMouth": self.mouth,
+            "uVomitT": (vk - VOMIT_STREAM[0]) if VOMIT_STREAM[0] <= vk < VOMIT_STREAM[1] + 0.6 else -1.0,
+            "uNGarb": float(len(self.garbage)),
         }
+        for i in range(N_GARB):
+            if i < len(self.garbage):
+                p = self.garbage[i]
+                out[f"uGarb{i}"] = (p.x, p.y, float(p.cell), p.rot)
+            else:
+                out[f"uGarb{i}"] = (0.0, -99.0, 0.0, 0.0)
+        return out
 
     def overlays(self, t: float):
         now = time.monotonic()
@@ -433,12 +630,17 @@ class Controller:
             out.append((self.line[:n], 0.026, 0.5, 0.25, (120, 230, 255), 0.9 * a))
         if now - self.burst_t0 < 2.0:
             out.append(("D A T E N E X P L O S I O N", 0.028, 0.5, 0.88, (255, 80, 220), 0.7 * (1.0 - (now - self.burst_t0) / 2.0)))
-        name = HEAD_NAMES[self.head] if self.awake > 0.3 else "OFFLINE"
+        if self.mask >= 0:
+            out.append(("MASKE: " + MASK_NAMES[self.mask], 0.022, 0.14, 0.9, (255, 120, 200), 0.6 + 0.3 * self.beat_pulse))
+        vk = now - self.vomit_t0
+        if vk < sum(d for _, d in VOMIT_SEQ):
+            out.append(("D A T E N M Ü L L", 0.026, 0.5, 0.84, (120, 255, 160), 0.5 + 0.4 * abs(math.sin(t * 9.0))))
+        name = GESTURE_NAMES[self.pose] if self.awake > 0.3 else "OFFLINE"
         if now < self.salvo_until:
             name = "SALVE  " + name
-        out.append((name, 0.022, 0.5, 0.03, (160, 220, 255), 0.4 + 0.5 * min(1.0, (now - self.head_t0) / 0.3) * self.awake + 0.2 * (1.0 - self.awake)))
-        if now < self.fast_until:
-            out.append(("AUTOMATIK SCHNELL  %d" % int(self.fast_until - now + 0.99), 0.018, 0.5, 0.84, (255, 200, 120), 0.6 + 0.3 * math.sin(t * 8.0)))
+        elif now < self.manual_until:
+            name = "MANUELL  " + name
+        out.append((name, 0.022, 0.5, 0.03, (160, 220, 255), 0.4 + 0.5 * min(1.0, (now - self.pose_t0) / 0.3) * self.awake + 0.2 * (1.0 - self.awake)))
         if now - self.scan_t0 < SCAN_SECONDS:
             out.append(("S C A N", 0.018, 0.1, 0.05, (120, 255, 220), 0.6))
         if self.glitch_k > 0.3:

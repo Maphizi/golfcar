@@ -567,6 +567,22 @@ pal = 3
 sx  = 100
 ix  = 160
 
+[modes.oracle_mask]         # Maske auf (4 s): Magenta-Rot-Stroboskop
+bri = 230
+fx  = 23
+col = [255, 40, 160]
+col2 = [255, 60, 40]
+sx  = 220
+ix  = 220
+
+[modes.oracle_vomit]        # Übergeben (5 s): giftgrün-cyan Tropfen
+bri = 200
+fx  = 43
+col = [60, 255, 120]
+col2 = [0, 160, 200]
+sx  = 160
+ix  = 200
+
 [modes.oracle_speak]        # Orakel spricht (6 s): weißes Flackern
 bri = 230
 fx  = 20
