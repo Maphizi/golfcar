@@ -159,7 +159,9 @@ uPattern`, Höhen funkeln, Drop `uFlash` + `drop_boost`, Stille dimmt. Stil `uSt
 (Gewinn-Effekte: Goldregen; Glühwürmchen/Fuchs/Lichthirsch; Chips/Samurai/Neon-Explosion; Dollar/Feuerspuren/Professor/
 Zeitmaschine/Sepia), Figuren `uFigTex`/`uFig`. Themen-Controller sind Klassenattribute (`THEMES, LED, STAKES, CURRENCY,
 FRAME, FIGURES, FIG_CELLS, STYLE, COUNTER, SEED_BASE`). Bögen 768x510 (3x3 à 256x170) unter `assets/slots/`, neue Bögen und
-Rahmen vom Bot nach `assets/slots/raw/` und `scripts/slots_assets.sh`. Automatenzähler `logs/<modus>_theme.txt`.
+Rahmen vom Bot nach `assets/slots/raw/` und `scripts/slots_assets.sh` (ruft `scripts/frame_clean.py`: nimmt das Hoverboard aus
+dem Walzenfeld von `future_frame.png`, Regeln `CLEAN`). Rahmen (Luma-Key) und Symbolbögen (Kachelzeilen) liegen als npz im
+Bild-Cache (`images.derived`, `load_frame`/`_sheet_tiles`, `warm_cache.py` wärmt sie). Automatenzähler `logs/<modus>_theme.txt`.
 
 | Modus | Thema | Walzen | Rahmen | Automaten (`slots_themes.py`) |
 |---|---|---|---|---|

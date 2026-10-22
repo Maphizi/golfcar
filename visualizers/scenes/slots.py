@@ -54,8 +54,14 @@ GOLD = (255, 220, 80)
 
 
 def _sheet_tiles(path, keyed: bool) -> np.ndarray | None:
-    """Bildbogen (3x3) laden und als Zeile von 9 Kacheln (TH x 9*TW x 4) zurückgeben; None bei Fehler.
-    keyed: Schwarz im Bogen wird durchsichtig (Alpha aus der Helligkeit), sonst ist die Kachel ein volles Etikett."""
+    """Bildbogen (3x3) als Zeile von 9 Kacheln (TH x 9*TW x 4), aus dem Bild-Cache (npz, Schlüssel Bogen + keyed);
+    None bei Fehler. keyed: Schwarz im Bogen wird durchsichtig (Alpha aus der Helligkeit), sonst volles Etikett."""
+    out = images.derived("slots_tiles", path, f"{TW}x{TH}|{int(keyed)}", lambda: {"row": _sheet_tiles_decode(path, keyed)})
+    row = out.get("row")
+    return None if row is None or row.ndim != 3 else row
+
+
+def _sheet_tiles_decode(path, keyed: bool) -> np.ndarray:
     try:
         surf = pygame.image.load(str(path))
         if surf.get_size() != (TW * art.SHEET_COLS, TH * art.SHEET_ROWS):
@@ -63,7 +69,7 @@ def _sheet_tiles(path, keyed: bool) -> np.ndarray | None:
         rgb = pygame.surfarray.array3d(surf).transpose(1, 0, 2)        # (H, W, 3)
     except Exception as exc:
         log.warning("Bildbogen %s nicht ladbar: %s", path, exc)
-        return None
+        return np.zeros(0, dtype=np.uint8)
     row = np.zeros((TH, N_SYM * TW, 4), dtype=np.uint8)
     for ry in range(art.SHEET_ROWS):
         for rx in range(art.SHEET_COLS):
@@ -84,7 +90,14 @@ def _load_rgba(path) -> np.ndarray | None:
 
 
 def load_frame(path) -> np.ndarray | None:
-    """Themenrahmen: auf FRAME_SIZE skaliert, Alpha per Luma-Key (reines Schwarz = Walzen sichtbar, weicher Rand)."""
+    """Themenrahmen (RGBA, aus dem Bild-Cache): auf FRAME_SIZE skaliert, Alpha per Luma-Key (reines Schwarz = Walzen
+    sichtbar, weicher Rand). PNG-Dekodierung und Luma-Key von 1920x1080 kosten auf dem Pi sonst je Start ~2 s."""
+    out = images.derived("slots_frame", path, f"{FRAME_SIZE[0]}x{FRAME_SIZE[1]}", lambda: {"rgba": _load_frame_decode(path)})
+    rgba = out.get("rgba")
+    return None if rgba is None or rgba.ndim != 3 else rgba
+
+
+def _load_frame_decode(path) -> np.ndarray:
     try:
         surf = pygame.image.load(str(path))
         if surf.get_size() != FRAME_SIZE:
@@ -92,7 +105,7 @@ def load_frame(path) -> np.ndarray | None:
         rgb = pygame.surfarray.array3d(surf).transpose(1, 0, 2)[::-1]
     except Exception as exc:
         log.warning("Rahmen %s nicht ladbar: %s", path, exc)
-        return None
+        return np.zeros(0, dtype=np.uint8)
     lum = rgb.max(axis=2).astype(np.float32)
     alpha = np.clip((lum - 10.0) / 26.0, 0.0, 1.0)
     # weicher Rand: Alpha leicht glätten (3x3), damit die Kante nicht pixelig über den Walzen liegt

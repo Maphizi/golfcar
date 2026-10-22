@@ -22,6 +22,7 @@ PYEOF
 }
 scale() { s=$(f "$1"); [ -n "$s" ] && scale_file "$s" "$OUT/$1.png" "$2" "$3" || echo "  fehlt: $RAW/$1.png"; }
 for n in forest_frame cyber_frame future_frame space_frame; do scale $n 1920 1080; done
+$PY scripts/frame_clean.py "$OUT/future_frame.png"      # Hoverboard aus dem Walzenfeld
 for n in forest_animals forest_magic cyber_konzern cyber_netzgeister future_1885 future_2015; do scale $n 768 510; done
 # vorhandene Themenbögen (erster Automat je Thema) auf das Space-Format
 for pair in assets/forestslots/symbols.png:forest assets/cyber/cyberslots_symbols.png:cyberslots_symbols assets/future/almanac_symbols.png:almanac_symbols; do

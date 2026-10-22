@@ -30,6 +30,22 @@ def main() -> int:
             print(f"Black Ice: {len(rects)} Bildschirme erkannt")
     except Exception as exc:
         print(f"Bildschirm-Suche übersprungen: {exc}")
+    # Slotmaschinen: Themenrahmen (Luma-Key) und Symbolbögen (Kachelzeilen) je Automat
+    try:
+        from visualizers.scenes import slots, slots_themes as art
+        n_slots = 0
+        for frame in ("space_frame.png", "forest_frame.png", "cyber_frame.png", "future_frame.png"):
+            p = art.SHEET_DIR / frame
+            if p.exists() and slots.load_frame(p) is not None:
+                n_slots += 1
+        for themes in (art.THEMES, art.FOREST, art.CYBER, art.FUTURE):
+            for th in themes:
+                p = art.SHEET_DIR / th["sheet"]
+                if p.exists() and slots._sheet_tiles(p, bool(th.get("keyed", False))) is not None:
+                    n_slots += 1
+        print(f"Slotmaschinen: {n_slots} Rahmen/Bögen bereit")
+    except Exception as exc:
+        print(f"Slotmaschinen-Cache übersprungen: {exc}")
     # alte Cache-Dateien (Bilder, die es so nicht mehr gibt) aufräumen
     keep = set()
     for p in sorted(ROOT.glob("assets/**/*.png")):
