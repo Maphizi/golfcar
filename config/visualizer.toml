@@ -212,3 +212,12 @@ cycle_minutes = 4          # Minuten je Epoche
 shader = "paradox"
 controller = "paradox"     # Paradoxon (Zukunft-Taste 7)
 render_scale = 0.6
+
+# ── Startbildschirm (Modus boot) ──────────────────────────────────────────────
+[scenes.splash]
+shader = "splash"
+controller = "splash"      # Titelbild bis zum ersten Tastendruck, Knopf "READY TO LIFT OFF" zur Musik
+render_scale = 0.6
+sun = [0.215, 0.47]        # Sonne im Bild (Anteile, y von unten)
+button = [0.19, 0.86, 0.30, 0.10]   # Knopf: x, y Mitte, Breite, Höhe (im Himmel links oben, neben dem Wagen)
+crop = [0.118, 0.038]      # Beschnitt des 3:2-Bilds oben, unten (Titel unten bleibt ganz)

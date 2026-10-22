@@ -877,6 +877,16 @@ Kippschalter AN = zurück in 1985 (klar), AUS = Rückfall. Board `paradox`, `par
 Controller `visualizers/scenes/paradox.py`, Shader `visualizers/shaders/paradox/frag.glsl`.
 Test: `python -m visualizers.engine paradox --test-signal --demo`.
 
+**Startbildschirm (Modus `boot`):** Statt der alten Bootsequenz zeigt der Pi nach dem Start das Titelbild
+"Marcs Taxi to Madness" (`assets/splash/scene.png`) bildfüllend und lebendig zur Musik: die Sonne glüht mit dem Bass
+und wirft drehende Lichtstrahlen, Beats stoßen das Bild kurz heran, Höhen lassen Staub und Funken aufsteigen, Drops
+blitzen. Links oben im Himmel leuchtet der Knopf "READY TO LIFT OFF" als Neonpille, die mit dem Bass glüht, auf den Beat
+hüpft und ein Lauflicht am Rand hat. Das Bild bleibt stehen, bis der erste Knopf gedrückt wird: Startknopf, Knüppel oder
+Kippschalter führen zum Taxistand, eine Modustaste direkt in den Modus. `config/visualizer.toml` `[scenes.splash]`
+`button`, `sun`, `crop`; `config/modes.toml` `[modes.boot]`; aus mit `boot_seconds = 0` in `config/settings.toml`.
+Controller `visualizers/scenes/splash.py`, Shader `visualizers/shaders/splash/frag.glsl`.
+Test: `python -m visualizers.engine splash --test-signal`.
+
 **Flug und Ankunft im Navigationscomputer:** Der Startknopf startet den Flug (Kippschalter AN
 zeigt vorher nur SCHARF an). Der Hyperraumflug endet nie von selbst: erst wenn der Pilot den
 Kippschalter umlegt (egal in welche Richtung), kommt die Ankunft. Nur im `--demo` gilt die feste

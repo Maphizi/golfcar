@@ -66,6 +66,15 @@ ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-S
 
 Nicht auf dem Board, über `scripts/kittctl <modus>`: droid (BIBO), news, viz_crt, viz_eye, planeten, menu, status.
 
+## Startbildschirm (`visualizers/scenes/splash.py`, Modus `boot`)
+`config/modes.toml` `[modes.boot]` startet `visualizers.engine splash` statt `launcher.boot_screen`: Titelbild
+`assets/splash/scene.png` (3:2, `[scenes.splash] crop` beschneidet auf 16:9) bildfüllend, Sonne (`sun`) glüht mit dem Bass
+und wirft drehende Strahlen (Energie), Beat = Zoom-Stoß, Höhen = Staub/Funken, Drop = Weißblitz. Knopf `button = [x, y, w, h]`
+als Neonpille im Shader (glüht mit dem Bass, hüpft auf den Beat, Lauflicht am Rand), Text "READY TO LIFT OFF" als Overlay.
+Bleibt stehen, bis die erste Taste kommt: jeder KEYDOWN (Knüppel, Startknopf, Kippschalter) postet `pygame.QUIT`, die Engine
+endet, der Launcher startet Home; Board-Tasten wechseln über den Launcher direkt den Modus. `boot_seconds > 0` in
+`settings.toml` bleibt der Schalter, ob der Startbildschirm überhaupt kommt. Test: `python -m visualizers.engine splash --test-signal`.
+
 ## Lagerfeuer (`visualizers/scenes/campfire.py`)
 Cinemagraph: Foto `assets/campfire/scene.png` + Flammen-Spritesheet `assets/campfire/flames.png` (8x5). Feuerstelle
 `[scenes.campfire] fire = [x, y, w, h]`; uDay Farbstimmung über `cycle_minutes`, uWind, uSpark, uBassS. Neue Bilder:

@@ -3,10 +3,10 @@
 # stop_timeout: Sekunden zwischen SIGTERM und SIGKILL beim Umschalten
 
 [modes.boot]
-label = "BOOT"
-command = ["{python}", "-m", "launcher.boot_screen"]
+label = "START"
+command = ["{python}", "-m", "visualizers.engine", "splash"]   # Titelbild bis zum ersten Tastendruck (vorher: launcher.boot_screen)
 cwd = "{root}"
-stop_timeout = 1
+stop_timeout = 2
 
 [modes.home]
 label = "TAXISTAND"

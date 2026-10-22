@@ -234,7 +234,7 @@ class Launcher:
         signal.signal(signal.SIGINT, lambda *_: setattr(self, "running", False))
         self.start_inputs()
         if self.boot_seconds > 0 and "boot" in self.pm.modes:
-            self.switch("boot")            # beendet sich selbst, danach geht es automatisch auf Home
+            self.switch("boot")            # Startbildschirm: endet beim ersten Tastendruck, danach automatisch Home (Board-Tasten wechseln direkt)
             self.announce("boot")
         else:
             self.go_home()
