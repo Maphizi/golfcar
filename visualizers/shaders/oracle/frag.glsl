@@ -1,10 +1,10 @@
 #version 140
-// Das Orakel: Serverhallen-Foto (uSceneTex) mit schwebendem Hologramm-Kopf (uHeadTex 8x2 à 192: Reihe 0 Köpfe 0-7,
-// Reihe 1 Glitch-Versionen 8-15) im Rahmen uFrame (x, y, Breite). Acht Neontafeln (uPanels: x0, x7, y, Breite) zeigen
+// Das Orakel: Serverhallen-Foto (uSceneTex) mit schwebendem Hologramm-Kopf (uHeadTex 8x3 à 192: 24 Köpfe, Reihenzahl
+// aus uHeadSize) im Rahmen uFrame (x, y, Breite). Acht Neontafeln (uPanels: x0, x7, y, Breite) zeigen
 // die Glyphen (uFigTex Reihe 2) und gehen hart auf den Beat an/aus (uPanelOn0/1 mit Nachglühen); innerhalb einer an-Tafel
 // ist das Band (uBands/uPeaks) die Füllhöhe. Serverlichter blinken je Zone (uZoneOn). Bass = Kopf atmet, Mitten = Kopf
-// dreht (Parallaxe), Höhen = Funkenregen im Rahmen; Kopfwechsel uHeadA/uHeadB/uHeadMix mit Glitch-Zwischenbild
-// (uHeadGlitch), Farbton uHue; Stille = Drahtgitter/Scanlinien-Schemen (uAwake); Drop = uFlash/uBurstT; Scanner-Welle
+// dreht (Parallaxe), Höhen = Funkenregen im Rahmen; Kopfwechsel uHeadA/uHeadB/uHeadMix mit prozeduralem Glitch
+// (uHeadGlitch: Streifen reißen, Blöcke springen, Zeilen fallen aus, Farbkanäle trennen, Rauschblöcke), Farbton uHue; Stille = Drahtgitter/Scanlinien-Schemen (uAwake); Drop = uFlash/uBurstT; Scanner-Welle
 // uScanT; Glitch-Modus uGlitch; Automatik schnell uFast; Sprechen uSpeakT.
 in vec2 vUv;
 out vec4 fragColor;
@@ -55,7 +55,7 @@ vec4 figCell(float idx, vec2 d) {
 float bandAt(int i) { return i < 4 ? uBands0[i] : uBands1[i - 4]; }
 float peakAt(int i) { return i < 4 ? uPeaks0[i] : uPeaks1[i - 4]; }
 float panelOn(int i) { return i < 4 ? uPanelOn0[i] : uPanelOn1[i - 4]; }
-// Kopf mit Glitch-Zwischenbild: Mischung A->B, dazwischen reißen Streifen/Blöcke und die Glitch-Zelle (+8) schiebt sich ein
+// Kopf: Mischung A->B (der Glitch dazwischen ist prozedural, siehe main)
 vec4 headPair(float a, float b, vec2 d) { return mix(headCell(a, d), headCell(b, d), uHeadMix); }
 
 void main() {
@@ -123,7 +123,7 @@ void main() {
         col += vec3(1.0) * pkLine * 0.6 * live;
     }
     // ---- Kopf im Projektionsrahmen: Hologramm (Scanlinien, Flackern), atmet mit dem Bass, dreht mit den Mitten,
-    //      Wechsel mit Glitch-Zwischenbild, bei Stille nur Drahtgitter/Scanlinien-Schemen
+    //      Wechsel mit prozeduralem Glitch, bei Stille nur Drahtgitter/Scanlinien-Schemen
     {
         float breathe = 1.0 + 0.05 * uBassS * live + 0.025 * uBeatPulse;
         float w = uFrame.z * aspect * 0.5 * 1.15 * breathe;                            // Kopf füllt den Rahmen (Zelle hat schwarzen Rand)
@@ -135,22 +135,31 @@ void main() {
         d.x += 0.02 * turn * sin(d.y * 6.0 + t * 2.0);
         float g = clamp(uHeadGlitch, 0.0, 1.0) + uGlitch * 0.5 + (uBurstT >= 0.0 ? exp(-uBurstT * 2.0) : 0.0) * 0.6;
         vec2 dg = d;
-        if (g > 0.01) {                                                               // Streifen reißen, Blöcke springen
+        float dropRow = 0.0, nz = 0.0;
+        if (g > 0.01) {                                                               // prozeduraler Glitch
             float row = floor(d.y * 24.0);
-            float tear = step(1.0 - 0.6 * g, hash12(vec2(row, floor(t * 14.0))));
+            float tear = step(1.0 - 0.6 * g, hash12(vec2(row, floor(t * 14.0))));     // Streifen reißen seitlich
             dg.x += (hash12(vec2(row, floor(t * 9.0) + 7.0)) - 0.5) * 0.5 * g * tear;
             vec2 blk = floor(d * vec2(5.0, 7.0));
-            float jump = step(1.0 - 0.3 * g, hash12(blk + floor(t * 6.0)));
+            float jump = step(1.0 - 0.3 * g, hash12(blk + floor(t * 6.0)));           // Blöcke springen
             dg += (vec2(hash12(blk + 1.0), hash12(blk + 2.0)) - 0.5) * 0.25 * jump;
+            float band = floor(d.y * 9.0 + floor(t * 11.0));
+            float slide = step(1.0 - 0.35 * g, hash12(vec2(band, floor(t * 7.0) + 2.0)));  // ganze Bänder gleiten durch
+            dg.x += (hash12(vec2(band, 5.0)) - 0.5) * 0.8 * g * slide;
+            dropRow = step(1.0 - 0.25 * g, hash12(vec2(floor(d.y * 60.0), floor(t * 20.0))));   // Zeilen fallen aus
+            nz = step(1.0 - 0.07 * g, hash12(floor(d * vec2(16.0, 24.0)) + floor(t * 12.0)));   // Rauschblöcke
         }
-        vec4 m = headPair(uHeadA, uHeadB, dg);
-        vec4 mg = headPair(uHeadA + 8.0, uHeadB + 8.0, dg + vec2(0.01 * sin(t * 30.0), 0.0));
-        vec4 hm = mix(m, mg, smoothstep(0.1, 0.6, g));
-        if (g > 0.3) {                                                                // Farbkanäle laufen auseinander
-            float sep = 0.03 * g;
-            hm.r = headPair(uHeadA, uHeadB, dg + vec2(sep, 0.0)).r;
-            hm.b = headPair(uHeadA, uHeadB, dg - vec2(sep, 0.0)).b;
+        vec4 hm = headPair(uHeadA, uHeadB, dg);
+        if (g > 0.2) {                                                                // Farbkanäle laufen auseinander
+            float sep = 0.04 * g;
+            hm.r = headPair(uHeadA, uHeadB, dg + vec2(sep, 0.004)).r;
+            hm.b = headPair(uHeadA, uHeadB, dg - vec2(sep, 0.004)).b;
+            hm.a = max(hm.a, max(headPair(uHeadA, uHeadB, dg + vec2(sep, 0.0)).a, headPair(uHeadA, uHeadB, dg - vec2(sep, 0.0)).a) * 0.7);
         }
+        hm.rgb *= 1.0 - dropRow * 0.9;                                                // ausgefallene Zeilen dunkel
+        hm.rgb = mix(hm.rgb, mix(vec3(0.2, 0.9, 1.0), vec3(1.0, 0.2, 0.8), hash12(dg * 90.0 + t)) * (0.5 + 0.5 * hash12(dg * 70.0 - t)), nz * step(0.05, hm.a));
+        hm.rgb += vec3(0.3, 1.0, 0.9) * dropRow * 0.15 * step(1.0 - 0.2 * g, hash12(vec2(floor(d.y * 60.0), 3.0)));
+        vec4 m = hm;
         hm.rgb = hueShift(hm.rgb, uHue);
         float scan = 0.85 + 0.15 * sin(uv.y * 700.0 + t * 30.0);
         float flick = 1.0 - 0.15 * step(0.93, hash12(vec2(floor(t * 24.0), 1.0))) - 0.3 * uBassS * step(0.9, hash12(vec2(floor(t * 40.0), 2.0)));

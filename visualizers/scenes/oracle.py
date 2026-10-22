@@ -1,7 +1,7 @@
 """Das Orakel (Taste 4 im Thema CYBERPUNK, Gegenstück zu HAL 3000 / Auge des Waldes).
 
 Serverhalle (assets/cyber/oracle_scene.png) mit einem schwebenden Hologramm-Kopf im Projektionsrahmen
-(assets/cyber/oracle_heads.png, 8x2 à 192: Reihe 0 acht Köpfe 0-7, Reihe 1 dieselben als Glitch-Version 8-15).
+(assets/cyber/oracle_heads.png, 8x3 à 192: 24 verschiedene Köpfe, HEAD_NAMES; der Glitch-Übergang ist rein prozedural).
 Jedes Musikmerkmal hat sein Element:
   Beat      die acht Neontafeln gehen hart an/aus nach Mustern (uPanelOn, uPattern), Serverlichter in Zonen blinken mit,
             jeder 4. Beat ein neuer Kopf (bei hoher Energie jeder 2., Automatik schnell: jeder Beat)
@@ -32,8 +32,11 @@ from launcher import wled
 log = logging.getLogger("oracle")
 ASSETS = Path(__file__).resolve().parents[2] / "assets" / "cyber"
 HEAD_CELL = 192
-HEADS = 8
-HEAD_NAMES = ["CYBORG", "VISOR", "SAMURAI", "GEISHA", "ANDROID", "SCHALTKREIS", "ROBOTER", "TENTAKEL"]
+HEADS = 24
+HEAD_NAMES = ["GEISHA", "ONI", "ANDROID", "NEONSCHÄDEL", "CYBERKATZE", "KITSUNE", "BUDDHA", "VR-HELM",
+              "DRAHTGITTER", "TATTOO", "HALBROBOTER", "GASMASKE", "SAMURAI", "QUALLE", "PIXEL", "MANNEQUIN",
+              "OKTOPUS", "PUPPE", "DATENBRILLE", "LÖWE", "KAPUZE", "GLASKOPF", "ROSENSCHÄDEL", "PORZELLAN"]
+HEAD_MEMORY = 10        # so viele zuletzt gezeigte Köpfe werden beim Würfeln gemieden
 N_PATTERNS = 8          # Lauflicht l->r, r->l, außen->innen, gerade/ungerade, zufällig, alle an jeden 4., Spiegel, Paare
 PATTERN_NAMES = ["LAUFLICHT", "RÜCKLAUF", "AUSSEN-INNEN", "WECHSEL", "ZUFALL", "VOLLBILD", "SPIEGEL", "PAARE"]
 SPEAK_SECONDS = 6.0
@@ -131,6 +134,7 @@ class Controller:
         # Kopf
         self.head = self.rng.randrange(HEADS)
         self.head_prev = self.head
+        self.recent = [self.head]                      # zuletzt gezeigte Köpfe (nicht zu oft dieselben)
         self.head_t0 = -10.0
         self.head_len = 0.3                            # Dauer des Übergangs
         self.head_glitch = 0.3                         # Stärke des Glitch-Übergangs 0..1
@@ -175,6 +179,8 @@ class Controller:
         self.head_len = length
         self.head_glitch = glitch
         self.head_beats = 0
+        self.recent.append(idx)
+        del self.recent[:-HEAD_MEMORY]
         if self.rng.random() < 0.35:
             self.hue_target = self.rng.choice((0.0, 0.0, 0.6, -0.6, 1.2, 2.4))
         if manual or now - self.last_head_led > 3.0:
@@ -189,7 +195,9 @@ class Controller:
         log.info("Kopf von Hand: %s", HEAD_NAMES[self.head])
 
     def random_head(self, glitch: float = 0.3, length: float = 0.3) -> None:
-        self.set_head(self.rng.choice([i for i in range(HEADS) if i != self.head]), glitch, length)
+        """Zufälliger Kopf, nie derselbe und keiner der zuletzt gezeigten (HEAD_MEMORY)."""
+        pool = [i for i in range(HEADS) if i != self.head and i not in self.recent]
+        self.set_head(self.rng.choice(pool or [i for i in range(HEADS) if i != self.head]), glitch, length)
 
     def fast(self) -> None:
         now = time.monotonic()
