@@ -721,6 +721,14 @@ col2 = [40, 80, 255]
 sx  = 200
 ix  = 160
 
+[modes.flux_storm]          # Gewitter (14 s): weiße Blitze auf Dunkelblau
+bri = 240
+fx  = 57
+col = [255, 255, 255]
+col2 = [10, 20, 80]
+sx  = 120
+ix  = 128
+
 [modes.flux_eject]          # Paradoxon (8 s): Sepia-Flackern
 bri = 220
 fx  = 1
