@@ -37,7 +37,7 @@ plate blackice_scene blackice_scene.png
 slice blackice_daemons blackice_daemons.png 4 3 256
 echo "== Runde 2 =="
 slice neonrace_obstacles neonrace_obstacles.png 8 2 192
-slice oracle_heads oracle_heads.png 8 3 192
+slice oracle_heads oracle_heads.png 8 2 192     # Bot lieferte 2 Reihen (Köpfe, Glitch-Köpfe)
 for i in 1 2 3 4 5 6; do plate rooftop_light_$i rooftop_light_$i.png; done
 # Bildschirminhalte: Raster mit dünnen schwarzen Stegen (geliefert 4x4) -> Kacheln erkennen, je 512x288, Atlas 4x4
 s=$(f blackice_screens); [ -n "$s" ] && $PY - "$s" "$OUT/blackice_screens.png" <<'PYEOF' 2>/dev/null
