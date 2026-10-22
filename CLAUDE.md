@@ -120,7 +120,10 @@ alle 15-30 s, Beat = Drehstoß. Test: `python -m visualizers.engine trip --demo`
 `[scenes.pond] vortex = [x, y]`, `water = [y0, y1, x0, x1]` (Wassermaske). Uferleben: `assets/pond/shore.png` (4x6 à 192,
 `trip_assets.py slice ... 4 6 192`; Spalte = Stufe, Reihe = Art), Plätze `SHORE` (x, Fußlinie, Größe, Seite, im Wasser),
 `plant_stage` 0..3 fließend (`_plants_tick`: Wachstum mit Energie, voll hält, welkt; Stille welkt alles; Drop = alles blüht),
-Shader `uPlantN`/`uPlantSN`, Sporen `uSporeT`. LINKS/RECHTS = `sprout(side)`. Wesen fallen nur noch von selbst (`AUTO_THROW`,
+Shader `uPlantN`/`uPlantSN` = (Stufe, Seite ±1/±2 im Wasser, Seed, Alter; Alter < 3 s = Sprießfunken), Sporen `uSporeT`.
+LINKS/RECHTS = `sprout(side)`: sofort eine neue Pflanze auf der Seite (leerer Platz, sonst die älteste ersetzt), wächst mit
+`SPROUT_RATE` in ~3 s unabhängig von der Musik, Nachbarn bekommen einen Schub. Von selbst nur `AUTO_PER_SIDE` 2 je Ufer alle
+`AUTO_PLANT` 8-20 s. Beat im Wasser leise: Ring schwach, Druckwelle/Beben (`uQuakeT`) nur jeder 4. oder kräftige Beat. Wesen fallen nur noch von selbst (`AUTO_THROW`,
 nur bei Energie > 0.3; Band im Strudel ~40-60 s), OBEN = Blätterregen, UNTEN = Umkehrung (Fontäne, Seegrund), ENTER = Stein hüpft, SPACE/BACKSPACE =
 Zoom. Beat = Ring, Drop = `uFlash`. Wasserebene perspektivisch: Shader-Konstante `FLAT` (y gestaucht).
 Test: `python -m visualizers.engine pond --test-signal --demo`.

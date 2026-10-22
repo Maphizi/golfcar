@@ -19,7 +19,7 @@ uniform sampler2D uShoreTex;                              // Uferleben 4x6 à 19
 uniform vec2 uShoreSize;
 uniform float uSporeT;                                    // Sekunden seit dem letzten Sporenstoß (Beat)
 uniform vec4 uPlant0, uPlant1, uPlant2, uPlant3, uPlant4, uPlant5, uPlant6, uPlant7, uPlant8, uPlant9;       // x, Fußlinie, Größe, Art
-uniform vec4 uPlantS0, uPlantS1, uPlantS2, uPlantS3, uPlantS4, uPlantS5, uPlantS6, uPlantS7, uPlantS8, uPlantS9; // Stufe 0..3 (-1 leer), Seite, Seed, im Wasser
+uniform vec4 uPlantS0, uPlantS1, uPlantS2, uPlantS3, uPlantS4, uPlantS5, uPlantS6, uPlantS7, uPlantS8, uPlantS9; // Stufe 0..3 (-1 leer), Seite (+-1 Ufer, +-2 im Wasser), Seed, Alter s
 uniform vec4 uRing0, uRing1, uRing2, uRing3, uRing4, uRing5;   // x, y, Alter, aktiv
 uniform vec4 uThrow0, uThrow1;                  // Fortschritt, Zelle, Seite, Seed
 uniform vec4 uThrowPar0, uThrowPar1;            // Spirale, rückwärts
@@ -83,7 +83,7 @@ vec3 plant(vec3 col, vec2 uv, float aspect, float t, int i, float live) {
     grow *= 1.0 - 0.25 * wither;
     grow *= 1.0 + 0.06 * uBassS * full * live + 0.02 * sin(t * 1.7 + fi);
     vec2 d = (uv - vec2(p.x, p.y)) * vec2(aspect, 1.0) / (hw * grow);
-    d.x *= st.y;                                                            // rechtes Ufer gespiegelt
+    d.x *= sign(st.y);                                                      // rechtes Ufer gespiegelt
     d.x += 0.04 * sin(d.y * 3.0 + t * 1.1 + fi) * (0.3 + 1.2 * uMidS * live) * smoothstep(-0.9, 0.5, d.y);   // Wind
     vec2 l = vec2(d.x, d.y - 1.0 + 0.04);
     float sa = clamp(stage, 0.0, 3.0);
@@ -97,6 +97,20 @@ vec3 plant(vec3 col, vec2 uv, float aspect, float t, int i, float live) {
     s.rgb = mix(s.rgb, s.rgb * vec3(0.7, 0.6, 0.5), wither * 0.5);
     col = mix(col, s.rgb, s.a);
     col += s.rgb * s.a * full * glowy * 0.25 * uBassS * live;
+    // Sprießen: in den ersten Sekunden glüht der Fußpunkt und Funken steigen auf (sichtbar, wenn der Knüppel es ruft)
+    float age = st.w;
+    if (age < 3.0) {
+        float born = 1.0 - age / 3.0;
+        vec2 foot = (uv - vec2(p.x, p.y + hw * 0.3)) * vec2(aspect, 1.0) / hw;
+        col += vec3(0.5, 1.0, 0.6) * exp(-dot(foot, foot) * 3.0) * born * born * 0.6;
+        for (int k = 0; k < 8; k++) {
+            float hk = hash12(vec2(float(k) + 7.0, seed * 70.0 + fi));
+            float ak = age * (0.6 + 0.6 * hk);
+            vec2 sp = vec2(p.x + (hk - 0.5) * p.z * 0.9 * sin(ak * 3.0 + float(k)), p.y + hw * (0.2 + 2.0 * fract(ak * 0.5 + hk)));
+            float g = smoothstep(0.005, 0.0, length((uv - sp) * vec2(aspect, 1.0)));
+            col += vec3(0.6, 1.0, 0.7) * g * born * 1.5;
+        }
+    }
     // Sporen / Pollen steigen von vollen Pflanzen auf (Beat), Libelle flattert über dem Schilf
     if (full > 0.0 && uSporeT < 2.5) {
         for (int k = 0; k < 6; k++) {
@@ -196,8 +210,8 @@ void main() {
     vec2 uv = mix(vUv, uVortex + (vUv - uVortex) / 1.6, uZoom);
     uv += vec2(0.003 * sin(t * 0.21), 0.002 * cos(t * 0.17));
     // Beben: jeder Beat rüttelt die Kamera kurz, das Wasser zittert (nur die Wasserfläche)
-    float quake = uBeatPulse * uBeatPulse * live;
-    uv += vec2(0.004 * sin(t * 60.0), 0.003 * cos(t * 47.0)) * quake;
+    float quake = uBeatPulse * uBeatPulse * live * smoothstep(1.6, 0.0, uQuakeT);   // nur bei der Druckwelle
+    uv += vec2(0.0015 * sin(t * 60.0), 0.001 * cos(t * 47.0)) * quake;
     vec2 q = vec2((uv.x - uVortex.x) * aspect, uv.y - uVortex.y);   // um den Strudel, isotrop
     float wm = waterMask(uv);
     float r = length(q), a = atan(q.y, q.x);
@@ -205,7 +219,7 @@ void main() {
     float rp = length(qp), ap = atan(qp.y, qp.x);
     // ---- Wasser: Wellen, Strudelverzerrung, Beat-Ringe
     vec2 wuv = uv;
-    float swirlStrength = (0.8 + 2.6 * uBassS * live + 1.2 * uBeatPulse * live) * (1.0 + 0.6 * uZoom);
+    float swirlStrength = (0.8 + 2.2 * uBassS * live + 0.4 * uBeatPulse * live) * (1.0 + 0.6 * uZoom);
     float reach = 6.0 - 2.5 * uBassS * live;                                 // mit Bass greift der Strudel weiter
     float sw = exp(-rp * reach) * swirlStrength;
     float ejectT = uEjectT;
@@ -214,13 +228,13 @@ void main() {
     vec2 wq = rot(sw * 2.0) * qp;
     vec2 disp = (wq - qp) * vec2(1.0, FLAT) * 0.5;
     disp += vec2(noise(uv * 40.0 + vec2(t * 0.6, t * 0.3)) - 0.5, noise(uv * 40.0 + vec2(-t * 0.4, t * 0.5)) - 0.5) * 0.004 * (1.0 + 2.0 * uBassS * live);
-    disp -= qp / max(rp, 0.01) * vec2(1.0, FLAT) * exp(-rp * 6.0) * 0.02 * (0.5 + 1.5 * uBassS + uBeatPulse);   // Sog zur Mitte
+    disp -= qp / max(rp, 0.01) * vec2(1.0, FLAT) * exp(-rp * 6.0) * 0.02 * (0.5 + 1.5 * uBassS + 0.4 * uBeatPulse);   // Sog zur Mitte
     // Beben: Druckwelle vom Strudel über den ganzen See (verschiebt das Wasserbild), dazu Zittern
     if (uQuakeT < 1.6) {
         float qr = uQuakeT * 0.9;
         float shock = exp(-pow((rp - qr) * 14.0, 2.0)) * (1.0 - uQuakeT / 1.6) * live;
-        disp += qp / max(rp, 0.01) * vec2(1.0, FLAT) * shock * 0.03;
-        disp += vec2(0.0, 0.006) * quake * sin(uv.x * 60.0 + t * 40.0) * smoothstep(0.0, 0.3, rp);
+        disp += qp / max(rp, 0.01) * vec2(1.0, FLAT) * shock * 0.012;
+        disp += vec2(0.0, 0.002) * quake * sin(uv.x * 60.0 + t * 40.0) * smoothstep(0.0, 0.3, rp);
     }
     for (int i = 0; i < 6; i++) {
         vec4 rg = ringAt(i);
@@ -228,7 +242,7 @@ void main() {
         vec2 rc = vec2((uv.x - rg.x) * aspect, uv.y - rg.y);
         float rr = length(rc * vec2(1.0, 2.2));
         float wave = exp(-pow((rr - rg.z * 0.18) * 30.0, 2.0)) * exp(-rg.z * 0.8);
-        disp += normalize(rc + 1e-5) * wave * 0.01;
+        disp += normalize(rc + 1e-5) * wave * 0.004;
     }
     disp += vec2(0.0, 0.03) * surge * sin(uv.x * 30.0 + t * 8.0) * smoothstep(0.0, 0.25, r);
     disp.x /= aspect;
@@ -244,15 +258,15 @@ void main() {
     // Schaumspiralen: drei Arme, springen auf jeden Beat ein Stück weiter (uBeatStep) und drehen mit uSwirlT
     float armJump = uBeatStep * 0.785 + uBeatPulse * 0.4;
     float foam = pow(0.5 + 0.5 * sin(ap * 3.0 + log(rp + 0.02) * 9.0 - uSwirlT * 3.0 - armJump), 10.0 - 6.0 * uBeatPulse) * exp(-rp * (5.0 - 2.0 * uBassS * live));
-    foam *= 1.0 + 1.1 * uBeatPulse;
+    foam *= 1.0 + 0.4 * uBeatPulse;
     col = mix(col, col * 0.25, smoothstep(0.08, 0.0, rp) * wm);
     col += vec3(0.8, 0.9, 0.95) * foam * wm * (0.4 + 0.5 * uBassS);
-    col += vec3(0.3, 0.9, 0.7) * exp(-rp * (14.0 - 5.0 * uBassS * live)) * wm * (0.2 + 0.9 * uBassS * live + 0.6 * uBeatPulse * live) * (1.0 + uZoom);
-    col += hueShift(vec3(0.4, 0.9, 1.0), uBeatStep * 0.5) * exp(-rp * 8.0) * wm * uBeatPulse * 0.5 * live;   // Beat-Blitz im Trichter
+    col += vec3(0.3, 0.9, 0.7) * exp(-rp * (14.0 - 5.0 * uBassS * live)) * wm * (0.2 + 0.8 * uBassS * live + 0.2 * uBeatPulse * live) * (1.0 + uZoom);
+    col += hueShift(vec3(0.4, 0.9, 1.0), uBeatStep * 0.5) * exp(-rp * 8.0) * wm * uBeatPulse * 0.15 * live;   // Beat-Blitz im Trichter
     // Druckwelle als heller Ring über das ganze Wasser
     if (uQuakeT < 1.6) {
         float qr = uQuakeT * 0.9;
-        col += vec3(0.6, 0.85, 1.0) * exp(-pow((rp - qr) * 18.0, 2.0)) * (1.0 - uQuakeT / 1.6) * wm * 0.6 * live;
+        col += vec3(0.6, 0.85, 1.0) * exp(-pow((rp - qr) * 18.0, 2.0)) * (1.0 - uQuakeT / 1.6) * wm * 0.22 * live;
     }
     // Beat-Ringe als helle Linien
     for (int i = 0; i < 6; i++) {
@@ -260,7 +274,7 @@ void main() {
         if (rg.w < 0.5 || rg.z > 4.0) continue;
         vec2 rc = vec2((uv.x - rg.x) * aspect, uv.y - rg.y);
         float rr = length(rc * vec2(1.0, 2.2));
-        col += vec3(0.7, 0.85, 1.0) * exp(-pow((rr - rg.z * 0.18) * 40.0, 2.0)) * exp(-rg.z * 0.9) * 0.5 * wm;
+        col += vec3(0.7, 0.85, 1.0) * exp(-pow((rr - rg.z * 0.18) * 40.0, 2.0)) * exp(-rg.z * 0.9) * 0.2 * wm;
     }
     // Drop: Wasser leuchtet von innen
     col += vec3(0.3, 0.9, 0.6) * uFlash * wm * (0.3 + 0.4 * noise(uv * 12.0 + t));

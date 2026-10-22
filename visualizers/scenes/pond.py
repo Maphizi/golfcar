@@ -35,10 +35,13 @@ EJECT_BURST_AT = 1.5
 LEAF_SECONDS = 45
 # Uferleben: assets/pond/shore.png (4x6 à 192: Spalte = Stufe Keim/jung/voll/verwelkt, Reihe = Art: 0 Fliegenpilze, 1 Farn,
 # 2 Leuchtpilze, 3 Lotus, 4 Schilf mit Libelle, 5 Fleischfresser). Plätze: (x, Fußlinie y, Größe, Seite -1/1, im Wasser)
-SHORE = [(0.07, 0.30, 0.16, -1, 0), (0.12, 0.19, 0.14, -1, 0), (0.05, 0.42, 0.13, -1, 0), (0.17, 0.12, 0.15, -1, 0),
-         (0.30, 0.17, 0.12, -1, 1), (0.87, 0.30, 0.16, 1, 0), (0.83, 0.19, 0.14, 1, 0), (0.91, 0.41, 0.13, 1, 0),
-         (0.77, 0.12, 0.15, 1, 0), (0.72, 0.17, 0.12, 1, 1)]
+SHORE = [(0.07, 0.30, 0.21, -1, 0), (0.13, 0.19, 0.19, -1, 0), (0.05, 0.42, 0.17, -1, 0), (0.19, 0.12, 0.20, -1, 0),
+         (0.30, 0.17, 0.15, -1, 1), (0.87, 0.30, 0.21, 1, 0), (0.82, 0.19, 0.19, 1, 0), (0.91, 0.41, 0.17, 1, 0),
+         (0.76, 0.12, 0.20, 1, 0), (0.72, 0.17, 0.15, 1, 1)]
 N_SHORE = len(SHORE)
+AUTO_PER_SIDE = 2                              # von selbst höchstens so viele Pflanzen je Ufer, der Rest kommt per Knüppel
+AUTO_PLANT = (8.0, 20.0)                       # Abstand der Keime von selbst (s, durch die Energie geteilt)
+SPROUT_RATE = 0.7                              # Wachstum je s nach Knüppel (Stufe 0 -> 2 in ~3 s), sonst mit der Energie
 WATER_SPECIES, BANK_SPECIES = (3, 4), (0, 1, 2, 5)
 AUTO_THROW = (50.0, 100.0)            # Wesen fallen nur noch selten von selbst in den Strudel.0
 # Zellen im Atlas assets/pond/creatures.png (6 x 4, Index = Reihe*6 + Spalte)
@@ -125,6 +128,8 @@ class Controller:
         self.plant_alive = [False] * N_SHORE
         self.plant_seed = [self.rng.random() for _ in range(N_SHORE)]
         self.plant_rate = [1.0] * N_SHORE
+        self.plant_t0 = [-10.0] * N_SHORE          # Startzeit (Sprießfunken im Shader)
+        self.plant_fast = [False] * N_SHORE        # per Knüppel: wächst schnell, unabhängig von der Musik
         self.plant_next = time.monotonic() + 2.0
         self.spore_t0 = -10.0
         self.auto_throw_at = time.monotonic() + self.rng.uniform(*AUTO_THROW)
@@ -156,30 +161,32 @@ class Controller:
         log.info("Geworfen: %s von %s", self.throws[slot].name, side)
 
     def sprout(self, side: int) -> None:
-        """Knüppel: auf dieser Seite sprießt etwas Neues (leerer Platz, sonst der am weitesten verwelkte)."""
+        """Knüppel: auf dieser Seite sprießt sofort etwas Neues (leerer Platz, sonst der älteste wird ersetzt) und wächst
+        in ~3 s mit Funken hoch; die anderen Pflanzen der Seite bekommen einen Schub."""
         now = time.monotonic()
-        cands = [i for i in range(N_SHORE) if SHORE[i][3] == side and not self.plant_alive[i]]
-        if not cands:
-            cands = [i for i in range(N_SHORE) if SHORE[i][3] == side and self.plant_stage[i] > 2.3]
-        if not cands:
-            cands = [i for i in range(N_SHORE) if SHORE[i][3] == side]
-            i = min(cands, key=lambda k: self.plant_stage[k])
-            if self.plant_stage[i] < 2.0:
-                self.plant_stage[i] = max(self.plant_stage[i], 1.6)   # ein Schub statt neu
-                return
-        else:
+        mine = [i for i in range(N_SHORE) if SHORE[i][3] == side]
+        cands = [i for i in mine if not self.plant_alive[i]]
+        if cands:
             i = self.rng.choice(cands)
-        self._plant_start(i, now)
+        else:                                                           # alles belegt: die am weitesten entwickelte neu
+            i = max(mine, key=lambda k: (self.plant_stage[k], -self.plant_t0[k]))
+        self._plant_start(i, now, fast=True)
+        for k in mine:
+            if k != i and self.plant_alive[k] and self.plant_stage[k] < 2.0:
+                self.plant_stage[k] = min(2.0, self.plant_stage[k] + 0.5)
+        self.spore_t0 = now
         log.info("Es sprießt: %s %s", ("Fliegenpilze", "Farn", "Leuchtpilze", "Lotus", "Schilf", "Fleischfresser")[self.plant_species[i]],
                  "links" if side < 0 else "rechts")
 
-    def _plant_start(self, i: int, now: float) -> None:
+    def _plant_start(self, i: int, now: float, fast: bool = False) -> None:
         pool = WATER_SPECIES if SHORE[i][4] else BANK_SPECIES
         self.plant_species[i] = self.rng.choice(pool)
         self.plant_stage[i] = 0.0
         self.plant_alive[i] = True
         self.plant_seed[i] = self.rng.random()
         self.plant_rate[i] = self.rng.uniform(0.7, 1.4)
+        self.plant_t0[i] = now
+        self.plant_fast[i] = fast
 
     def _plants_tick(self, now: float, dt: float, live: float, on_beat: bool) -> None:
         """Pflanzen wachsen mit der Energie der Musik, stehen voll da, verwelken; in der Stille welkt alles langsam."""
@@ -188,7 +195,9 @@ class Controller:
         for i in alive:
             st = self.plant_stage[i]
             r = self.plant_rate[i]
-            if live < 0.3:
+            if self.plant_fast[i] and st < 2.0:                        # per Knüppel: schnell hoch, auch ohne Musik
+                self.plant_stage[i] = min(2.0, st + dt * SPROUT_RATE)
+            elif live < 0.3:
                 self.plant_stage[i] = min(3.0, st + dt * 0.08 * r) if st >= 2.0 else st + dt * 0.03 * r
             elif st < 2.0:
                 self.plant_stage[i] = min(2.0, st + dt * grow * r)
@@ -197,10 +206,11 @@ class Controller:
                 self.plant_stage[i] = min(3.0, st + dt * r / hold)
             if self.plant_stage[i] >= 3.0:
                 self.plant_alive[i] = False
-        # neue Keime: je lauter, desto öfter
-        if live > 0.3 and now >= self.plant_next and len(alive) < N_SHORE:
-            self.plant_next = now + self.rng.uniform(1.2, 5.0) / (0.4 + 1.6 * self.energy)
-            empty = [i for i in range(N_SHORE) if not self.plant_alive[i]]
+        # neue Keime von selbst: selten und je Ufer höchstens AUTO_PER_SIDE, damit der Knüppel Platz hat
+        if live > 0.3 and now >= self.plant_next:
+            self.plant_next = now + self.rng.uniform(*AUTO_PLANT) / (0.5 + 1.0 * self.energy)
+            empty = [i for i in range(N_SHORE) if not self.plant_alive[i]
+                     and sum(1 for k in alive if SHORE[k][3] == SHORE[i][3]) < AUTO_PER_SIDE]
             if empty and self.rng.random() < 0.3 + 0.7 * self.energy:
                 self._plant_start(self.rng.choice(empty), now)
         if on_beat and self.rng.random() < 0.2 + 0.4 * self.bass_s:
@@ -291,8 +301,9 @@ class Controller:
             self.rings.append((self.vortex[0], self.vortex[1], now))
             self.beat_pulse = 1.0
             self.beat_step = (self.beat_step + 1) % 8
-            self.quake_t0 = now
-            self.swirl_t += 0.35 * beat                                  # Drehstoß
+            if self.beat_step % 4 == 0 or bass > 0.75:                  # Druckwelle nur bei jedem 4. oder kräftigen Beat
+                self.quake_t0 = now
+            self.swirl_t += 0.2 * beat                                   # Drehstoß
         # Drop: Wasser leuchtet auf
         if live and self.energy > 0.03 and e_fast < 0.5 * self.energy:
             self.quiet_since = self.quiet_since or now
@@ -368,7 +379,8 @@ class Controller:
         }
         for i, (x, y, sz, side, water) in enumerate(SHORE):
             out[f"uPlant{i}"] = (x, y, sz, float(self.plant_species[i]))
-            out[f"uPlantS{i}"] = (self.plant_stage[i] if self.plant_alive[i] else -1.0, float(side), self.plant_seed[i], float(water))
+            out[f"uPlantS{i}"] = (self.plant_stage[i] if self.plant_alive[i] else -1.0, float(side * (1 + water)), self.plant_seed[i],
+                                  min(9.0, now - self.plant_t0[i]))
         for i in range(6):
             if i < len(self.rings):
                 x, y, t0 = self.rings[i]
