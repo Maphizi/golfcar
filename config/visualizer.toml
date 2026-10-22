@@ -176,7 +176,8 @@ shader = "timejump"
 controller = "timejump"    # Zeitsprung (Zukunft-Taste 2)
 render_scale = 0.6
 vanish = [0.5, 0.42]       # Fluchtpunkt der Straße (Anteile, y von unten)
-windshield = [0.0, 1.0, 0.36, 1.0]   # Scheibenbereich im Cockpitbild: x0, x1, y0, y1 (y von unten)
+windshield = [0.0, 1.0, 0.50, 1.0]   # Scheibenbereich im Cockpitbild: x0, x1, y0, y1 (y von unten)
+cockpit_drop = 0.17        # Cockpit nach unten schieben: mehr Scheibe, kleinere Armaturen
 
 [scenes.flux]
 shader = "flux"
@@ -190,7 +191,7 @@ shader = "clocktower"
 controller = "clocktower"  # Uhrturm (Zukunft-Taste 4)
 render_scale = 0.6
 clock = [0.667, 0.824, 0.045]            # Zifferblatt x, y, Radius (am Foto gemessen)
-windows = [0.183, 0.611, 0.318, 0.039]   # Schaufenster: x erste, x letzte (8 von 9, das neunte liegt unter dem Turm), y Mitte, Breite
+windows = [0.186, 0.613, 0.268, 0.044]   # Schaufenster: x erste, x letzte (8 von 9, das neunte liegt unter dem Turm), y Mitte, Breite
 cable = [0.714, 0.764, 0.922, 0.463]     # Kabel Turm -> Laterne: x0, y0, x1, y1
 
 [scenes.almanacslots]
