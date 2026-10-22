@@ -52,6 +52,7 @@ render_scale = 0.6
 shader = "slots"
 controller = "slots"            # ORBIT, COMIC, WAHNSINN (3 Walzen); Rahmen assets/slots/space_frame.png optional, sonst Blende
 render_scale = 0.6
+area = [0.195, 0.08, 0.89, 0.942]   # Walzenfläche = Schwarzfläche des Rahmens (x0, y0, x1, y1, y von unten)
 
 [scenes.blackhole]
 shader = "blackhole"
@@ -115,7 +116,7 @@ eye = [0.511, 0.722, 0.175] # Augenmitte x, y (von unten), Breite (Bildanteile)
 shader = "slots"
 controller = "forestslots"   # Pilzautomat, Tiere des Waldes, Waldgeister (Thema Power of the Green), gemeinsamer Shader "slots"
 render_scale = 0.6
-# area = [0.10, 0.075, 0.90, 0.925]   # Walzenfläche x0, y0, x1, y1 (Bildanteile, von unten); Standard: mit Rahmen die Schwarzfläche
+area = [0.161, 0.093, 0.834, 0.861]   # Walzenfläche = Schwarzfläche des Rahmens (x0, y0, x1, y1, y von unten)
 
 [scenes.hearttree]
 shader = "hearttree"
@@ -154,6 +155,7 @@ panels = [0.264, 0.757, 0.385, 0.052]    # Neontafeln: x erste, x letzte, y, Bre
 shader = "slots"
 controller = "cyberslots"  # Pachinko, Konzern, Netzgeister (Cyber-Taste 5), gemeinsamer Shader "slots", Rahmen assets/slots/cyber_frame.png
 render_scale = 0.6
+area = [0.133, 0.079, 0.866, 0.923]   # Walzenfläche = Schwarzfläche des Rahmens (x0, y0, x1, y1, y von unten)
 
 [scenes.rooftop]
 shader = "rooftop"
@@ -195,6 +197,7 @@ cable = [0.714, 0.764, 0.922, 0.463]     # Kabel Turm -> Laterne: x0, y0, x1, y1
 shader = "slots"
 controller = "almanacslots"   # Almanach, Wilder Westen, Zukunft 2015 (Zukunft-Taste 5), gemeinsamer Shader "slots", Rahmen future_frame.png
 render_scale = 0.6
+area = [0.165, 0.057, 0.832, 0.896]   # Walzenfläche = Schwarzfläche des Rahmens (x0, y0, x1, y1, y von unten)
 
 [scenes.square]
 shader = "square"

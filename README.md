@@ -627,25 +627,21 @@ Ereignisprofile (`config/wled.toml` `woodeye_*`). Augenmitte und -größe: `conf
 `visualizers/scenes/woodeye.py`, Shader `visualizers/shaders/woodeye/frag.glsl`.
 Test: `python -m visualizers.engine woodeye --test-signal --demo`.
 
-**Der Pilzautomat (Taste 5 im Thema THE POWER OF THE GREEN, `forestslots`):** Das Gegenstück zur
-Space-Slotmaschine (`themes.toml` `modes = { slots = "forestslots" }`). Ein Baumstumpf im Nachtwald
-(`assets/forestslots/scene.png`) ist der Automat, seine drei ausgehöhlten Fenster sind die Walzen; die Symbole
-(`assets/forestslots/symbols.png`, 3x3: Fliegenpilz, Frosch, Eule, Glühwürmchen, Eichel, Farn, Schnecke, Fuchs,
-Lichthirsch = Jackpot) laufen auf feuchten Holztrommeln. Die Spiellogik ist die der Space-Slotmaschine (Walzen,
-Gewinnplanung, Fast-Gewinn, Nachdrehen, Jackpot, Mega), `visualizers/scenes/forestslots.py` erbt sie. Statt dreier
-Automaten wechselt der Knüppel links/rechts den Einsatz: Eichel (10 CR, x1), Pilz (50 CR, x5), Hirsch (200 CR,
-x20), der Stumpf leuchtet mit dem Einsatz stärker. Startknopf = Hebel ziehen. Die Kamera steht nah am Automaten.
-Musik: die Pilze sind die Lichtshow: ohne Bass gedimmt, mit Bass und Beat flammen sie mit weichem Schein auf, ein
-Lauflicht wandert auf den Beat durch die drei Pilzgruppen (links, Mitte, rechts) und färbt sie um, die Kamera atmet und
-ruckt auf den Beat; Beats glimmen im Moos und zucken auf der Gewinnlinie, einrastende Walzen stauben, der Hebelknauf
-glüht beim Drehen, Höhen funkeln als
-Glühwürmchen und Tautropfen, Mitten lassen den Nebel atmen, Drops schicken eine Sporenwolke und eine Farbwelle über
-die Pilze und die nächste Drehung läuft schneller an. Gewinne: zwei gleiche = Glühwürmchen schwärmen aus den
-Fenstern, drei gleiche = Blätter und Pollen regnen, die Pilze leuchten in Wellen, der Fuchs tanzt am Stumpf
-(Figuren vom Auge des Waldes); Lichthirsch = der ganze Wald leuchtet auf, der Hirsch galoppiert mit Funkenschweif
-durchs Bild, Sporenfeuerwerk, Board in Gold und Grün (`config/wled.toml` `forestslots_*`). Fensterpositionen:
-`config/visualizer.toml` `[scenes.forestslots]` `windows`, `window_y`. Shader
-`visualizers/shaders/forestslots/frag.glsl`. Test: `python -m visualizers.engine forestslots --test-signal`.
+**Der Pilzautomat (Taste 5 im Thema THE POWER OF THE GREEN, `forestslots`):** Das Gegenstück zur Space-Slotmaschine
+(`themes.toml` `modes = { slots = "forestslots" }`), gleicher Aufbau wie diese: **vier Walzen** füllen das Bild, darüber
+liegt der Waldrahmen (`assets/slots/forest_frame.png`: Rinde, Moos, Farne, Glühwürmchen; drei leuchtende Pilze hängen
+von oben und links über die Walzen und blinken zum Bass). Drei Automaten, Knüppel links/rechts wechselt: PILZAUTOMAT
+(`assets/slots/forest.png`: Fliegenpilz, Frosch, Eule, Glühwürmchen, Eichel, Farn, Schnecke, Fuchs, Lichthirsch =
+Jackpot), TIERE DES WALDES (`forest_animals.png`: Igel, Dachs, Reh, Wildschwein, Wolf, Rabe, Fledermaus, Luchs,
+Lichthirsch) und WALDGEISTER (`forest_magic.png`: Fee, Irrlicht, Hexenring, Traumfänger, Mond, Kristall, Zwerg, Alraune,
+Waldgott). Knüppel oben/unten = Einsatz (Eichel, Pilz, Hirsch), Startknopf = drehen. Gewinne bei vier Walzen: drei
+gleiche nebeneinander = groß, drei mit Lücke = klein, alle vier = Jackpot, Lichthirsch überall = Mega. Rahmenlichter und
+Pilze pulsen zum Bass, Lauflicht über die Stege auf den Beat, Höhen funkeln, Drop = Blitz und die nächste Drehung läuft
+schneller. Gewinn = Glühwürmchen und Blätter, großer Gewinn = der Fuchs tanzt (`assets/woodeye/figures.png`), Jackpot =
+der Lichthirsch galoppiert mit Sporenfeuerwerk. Board `forestslots`, `forestslots_win`, `forestslots_jackpot`.
+`config/visualizer.toml` `[scenes.forestslots]` `area` (Walzenfläche = Schwarzfläche des Rahmens). Controller
+`visualizers/scenes/forestslots.py` (dünne Unterklasse), Shader gemeinsam `visualizers/shaders/slots/frag.glsl`.
+Test: `python -m visualizers.engine forestslots --test-signal`.
 
 **Der Herzbaum (Taste 6 im Thema THE POWER OF THE GREEN, `hearttree`):** Das Gegenstück zum Lagerfeuer
 (`themes.toml` `modes = { campfire = "hearttree" }`). Ein uralter Baum bei Nacht (`assets/hearttree/scene.png`), durch
@@ -731,15 +727,20 @@ durch die Halle, kurzer Glitch oder ein Spruch. Board `oracle`, `oracle_speak`, 
 `visualizers/scenes/oracle.py`, Shader `visualizers/shaders/oracle/frag.glsl`.
 Test: `python -m visualizers.engine oracle --test-signal --demo`.
 
-**Pachinko (Taste 5 im Thema CYBERPUNK, `cyberslots`):** Das Gegenstück zur Slotmaschine, gleiche Spiellogik
-(`visualizers/scenes/slots.py`), eigener Automat (`assets/cyber/cyberslots_scene.png`) und eigene Symbole
-(`cyberslots_symbols.png`, 3x3: Neurochip, Deck, Drohne, Katze, Ramen, Implantat, Eddies, Samurai, KI-Kern =
-Jackpot). Knüppel links/rechts = Einsatz CHIP, DECK, IMPLANT (Gewinne x1, x5, x20), Startknopf = drehen. Neonröhren
-und Werbeschilder im Foto pulsieren zum Bass, Lauflicht auf jeden Beat, Glitch-Flackern in den Höhen, Drop = Blitz und
-die nächste Drehung läuft schneller. Gewinn = Credit-Chips regnen, großer Gewinn = Samurai tanzt, Jackpot = der
-KI-Kern erwacht, Drohne und Koffer fliegen ein. Board `cyberslots`, `cyberslots_win`, `cyberslots_jackpot`.
-`[scenes.cyberslots]` `windows`, `window_y`. Controller `visualizers/scenes/cyberslots.py`, Shader
-`visualizers/shaders/cyberslots/frag.glsl`. Test: `python -m visualizers.engine cyberslots --test-signal`.
+**Pachinko (Taste 5 im Thema CYBERPUNK, `cyberslots`):** Das Gegenstück zur Slotmaschine, gleicher Aufbau: **fünf
+Walzen** füllen das Bild, darüber der Chromrahmen (`assets/slots/cyber_frame.png`: Neonröhren, kleine Bildschirme,
+Kabel; eine Lieferdrohne hängt von oben über die Walzen, die Neonkatze sitzt unten rechts). Drei Automaten (Knüppel
+links/rechts): PACHINKO (`assets/slots/cyberslots_symbols.png`: Neurochip, Drohne, Ramen, Katana, Deck, Neonkatze,
+Credit-Chip, Chromschädel, KI-Kern = Jackpot), KONZERN (`cyber_konzern.png`: Koffer voller Chips, Sicherheitsroboter,
+Konzernwürfel, Überwachungskamera, Chipkarte, Serverschrank, Android im Anzug, Schwebelimousine, KI-Kern) und
+NETZGEISTER (`cyber_netzgeister.png`: Glitch-Maske, Platinenspinne, Virus, Hologramm-Schädel, Pixelfisch,
+Scanlinien-Auge, Glasfaserhand, Drahtgitter-Gesicht, KI-Kern). Knüppel oben/unten = Einsatz (CHIP, DECK, IMPLANT),
+Startknopf = drehen. Gewinne bei fünf Walzen: drei gleiche nebeneinander = klein, vier = groß, alle fünf = Jackpot,
+KI-Kern überall = Mega. Neonröhren pulsen zum Bass, Lauflicht auf den Beat, Drop = Blitz und schnellere Drehung.
+Gewinn = Credit-Chips regnen und Holo-Ringe, großer Gewinn = der Samurai tanzt (`assets/cyber/oracle_figures.png`),
+Jackpot = Neon-Explosion. Board `cyberslots`, `cyberslots_win`, `cyberslots_jackpot`. `[scenes.cyberslots]` `area`.
+Controller `visualizers/scenes/cyberslots.py`, Shader gemeinsam `visualizers/shaders/slots/frag.glsl`.
+Test: `python -m visualizers.engine cyberslots --test-signal`.
 
 **Dachterrasse (Taste 6 im Thema CYBERPUNK, `rooftop`):** Das Gegenstück zum Lagerfeuer. Blick von einem Dach über
 die Skyline (`assets/cyber/rooftop_scene.png`) und sechs Lichtzustände derselben Stadt (`rooftop_light_1..6.png`:
@@ -829,16 +830,19 @@ aus 1955 tanzt), Kippschalter AN = Nahaufnahme aufs Zifferblatt, AUS = zurück. 
 y, Breite), `cable` (Turm zu Laterne). Controller `visualizers/scenes/clocktower.py`, Shader
 `visualizers/shaders/clocktower/frag.glsl`. Test: `python -m visualizers.engine clocktower --test-signal --demo`.
 
-**Almanach (Taste 5 im Thema ZURÜCK IN DIE ZUKUNFT, `almanacslots`):** Das Gegenstück zur Slotmaschine, gleiche
-Spiellogik, ein protziger Casino-Automat aus dem falschen 1985 (`assets/future/almanac_scene.png`) mit neun
-Zeitreise-Symbolen (`almanac_symbols.png`, 3x3: Hoverboard, Almanach, Plutonium, Skateboard, Kassette, Hund, Turnschuh,
-Fluxkompensator, Uhr auf 22:04 = Jackpot). Knüppel links/rechts = Einsatz CENT 1955, DOLLAR 1985, KARTE 2015 (Gewinne
-x1, x5, x20), Startknopf = drehen. Gold, Spiegel und Neon pulsen zum Bass, Lauflicht durch die drei Säulen auf den
-Beat, Glühbirnen flackern in den Höhen, Drop = Blitz von oben in den Automaten und die nächste Drehung läuft
-schneller. Gewinn = Dollarscheine regnen, großer Gewinn = Feuerspuren laufen durchs Bild, der Professor und das
-Tanzpaar tanzen, Jackpot = Blitz, die Zeitmaschine fährt durch den Automaten und alles kippt kurz nach Schwarzweiß wie
-1955. Board `almanacslots`, `almanacslots_win`, `almanacslots_jackpot`. `[scenes.almanacslots]` `windows`, `window_y`.
-Controller `visualizers/scenes/almanacslots.py`, Shader `visualizers/shaders/almanacslots/frag.glsl`.
+**Almanach (Taste 5 im Thema ZURÜCK IN DIE ZUKUNFT, `almanacslots`):** Das Gegenstück zur Slotmaschine, gleicher
+Aufbau: **drei Walzen** füllen das Bild, darüber der Casino-Rahmen von 1985 (`assets/slots/future_frame.png`: Gold,
+Spiegel, Glühbirnenreihen, Neonstreifen; der Fluxkompensator leuchtet oben rechts, ein Hoverboard lehnt unten links über
+die Walzen). Drei Automaten (Knüppel links/rechts): ALMANACH (`assets/slots/almanac_symbols.png`: Hoverboard, Almanach,
+Plutonium, Skateboard, Kassette, Hund, Turnschuh, Fluxkompensator, Uhr 22:04 = Jackpot), WILDER WESTEN
+(`future_1885.png`: Revolver, Cowboyhut, Sheriffstern, Hufeisen, Kaktus, Dampflok, Whiskey, Steckbrief, Uhr 22:04) und
+ZUKUNFT 2015 (`future_2015.png`: Hoverboard, Flugauto, Turnschuh, Hologramm-Hai, Fusionsreaktor, Drohne, Videobrille,
+Roboterkellner, Uhr 22:04). Knüppel oben/unten = Einsatz (CENT 1955, DOLLAR 1985, KARTE 2015), Startknopf = drehen.
+Glühbirnen und Neon pulsen zum Bass, Lauflicht auf den Beat, Drop = Blitz von oben und schnellere Drehung. Gewinn =
+Dollarscheine regnen, großer Gewinn = Feuerspuren und der Professor tanzt (`assets/future/clocktower_figures.png`),
+Jackpot = Blitz, die Zeitmaschine fährt durch und alles kippt kurz nach Schwarzweiß wie 1955. Board `almanacslots`,
+`almanacslots_win`, `almanacslots_jackpot`. `[scenes.almanacslots]` `area`. Controller
+`visualizers/scenes/almanacslots.py`, Shader gemeinsam `visualizers/shaders/slots/frag.glsl`.
 Test: `python -m visualizers.engine almanacslots --test-signal`.
 
 **Marktplatz (Taste 6 im Thema ZURÜCK IN DIE ZUKUNFT, `square`):** Das Gegenstück zum Lagerfeuer. Derselbe Marktplatz

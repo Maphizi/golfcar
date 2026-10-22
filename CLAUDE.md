@@ -121,16 +121,28 @@ RECHTS Zwerge / OBEN beide (`uFig`, `uOwl`), UNTEN Kaleidoskop, ENTER Froschchor
 `[scenes.woodeye] eye = [x, y, Breite]`.
 Test: `python -m visualizers.engine woodeye --test-signal --demo`.
 
-## Pilzautomat (`visualizers/scenes/forestslots.py`, Thema green ersetzt Taste 5 / Slots)
-`themes.toml` `modes = { slots = "forestslots" }`. Erbt `slots.Controller` (Walzen, Planung, Gewinne); Basis ist dafür
-parametrisiert: `self.themes`, `self.led` (WLED-Profile Modus/Gewinn/Jackpot), `self.bet`, `self.payout_mult`,
-`self.strip_row`, `_pick_theme()`. Eigener Atlas: Bogen `assets/forestslots/symbols.png` 3x3 à 384x256 (Schwarz = frei),
-Thema `slots_themes.FOREST` (letztes Symbol = Lichthirsch = Jackpot). Szene `assets/forestslots/scene.png`, Fenster
-`[scenes.forestslots] windows = [[x0,x1],...]`, `window_y = [y0,y1]`. Knüppel links/rechts = Einsatz `STAKES`
-(Eichel/Pilz/Hirsch) statt Automatenwechsel. Shader zeichnet Trommeln in den Fenstern (`drum()`), Pilze im Foto pulsieren
-(helle gesättigte Stellen), `uWin` 1 Glühwürmchen, 2 Blätter + Fuchs (`assets/woodeye/figures.png`), 3/4 Lichthirsch
-galoppiert; Drop `uFlash`/`uSporeT`, nächste Drehung schneller (`drop_boost`).
-Test: `python -m visualizers.engine forestslots --test-signal`.
+## Slotmaschinen (`visualizers/scenes/slots.py`, Shader `visualizers/shaders/slots/frag.glsl`, `docs/slots_plan.md`)
+Eine Basis für alle vier Themen: Walzen füllen das Bild (`uArea` = `[scenes.<modus>] area`, sonst Standard), 3-5 Walzen je
+Automat (`"reels"` im Theme-Dict, `MAX_REELS` 5, `uReel0..4` = Position/Drehzahl/Unschärfe/Stoppalter, `uNReels`), Gewinne
+`_evaluate()`: 3 Walzen wie bisher (Paar klein, Drilling groß, Jackpot-Symbol = Jackpot, alle 9 = Mega, Diagonalen); 4 Walzen:
+3 nebeneinander = groß, 3 mit Lücke = klein; 5 Walzen: 3 nebeneinander klein, 4 groß, alle = Jackpot, Jackpot-Symbol überall
+= Mega (`uWinMask` je Walze, `uWinLine`). Tasten: ENTER/SPACE drehen, LINKS/RECHTS Automat (`ST_THEME`), OBEN/UNTEN Einsatz
+(`STAKES`). Themenrahmen `assets/slots/<FRAME>` (1920x1080, Mitte reines Schwarz, `load_frame` Luma-Key mit weichem Rand,
+`uFrameTex/uFrameOK`, `KITT_SLOTS_FRAME=<pfad>` zum Testen), Rahmenlichter pulsen zum Bass, Lauflicht `uStep/uStepPhase/
+uPattern`, Höhen funkeln, Drop `uFlash` + `drop_boost`, Stille dimmt. Stil `uStyle` 0 Space / 1 Natur / 2 Cyber / 3 Zukunft
+(Gewinn-Effekte: Goldregen; Glühwürmchen/Fuchs/Lichthirsch; Chips/Samurai/Neon-Explosion; Dollar/Feuerspuren/Professor/
+Zeitmaschine/Sepia), Figuren `uFigTex`/`uFig`. Themen-Controller sind Klassenattribute (`THEMES, LED, STAKES, CURRENCY,
+FRAME, FIGURES, FIG_CELLS, STYLE, COUNTER, SEED_BASE`). Bögen 768x510 (3x3 à 256x170) unter `assets/slots/`, neue Bögen und
+Rahmen vom Bot nach `assets/slots/raw/` und `scripts/slots_assets.sh`. Automatenzähler `logs/<modus>_theme.txt`.
+
+| Modus | Thema | Walzen | Rahmen | Automaten (`slots_themes.py`) |
+|---|---|---|---|---|
+| `slots` | Space | 3 | `space_frame.png` | `THEMES`: ORBIT `real.png`, COMIC `cartoon.png`, WAHNSINN `crazy.png` |
+| `forestslots` | green | 4 | `forest_frame.png` | `FOREST`: PILZAUTOMAT `forest.png`, TIERE DES WALDES `forest_animals.png`, WALDGEISTER `forest_magic.png` |
+| `cyberslots` | cyber | 5 | `cyber_frame.png` | `CYBER`: PACHINKO `cyberslots_symbols.png`, KONZERN `cyber_konzern.png`, NETZGEISTER `cyber_netzgeister.png` |
+| `almanacslots` | future | 3 | `future_frame.png` | `FUTURE`: ALMANACH `almanac_symbols.png`, WILDER WESTEN `future_1885.png`, ZUKUNFT 2015 `future_2015.png` |
+
+Test: `python -m visualizers.engine <slots|forestslots|cyberslots|almanacslots> --test-signal`.
 
 ## Herzbaum (`visualizers/scenes/hearttree.py`, Thema green ersetzt Taste 6 / Lagerfeuer)
 `themes.toml` `modes = { campfire = "hearttree" }`. Szene `assets/hearttree/scene.png` (Shader erkennt Adern: Bernstein/Türkis),
@@ -193,11 +205,7 @@ Salve (`salvo()`), Scanner `uScanT`, Glitch 4 s, Spruch. `oracle_mask.png` unben
 Test: `python -m visualizers.engine oracle --test-signal --demo`.
 
 ### Pachinko (`visualizers/scenes/cyberslots.py`, Taste 5 / Slots)
-Erbt `slots.Controller` wie der Pilzautomat. Thema `CYBER` (Symbole `cyberslots_symbols.png` 3x3 à 384x256, letztes =
-KI-Kern = Jackpot), `STAKES` CHIP 10/x1, DECK 50/x5, IMPLANT 200/x20 (LINKS/RECHTS). Extra-Uniforms `uGlitchT, uStake,
-uStakeT, uSam, uStep, uStepPhase, uStopT`, `uObjTex` = `core_objects.png` (Drohne Zelle 0, Koffer Zelle 20 beim Jackpot),
-`uFigTex` = Samurai tanzt bei großem Gewinn, Chips regnen. Zoom im Shader (center 0.5/0.52, 1.22), Symbolbreite
-`symW = min(1, 1.5*winAspect*1.08)`. `[scenes.cyberslots] windows`, `window_y`.
+Dünne Unterklasse der Slotmaschine (siehe "Slotmaschinen"): fünf Walzen, Rahmen `cyber_frame.png`, Automaten `CYBER`.
 Test: `python -m visualizers.engine cyberslots --test-signal`.
 
 ### Dachterrasse (`visualizers/scenes/rooftop.py`, Taste 6 / Lagerfeuer)
@@ -261,10 +269,7 @@ SPACE/BACKSPACE `uZoom`. `[scenes.clocktower] clock = [x, y, r]`, `windows = [x0
 Test: `python -m visualizers.engine clocktower --test-signal --demo`.
 
 ### Almanach (`visualizers/scenes/almanacslots.py`, Taste 5 / Slots)
-Erbt `slots.Controller` wie Pilzautomat/Pachinko. Thema `FUTURE` (`almanac_symbols.png` 3x3 à 384x256, letztes = 22:04 =
-Jackpot), `STAKES` CENT 1955 10/x1, DOLLAR 1985 50/x5, KARTE 2015 200/x20. Extra-Uniforms `uBoltT/uBoltSeed` (Drop-Blitz),
-`uSepia` (Schwarzweiß beim Jackpot), `uStake/uStakeT`, `uFig` (Professor/Tanzpaar aus `clocktower_figures.png`, Jackpot-Wagen
-Zellen 14/15), `uStep/uStepPhase/uStopT`. Dollarregen und Feuerspuren prozedural. `[scenes.almanacslots] windows`, `window_y`.
+Dünne Unterklasse der Slotmaschine (siehe "Slotmaschinen"): drei Walzen, Rahmen `future_frame.png`, Automaten `FUTURE`.
 Test: `python -m visualizers.engine almanacslots --test-signal`.
 
 ### Marktplatz (`visualizers/scenes/square.py`, Taste 6 / Lagerfeuer)
