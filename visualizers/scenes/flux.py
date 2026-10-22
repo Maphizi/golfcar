@@ -178,14 +178,40 @@ class Controller:
         self.over_t0 = -10.0
         self.fade = 0.0
         self.polaroid = 0.0
-        self.zoom = 0.0
-        self.zoom_target = 0.0
+        self.base_zoom = float(scene_cfg.get("base_zoom", 0.5))    # Grundnähe: das Y füllt das Bild, Kippschalter = ganz nah
+        self.zoom = self.base_zoom
+        self.zoom_target = self.base_zoom
+        # Ladung: füllt die drei Röhren vom Knoten aus mit der Musik, voll = Entladung (Blitz nach innen, Funken), Stille entlädt
+        self.charge = 0.25
+        self.flow = 1.0                                         # Lauflicht: +1 nach außen (laden), -1 nach innen (entladen)
+        self.discharge_t0 = -10.0
+        self.spray_t0 = -10.0
+        self.spray_arm = 0
+        self.spray_seed = 1.0
+        self.spray_strength = 1.0
+        self.next_spray = time.monotonic() + 6.0
         self.led_back_at: float | None = None
         self.demo_next = time.monotonic() + 3.0
         log.info("Fluxkompensator: Szene %s, Objekte %s, Foto %s", "ok" if self.scene is not None else "fehlt",
                  "ok" if self.objects is not None else "fehlt", "ok" if self.photo is not None else "fehlt")
 
     # -- Aktionen ----------------------------------------------------------
+    def spray(self, now: float, arm: int, strength: float = 1.0) -> None:
+        """Funken sprühen aus einem Röhrenende (arm 0-2) oder allen (3)."""
+        self.spray_t0 = now
+        self.spray_arm = arm
+        self.spray_seed = self.rng.uniform(1.0, 100.0)
+        self.spray_strength = strength
+
+    def discharge(self, now: float) -> None:
+        """Voll geladen: Entladung, Lauflicht kehrt um, Funken aus allen Röhren, Ladung fällt."""
+        self.discharge_t0 = now
+        self.flow = -1.0
+        self.spray(now, 3, 1.4)
+        self.flash = max(self.flash, 0.5)
+        self.rings += [now, now + 0.2]
+        log.info("Entladung bei voller Ladung")
+
     def throw(self, side: str) -> None:
         now = time.monotonic()
         slot = next((i for i, th in enumerate(self.throws) if th is None), None)
@@ -240,6 +266,8 @@ class Controller:
 
     def _drop(self, now: float) -> None:
         self.flash = 1.0
+        if self.charge > 0.4:
+            self.discharge(now)
         self.spin_dir = -self.spin_dir
         self.hue_target = self.rng.choice([-1.2, -0.7, 0.9, 1.6, 2.4])   # weißblau -> orange / violett / grün
         self.rings += [now, now + 0.25, now + 0.5]
@@ -261,7 +289,7 @@ class Controller:
         elif ev.key == pygame.K_SPACE:
             self.zoom_target = 1.0
         elif ev.key == pygame.K_BACKSPACE:
-            self.zoom_target = 0.0
+            self.zoom_target = self.base_zoom
 
     # -- Engine ------------------------------------------------------------
     def images(self) -> dict:
@@ -272,7 +300,8 @@ class Controller:
     def uniform_names(self):
         names = ["uSceneTex", "uObjTex", "uPhotoTex", "uSceneSize", "uObjSize", "uPhotoSize", "uSeed", "uCenter", "uRadius",
                  "uArm0", "uArm1", "uArm2", "uBassS", "uMidS", "uHighS", "uEnergy", "uLive", "uBeatPulse", "uBeatStep",
-                 "uFlash", "uHue", "uSpinT", "uSpinRate", "uZoom", "uStormT", "uEjectT", "uOverT", "uFade", "uPolaroid"]
+                 "uFlash", "uHue", "uSpinT", "uSpinRate", "uZoom", "uStormT", "uEjectT", "uOverT", "uFade", "uPolaroid",
+                 "uCharge", "uFlow", "uDischargeT", "uSpray"]
         names += [f"uRing{i}" for i in range(6)]
         names += [f"uBolt{i}" for i in range(BOLTS)]
         for i in range(SLOTS):
@@ -331,6 +360,22 @@ class Controller:
             self.hue_target = 0.0
         self.rings = [r for r in self.rings if now - r < 3.0][-6:]
         self.zoom += (self.zoom_target - self.zoom) * min(1.0, dt / 1.8)
+        # Ladung hoch und runter: mit der Musik füllen sich die Röhren, voll = Entladung; Stille lässt sie leerlaufen
+        dis_t = now - self.discharge_t0
+        if dis_t < 2.0:
+            self.charge = max(0.08, self.charge - dt * 0.6)
+        elif live:
+            self.flow = 1.0
+            self.charge += dt * (0.015 + 0.08 * self.energy + 0.06 * self.bass_s + 0.1 * self.beat_pulse * self.energy)
+            if self.charge >= 1.0:
+                self.charge = 1.0
+                self.discharge(now)
+        else:
+            self.charge = max(0.0, self.charge - dt * 0.04)
+        # Funken aus den Röhrenenden von selbst (bei Musik), reihum eine andere Seite
+        if live and self.energy > 0.2 and now >= self.next_spray:
+            self.next_spray = now + self.rng.uniform(6.0, 14.0)
+            self.spray(now, self.rng.randrange(3), 0.6 + 0.8 * self.energy)
         # Gewitter: Blitze nach Plan, Beats schlagen zusätzlich ein
         storm_t = -1.0
         if storming:
@@ -379,6 +424,10 @@ class Controller:
             "uStormT": storm_t,
             "uEjectT": eject_t, "uOverT": (now - self.over_t0) if now - self.over_t0 < OVER_SECONDS else -1.0,
             "uFade": self.fade, "uPolaroid": self.polaroid,
+            "uCharge": self.charge, "uFlow": (self.flow, 2.0 + 6.0 * self.bass_s + 3.0 * self.energy),
+            "uDischargeT": (now - self.discharge_t0) if now - self.discharge_t0 < 3.0 else -1.0,
+            "uSpray": ((now - self.spray_t0) if now - self.spray_t0 < 2.0 else -1.0, float(self.spray_arm), self.spray_seed,
+                       self.spray_strength),
         }
         for i, arm in enumerate(self.arms):
             out[f"uArm{i}"] = (arm[0], arm[1], arm[2], 0.0)

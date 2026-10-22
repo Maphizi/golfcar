@@ -18,6 +18,9 @@ uniform vec2 uSceneSize, uObjSize, uPhotoSize, uCenter;
 uniform vec4 uArm0, uArm1, uArm2;
 uniform float uSeed, uRadius, uBassS, uMidS, uHighS, uEnergy, uLive, uBeatPulse, uBeatStep, uFlash, uHue, uSpinT, uSpinRate, uZoom;
 uniform float uStormT, uEjectT, uOverT, uFade, uPolaroid, uRing0, uRing1, uRing2, uRing3, uRing4, uRing5;
+uniform float uCharge, uDischargeT;                       // Ladung 0..1 der Röhren, Alter der Entladung (-1 = keine)
+uniform vec2 uFlow;                                        // Lauflicht: Richtung (+1 außen / -1 innen), Tempo
+uniform vec4 uSpray;                                       // Funken aus einem Röhrenende: Alter, Arm (3 = alle), Seed, Stärke
 uniform vec4 uThrow0, uThrow1, uThrow2, uThrowPar0, uThrowPar1, uThrowPar2, uBolt0, uBolt1, uBolt2;
 const float PI = 3.14159265;
 const int STORM_LEN = 20;
@@ -190,7 +193,24 @@ void main() {
     }
     float flick = mix(1.0, 0.35 + 0.65 * step(0.3, hash12(vec2(floor(t * 26.0), 3.0))), stormA * 0.8 + boltFlash * 0.5);
     float glimmer = 0.42 + 0.08 * sin(t * 1.7 + 2.0 * noise(vec2(t * 0.5, 1.0)));
-    float power = min(2.4, mix(glimmer, 1.0 + 0.6 * uBassS + 0.4 * uBeatPulse, live) * flick + 0.8 * pulse + 1.5 * overE + 0.8 * surge);
+    float disE = uDischargeT >= 0.0 ? exp(-uDischargeT * 2.2) : 0.0;
+    // Ladung: Röhren füllen sich vom Knoten aus bis uCharge (heller Kopf), Lauflicht fließt entlang der Arme (uFlow)
+    float fillGlow = 0.0, headGlow = 0.0, flowGlow = 0.0, nearFilled = 1.0, nearD = 9.0;
+    for (int i = 0; i < 3; i++) {
+        vec4 a = armAt(i);
+        float u;
+        float d = segDist(q, vec2(0.0), a.xy * a.z, u);
+        float w = exp(-d * 28.0);
+        float filled = smoothstep(uCharge + 0.04, uCharge - 0.04, u);
+        fillGlow += w * filled;
+        if (d < nearD) { nearD = d; nearFilled = filled; }
+        headGlow += w * exp(-pow((u - uCharge) * 10.0, 2.0)) * step(0.02, uCharge) * (1.0 - step(0.999, uCharge) * 0.5);
+        float stripes = 0.5 + 0.5 * sin(u * 36.0 - t * uFlow.y * uFlow.x + float(i) * 2.0);
+        flowGlow += w * smoothstep(0.55, 0.95, stripes) * filled;
+    }
+    // ungeladener Teil der Röhren bleibt dunkel (Glimmen), geladener Teil leuchtet voll
+    float lit = mix(0.3, 1.0, nearFilled);
+    float power = min(2.4, mix(glimmer, (0.7 + 0.5 * uBassS + 0.35 * uBeatPulse) * lit, live) * flick + 0.8 * pulse + 1.5 * overE + 0.8 * surge + 1.2 * disE);
     vec3 tubeCol = hueShift(vec3(0.62, 0.82, 1.0), uHue);
     // Röhren: Grundlicht dimmen (Stille), färben (Drop), aufhellen (Bass, Beat, Stöße)
     col = mix(col, hueShift(col, uHue), max(tube, glow * 0.9));
@@ -199,6 +219,30 @@ void main() {
     col += tubeCol * halo * (0.06 + 0.35 * uBassS * live + 0.9 * pulse + 0.6 * overE) * (0.3 + 0.7 * live + overE);
     col += tubeCol * exp(-r * 12.0) * (0.15 * uBassS * live + 0.5 * pulse + overE);
     col += tubeCol * rings * 0.3 * (1.0 - near);
+    col += tubeCol * fillGlow * (0.05 + 0.2 * uCharge) * live * (1.0 - tube);
+    col += vec3(1.0, 0.95, 0.85) * headGlow * (0.4 + 0.6 * uBassS + 0.3 * uBeatPulse) * live;
+    col += tubeCol * flowGlow * (0.15 + 0.25 * uBassS) * live * tube;
+    if (disE > 0.0) {                                                        // Entladung: weißer Stoß nach innen, Knoten blitzt
+        col += tubeCol * halo * disE * 1.6 + vec3(1.0) * exp(-r * 9.0) * disE * 1.2;
+        col += vec3(1.0, 0.98, 0.9) * exp(max(-uDischargeT * 7.0, -60.0)) * 0.35;
+    }
+    // Funken sprühen aus einem Röhrenende (oder allen bei der Entladung), nach außen und fallend
+    if (uSpray.x >= 0.0) {
+        for (int k = 0; k < 36; k++) {
+            float fk = float(k);
+            int ai = uSpray.y >= 2.5 ? int(mod(fk, 3.0)) : int(uSpray.y + 0.5);
+            vec4 a = armAt(ai);
+            float h1 = hash12(vec2(fk, uSpray.z)), h2 = hash12(vec2(fk, uSpray.z + 1.0)), h3 = hash12(vec2(fk, uSpray.z + 2.0));
+            float age = uSpray.x * (0.7 + 0.6 * h2) - 0.3 * h3;
+            if (age < 0.0 || age > 1.4) continue;
+            vec2 dir = normalize(a.xy);
+            vec2 nrm = vec2(-dir.y, dir.x);
+            vec2 vel = dir * (0.25 + 0.45 * h1) + nrm * (h2 - 0.5) * 0.5;
+            vec2 sp = dir * a.z + vel * age * 0.6 + vec2(0.0, -0.5 * age * age);
+            float g = smoothstep(0.005 + 0.003 * h3, 0.0, length(q - sp));
+            col += mix(vec3(1.0, 0.9, 0.6), tubeCol * 1.3, step(0.5, h3)) * g * (1.0 - age / 1.4) * 2.2 * uSpray.w;
+        }
+    }
     // ---- Lichter im Foto: rote Kontrolllampe blinkt auf Beats, warme Lampen flackern mit den Mitten
     float redLamp = smoothstep(0.5, 0.8, col.r) * smoothstep(0.35, 0.1, col.g) * (1.0 - tube);
     col += plate * redLamp * (1.5 * uBeatPulse + 0.3 * uBassS) * live;

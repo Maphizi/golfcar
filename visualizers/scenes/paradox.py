@@ -87,28 +87,72 @@ def _triple(value, default) -> tuple[float, float, float]:
     return default
 
 
+MORPH_LEN = 2.8                       # s, in denen ein Anachronismus in den nächsten übergeht
+FADE_IN, FADE_OUT = 2.5, 3.0          # weiches Auftauchen / Verschwinden (s)
+
+
 class Creature:
-    """Ein Anachronismus lauert am Rand, rückt näher, springt auf den Beat."""
+    """Ein Anachronismus lauert am Rand und morpht nach seiner Lebenszeit in den nächsten (nie hartes Ein-/Ausblitzen);
+    auf den Beat rückt er sanft näher, nur in der Gigawatt-Phase deutlicher."""
 
     def __init__(self, rng: random.Random, now: float, horror: bool, cell: int | None = None):
+        self.rng = rng
         self.cell = rng.randrange(N_CELLS) if cell is None else cell
+        self.cell_next = self.cell
+        self.morph_t0 = -10.0
         side = rng.choice((-1.0, 1.0))
         self.x = 0.5 + side * rng.uniform(0.28, 0.46)
         self.y = rng.uniform(0.2, 0.7)
+        self.x_target, self.y_target = self.x, self.y
         self.t0 = now
-        self.life = rng.uniform(6.0, 12.0) if not horror else rng.uniform(3.0, 6.0)
+        self.life = rng.uniform(7.0, 13.0) if not horror else rng.uniform(4.0, 7.0)
         self.size = rng.uniform(0.14, 0.24) * (1.4 if horror else 1.0)
         self.approach = rng.uniform(0.3, 0.8) * (2.0 if horror else 1.0)
         self.hue = rng.uniform(0.0, 6.28)
         self.lunge_t0 = -10.0
         self.mirror = rng.random() < 0.5
         self.seed = rng.random()
+        self.exit_t0 = -1.0
 
     def age(self, now: float) -> float:
         return now - self.t0
 
-    def done(self, now: float) -> bool:
-        return now - self.t0 > self.life
+    def morph(self, now: float, cell: int | None = None) -> None:
+        """In einen anderen Anachronismus übergehen (Position wandert dabei leicht)."""
+        if now - self.morph_t0 < MORPH_LEN:
+            return
+        pool = [c for c in range(N_CELLS) if c != self.cell]
+        self.cell_next = self.rng.choice(pool) if cell is None else cell
+        self.morph_t0 = now
+        self.x_target = min(0.96, max(0.04, self.x + self.rng.uniform(-0.08, 0.08)))
+        self.y_target = min(0.8, max(0.15, self.y + self.rng.uniform(-0.1, 0.1)))
+
+    def tick(self, now: float, dt: float, horror: bool) -> None:
+        k = (now - self.morph_t0) / MORPH_LEN
+        if self.cell_next != self.cell and k >= 1.0:
+            self.cell = self.cell_next
+            self.t0 = now - FADE_IN                                           # neues Leben, voll sichtbar
+            self.life = self.rng.uniform(7.0, 13.0) if not horror else self.rng.uniform(4.0, 7.0)
+        elif self.cell_next == self.cell and now - self.t0 > self.life and self.exit_t0 < 0:
+            self.morph(now)
+        self.x += (self.x_target - self.x) * min(1.0, dt / 2.5)
+        self.y += (self.y_target - self.y) * min(1.0, dt / 2.5)
+
+    def leave(self, now: float) -> None:
+        if self.exit_t0 < 0:
+            self.exit_t0 = now
+
+    def gone(self, now: float) -> bool:
+        return self.exit_t0 >= 0 and now - self.exit_t0 > FADE_OUT
+
+    def fade(self, now: float) -> float:
+        f = min(1.0, (now - self.t0) / FADE_IN)
+        if self.exit_t0 >= 0:
+            f = min(f, max(0.0, 1.0 - (now - self.exit_t0) / FADE_OUT))
+        return f
+
+    def morph_k(self, now: float) -> float:
+        return 0.0 if self.cell_next == self.cell else min(1.0, (now - self.morph_t0) / MORPH_LEN)
 
 
 class Controller:
@@ -224,10 +268,12 @@ class Controller:
     def _drop(self, now: float) -> None:
         self.flash = 1.0
         self._bolt(now, 1.6)
-        self.creatures = [Creature(self.rng, now, True, cell=c) for c in self.rng.sample(range(N_CELLS), N_CRE)]
-        for c in self.creatures:
-            c.size *= 1.3
+        cells = self.rng.sample(range(N_CELLS), N_CRE)                     # Drop: alle morphen auf einmal, neue kommen weich
+        for i, c in enumerate(self.creatures):
+            c.morph(now, cells[i])
             c.lunge_t0 = now
+        for i in range(len(self.creatures), N_CRE):
+            self.creatures.append(Creature(self.rng, now, True, cell=cells[i]))
         self.poison = min(1.0, self.poison + 0.1)
         self.fade = min(1.0, self.fade + 0.08)
         self._led_event("paradox_drop", now + 2.0)
@@ -239,14 +285,16 @@ class Controller:
         if ph == PH_WARN:
             self.wave += 1
             self.seed = self.rng.uniform(1.0, 100.0)
-            self.creatures = []
+            for c in self.creatures:
+                c.leave(now)
             self.fade = 0.0                                                   # Zeitlinie wiederhergestellt
             wled.apply_mode_async("paradox")
         elif ph == PH_HORROR:
             self.next_whisper = now + 1.0
             wled.apply_mode_async("paradox_horror")
         elif ph == PH_BLACKOUT:
-            self.creatures = []
+            for c in self.creatures:
+                c.leave(now)
             self.fade = 1.0
             wled.apply_mode_async("paradox_blackout")
         elif ph == PH_POISON:
@@ -295,7 +343,7 @@ class Controller:
                  "uRelief", "uRebootT", "uPhotoView", "uHelpT", "uShock", "uBassS", "uMidS", "uHighS", "uEnergy", "uLive",
                  "uBeatPulse", "uBeatStep", "uFlash", "uCut", "uBolt", "uCar", "uProf"]
         for i in range(N_CRE):
-            names += [f"uCre{i}", f"uCreP{i}"]
+            names += [f"uCre{i}", f"uCreP{i}", f"uCreM{i}"]
         return tuple(names)
 
     def uniforms(self, t: float, f) -> dict:
@@ -327,8 +375,8 @@ class Controller:
                 self.fade = min(1.0, self.fade + 0.035)                      # das Foto verblasst Stück für Stück
             elif self.phase == PH_POISON and self.rng.random() < 0.25:
                 self._bolt(now, 0.6)
-            for c in self.creatures:                                      # Anachronismen springen auf den Beat näher
-                if self.phase == PH_HORROR or self.rng.random() < 0.35:
+            for c in self.creatures:                                      # Anachronismen rücken auf den Beat sanft näher
+                if self.phase == PH_HORROR or self.rng.random() < 0.2:
                     c.lunge_t0 = now
         self.beat_pulse = max(0.0, self.beat_pulse - dt / 0.4)
         # Drop
@@ -367,10 +415,12 @@ class Controller:
         self.photo_view += ((1.0 if self.photo_view_on else 0.0) - self.photo_view) * min(1.0, dt / 0.6)
         self.shock += ((1.0 if self.shock_on else 0.0) - self.shock) * min(1.0, dt / 1.0)
         # Anachronismen: lauern, rücken näher, verschwinden; in der Gigawatt-Phase mehr und größer
-        self.creatures = [c for c in self.creatures if not c.done(now)]
+        self.creatures = [c for c in self.creatures if not c.gone(now)]
+        for c in self.creatures:
+            c.tick(now, dt, self.phase == PH_HORROR)
         if self.phase in (PH_POISON, PH_HORROR) and now >= self.next_spawn and len(self.creatures) < N_CRE:
             self.creatures.append(Creature(self.rng, now, self.phase == PH_HORROR))
-            self.next_spawn = now + self.rng.uniform(1.5, 4.0) * (0.5 if self.phase == PH_HORROR else 1.0)
+            self.next_spawn = now + self.rng.uniform(3.0, 6.0) * (0.6 if self.phase == PH_HORROR else 1.0)
         # Flüstern
         if self.phase == PH_HORROR and now >= self.next_whisper:
             self.whisper = self.rng.choice(WHISPERS)
@@ -422,12 +472,15 @@ class Controller:
             if i < len(self.creatures):
                 c = self.creatures[i]
                 age = c.age(now)
-                lunge = max(0.0, 1.0 - (now - c.lunge_t0) / 0.5)
+                lk = min(1.0, (now - c.lunge_t0) / 0.9)
+                lunge = (1.0 - lk) * (1.0 - lk) * (0.35 if self.phase != PH_HORROR else 0.7)   # weich abklingend
                 out[f"uCre{i}"] = (c.x, c.y, c.size * (1.0 + 0.5 * c.approach * min(1.0, age / c.life)), float(c.cell))
-                out[f"uCreP{i}"] = (age, lunge, c.hue, (1.0 if c.mirror else 0.0) + 2.0 * c.seed + 10.0 * c.life)
+                out[f"uCreP{i}"] = (c.fade(now), lunge, c.hue, (1.0 if c.mirror else 0.0) + 2.0 * c.seed + 10.0 * c.life)
+                out[f"uCreM{i}"] = (float(c.cell_next), c.morph_k(now), c.seed * 7.0, age)
             else:
                 out[f"uCre{i}"] = (0.0, 0.0, 0.0, -1.0)
                 out[f"uCreP{i}"] = (0.0, 0.0, 0.0, 0.0)
+                out[f"uCreM{i}"] = (0.0, 0.0, 0.0, 0.0)
         return out
 
     def overlays(self, t: float):

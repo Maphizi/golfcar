@@ -298,9 +298,13 @@ Test: `python -m visualizers.engine timejump --test-signal --demo`.
 ### Fluxkompensator (`visualizers/scenes/flux.py`, Taste 3)
 Wie Der Kern: `Throw` (3 Slots, 40-60 s, `uThrow0..2`/`uThrowPar0..2`, Feuerspuren, Zeitschleife, Blitze), Objekte
 `flux_objects.png` 6x4 à 192 (`OBJECT_NAMES`). Y-Erkennung beim Start (weißblaue Röhren um `center`/`radius`, PCA je Arm ->
-`uCenter`, `uArm0..2`). OBEN Gewitter `uStormT` (20 s, `uBolt0..2`), UNTEN Paradoxon `uEjectT` (8 s, Polaroid `uPolaroid`,
-`uFade`), ENTER `uOverT` 1,21 GW (2,5 s), SPACE/BACKSPACE `uZoom`. Beat-Ringe `uRing0..5`, Drop `uFlash`/`uHue`, Oszilloskope
-aus `uAudioTex`. Test: `python -m visualizers.engine flux --test-signal --demo`.
+`uCenter`, `uArm0..2`). Grundnähe `[scenes.flux] base_zoom` 0.5 (das Y füllt das Bild), SPACE = ganz nah, BACKSPACE zurück.
+Ladung `uCharge` 0..1 (`charge`: steigt mit Energie/Bass/Beats, voll = `discharge()`: `uDischargeT` Weißstoß nach innen,
+Funken aus allen Röhren, Lauflicht `uFlow` = (Richtung, Tempo) kehrt um; Stille entlädt langsam; Drop bei Ladung > 0.4 =
+Entladung): im Shader ist der Röhrenteil bis `uCharge` hell (`nearFilled`), der Rest glimmt, Kopf `headGlow`, Streifen
+`flowGlow`. Funken `uSpray` = (Alter, Arm 0-2 oder 3 = alle, Seed, Stärke) aus einem Röhrenende, von selbst alle 6-14 s bei
+Energie > 0.2. OBEN Gewitter `uStormT` (20 s, `uBolt0..2`), UNTEN Paradoxon `uEjectT` (8 s, Polaroid `uPolaroid`,
+`uFade`), ENTER `uOverT` 1,21 GW (2,5 s). Beat-Ringe `uRing0..5`, Drop `uFlash`/`uHue`, Oszilloskope aus `uAudioTex`. Test: `python -m visualizers.engine flux --test-signal --demo`.
 
 ### Uhrturm (`visualizers/scenes/clocktower.py`, Taste 4 / HAL)
 Wie Orakel: Zeiger `uHands` (h, m, s in Umdrehungen; Sekunde tickt je Beat, `uClockT` 21:00 -> 22:04 mit Energie), Blitz
@@ -324,7 +328,11 @@ UNTEN `uBlackT`/`uBlackBeats`, ENTER `uLightT`/`uLightSeed`, SPACE/BACKSPACE `uZ
 
 ### Paradoxon (`visualizers/scenes/paradox.py`, Taste 7 / Systemfehler)
 Wie Black Ice: Phasen STÖRUNG/PARADOXON/1,21 GIGAWATT/AUSLÖSCHUNG (`PHASE_LEN`, `PHASE_NAMES`), Anachronismen
-`paradox_intruders.png` 4x3 à 256 (`uCre0..4`/`uCreP0..4`, `lunge_t0`), Foto `uPhotoTex` (driver.png, 512 px) im Polaroid
+`paradox_intruders.png` 4x3 à 256 als dauerhafte Geister: `uCre0..4` (x, y, Größe, Zelle), `uCreP0..4` (Sichtbarkeit 0..1,
+Sprung, Hue, Spiegel/Seed), `uCreM0..4` (nächste Zelle, Morph 0..1, Seed, Alter); nach `life` 7-13 s `Creature.morph()` in
+die nächste Zelle (`MORPH_LEN` 2,8 s, Shader `creatureMorph`: Verzerrung + Rauschmaske + Leuchtsaum), Auftauchen/Verschwinden
+als Rauschauflösung (`FADE_IN` 2,5 s, `FADE_OUT` 3 s, `leave()` beim Phasenende), Beat-Sprung nur sanft (`lunge_t0`, in
+der Gigawatt-Phase stärker), Drop = alle morphen; Zeitmaschine beim Hilferuf mit Funken aus Heck/Rädern und Lichtbögen, Foto `uPhotoTex` (driver.png, 512 px) im Polaroid
 `uPhoto = [x, y, w]` mit `uFade` (fbm-Maske), Hand prozedural `uHand`. LINKS/RECHTS `ANTIDOTES` (`uRelief`), OBEN `uRebootT`,
 UNTEN `uPhotoView`, ENTER `uHelpT` (Zeitmaschine `uCar` + Professor `uProf` aus `clocktower_figures.png`), SPACE/BACKSPACE
 `uShock`. Beat `uCut`, Gigawatt-Blitze `uBolt`, `WHISPERS`. Test: `python -m visualizers.engine paradox --test-signal --demo`.

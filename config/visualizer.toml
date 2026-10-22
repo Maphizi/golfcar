@@ -186,6 +186,7 @@ controller = "flux"        # Fluxkompensator (Zukunft-Taste 3)
 render_scale = 0.6
 center = [0.5, 0.5]        # Mitte des Y (Anteile, y von unten)
 radius = 0.12
+base_zoom = 0.5            # Grundnähe (0 = ganzes Foto, 1 = Nahaufnahme wie Kippschalter AN)
 
 [scenes.clocktower]
 shader = "clocktower"

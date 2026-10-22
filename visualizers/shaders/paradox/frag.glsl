@@ -19,6 +19,7 @@ uniform float uPhotoOK, uFigOK, uSeed, uPhase, uPhaseT, uPhaseLen, uWave, uPoiso
 uniform float uBassS, uMidS, uHighS, uEnergy, uLive, uBeatPulse, uBeatStep, uFlash;
 uniform vec4 uBolt, uCar, uProf;
 uniform vec4 uCre0, uCre1, uCre2, uCre3, uCre4, uCreP0, uCreP1, uCreP2, uCreP3, uCreP4;
+uniform vec4 uCreM0, uCreM1, uCreM2, uCreM3, uCreM4;       // nächste Zelle, Morph 0..1, Seed, Alter
 const float PI = 3.14159265;
 
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
@@ -59,6 +60,27 @@ vec4 figCell(float idx, vec2 d) {                                            // 
 }
 vec4 creAt(int i) { return i == 0 ? uCre0 : (i == 1 ? uCre1 : (i == 2 ? uCre2 : (i == 3 ? uCre3 : uCre4))); }
 vec4 crePAt(int i) { return i == 0 ? uCreP0 : (i == 1 ? uCreP1 : (i == 2 ? uCreP2 : (i == 3 ? uCreP3 : uCreP4))); }
+vec4 creMAt(int i) { return i == 0 ? uCreM0 : (i == 1 ? uCreM1 : (i == 2 ? uCreM2 : (i == 3 ? uCreM3 : uCreM4))); }
+// Morph: zwei Anachronismen gehen ineinander über: beide verzerren sich zueinander hin, eine Rauschmaske löst den einen
+// auf, während der andere darin erscheint; an der Grenze leuchtet ein Saum
+vec4 creatureMorph(float a, float b, float m, vec2 d, float seed, float t) {
+    if (m <= 0.001) return creature(a, d);
+    if (m >= 0.999) return creature(b, d);
+    float w = sin(m * 3.14159);
+    vec2 warp = vec2(noise(d * 3.0 + seed + t * 0.3) - 0.5, noise(d * 3.0 + seed + 7.0 - t * 0.2) - 0.5) * 0.5 * w;
+    vec4 sa = creature(a, d + warp * m);
+    vec4 sb = creature(b, d - warp * (1.0 - m));
+    float n = noise(d * 5.0 + seed * 3.0) * 0.7 + noise(d * 13.0 + seed) * 0.3;
+    float edge = 0.08;
+    float k = smoothstep(m - edge, m + edge, n);                              // 1 = noch A, 0 = schon B
+    vec4 o;
+    o.a = mix(sb.a, sa.a, k);
+    o.rgb = mix(sb.rgb, sa.rgb, k);
+    float rim = (1.0 - abs(k * 2.0 - 1.0)) * max(sa.a, sb.a) * w;
+    o.rgb += vec3(0.6, 0.9, 1.2) * rim * 0.9;
+    o.a = max(o.a, rim * 0.8);
+    return o;
+}
 
 // Umkehrung der bilinearen Abbildung: p im Viereck a (unten links), b (unten rechts), c (oben rechts), d (oben links) -> (u, v)
 vec2 invBilinear(vec2 p, vec2 a, vec2 b, vec2 c, vec2 d) {
@@ -210,28 +232,33 @@ void main() {
     col = mix(col, vec3(1.0, 0.97, 0.9) * (0.4 + 0.6 * (1.0 - lum)), uFlash * 0.8);   // Drop: weißer Blitz als Negativ
     // ---- Anachronismen lauern an den Rändern, rücken näher, springen auf den Beat
     for (int i = 0; i < 5; i++) {
-        vec4 c = creAt(i), p = crePAt(i);
+        vec4 c = creAt(i), p = crePAt(i), mm = creMAt(i);
         if (c.w < 0.0) continue;
-        float age = p.x;
-        float fade = smoothstep(0.0, 1.2, age);
+        float age = mm.w;
+        float fadeK = p.x;                                                     // 0..1 weiches Auftauchen / Verschwinden
         float lunge = p.y;
-        float sz = c.z * (1.0 + 1.2 * lunge + 0.08 * uBassS) * aspect * 0.5;
+        float breathe = 1.0 + 0.04 * sin(t * 1.1 + p.z * 3.0);
+        float sz = c.z * (1.0 + 0.5 * lunge + 0.06 * uBassS) * breathe * aspect * 0.5;
         vec2 pos = vec2(c.x, c.y);
-        pos = mix(pos, vec2(0.5, 0.5), 0.35 * lunge);                        // Sprung Richtung Kamera
-        pos += vec2(0.004 * sin(t * 9.0 + age), 0.003 * cos(t * 7.0)) * (poison + horror);
+        pos = mix(pos, vec2(0.5, 0.5), 0.15 * lunge);                        // sanft Richtung Kamera
+        pos += vec2(0.006 * sin(t * 0.9 + age), 0.005 * cos(t * 0.7 + p.z)) * (0.5 + poison + horror);   // schwebt
         vec2 d = (uv - pos) * vec2(aspect, 1.0) / sz;
         if (mod(p.w, 2.0) >= 1.0) d.x = -d.x;
         d += vec2(0.02 * sin(d.y * 8.0 + t * 3.0), 0.0) * poison;             // wabert
-        vec4 s = creature(c.w, d);
+        vec4 s = creatureMorph(c.w, mm.x, mm.y, d, mm.z, t);
+        // Auftauchen/Verschwinden als Rauschauflösung statt Einblitzen
+        float dis = noise(d * 6.0 + mm.z * 5.0) * 0.6 + noise(d * 15.0 - mm.z) * 0.4;
+        float vis = smoothstep(fadeK + 0.08, fadeK - 0.08, dis * 0.85) * smoothstep(0.0, 0.15, fadeK);
         vec3 sc = mix(s.rgb, sepia(s.rgb) * 1.1, 0.5 * poison);
         sc = hueShift(sc, 0.3 * sin(p.z + t * 2.0) * poison);
-        sc = mix(sc, 1.0 - sc, horror * uBeatPulse * 0.6);
-        sc *= 0.7 + 0.5 * uBassS + 0.5 * lunge;
-        float flick = 0.8 + 0.2 * step(0.3, hash12(vec2(floor(t * 24.0), p.z)));   // alte Filmrolle
-        col = mix(col, sc * flick, s.a * fade * (0.75 + 0.25 * lunge));
+        sc = mix(sc, 1.0 - sc, horror * uBeatPulse * 0.35);
+        sc *= 0.75 + 0.4 * uBassS + 0.3 * lunge;
+        float flick = 0.92 + 0.08 * step(0.3, hash12(vec2(floor(t * 24.0), p.z)));   // alte Filmrolle, leise
+        col = mix(col, sc * flick, s.a * vis * (0.8 + 0.2 * lunge));
+        col += vec3(0.6, 0.8, 1.0) * s.a * (1.0 - vis) * smoothstep(0.0, 0.5, fadeK) * 0.25 * step(0.02, fadeK) * (1.0 - fadeK);
         // zweite Zeitlinie: blasse, blaue Kopie leicht versetzt
-        vec4 s2 = creature(c.w, d + vec2(0.1, 0.05) * (0.5 + 0.5 * sin(t * 1.3 + age)));
-        col = mix(col, max(col, vec3(0.5, 0.7, 1.2) * dot(s2.rgb, vec3(0.33))), s2.a * fade * (0.25 * poison + 0.35 * horror));
+        vec4 s2 = creatureMorph(c.w, mm.x, mm.y, d + vec2(0.1, 0.05) * (0.5 + 0.5 * sin(t * 1.3 + age)), mm.z, t);
+        col = mix(col, max(col, vec3(0.5, 0.7, 1.2) * dot(s2.rgb, vec3(0.33))), s2.a * vis * (0.25 * poison + 0.35 * horror));
     }
     // ---- Hilfe: die Zeitmaschine fährt mit Feuerspuren herein, der Professor winkt, klares Bild
     if (uHelpT >= 0.0) {
@@ -262,6 +289,30 @@ void main() {
             col = mix(col, sp.rgb * 1.05, sp.a * uProf.w);
         }
         col += vec3(1.0, 0.8, 0.5) * exp(-length((uv - vec2(carX, carY)) * vec2(aspect, 1.0)) * 5.0) * 0.25 * clear;
+        // Funken sprühen aus Heck und Rädern, Lichtbögen zucken um die Karosserie (mit dem Beat mehr)
+        float sparkOn = clear * (0.6 + 0.4 * uBeatPulse);
+        for (int k = 0; k < 28; k++) {
+            float fk = float(k);
+            float h1 = hash12(vec2(fk, 61.0)), h2 = hash12(vec2(fk, 63.0)), h3 = hash12(vec2(fk, 67.0));
+            float life = fract(t * (1.2 + 1.5 * h2) + h3);
+            vec2 src = vec2(carX - carW * (0.35 - 0.25 * h3), carY - 0.08 + 0.02 * h1);                // Heck / Räder
+            vec2 vel = vec2(-(0.25 + 0.3 * h1), 0.25 * (h2 - 0.3));
+            vec2 sp = src + vel * life * 0.5 + vec2(0.0, -0.3 * life * life);                           // fällt
+            float g = smoothstep(0.006 + 0.004 * h2, 0.0, length((uv - sp) * vec2(aspect, 1.0)));
+            col += mix(vec3(1.0, 0.85, 0.4), vec3(0.6, 0.8, 1.0), step(0.5, h3)) * g * (1.0 - life) * 2.5 * sparkOn;
+        }
+        for (int k = 0; k < 4; k++) {
+            float fk = float(k);
+            float slot = floor(t * 14.0 + fk * 0.7);
+            float on = step(0.55 - 0.3 * uBeatPulse, hash12(vec2(slot, fk + 30.0)));
+            vec2 a0 = vec2(carX + carW * (hash12(vec2(slot, fk)) - 0.5) * 0.9, carY + 0.03 + 0.12 * hash12(vec2(slot, fk + 3.0)));
+            vec2 a1 = a0 + vec2(0.03 + 0.05 * hash12(vec2(slot, fk + 5.0)), 0.04 * (hash12(vec2(slot, fk + 7.0)) - 0.5));
+            vec2 pa = (uv - a0) * vec2(aspect, 1.0), ba = (a1 - a0) * vec2(aspect, 1.0);
+            float hh = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-5), 0.0, 1.0);
+            vec2 q = pa - ba * hh;
+            float arc = smoothstep(0.004, 0.0, abs(q.y + 0.01 * sin(hh * 30.0 + slot) * (1.0 - hh) * hh * 4.0) + abs(q.x));
+            col += vec3(0.7, 0.85, 1.0) * arc * on * sparkOn * 1.5;
+        }
     }
     // ---- Filmkorn, Staubfäden und Kratzer mit den Höhen
     float grain = noise(vUv * 420.0 + t * 60.0) - 0.5;
