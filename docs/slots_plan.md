@@ -7,16 +7,19 @@ eigenem Symbolbogen, Knüppel links/rechts wechselt den Automaten. Genau so soll
 - **Vollbild-Walzen** wie bei Space, kein kleiner Automat mehr in einem Foto.
 - **Themenrahmen**: ein Bild je Thema, das als Rand über den Walzen liegt (Mitte reines Schwarz = Walzen sichtbar).
   Teile des Rahmens dürfen über die Walzen hängen (Natur: 2-3 Pilze, die leicht zur Musik blinken).
-- **Drei Automaten je Thema**, Knüppel links/rechts wechselt (wie bei Space), Knüppel oben/unten = Einsatz.
+- **Drei Automaten je Thema** mit **3, 4 und 5 Walzen** (der erste Automat drei, der zweite vier, der dritte fünf; die
+  Walzen teilen sich die Bildbreite, Symbole bleiben 3:2), Knüppel links/rechts wechselt (wie bei Space), Knüppel
+  oben/unten = Einsatz. Gewinne bei 4/5 Walzen: drei gleiche nebeneinander = klein, alle bis auf eine = groß, alle gleich
+  = Jackpot (Jackpot-Symbol auf allen = Mega).
 - Musik: Rahmen-Lichter (helle, gesättigte Stellen des Rahmenbilds) pulsen zum Bass, Lauflicht über die Stege auf
   den Beat, Drop = Blitz und schnellere Drehung, Gewinn-/Jackpot-Effekte je Thema bleiben.
 
 | Thema | Modus | Rahmen | Automaten (Symbolbögen 3x3, letztes Symbol = Jackpot) |
 |---|---|---|---|
-| Space | `slots` | `space_frame` (neu, optional, sonst Blende wie bisher) | ORBIT `real.png`, COMIC `cartoon.png`, WAHNSINN `crazy.png` (vorhanden) |
-| Natur | `forestslots` | `forest_frame` (Holz, Moos, Pilze hängen über) | PILZAUTOMAT `forest.png` (vorhanden), TIERE DES WALDES `forest_animals`, WALDGEISTER `forest_magic` |
-| Cyberpunk | `cyberslots` | `cyber_frame` (Chrom, Neonröhren, Kabel) | PACHINKO `cyberslots_symbols` (vorhanden), KONZERN `cyber_konzern`, NETZGEISTER `cyber_netzgeister` |
-| Zurück in die Zukunft | `almanacslots` | `future_frame` (Casino-Gold 1985, Flux-Lämpchen) | ALMANACH `almanac_symbols` (vorhanden), WILDER WESTEN `future_1885`, ZUKUNFT 2015 `future_2015` |
+| Space | `slots` | `space_frame` (neu, optional, sonst Blende wie bisher) | ORBIT `real.png` (3 Walzen), COMIC `cartoon.png` (4), WAHNSINN `crazy.png` (5) (vorhanden) |
+| Natur | `forestslots` | `forest_frame` (Holz, Moos, Pilze hängen über) | PILZAUTOMAT `forest.png` (3, vorhanden), TIERE DES WALDES `forest_animals` (4), WALDGEISTER `forest_magic` (5) |
+| Cyberpunk | `cyberslots` | `cyber_frame` (Chrom, Neonröhren, Kabel) | PACHINKO `cyberslots_symbols` (3, vorhanden), KONZERN `cyber_konzern` (4), NETZGEISTER `cyber_netzgeister` (5) |
+| Zurück in die Zukunft | `almanacslots` | `future_frame` (Casino-Gold 1985, Flux-Lämpchen) | ALMANACH `almanac_symbols` (3, vorhanden), WILDER WESTEN `future_1885` (4), ZUKUNFT 2015 `future_2015` (5) |
 
 Die Bilder legt der Bot unter **`assets/slots/raw/`** ab (PNG, Name exakt wie unten). `scripts/slots_assets.sh` skaliert
 die Symbolbögen auf das Format der Space-Bögen (768x510, Kacheln 256x170) und die Rahmen auf 1920x1080.
