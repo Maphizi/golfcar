@@ -32,12 +32,14 @@ log = logging.getLogger("woodeye")
 
 ASSETS = Path(__file__).resolve().parents[2] / "assets" / "woodeye"
 # Seerosenblätter: (x, y, Größe) im Bild (Anteile, y von unten); Band 0 = Bass (links) .. Band 7 = Höhen (rechts)
-FROGS = [(0.072, 0.118, 0.085), (0.157, 0.150, 0.085), (0.287, 0.150, 0.082), (0.428, 0.150, 0.080),
-         (0.571, 0.150, 0.078), (0.712, 0.150, 0.076), (0.849, 0.150, 0.074), (0.930, 0.118, 0.074)]
+FROG_DY = -0.022          # Frösche sitzen AUF dem Blatt (Zellenrand unten)
+FROGS = [(0.072, 0.118 + FROG_DY, 0.085), (0.157, 0.150 + FROG_DY, 0.085), (0.287, 0.150 + FROG_DY, 0.082), (0.428, 0.150 + FROG_DY, 0.080),
+         (0.571, 0.150 + FROG_DY, 0.078), (0.712, 0.150 + FROG_DY, 0.076), (0.849, 0.150 + FROG_DY, 0.074), (0.930, 0.118 + FROG_DY, 0.074)]
+MAX_FROGS = 4             # höchstens so viele gleichzeitig (ruhiger)
 # Frosch je Blatt: assets/woodeye/frogs.png (8x4 à 160: Reihe = Art, Spalte = Sprungbild 0 sitzt .. 7 Kehlsack),
 # assets/woodeye/dive.png (8x2 à 192: Reihe 0 springt ins Wasser, Reihe 1 taucht auf). Phasen:
 PH_EMPTY, PH_EMERGE, PH_SIT, PH_HOP, PH_DIVE, PH_UNDER = 0, 1, 2, 3, 4, 5
-HOP_SECONDS, DIVE_SECONDS, EMERGE_SECONDS, UNDER_MIN = 0.7, 0.9, 1.0, 1.2
+HOP_SECONDS, DIVE_SECONDS, EMERGE_SECONDS, UNDER_MIN = 0.6, 0.7, 0.8, 1.2
 N_SPECIES = 4
 EYE_OPEN, EYE_LEFT, EYE_RIGHT, EYE_UP, EYE_DOWN, EYE_FIRE, EYE_SPIRAL = 7, 16, 18, 19, 20, 22, 23
 EYE_COLORS = list(range(8, 16))
@@ -48,6 +50,7 @@ GNOMES = [(0.06, 0.40, 0.075, 0), (0.14, 0.36, 0.08, 1), (0.22, 0.42, 0.07, 2), 
           (0.38, 0.38, 0.07, 4), (0.46, 0.30, 0.08, 5), (0.56, 0.31, 0.078, 6), (0.64, 0.37, 0.072, 7),
           (0.72, 0.33, 0.082, 1), (0.80, 0.41, 0.07, 3), (0.88, 0.36, 0.08, 5), (0.95, 0.42, 0.072, 7)]
 N_GNOMES = len(GNOMES)
+GNOMES_VISIBLE = 5        # gleichzeitig sichtbare Zwerge (ruhiger als alle zwölf)
 G_PEEK, G_DUCK, G_WAVE = 0, 1, 2
 CHORUS_SECONDS = 4.0
 SPORE_SECONDS = 4.0
@@ -99,6 +102,8 @@ class Controller:
         self.gnome_prev = [G_PEEK] * N_GNOMES
         self.gnome_t0 = [0.0] * N_GNOMES
         self.gnome_rise = [0.0] * N_GNOMES
+        self.hop_wish = [False] * 8
+        self.gnome_on = [True] * N_GNOMES
         self.gnome_wave_next = time.monotonic() + 3.0
         # Beat-Zähler / Lauflicht
         self.step = 0
@@ -145,6 +150,8 @@ class Controller:
     # -- Aktionen ----------------------------------------------------------
     def set_fig(self, which: int) -> None:
         self.fig = FIG_NONE if self.fig == which else which
+        if self.fig in (FIG_GNOMES, FIG_BOTH):
+            self._gnome_pick()
         now = time.monotonic()
         if self.fig == FIG_NONE:
             wled.apply_mode_async("woodeye")
@@ -167,7 +174,8 @@ class Controller:
         for i in range(8):                   # Welle: alle sitzenden hüpfen nacheinander, leere Blätter bekommen Besuch
             if self.phase[i] == PH_SIT:
                 self._set_phase(i, PH_HOP, now + 0.3 + i * 0.14)
-            elif self.phase[i] in (PH_EMPTY, PH_UNDER):
+            elif self.phase[i] in (PH_EMPTY, PH_UNDER) and i % 2 == 0 and self.energy > 0.3 \
+                    and sum(1 for p in self.phase if p in (PH_SIT, PH_HOP, PH_EMERGE)) < MAX_FROGS:
                 self._set_phase(i, PH_EMERGE, now + 0.3 + i * 0.14)
                 self.species[i] = self.rng.randrange(N_SPECIES)
         self._led_event("woodeye_chorus", now + CHORUS_SECONDS)
@@ -195,10 +203,7 @@ class Controller:
         self.color_cell = self.rng.choice([c for c in EYE_COLORS if c != self.color_cell])
         self.color_until = now + 7.0
         for i in range(8):
-            if self.phase[i] in (PH_UNDER, PH_EMPTY):
-                self._set_phase(i, PH_EMERGE, now + 0.05 * i)
-                self.species[i] = self.rng.randrange(N_SPECIES)
-            elif self.phase[i] == PH_SIT:
+            if self.phase[i] == PH_SIT:
                 self._set_phase(i, PH_HOP, now + 0.05 * i)
         self.hue_burst = 1.0
         log.info("Drop: Auge brennt, Sporen, Frösche springen")
@@ -237,10 +242,10 @@ class Controller:
             target = 0
         else:
             e = max(0.0, min(1.0, (self.energy - 0.12) / 0.5))
-            target = int(round(0.5 + 7.5 * e + 0.8 * self.bass_s))
-            target = max(0, min(8, target))
+            target = int(round(0.4 + (MAX_FROGS - 0.4) * e))
+            target = max(0, min(MAX_FROGS, target))
         present = [i for i in range(8) if self.phase[i] in (PH_SIT, PH_HOP, PH_EMERGE)]
-        if now - self.last_pop_change > (0.35 if target > len(present) else 1.2):
+        if on_beat and now - self.last_pop_change > (1.2 if target > len(present) else 2.5):   # nur auf den Beat
             if target > len(present):
                 cands = [i for i in range(8) if self.phase[i] == PH_EMPTY or (self.phase[i] == PH_UNDER and not self.returning[i] and now - self.phase_t0[i] > UNDER_MIN)]
                 if cands:
@@ -257,8 +262,8 @@ class Controller:
                     self.last_pop_change = now
         # Tauchspiel im Takt
         under = sum(1 for p in self.phase if p in (PH_DIVE, PH_UNDER))
-        if on_beat and live > 0.3 and under < 3 and now - self.last_dive > 0.6 and len(present) >= 2:
-            if self.rng.random() < 0.08 + 0.3 * self.energy + 0.15 * self.bass_s:
+        if on_beat and live > 0.3 and under < 2 and now - self.last_dive > 4.0 and len(present) >= 2:
+            if self.rng.random() < 0.04 + 0.12 * self.energy:
                 cands = [i for i in present if self.phase[i] == PH_SIT and now - self.phase_t0[i] > 1.5]
                 if cands:
                     i = self.rng.choice(cands)
@@ -270,7 +275,7 @@ class Controller:
     def _gnomes_tick(self, now: float, on_beat: bool, dt: float) -> None:
         show = self.fig in (FIG_GNOMES, FIG_BOTH)
         for i in range(N_GNOMES):
-            target = 1.0 if show else 0.0
+            target = 1.0 if (show and self.gnome_on[i]) else 0.0
             delay = 0.06 * i if show else 0.04 * (N_GNOMES - i)
             self.gnome_rise[i] += (target - self.gnome_rise[i]) * min(1.0, dt / 0.5) * (1.0 if now - self.gnome_t0[i] > delay else 0.3)
             if self.gnome_pose[i] == G_DUCK and now - self.gnome_t0[i] > 0.45:
@@ -281,13 +286,25 @@ class Controller:
             return
         if on_beat:
             for i in range(N_GNOMES):
-                if self.gnome_pose[i] == G_PEEK and self.rng.random() < 0.25 + 0.3 * self.bass_s:
+                if self.gnome_on[i] and self.gnome_pose[i] == G_PEEK and self.rng.random() < 0.08 + 0.15 * self.bass_s:
                     self._gnome_set(i, G_DUCK, now)
         if now >= self.gnome_wave_next:
-            self.gnome_wave_next = now + self.rng.uniform(2.0, 5.0)
+            self.gnome_wave_next = now + self.rng.uniform(5.0, 10.0)
+            # alle paar Winker wechselt die Besetzung: einer verschwindet, ein anderer kommt
+            if self.rng.random() < 0.4:
+                on = [i for i in range(N_GNOMES) if self.gnome_on[i]]
+                off = [i for i in range(N_GNOMES) if not self.gnome_on[i]]
+                if on and off:
+                    self.gnome_on[self.rng.choice(on)] = False
+                    self.gnome_on[self.rng.choice(off)] = True
             i = self.rng.randrange(N_GNOMES)
             if self.gnome_pose[i] == G_PEEK:
                 self._gnome_set(i, G_WAVE, now)
+
+    def _gnome_pick(self) -> None:
+        """Fünf zufällige Zwerge sichtbar, die anderen bleiben unten."""
+        chosen = set(self.rng.sample(range(N_GNOMES), GNOMES_VISIBLE))
+        self.gnome_on = [i in chosen for i in range(N_GNOMES)]
 
     def _gnome_set(self, i: int, pose: int, now: float) -> None:
         self.gnome_prev[i] = self.gnome_pose[i]
@@ -360,7 +377,7 @@ class Controller:
                 rate = 0.05 if v > self.bands[i] else 0.3
                 self.bands[i] += (v - self.bands[i]) * min(1.0, dt / rate)
                 if v > 0.78 and self.jump_arm[i] and self.phase[i] == PH_SIT and now - self.phase_t0[i] > 0.5:
-                    self._set_phase(i, PH_HOP, now)
+                    self.hop_wish[i] = True                        # springt beim nächsten Beat
                     self.jump_arm[i] = False
                 if v < 0.5:
                     self.jump_arm[i] = True
@@ -369,6 +386,12 @@ class Controller:
                 self.bands[i] += (0.0 - self.bands[i]) * min(1.0, dt / 0.6)
         # Beat: Lauflicht einen Schritt weiter, Puls, Frösche tauchen
         on_beat = beat > 0.5 and now - self.last_beat > 0.25
+        if on_beat:
+            hoppers = [i for i in range(8) if self.hop_wish[i] and self.phase[i] == PH_SIT]
+            for i in hoppers[:2]:                                   # höchstens zwei je Beat
+                self._set_phase(i, PH_HOP, now)
+            for i in range(8):
+                self.hop_wish[i] = False
         self._frogs_tick(now, on_beat, self.live_s, dt)
         self._gnomes_tick(now, on_beat, dt)
         self.hue_burst = max(0.0, self.hue_burst - dt / 3.0)

@@ -117,59 +117,52 @@ vec3 frog(vec3 col, vec2 uv, float aspect, int i, bool mirror) {
         infl = max(infl, 0.5 + 0.5 * sin(cph * PI - PI * 0.5));
     }
     float hw = fr.z * aspect * 0.5 * (0.95 + 0.1 * uLive);
-    float wl = fr.y - 0.012;                                                  // Wasserlinie
-    bool diveSeq = phase == 1.0 || phase == 4.0;                             // Tauchbilder (größer, mit Blatt)
-    float scale = diveSeq ? 1.45 : 1.0;
-    float yOff = diveSeq ? -0.02 * hw : 0.0;
+    float wl = fr.y - 0.006;                                                  // Wasserlinie (Blattrand)
+    float scale = 1.0;                                                       // Tauchbogen unbenutzt: eigene Sprungbilder
     vec4 s;
-    if (phase == 5.0) {                                                      // unter Wasser: wabernder Schatten, Blasen
-        vec2 wuv = uv + vec2(0.006 * sin(uv.y * 70.0 + iTime * 3.0 + fi), 0.0);
-        if (mirror || wuv.y > wl) return col;
-        float wob = 0.5 + 0.5 * sin(prog * 1.7 + fi);
-        vec2 d = (wuv - vec2(fr.x + 0.01 * sin(prog * 0.9 + fi), fr.y - 1.1 * hw - 0.15 * hw * wob)) * vec2(aspect, 1.0) / hw;
-        d.x *= flip;
-        vec4 sh = frogCell(sp, 0.0, vec2(d.x, d.y - 1.0 + 0.02));
-        vec3 tint = hueShift(vec3(0.3, 0.9, 0.8), uHueT * 3.0 + fi) * (0.7 + 0.5 * band);
-        for (int k = 0; k < 4; k++) {
+    if (phase == 5.0) {                                                      // unter Wasser: nur Blasen, kein Schatten
+        for (int k = 0; k < 3; k++) {
             float hk = hash12(vec2(float(k), fi + 50.0));
-            float age = mod(prog * 0.7 + hk * 3.0, 3.0);
-            vec2 bp = vec2(fr.x + (hk - 0.5) * 0.03, fr.y - 1.2 * hw + age * 0.025);
-            if (bp.y < wl) col += vec3(0.6, 0.9, 1.0) * smoothstep(0.004, 0.0, length((uv - bp) * vec2(aspect, 1.0))) * 0.6;
+            float age = mod(prog * 0.5 + hk * 3.0, 3.0);
+            vec2 bp = vec2(fr.x + (hk - 0.5) * 0.03, fr.y - 1.0 * hw + age * 0.02);
+            if (bp.y < wl && !mirror) col += vec3(0.6, 0.9, 1.0) * smoothstep(0.004, 0.0, length((uv - bp) * vec2(aspect, 1.0))) * 0.5;
         }
-        return mix(col, mix(sh.rgb, tint, 0.6) * 1.3, sh.a * 0.6);
+        return col;
     }
-    if (!mirror && uv.y < wl - 0.002 && !diveSeq) return col;
-    if (mirror && (uv.y >= wl || diveSeq)) return col;
+    // Sprung ins Wasser (4): Bogen nach vorn und unten, unter der Wasserlinie abgeschnitten; Auftauchen (1): von unten herauf
+    vec2 jump = vec2(0.0);
+    if (phase == 4.0) jump = vec2(0.9 * hw * prog, 1.2 * hw * sin(prog * PI) - 3.0 * hw * prog * prog);
+    if (phase == 1.0) jump = vec2(0.0, -2.2 * hw * (1.0 - prog) * (1.0 - prog));
+    if (!mirror && uv.y < wl - 0.002) return col;
+    if (mirror && uv.y >= wl) return col;
     vec2 l;
+    vec2 base = vec2(fr.x + jump.x * flip / aspect, fr.y + jump.y);
     if (mirror) {
         vec2 wuv = uv + vec2(0.004 * sin(uv.y * 90.0 + iTime * 2.0 + fi), 0.0);
-        vec2 d = (wuv - vec2(fr.x, wl)) * vec2(aspect, 1.0) / (hw * scale);
-        l = vec2(d.x * flip, -d.y - 1.0 - (fr.y + yOff - wl) / (hw * scale));
+        vec2 d = (wuv - vec2(base.x, wl)) * vec2(aspect, 1.0) / (hw * scale);
+        l = vec2(d.x * flip, -d.y - 1.0 - (base.y - wl) / (hw * scale));
     } else {
-        vec2 d = (uv - vec2(fr.x, fr.y + yOff)) * vec2(aspect, 1.0) / (hw * scale);
+        vec2 d = (uv - base) * vec2(aspect, 1.0) / (hw * scale);
         l = vec2(d.x * flip, d.y - 1.0 + 0.02);
     }
     if (phase == 2.0) {                                                      // sitzt: Kehlsack mit dem Band
         s = mix(frogCell(sp, 0.0, l), frogCell(sp, 7.0, l), infl);
     } else if (phase == 3.0) {                                               // hüpft: 8 Bilder
         s = frogAnim(sp, prog, 8, l);
-    } else if (phase == 4.0) {                                               // springt ins Wasser
-        s = diveAnim(0.0, prog, l);
-        s.rgb = hueShift(s.rgb, speciesHue(sp));
-    } else {                                                                 // taucht auf
-        s = diveAnim(1.0, prog, l);
-        s.rgb = hueShift(s.rgb, speciesHue(sp));
-        if (prog > 0.85) s = mix(s, frogCell(sp, 0.0, l), (prog - 0.85) / 0.15);   // Übergang auf das Sprungbild der Art
+    } else if (phase == 4.0) {                                               // springt ins Wasser: Absprungbilder 2..5
+        s = frogCell(sp, clamp(floor(2.0 + prog * 4.0), 2.0, 5.0), l);
+    } else {                                                                 // taucht auf: Sitzbild steigt aus dem Wasser
+        s = frogCell(sp, 0.0, l);
     }
     s.rgb *= 0.55 + 0.45 * uLive + 0.5 * band;
     s.rgb = hueShift(s.rgb, uKaleido * (uHueT * 6.0 + fi) + uHueBurst * 2.0 * sin(uHueT * 30.0 + fi * 2.0));
     if (mirror) { s.rgb *= 0.35; s.a *= 0.55; }
     col = mix(col, s.rgb, s.a);
     // Nachbilder beim Hüpfen und Tauchen (psychedelisch, mit der Musik)
-    if (!mirror && (phase == 3.0 || phase == 4.0 || phase == 1.0) && uLive > 0.3) {
+    if (!mirror && phase == 3.0 && uLive > 0.3) {
         for (int k = 1; k <= 2; k++) {
             float pk = max(0.0, prog - 0.08 * float(k));
-            vec4 g = phase == 3.0 ? frogAnim(sp, pk, 8, l) : diveAnim(phase == 4.0 ? 0.0 : 1.0, pk, l);
+            vec4 g = frogAnim(sp, pk, 8, l);
             vec3 gc = hueShift(vec3(0.5, 1.0, 0.8), float(k) * 1.4 + uHueT * 10.0 + fi);
             col = mix(col, mix(g.rgb, gc, 0.6), g.a * 0.3 * (1.0 - float(k) * 0.3) * (1.0 - s.a) * (0.5 + 0.5 * uBassS));
         }

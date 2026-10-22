@@ -110,12 +110,13 @@ Figuren `figures.png` (8x4 à 192: Eule 28-31; Reihen 0-2 und Fuchs unbenutzt), 
 Spalte = Sprungbild 0 sitzt .. 7 Kehlsack), Tauchen `dive.png` (8x2 à 192: Reihe 0 springt ins Wasser, 1 taucht auf, grün,
 im Shader je Art umgefärbt `speciesHue`), Zwerge `gnomes.png` (8x3 à 160: Reihe 0 gucken, 1 ducken, 2 winken); Bögen mit
 `scripts/trip_assets.py slice AUS.png BOGEN.png SPALTEN REIHEN ZELLE` (gleich große Zellen, Fußpunkt unten). Blatt i =
-Spektrumband i (`FROGS` Position/Größe, `uBands0/1`). Besetzung folgt der Musik (`_frogs_tick`: Ziel 0 bei Stille bis 8 bei
-hoher Energie; kommen per `PH_EMERGE`, gehen per `PH_DIVE`), Hüpfen `PH_HOP` bei Bandspitzen/Chor/Drop, Tauchspiel auf Beats
-(`returning`, `under_beats`). Shader `uFrogN` = (x, y, Größe, Art), `uFrogPhN` = (Phase 0 leer 1 auftauchen 2 sitzt 3 hüpft
+Spektrumband i (`FROGS` Position/Größe, `uBands0/1`). Besetzung folgt der Musik (`_frogs_tick`: Ziel 0 bei Stille bis `MAX_FROGS` 4 bei
+hoher Energie, Wechsel nur auf Beats; kommen per `PH_EMERGE` von unten aus dem Wasser, gehen per `PH_DIVE` im Bogen hinein, beides
+mit den eigenen Sprungbildern, unter Wasser nur Blasen), Hüpfen `PH_HOP` nur auf den Beat (`hop_wish` aus Bandspitzen, max. 2 je Beat),
+Tauchspiel selten (`returning`, `under_beats`). Frösche sitzen mit `FROG_DY` auf den Blättern. Shader `uFrogN` = (x, y, Größe, Art), `uFrogPhN` = (Phase 0 leer 1 auftauchen 2 sitzt 3 hüpft
 4 springt 5 unten, Fortschritt, rechts = spiegeln). Zwerge `GNOMES` (x, Fußlinie, Größe, Zelle), `uGnomeN`/`uGnomeSN` (Pose
-A, B, Mischung, aufgetaucht), unterhalb der Fußlinie abgeschnitten (`gnome()`), `_gnomes_tick` (Beat = ducken, alle 2-5 s
-winkt einer). Beat -> `uStep`/`uPattern` Lauflicht auf den türkisen Stellen des Fotos, Drop -> `uFlash`, `uSporeT`, Auge
+A, B, Mischung, aufgetaucht), unterhalb der Fußlinie abgeschnitten (`gnome()`), `_gnomes_tick` (nur `GNOMES_VISIBLE` 5 zufällige
+Zwerge oben, `_gnome_pick`/`gnome_on`, Besetzung wechselt langsam; Beat = selten ducken, alle 5-10 s winkt einer). Beat -> `uStep`/`uPattern` Lauflicht auf den türkisen Stellen des Fotos, Drop -> `uFlash`, `uSporeT`, Auge
 Feuer + neue Irisfarbe. Auge über `uBlink` (Öffnung, Reihe 0) und `uEyeA/uEyeB/uEyeMix` (Blickzelle). Knüppel LINKS Eule /
 RECHTS Zwerge / OBEN beide (`uFig`, `uOwl`), UNTEN Kaleidoskop, ENTER Froschchor (`uChorusT`), SPACE/BACKSPACE Zoom.
 `[scenes.woodeye] eye = [x, y, Breite]`.
