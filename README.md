@@ -762,6 +762,104 @@ Sekunden in ein klares Bild, Kippschalter AN = Jack out (klar und kalt), AUS = R
 `blackice_horror`, `blackice_drop`, `blackice_blackout`, `blackice_help`. Controller `visualizers/scenes/blackice.py`,
 Shader `visualizers/shaders/blackice/frag.glsl`. Test: `python -m visualizers.engine blackice --test-signal --demo`.
 
+**Thema ZURÜCK IN DIE ZUKUNFT (`future`):** Das vierte Thema ersetzt die Tasten 2 bis 7 (`config/themes.toml`
+`modes = { viz_psychedelic = "timejump", blackhole = "flux", hal = "clocktower", slots = "almanacslots",
+campfire = "square", error = "paradox" }`), spricht als verrückter Professor (`de_DE-karlsson-low`, schnell, etwas höher,
+Hauch Werkstatt-Hall, Sätze in `config/announce.toml` `[themes.future]`). Roter Faden: vier Epochen (1885, 1955, 1985,
+2015), 88 Meilen pro Stunde, 1,21 Gigawatt, Feuerspuren, der Uhrturm um 22:04 und das verblassende Fahrerfoto
+(`assets/taxi/future/driver.png`). Bilder vom Bot (Prompts und Dateinamen in `docs/future_plan.md`, Rohbilder
+`assets/future/raw/`), `scripts/future_assets.sh` schneidet daraus Szenen und Atlanten unter `assets/future/`.
+
+**Zeitsprung (Taste 2 im Thema ZURÜCK IN DIE ZUKUNFT, `timejump`):** Das Gegenstück zum Navigationscomputer. Blick aus
+dem Cockpit der Zeitmaschine (`assets/future/timejump_cockpit.png`, die Scheibe ist im Bild schwarz und zeigt die
+Epochenstraße dahinter; `cockpit_drop` schiebt die Armaturen nach unten). Startknopf = Gas geben, der Tacho folgt der
+Energie der Musik, laute Musik hält den Schub, Stille lässt ausrollen. Bei 88 zündet der Zeitsprung: Blaulicht um die
+Scheibe, zwei Feuerspuren zum Fluchtpunkt, Weißblitz, und die Straße ist in einer anderen Epoche (`timejump_1885|1955|
+1985|2015.png`, nie zweimal dieselbe). Kippschalter = anhalten (egal welche Richtung). Knüppel links/rechts = Spur,
+oben = Hupe (Verkehr weicht, in 2015 steigt alles auf), unten = Zeitkreise umschalten (nächste Epoche vorwählen, die
+Anzeige rattert). Zeitkreis-Anzeige im Cockpit: ZIELZEIT rot, JETZTZEIT grün, ZULETZT gelb, Tacho "NN MPH" unten.
+Verkehr je Epoche aus `timejump_traffic.png` (8x4: Reiter und Kutschen, 50er-Autos, 80er-Autos, Flugautos und
+Hoverboards). Musik: Bass ist Motorvibration, Beats lassen Laternen, Schilder und Feuerspuren blitzen, Höhen sind
+Staub, Sterne, Regen oder Hologramm-Funken je Epoche, Mitten machen den Verkehr dichter, Drop = sofortiger Sprung.
+Ereignisse alle 30 bis 60 Sekunden je Epoche: Pferdekutsche, Dampflok, Mistwagen, Tanzball, Skateboarder,
+Einkaufszentrum, Hoverboards, Hologramm-Hai, und immer Gewitter. Board `timejump`, `timejump_start`, `timejump_jump`,
+`timejump_honk`, `timejump_storm`. `config/visualizer.toml` `[scenes.timejump]` `vanish`, `windshield`, `cockpit_drop`.
+Controller `visualizers/scenes/timejump.py`, Shader `visualizers/shaders/timejump/frag.glsl`.
+Test: `python -m visualizers.engine timejump --test-signal --demo` (`KITT_TIMEJUMP_ERA=0..3` setzt die Startepoche).
+
+**Fluxkompensator (Taste 3 im Thema ZURÜCK IN DIE ZUKUNFT, `flux`):** Das Gegenstück zum Schwarzen Loch. Die Werkstatt
+mit dem leuchtenden Y (`assets/future/flux_scene.png`; die drei Lichtarme werden beim Start im Foto erkannt und pulsen
+zum Bass, Lichtstöße laufen auf jeden Beat vom Knoten durch die Arme, die Oszilloskope zeigen die Wellenform). Knüppel
+links/rechts wirft ein Objekt aus `flux_objects.png` (6x4: Hoverboard, Almanach, Skateboard, E-Gitarre, Plutoniumkoffer,
+Hund, Kassette, Jukebox und mehr) von dieser Seite hinein: es wird angezogen, zieht zwei Feuerspuren, dehnt sich zur
+Zeitschleife um das Y und löst sich in Blitze auf, die in die Arme laufen (40 bis 60 Sekunden). Oben = Gewitter (Blitze
+schlagen in die Kabel über dem Kasten, Y flackert, Regen am Fenster), unten = Paradoxon (alles kommt rückwärts wieder
+heraus, das Fahrerfoto erscheint als Polaroid und verblasst, jeder Beat holt ein Stück zurück), Startknopf = 1,21
+Gigawatt (Weißblitz, Lichtbögen über alle Kabel, kurz Negativ), Kippschalter AN = Nahaufnahme, AUS = zurück. Drop =
+Farbwechsel des Y und die Schleifen laufen rückwärts, Stille = nur Glimmen und Oszilloskope. Board `flux`, `flux_throw`,
+`flux_storm`, `flux_eject`, `flux_overload`. `[scenes.flux]` `center`, `radius` (Suchzentrum für die Y-Erkennung).
+Controller `visualizers/scenes/flux.py`, Shader `visualizers/shaders/flux/frag.glsl`.
+Test: `python -m visualizers.engine flux --test-signal --demo`.
+
+**Uhrturm (Taste 4 im Thema ZURÜCK IN DIE ZUKUNFT, `clocktower`):** Das Gegenstück zu HAL 3000. Das Rathaus in der
+Gewitternacht (`assets/future/clocktower_scene.png`), das leere Zifferblatt bekommt im Shader seine Zeiger: der
+Sekundenzeiger tickt auf jeden Beat, die großen Zeiger kriechen mit der Energie von 21:00 Richtung 22:04, in Stille
+tickt die Uhr wie eine echte. Bei 22:04 (oder Drop oder Startknopf) schlägt der Blitz in den Turm, das Kabel zur
+Laterne glüht, Weißblitz, die Uhr bleibt zehn Sekunden stehen und läuft dann zurück. Die acht Schaufenster unter dem
+Turm sind die acht Spektrumbänder, Lauflicht über Fenster und Laternen auf den Beat, Bass lässt die Wolken von innen
+leuchten und den Turm beben, Mitten sind Wetterleuchten, Höhen Regen und Funken am Kabel. Knüppel links = der
+Professor hängt am Zifferblatt (Posen auf den Beat, beim Blitz erschrickt er), rechts = die Zeitmaschine rast mit
+Feuerspuren über den Platz, oben = beide, unten = Tanzball (Girlanden-Lichter über dem Platz blinken im Takt, ein Paar
+aus 1955 tanzt), Kippschalter AN = Nahaufnahme aufs Zifferblatt, AUS = zurück. Figuren aus `clocktower_figures.png`
+(8x3: Professor, Zeitmaschine, Tanzpaar). Board `clocktower`, `clocktower_doc`, `clocktower_car`, `clocktower_both`,
+`clocktower_dance`, `clocktower_strike`. `[scenes.clocktower]` `clock` (x, y, Radius), `windows` (x erste, x letzte,
+y, Breite), `cable` (Turm zu Laterne). Controller `visualizers/scenes/clocktower.py`, Shader
+`visualizers/shaders/clocktower/frag.glsl`. Test: `python -m visualizers.engine clocktower --test-signal --demo`.
+
+**Almanach (Taste 5 im Thema ZURÜCK IN DIE ZUKUNFT, `almanacslots`):** Das Gegenstück zur Slotmaschine, gleiche
+Spiellogik, ein protziger Casino-Automat aus dem falschen 1985 (`assets/future/almanac_scene.png`) mit neun
+Zeitreise-Symbolen (`almanac_symbols.png`, 3x3: Hoverboard, Almanach, Plutonium, Skateboard, Kassette, Hund, Turnschuh,
+Fluxkompensator, Uhr auf 22:04 = Jackpot). Knüppel links/rechts = Einsatz CENT 1955, DOLLAR 1985, KARTE 2015 (Gewinne
+x1, x5, x20), Startknopf = drehen. Gold, Spiegel und Neon pulsen zum Bass, Lauflicht durch die drei Säulen auf den
+Beat, Glühbirnen flackern in den Höhen, Drop = Blitz von oben in den Automaten und die nächste Drehung läuft
+schneller. Gewinn = Dollarscheine regnen, großer Gewinn = Feuerspuren laufen durchs Bild, der Professor und das
+Tanzpaar tanzen, Jackpot = Blitz, die Zeitmaschine fährt durch den Automaten und alles kippt kurz nach Schwarzweiß wie
+1955. Board `almanacslots`, `almanacslots_win`, `almanacslots_jackpot`. `[scenes.almanacslots]` `windows`, `window_y`.
+Controller `visualizers/scenes/almanacslots.py`, Shader `visualizers/shaders/almanacslots/frag.glsl`.
+Test: `python -m visualizers.engine almanacslots --test-signal`.
+
+**Marktplatz (Taste 6 im Thema ZURÜCK IN DIE ZUKUNFT, `square`):** Das Gegenstück zum Lagerfeuer. Derselbe Marktplatz
+mit Rathaus und Uhrturm in vier Epochen (`assets/future/square_1885|1955|1985|2015.png`). Knüppel links/rechts =
+Zeitsprung zurück/vor: Weißblitz, zwei Feuerspuren laufen über den Platz, und der Platz ist ein anderes Jahr; sonst
+wandert die Zeit alle `cycle_minutes` von selbst. Fenster und Schilder leuchten mit dem Bass, Beats laufen als Lichtwelle
+vom Uhrturm durch die Häuserzeile, Mitten sind Verkehrs- und Passantenlichter, Höhen je Epoche Staub, Regen,
+Neon-Flackern oder Hologramm-Funken, dazu Teilchen aus `square_particles.png` (8x3: Steppenläufer, Konfetti, Ballons,
+Schallplatten, Drohnen, Pizza). Drop = Blitz in den Uhrturm und Sprung in eine zufällige andere Epoche. Oben =
+Feuerwerk (1885 Kanonenblitze, 2015 Drohnenshow), unten = Stromausfall (der Platz geht blockweise aus und kommt mit
+den Beats zurück), Startknopf = Blitz, Kippschalter AN = Nahaufnahme auf das Zifferblatt, AUS = zurück. Board `square`
+und je Epoche `square_1885|1955|1985|2015`, Ereignisse `square_jump`, `square_fireworks`, `square_blackout`,
+`square_lightning`. `[scenes.square]` `clocks` (Zifferblatt je Epoche), `grounds` (Bodenkante je Epoche),
+`cycle_minutes`. Controller `visualizers/scenes/square.py`, Shader `visualizers/shaders/square/frag.glsl`.
+Test: `python -m visualizers.engine square --test-signal --demo`.
+
+**Paradoxon (Taste 7 im Thema ZURÜCK IN DIE ZUKUNFT, `paradox`):** Das Gegenstück zum Systemfehler, aufgebaut wie
+Überdosis und Black Ice: die Zeitlinie bricht, in Wellen. Störung (10 s, "ZEITKREISE DEFEKT", die drei Zeitkreis-Zeilen
+rattern, der Puls steigt), Paradoxon (30 s, Doppelbilder, Sepia und Blitzblau, Anachronismen aus
+`assets/future/paradox_intruders.png` (4x3: Tyrannosaurus, Revolverheld, Ritter, Legionär, Rocker, Polizei-Schwebeauto,
+Roboter, Höhlenmensch, Pirat, Astronaut, Mammut, verblassende Person) lauern am Rand und springen auf den Beat, deine
+Hand unten im Bild wird durchsichtig), 1,21 Gigawatt (20 s, Blitze auf jeden Beat, Negativ-Blitze und Bildsprünge, das
+Fahrerfoto auf dem Tisch verblasst Stück für Stück, Flüstertexte "DU LÖSCHST DICH AUS"), Auslöschung (8 s, Schwarz mit
+Brandloch und Filmriss, dann "ZEITLINIE WIEDERHERGESTELLT. NOCH EINMAL."). Oben links "PULS n" und "ZEITLINIE n %".
+Musik: Bass = Herzschlag, Beat = Bildsprung, Höhen = Filmkorn und Kratzer, Mitten = Ränder verbiegen, Drop = Blitz und
+alle Anachronismen springen, Stille = schweres Atmen, Sepia kriecht. Knüppel links/rechts = Gegenmaßnahme (Zeitkreise
+reset, Almanach verbrennen, Brief an den Professor, Blitzableiter, 88 MPH: das Foto kehrt kurz zurück, dann Rückfall),
+oben = Zeitkreise neu starten (Bild rollt, Ziffern rattern), unten = Foto ansehen (Dunkel, nur das Polaroid atmet und
+verblasst), Startknopf = der Professor kommt mit der Zeitmaschine und holt dich fünf Sekunden in ein klares Bild,
+Kippschalter AN = zurück in 1985 (klar), AUS = Rückfall. Board `paradox`, `paradox_horror`, `paradox_drop`,
+`paradox_blackout`, `paradox_help`. `[scenes.paradox]` optional `photo = [x, y, Breite]`, `hand = [x, y, Größe]`.
+Controller `visualizers/scenes/paradox.py`, Shader `visualizers/shaders/paradox/frag.glsl`.
+Test: `python -m visualizers.engine paradox --test-signal --demo`.
+
 **Flug und Ankunft im Navigationscomputer:** Der Startknopf startet den Flug (Kippschalter AN
 zeigt vorher nur SCHARF an). Der Hyperraumflug endet nie von selbst: erst wenn der Pilot den
 Kippschalter umlegt (egal in welche Richtung), kommt die Ankunft. Nur im `--demo` gilt die feste
@@ -1041,7 +1139,7 @@ Prüfen: `scripts/setup_cast.sh --status`, anderer Name: `--name NAME`, entferne
 mit `voice` (Piper-Stimme, wird beim Rendern nachgeladen), `tts` (Abweichungen vom KITT-Profil in `kitt.toml`, z. B.
 `pitch_factor`, `length_scale`, `robot = false`, `echo_ms`/`echo_mix`/`echo_decay` für Hall) und `[themes.<name>.lines]`
 mit eigenen Sätzen je Gruppe haben. THE POWER OF THE GREEN spricht als Waldgeist (`de_DE-pavoque-low`, tief, langsam,
-mit Hall), CYBERPUNK als Netz-KI (`de_DE-kerstin-low`, leicht robotisch mit kurzem Hall); beide haben für jeden Modus eigene Sätze; Gruppen, die im Thema fehlen, werden mit den Standardsätzen in der
+mit Hall), CYBERPUNK als Netz-KI (`de_DE-kerstin-low`, leicht robotisch mit kurzem Hall), ZURÜCK IN DIE ZUKUNFT als verrückter Professor (`de_DE-karlsson-low`, schnell und atemlos); alle haben für jeden Modus eigene Sätze; Gruppen, die im Thema fehlen, werden mit den Standardsätzen in der
 Themenstimme gesprochen. Der Launcher sagt immer den tatsächlich gestarteten Modus an (im grünen Thema also das Auge
 des Waldes statt HAL), und der Taxistand begrüßt beim Bestätigen eines Themas mit dessen Stimme (Gruppe `theme`).
 Rendern: `scripts/announce_build.sh` (läuft bei jedem `update.sh`; Dateien `models/announce/<thema>__<gruppe>_<hash>.wav`).
