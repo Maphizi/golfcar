@@ -794,10 +794,11 @@ Hauch Werkstatt-Hall, Sätze in `config/announce.toml` `[themes.future]`). Roter
 
 **Zeitsprung (Taste 2 im Thema ZURÜCK IN DIE ZUKUNFT, `timejump`):** Das Gegenstück zum Navigationscomputer. Blick aus
 dem Cockpit der Zeitmaschine (`assets/future/timejump_cockpit.png`, die Scheibe ist im Bild schwarz und zeigt die
-Epochenstraße dahinter; `cockpit_drop` schiebt die Armaturen etwas nach unten). Startknopf = Gas geben, der Tacho folgt der
-Energie der Musik, laute Musik hält den Schub, Stille lässt ausrollen. Bei 88 zündet der Zeitsprung: Blaulicht um die
+Epochenstraße dahinter; `cockpit_drop` schiebt die Armaturen etwas nach unten). Der Autopilot gibt nach vier Sekunden von selbst Gas
+(Startknopf = sofort), der Tacho folgt der Energie der Musik, laute Musik hält den Schub, Stille lässt ausrollen; spätestens
+nach 35 bis 60 Sekunden Fahrt laden die Zeitkreise und er zieht auf 88, beim Drop sofort. Bei 88 zündet der Zeitsprung: Blaulicht um die
 Scheibe, zwei Feuerspuren zum Fluchtpunkt, Weißblitz, und die Straße ist in einer anderen Epoche (`timejump_1885|1955|
-1985|2015.png`, nie zweimal dieselbe). Kippschalter = anhalten (egal welche Richtung). Knüppel links/rechts = Spur,
+1985|2015.png`, nie zweimal dieselbe). Kippschalter = anhalten (egal welche Richtung), nach 25 Sekunden fährt er wieder an. Knüppel links/rechts = Spur,
 oben = Hupe (Verkehr weicht, in 2015 steigt alles auf), unten = Zeitkreise umschalten (nächste Epoche vorwählen, die
 Anzeige rattert). Zeitkreis-Anzeige im Cockpit: ZIELZEIT rot, JETZTZEIT grün, ZULETZT gelb, Tacho "NN MPH" unten.
 Verkehr je Epoche aus `timejump_traffic.png` (8x4: Reiter und Kutschen, 50er-Autos, 80er-Autos, Flugautos und

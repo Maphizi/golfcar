@@ -282,8 +282,9 @@ Aktionen `launcher/actions.py`. Shader-Hinweis (llvmpipe): `pow(x, 2.0)` mit neg
 negativem Argument liefern NaN/weiße Blöcke, daher `sq()` statt pow und `exp(max(x, -60))`.
 
 ### Zeitsprung (`visualizers/scenes/timejump.py`, Taste 2)
-Wie Neonfahrt: ENTER = Gas (`uDriving`), `mph` folgt der Energie, bei `MPH_JUMP` 88 `jump()` (`uJumpT` 0..3 s, Weißblitz bei 1,5 s,
-`_swap_era()`), SPACE/BACKSPACE = anhalten, LINKS/RECHTS `uLane`, OBEN `uHonkT`, UNTEN `toggle_circuits` (`uCircuitT`). Cockpit
+Wie Neonfahrt: Autopilot fährt nach `AUTO_START` 4 s von selbst (ENTER sofort, SPACE/BACKSPACE = anhalten, nach `AUTO_RESTART`
+25 s wieder los). `mph` folgt der Energie (30 + 70·Energie + Schub bis 40), spätestens nach `JUMP_DUE` 35-60 s Fahrt laden die
+Zeitkreise und das Tempo geht auf `MPH_JUMP` 88 -> `jump()` (`uJumpT` 0..3 s, Weißblitz bei 1,5 s, `_swap_era()`), Drop = sofort, LINKS/RECHTS `uLane`, OBEN `uHonkT`, UNTEN `toggle_circuits` (`uCircuitT`). Cockpit
 `timejump_cockpit.png` (Alpha aus der schwarzen Scheibe, `_windshield_mask`, `SHIELD_Y0` 0.45; `cockpit_drop` schiebt das Bild
 nach unten, Shader bekommt `uShield` = Scheibenkante auf dem Schirm + Drop in .w), Epochen `uEra0..3Tex` (`uEraA/uEraB/uEraMix`),
 Verkehr `timejump_traffic.png` 8x4 à 192 (Reihe = Epoche) als `uMov0..9`/`uMovP0..9`. `EVENTS` je Epoche + Gewitter (`uEvent/

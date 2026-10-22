@@ -34,6 +34,9 @@ JUMP_SWAP = 1.5
 CIRCUIT_LEN = 1.2         # Anzeige rattert (s)
 HONK_LEN = 1.5
 MPH_JUMP = 88.0
+AUTO_START = 4.0          # s nach dem Start fährt der Wagen von selbst los (Autopilot)
+AUTO_RESTART = 25.0       # s nach dem Anhalten per Kippschalter fährt er wieder an
+JUMP_DUE = (35.0, 60.0)   # spätestens nach so vielen Sekunden Fahrt laden die Zeitkreise und er springt (bei Musik)
 COCKPIT_DROP = 0.08
 CIRCUIT_X = 0.735         # Zeitkreis-Anzeigen im Cockpitbild: Mitte x und die drei Zeilen (y von unten)
 CIRCUIT_Y = (0.356, 0.247, 0.142)
@@ -153,6 +156,8 @@ class Controller:
         self.led_back_at: float | None = None
         self.demo_next = time.monotonic() + 3.0
         self.demo_jump_at = 0.0
+        self.auto_start_at = time.monotonic() + AUTO_START
+        self.jump_due = 1e18
         if demo:
             self.start()
         log.info("Zeitsprung: Cockpit %s, Epochen %s, Verkehr %s, Start in %s",
@@ -170,6 +175,7 @@ class Controller:
         self.boost = 0.0
         self.next_event_at = now + self.rng.uniform(*EVENT_EVERY) * (0.25 if self.demo else 0.7)
         self.demo_jump_at = now + 12.0
+        self.jump_due = now + self.rng.uniform(*JUMP_DUE)
         self._led_event("timejump_start", now + 3.0)
         log.info("Gas gegeben in %s", ERA_NAMES[self.era])
 
@@ -178,6 +184,7 @@ class Controller:
             return
         self.driving = False
         self.event = None
+        self.auto_start_at = time.monotonic() + AUTO_RESTART
         secs = int(time.monotonic() - self.started_at)
         log.info("Angehalten nach %d:%02d, %d Zeitsprünge", secs // 60, secs % 60, self.jumps)
         wled.apply_mode_async("timejump")
@@ -216,6 +223,7 @@ class Controller:
         self.mph = min(self.mph, 42.0)
         self.boost = 0.0
         self.demo_jump_at = time.monotonic() + self.rng.uniform(14.0, 20.0)
+        self.jump_due = time.monotonic() + self.rng.uniform(*JUMP_DUE)
 
     def _led_event(self, profile: str, back_at: float) -> None:
         wled.apply_mode_async(profile)
@@ -356,13 +364,20 @@ class Controller:
         if jumping and not self.jump_swapped and jt >= JUMP_SWAP:
             self.jump_swapped = True
             self._swap_era()
-        # Tempo: Energie der Musik plus Schub bei anhaltend lauter Musik; Stille = ausrollen; nach dem Sprung ~40
+        # Autopilot: fährt nach AUTO_START von selbst los (und nach dem Anhalten wieder an)
+        if not self.driving and now >= self.auto_start_at and live:
+            self.start()
+            log.info("Autopilot: fährt von selbst los")
+        # Tempo: Energie der Musik plus Schub bei anhaltender Musik; Stille = ausrollen; nach dem Sprung ~40;
+        # spätestens zur Fälligkeit (jump_due) laden die Zeitkreise und das Tempo geht auf 88
         if self.driving:
             if live:
-                self.boost = max(0.0, min(30.0, self.boost + dt * 6.0 * (self.energy - 0.45)))
+                self.boost = max(0.0, min(40.0, self.boost + dt * 5.0 * (self.energy - 0.2)))
             else:
                 self.boost = max(0.0, self.boost - dt * 4.0)
-            target = (35.0 + 50.0 * self.energy + self.boost) * live + (1.0 - live) * 8.0
+            target = (30.0 + 70.0 * self.energy + self.boost) * live + (1.0 - live) * 8.0
+            if live and now >= self.jump_due and not jumping:
+                target = max(target, MPH_JUMP + 8.0)
             if jumping:
                 target = MPH_JUMP + 6.0 if jt < JUMP_SWAP else 40.0
         else:
@@ -456,7 +471,8 @@ class Controller:
             out.append((self._date(era, rattle), 0.025, CIRCUIT_X, y, color, dim * flick))
         if not self.driving:
             out.append(("Z E I T S P R U N G", 0.05, 0.5, 0.74, (255, 170, 60), 0.7 + 0.3 * np.sin(t * 2.0)))
-            out.append(("STARTKNOPF = GAS GEBEN      KIPPSCHALTER = ANHALTEN      KNÜPPEL UNTEN = ZEITKREISE", 0.018, 0.5, 0.67, (160, 220, 255), 0.7))
+            wait = max(0.0, self.auto_start_at - now)
+            out.append((f"AUTOPILOT STARTET IN {int(wait + 0.99)} S      STARTKNOPF = SOFORT      KIPPSCHALTER = ANHALTEN", 0.018, 0.5, 0.67, (160, 220, 255), 0.7))
             out.append((f"{ERA_NAMES[self.era]}  {ERA_LABELS[self.era]}", 0.022, 0.5, 0.60, (255, 220, 160), 0.6))
             out.append(("0 MPH", 0.05, MPH_X, MPH_Y, (255, 170, 60), 0.45))
         else:
