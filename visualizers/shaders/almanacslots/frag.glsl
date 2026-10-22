@@ -4,7 +4,7 @@
 // drei Säulen auf den Beat (uStep), Glühbirnen flackern mit den Höhen, Funken. Drop = Blitz von oben (uBoltT) +
 // Lichtwelle (uFlash). Gewinne: uWin 1 Dollarscheine regnen, 2 Feuerspuren + Professor tanzt (uFigTex Reihe 0, uFig),
 // 3/4 Blitz, die Zeitmaschine fährt durch den Automaten (Reihe 1), Schwarzweiß wie 1955 (uSepia). Figurenbogen 8x3 à 192:
-// Reihe 0 Professor (ragt 64 px in Reihe 1 hinein, daher 256 hoch gelesen), Reihe 1 Zeitmaschine (untere 128 px),
+// Reihe 0 Professor, Reihe 1 Zeitmaschine,
 // Reihe 2 Tanzpaar (Zellen 16-23).
 in vec2 vUv;
 out vec4 fragColor;
@@ -57,14 +57,13 @@ float bulbAt(vec3 c) {
     float sat = lum - min(c.r, min(c.g, c.b));
     return smoothstep(0.86, 0.97, lum) * smoothstep(0.5, 0.2, sat);
 }
-// Figurenbogen 8x3 à 192 (Schwarz = frei). Zeile 0 wird 256 hoch gelesen (Professor ragt nach unten über die Zelle),
-// Zeile 1 nur die unteren 128 (Zeitmaschine), Zeile 2 normal. figH = Höhe der Zelle in Pixeln.
-float figH(float ri) { return ri < 0.5 ? 256.0 : (ri < 1.5 ? 128.0 : 192.0); }
+// Figurenbogen 8x3 à 192 (Schwarz = frei), gleich große Zellen. figH = Höhe der Zelle in Pixeln.
+float figH(float ri) { return 192.0; }                                           // Bogen mit gleich großen Zellen
 vec4 figCell(float idx, vec2 d) {
     if (abs(d.x) >= 1.0 || abs(d.y) >= 1.0 || uFig.w < 0.5) return vec4(0.0);
     float ci = mod(idx, 8.0), ri = floor(idx / 8.0);
     float h = figH(ri);
-    float y0 = ri < 0.5 ? 320.0 : (ri < 1.5 ? 192.0 : 0.0);
+    float y0 = (2.0 - ri) * 192.0;                                                // Textur steht kopf: Reihe 0 oben
     vec2 lo = vec2(ci * 192.0, y0);
     vec4 s = bilin(uFigTex, lo + (d * 0.5 + 0.5) * vec2(192.0, h), uFigSize, lo, lo + vec2(191.0, h - 1.0));
     float lum = max(s.r, max(s.g, s.b));
@@ -295,7 +294,7 @@ void main() {
             float cx = -0.35 + drive * 1.7;
             float cy = 0.40 + 0.012 * sin(t * 7.0);
             float hw = 0.36 * aspect * 0.5;
-            float frame = 12.0 + step(0.5, fract(t * 8.0));                            // Wagen (Zellen 12/13, Feuer flackert)
+            float frame = 14.0 + step(0.5, fract(t * 8.0));                            // Wagen mit Feuerspuren (Zellen 14/15, Feuer flackert)
             vec4 car = figAt(frame, uv, vec2(cx, cy), hw, aspect);
             col = blendFire(col, fireTrail(uv, aspect, cy + 0.005, cx - 0.9, cx - 0.12, t, 1.5));
             col += BOLT * car.a * 0.3 * step(0.5, fract(t * 10.0));                 // Zeitkreise blitzen blau

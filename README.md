@@ -772,7 +772,7 @@ Hauch Werkstatt-Hall, Sätze in `config/announce.toml` `[themes.future]`). Roter
 
 **Zeitsprung (Taste 2 im Thema ZURÜCK IN DIE ZUKUNFT, `timejump`):** Das Gegenstück zum Navigationscomputer. Blick aus
 dem Cockpit der Zeitmaschine (`assets/future/timejump_cockpit.png`, die Scheibe ist im Bild schwarz und zeigt die
-Epochenstraße dahinter; `cockpit_drop` schiebt die Armaturen nach unten). Startknopf = Gas geben, der Tacho folgt der
+Epochenstraße dahinter; `cockpit_drop` schiebt die Armaturen etwas nach unten). Startknopf = Gas geben, der Tacho folgt der
 Energie der Musik, laute Musik hält den Schub, Stille lässt ausrollen. Bei 88 zündet der Zeitsprung: Blaulicht um die
 Scheibe, zwei Feuerspuren zum Fluchtpunkt, Weißblitz, und die Straße ist in einer anderen Epoche (`timejump_1885|1955|
 1985|2015.png`, nie zweimal dieselbe). Kippschalter = anhalten (egal welche Richtung). Knüppel links/rechts = Spur,

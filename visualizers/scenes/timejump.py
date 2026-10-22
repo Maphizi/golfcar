@@ -32,8 +32,11 @@ JUMP_SWAP = 1.5
 CIRCUIT_LEN = 1.2         # Anzeige rattert (s)
 HONK_LEN = 1.5
 MPH_JUMP = 88.0
-COCKPIT_DROP = 0.17       # Cockpitbild um diesen Anteil nach unten schieben (Armaturen kleiner, Scheibe größer)
-SHIELD_Y0 = 0.50          # Unterkante der Scheibe im Cockpitbild (Anteil von unten): darunter liegt das Armaturenbrett
+COCKPIT_DROP = 0.08
+CIRCUIT_X = 0.735         # Zeitkreis-Anzeigen im Cockpitbild: Mitte x und die drei Zeilen (y von unten)
+CIRCUIT_Y = (0.356, 0.247, 0.142)
+MPH_X, MPH_Y = 0.5, 0.035       # Tacho-Text unter dem Lenkrad       # Cockpitbild um diesen Anteil nach unten schieben (Armaturen kleiner, Scheibe größer)
+SHIELD_Y0 = 0.45          # Unterkante der Scheibe im Cockpitbild (Anteil von unten): darunter liegt das Armaturenbrett
 EVENT_EVERY = (30.0, 60.0)
 ERA_NAMES = ("1885", "1955", "1985", "2015")
 ERA_LABELS = ("WILDER WESTEN", "KLEINSTADT", "VORSTADT", "ZUKUNFT")
@@ -461,21 +464,19 @@ class Controller:
         # Zeitkreise in den drei Anzeigen des Cockpits (rechts): Ziel rot, Jetzt grün, Zuletzt gelb
         flick = 0.85 + 0.15 * np.sin(t * 37.0)
         d = self.drop
-        rows = ((self.era_next, 0.556 - d, (255, 70, 50)), (self.era, 0.472 - d, (70, 255, 110)), (self.era_prev, 0.388 - d, (255, 215, 60)))
+        rows = ((self.era_next, CIRCUIT_Y[0] - d, (255, 70, 50)), (self.era, CIRCUIT_Y[1] - d, (70, 255, 110)), (self.era_prev, CIRCUIT_Y[2] - d, (255, 215, 60)))
         for era, y, color in rows:
-            out.append((self._date(era, rattle), 0.025, 0.80, y, color, dim * flick))
-        for label, y, color in (("ZIELZEIT", 0.556 - d, (255, 70, 50)), ("JETZTZEIT", 0.472 - d, (70, 255, 110)), ("ZULETZT", 0.388 - d, (255, 215, 60))):
-            out.append((label, 0.011, 0.655, y, color, 0.8 * dim))
+            out.append((self._date(era, rattle), 0.025, CIRCUIT_X, y, color, dim * flick))
         if not self.driving:
             out.append(("Z E I T S P R U N G", 0.05, 0.5, 0.74, (255, 170, 60), 0.7 + 0.3 * np.sin(t * 2.0)))
             out.append(("STARTKNOPF = GAS GEBEN      KIPPSCHALTER = ANHALTEN      KNÜPPEL UNTEN = ZEITKREISE", 0.018, 0.5, 0.67, (160, 220, 255), 0.7))
             out.append((f"{ERA_NAMES[self.era]}  {ERA_LABELS[self.era]}", 0.022, 0.5, 0.60, (255, 220, 160), 0.6))
-            out.append(("0 MPH", 0.06, 0.5, 0.09, (255, 170, 60), 0.45))
+            out.append(("0 MPH", 0.05, MPH_X, MPH_Y, (255, 170, 60), 0.45))
         else:
             mph = int(self.mph)
             hot = self.mph >= MPH_JUMP - 0.5
             col = (200, 230, 255) if hot else (255, 170, 60)
-            out.append((f"{mph} MPH", 0.06, 0.5, 0.09, col, 0.9 if not hot else 0.6 + 0.4 * np.sin(t * 25.0)))
+            out.append((f"{mph} MPH", 0.05, MPH_X, MPH_Y, col, 0.9 if not hot else 0.6 + 0.4 * np.sin(t * 25.0)))
             secs = int(now - self.started_at)
             out.append((f"{ERA_NAMES[self.era]}  {ERA_LABELS[self.era]}     {secs // 60}:{secs % 60:02d}     SPUR {int(round(self.lane)) + 2}",
                         0.018, 0.5, 0.925, (160, 220, 255), 0.55))

@@ -218,10 +218,10 @@ negativem Argument liefern NaN/weiße Blöcke, daher `sq()` statt pow und `exp(m
 ### Zeitsprung (`visualizers/scenes/timejump.py`, Taste 2)
 Wie Neonfahrt: ENTER = Gas (`uDriving`), `mph` folgt der Energie, bei `MPH_JUMP` 88 `jump()` (`uJumpT` 0..3 s, Weißblitz bei 1,5 s,
 `_swap_era()`), SPACE/BACKSPACE = anhalten, LINKS/RECHTS `uLane`, OBEN `uHonkT`, UNTEN `toggle_circuits` (`uCircuitT`). Cockpit
-`timejump_cockpit.png` (Alpha aus der schwarzen Scheibe, `_windshield_mask`, `SHIELD_Y0` 0.50; `cockpit_drop` schiebt das Bild
+`timejump_cockpit.png` (Alpha aus der schwarzen Scheibe, `_windshield_mask`, `SHIELD_Y0` 0.45; `cockpit_drop` schiebt das Bild
 nach unten, Shader bekommt `uShield` = Scheibenkante auf dem Schirm + Drop in .w), Epochen `uEra0..3Tex` (`uEraA/uEraB/uEraMix`),
 Verkehr `timejump_traffic.png` 8x4 à 192 (Reihe = Epoche) als `uMov0..9`/`uMovP0..9`. `EVENTS` je Epoche + Gewitter (`uEvent/
-uEventT/uEventLen`). Overlay Zeitkreise (rot/grün/gelb, Positionen minus Drop) und "NN MPH". `KITT_TIMEJUMP_ERA` = Startepoche.
+uEventT/uEventLen`). Overlay Zeitkreise (`CIRCUIT_X/CIRCUIT_Y` minus Drop, rot/grün/gelb) und "NN MPH" (`MPH_X/MPH_Y`). `KITT_TIMEJUMP_ERA` = Startepoche.
 Test: `python -m visualizers.engine timejump --test-signal --demo`.
 
 ### Fluxkompensator (`visualizers/scenes/flux.py`, Taste 3)
@@ -235,7 +235,7 @@ aus `uAudioTex`. Test: `python -m visualizers.engine flux --test-signal --demo`.
 Wie Orakel: Zeiger `uHands` (h, m, s in Umdrehungen; Sekunde tickt je Beat, `uClockT` 21:00 -> 22:04 mit Energie), Blitz
 `strike()` (`uStrikeT`, `uBoltSeed`, `uCableGlow`, danach 10 s Stillstand, Rücklauf), acht Schaufenster = Bänder (`uBands0/1`,
 `uPeaks0/1`), Lauflicht `uStep/uStepPhase/uPattern`, Wetterleuchten `uSheet`. Figuren `clocktower_figures.png` 8x3 à 192 (Reihe 0
-Professor, 1 Zeitmaschine, 2 Tanzpaar; Bogen ungleichmäßig, `_fit_cells()` misst je Zelle -> `uCarFit`, `uDocFitA/B`,
+Professor, 1 Zeitmaschine, 2 Tanzpaar; `_fit_cells()` misst je Zelle -> `uCarFit`, `uDocFitA/B`,
 `uDancerFitA/B`). LINKS `uDoc`, RECHTS `uCar`/`uCarPar`, OBEN beide (`uFig`), UNTEN Tanzball `uDance`/`uDancer`, ENTER Blitz,
 SPACE/BACKSPACE `uZoom`. `[scenes.clocktower] clock = [x, y, r]`, `windows = [x0, x7, y, w]`, `cable = [x0, y0, x1, y1]`.
 Test: `python -m visualizers.engine clocktower --test-signal --demo`.
@@ -243,8 +243,8 @@ Test: `python -m visualizers.engine clocktower --test-signal --demo`.
 ### Almanach (`visualizers/scenes/almanacslots.py`, Taste 5 / Slots)
 Erbt `slots.Controller` wie Pilzautomat/Pachinko. Thema `FUTURE` (`almanac_symbols.png` 3x3 à 384x256, letztes = 22:04 =
 Jackpot), `STAKES` CENT 1955 10/x1, DOLLAR 1985 50/x5, KARTE 2015 200/x20. Extra-Uniforms `uBoltT/uBoltSeed` (Drop-Blitz),
-`uSepia` (Schwarzweiß beim Jackpot), `uStake/uStakeT`, `uFig` (Professor/Tanzpaar aus `clocktower_figures.png`, Reihe 0 als
-192x256 gelesen), `uStep/uStepPhase/uStopT`. Dollarregen und Feuerspuren prozedural. `[scenes.almanacslots] windows`, `window_y`.
+`uSepia` (Schwarzweiß beim Jackpot), `uStake/uStakeT`, `uFig` (Professor/Tanzpaar aus `clocktower_figures.png`, Jackpot-Wagen
+Zellen 14/15), `uStep/uStepPhase/uStopT`. Dollarregen und Feuerspuren prozedural. `[scenes.almanacslots] windows`, `window_y`.
 Test: `python -m visualizers.engine almanacslots --test-signal`.
 
 ### Marktplatz (`visualizers/scenes/square.py`, Taste 6 / Lagerfeuer)
