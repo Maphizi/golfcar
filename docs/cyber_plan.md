@@ -197,3 +197,109 @@ Photorealistic dark hacker den at night, a wall of many screens and cables in fr
 ```
 Sprite sheet, 4 columns and 3 rows, each cell one creature centered on pure black background, same scale, photorealistic intrusion countermeasure daemons: chrome skull with cables, wireframe face, eye made of scanlines, spider made of circuit boards, snake made of data blocks, mask with glitches, hand made of fiber optics, holographic skull, spiked virus sphere, half destroyed android head, fish made of pixels, corporate guardian robot. No text, no borders
 ```
+
+---
+
+## Prompts Runde 2
+
+Neue und ersetzte Bilder; gleiche Regeln wie Runde 1 (fotorealistisch, kein lesbarer Text,
+16:9 mind. 1600 px breit, Bögen exakt mit Spalten- und Reihenzahl, gleiche Zellgröße,
+Schwarz als Hintergrund). blackice_screens: 8×4-Raster mit dünnen schwarzen Rändern, jede
+Kachel bis zum Rand gefüllt. rooftop_light_*: identische Ansicht wie rooftop_scene.png,
+nur andere Beleuchtung/Wetter (Vorlage per Bild-zu-Bild nutzen).
+
+**neonrace_obstacles**
+```
+Sprite sheet, 8 columns and 2 rows, pure black background, same scale, centered.
+Obstacles and events during a neon city night drive.
+Row 1: police hover drone with flashing lights, advertising blimp with glowing panels,
+thunderstorm cloud with lightning bolt, neon tunnel arch entrance, glowing corporate
+skyscraper facade segment, neon-lit street market stall, blooming cherry blossom tree
+at night, holographic road barrier cone.
+Row 2: burst of water from puddle splash, police spotlight beam cone, street food vendor
+cart with neon sign, hover motorcycle gang silhouette, heavy rain wall curtain, scattered
+road debris and broken glass, graffiti-covered concrete overpass section, neon traffic
+signal pole.
+No text, no borders.
+```
+
+**oracle_heads**
+```
+Sprite sheet, 8 columns and 2 rows, pure black background, same scale, centered.
+Close-up cyberpunk AI and android head portraits, frontal, glowing eyes.
+Row 1: male android with chrome jaw implants, female android with full visor over eyes,
+samurai warrior android with kabuto helmet, holographic geisha face glowing cyan,
+corporate executive android with smooth chrome face, hacker face with neural port tattoos,
+boxy retro robot head with round glowing eye lenses, alien AI construct head with
+fiber-optic tendrils.
+Row 2: each of the same eight heads with heavy glitch effects (pixel corruption blocks,
+horizontal scanlines, half dissolved into static, color channel separation, geometry
+fragmentation, image doubling, wireframe mesh visible, dissolving into cascading data
+streams).
+No text, no borders.
+```
+
+**blackice_scene** _(ersetzt das alte)_
+```
+Photorealistic dark hacker den at night, a wall of many screens and cables in front of
+the viewer, all screens showing only pure solid black with no image, red warning lights
+casting faint red glow, cold neon light filtering through window blinds, a neural
+interface cable lying across the desk, cinematic, 16:9
+```
+
+**blackice_screens**
+```
+Rectangular grid of 8 columns and 4 rows of screen tiles, thin black borders between
+every tile, each tile fully filled edge-to-edge, no empty space, no outer border.
+Row 1: green cascading terminal characters (abstract glyphs), network topology node graph,
+CPU spike waveform monitor, horizontal glitch static bands.
+Row 2: dark city grid satellite view with amber lights, empty grey room security camera,
+flatlined EKG heartrate trace, rotating radar sweep arc.
+Row 3: fiber optic green data streams, corrupted red pixel data blocks, circuit board
+trace diagram, pulsing cyan energy core sphere.
+Row 4: cascading red error code columns (abstract glyphs), rotating encryption wheel,
+neural network node graph, audio spectrum waveform bars.
+No readable text, tile borders are plain black lines only.
+```
+
+**rooftop_light_1** _(Referenz: rooftop_scene.png)_
+```
+Same rooftop terrace over the neon megacity, clear night sky, no rain, sharp crisp city
+lights and vivid neon reflections on the dry railing and pavement below, stars faintly
+visible above the towers, calm clear atmosphere, photorealistic, 16:9
+```
+
+**rooftop_light_2** _(Referenz: rooftop_scene.png)_
+```
+Same rooftop terrace over the neon megacity, heavy downpour, dense rain streaks blurring
+the view, neon lights bleeding into heavy raindrops on the railing and glass, puddles
+pooling on the terrace floor, dark storm sky, photorealistic, 16:9
+```
+
+**rooftop_light_3** _(Referenz: rooftop_scene.png)_
+```
+Same rooftop terrace over the neon megacity, dense grey fog rolling in over the city,
+towers half hidden in thick mist, neon halos glowing softly through the fog, diffused
+light, eerie quiet atmosphere, photorealistic, 16:9
+```
+
+**rooftop_light_4** _(Referenz: rooftop_scene.png)_
+```
+Same rooftop terrace over the neon megacity, acid rain with a sickly green atmospheric
+tint, green-hued neon reflections in toxic puddles on the terrace, chemical haze over
+the city, dystopian oppressive mood, photorealistic, 16:9
+```
+
+**rooftop_light_5** _(Referenz: rooftop_scene.png)_
+```
+Same rooftop terrace over the neon megacity, snow and white ash falling gently, cold
+blue-white light, snowflakes settling on the railing, tower tops dusted white, quieter
+calmer atmosphere, photorealistic, 16:9
+```
+
+**rooftop_light_6** _(Referenz: rooftop_scene.png)_
+```
+Same rooftop terrace over the neon megacity, violent thunderstorm, a bright lightning
+bolt forking across the dark sky above the towers, dramatic flash illuminating the clouds
+from within, charged electrified atmosphere, photorealistic, 16:9
+```
