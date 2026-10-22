@@ -189,8 +189,9 @@ radius = 0.12
 shader = "clocktower"
 controller = "clocktower"  # Uhrturm (Zukunft-Taste 4)
 render_scale = 0.6
-clock = [0.5, 0.72, 0.09]                # Zifferblatt x, y, Radius
-windows = [0.2, 0.8, 0.2, 0.05]          # Schaufenster: x erste, x letzte, y, Breite
+clock = [0.667, 0.824, 0.045]            # Zifferblatt x, y, Radius (am Foto gemessen)
+windows = [0.183, 0.611, 0.318, 0.039]   # Schaufenster: x erste, x letzte (8 von 9, das neunte liegt unter dem Turm), y Mitte, Breite
+cable = [0.714, 0.764, 0.922, 0.463]     # Kabel Turm -> Laterne: x0, y0, x1, y1
 
 [scenes.almanacslots]
 shader = "almanacslots"
@@ -203,7 +204,9 @@ window_y = [0.414, 0.666]
 shader = "square"
 controller = "square"      # Marktplatz (Zukunft-Taste 6)
 render_scale = 0.6
-clock = [0.5, 0.62]        # Uhrturm (Blitzziel)
+clock = [0.53, 0.82]       # Uhrturm (Blitzziel, Nahaufnahme) x, y von unten – Standard, wenn clocks fehlt
+clocks = [[0.577, 0.829], [0.501, 0.824], [0.509, 0.861], [0.541, 0.785]]   # Zifferblatt je Epoche 1885, 1955, 1985, 2015
+grounds = [0.26, 0.35, 0.41, 0.35]   # Oberkante des Platzes (Boden) je Epoche
 cycle_minutes = 4          # Minuten je Epoche
 
 [scenes.paradox]
