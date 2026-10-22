@@ -38,8 +38,12 @@ AUTO_START = 4.0          # s nach dem Start fährt der Wagen von selbst los (Au
 AUTO_RESTART = 25.0       # s nach dem Anhalten per Kippschalter fährt er wieder an
 JUMP_DUE = (35.0, 60.0)   # spätestens nach so vielen Sekunden Fahrt laden die Zeitkreise und er springt (bei Musik)
 COCKPIT_DROP = 0.08
-CIRCUIT_X = 0.735         # Zeitkreis-Anzeigen im Cockpitbild: Mitte x und die drei Zeilen (y von unten)
-CIRCUIT_Y = (0.356, 0.247, 0.142)
+# Zeitkreis-Anzeigen im Cockpitbild: je Zeile (Ziel rot, Jetzt grün, Zuletzt gelb) die fünf Fenster MONTH/DAY/YEAR/HOUR/MIN
+# (x-Mitten) und die Fenstermitte y (von unten); gemessen im Cockpitbild, der Text wird mit der Unterkante gesetzt
+CIRCUIT_X = ((0.662, 0.695, 0.7425, 0.789, 0.821), (0.662, 0.695, 0.7425, 0.789, 0.821), (0.666, 0.699, 0.746, 0.7925, 0.825))
+CIRCUIT_Y = (0.352, 0.250, 0.1435)
+CIRCUIT_FONT = 0.028
+MONTHS = ("JAN", "FEB", "MÄR", "APR", "MAI", "JUN", "JUL", "AUG", "SEP", "OKT", "NOV", "DEZ")
 MPH_X, MPH_Y = 0.5, 0.035       # Tacho-Text unter dem Lenkrad       # Cockpitbild um diesen Anteil nach unten schieben (Armaturen kleiner, Scheibe größer)
 SHIELD_Y0 = 0.45          # Unterkante der Scheibe im Cockpitbild (Anteil von unten): darunter liegt das Armaturenbrett
 EVENT_EVERY = (30.0, 60.0)
@@ -449,26 +453,47 @@ class Controller:
         return out
 
     # -- Overlays ----------------------------------------------------------
-    def _date(self, era: int, rattle: bool) -> str:
-        s = ERA_DATES[era]
-        if not rattle:
-            return s
-        return "".join(str(self.rng.randrange(10)) if c.isdigit() else c for c in s)
+    def _date_fields(self, era: int, spin: float, t: float, row: int) -> list[str]:
+        """Die fünf Felder (Monat, Tag, Jahr, Stunde, Minute); spin > 0 = Zählwerk läuft durch (0..1 = Anteil, der noch
+        dreht: Felder rasten von links nach rechts ein)."""
+        fields = ERA_DATES[era].replace(":", " ").split()
+        if spin <= 0.0:
+            return fields
+        out = []
+        for k, f in enumerate(fields):
+            settled = (1.0 - spin) * 5.5 > k + 0.5                          # links zuerst einrasten
+            if settled:
+                out.append(f)
+            elif k == 0:
+                out.append(MONTHS[int(t * 22.0 + row * 4 + k) % 12])
+            else:
+                out.append("".join(str((int(c) + int(t * (28.0 + 7.0 * j) + row * 3 + k)) % 10) if c.isdigit() else c
+                                   for j, c in enumerate(f)))
+        return out
 
     def overlays(self, t: float):
         now = time.monotonic()
         out = []
-        rattle = now - self.circuit_t0 < CIRCUIT_LEN
         jt = now - self.jump_t0
         dim = 1.0 if self.driving else 0.45
-        if jt < JUMP_LEN and not self.jump_swapped:
-            rattle = True
-        # Zeitkreise in den drei Anzeigen des Cockpits (rechts): Ziel rot, Jetzt grün, Zuletzt gelb
+        # Zeitkreise in den drei Anzeigen des Cockpits (rechts): Ziel rot, Jetzt grün, Zuletzt gelb; beim Sprung drehen
+        # alle Zählwerke durch und rasten am Ende von links nach rechts ein, Knüppel unten lässt die Zielzeit rattern
+        spin_jump = 0.0
+        if jt < JUMP_LEN:
+            spin_jump = 1.0 if jt < JUMP_LEN - 0.9 else max(0.0, (JUMP_LEN - jt) / 0.9)
+        spin_circ = 0.0
+        if now - self.circuit_t0 < CIRCUIT_LEN:
+            k = now - self.circuit_t0
+            spin_circ = 1.0 if k < CIRCUIT_LEN - 0.6 else max(0.0, (CIRCUIT_LEN - k) / 0.6)
         flick = 0.85 + 0.15 * np.sin(t * 37.0)
         d = self.drop
-        rows = ((self.era_next, CIRCUIT_Y[0] - d, (255, 70, 50)), (self.era, CIRCUIT_Y[1] - d, (70, 255, 110)), (self.era_prev, CIRCUIT_Y[2] - d, (255, 215, 60)))
-        for era, y, color in rows:
-            out.append((self._date(era, rattle), 0.025, CIRCUIT_X, y, color, dim * flick))
+        rows = ((self.era_next, max(spin_jump, spin_circ), (255, 70, 50)), (self.era, spin_jump, (70, 255, 110)),
+                (self.era_prev, spin_jump, (255, 215, 60)))
+        for row, (era, spin, color) in enumerate(rows):
+            y = CIRCUIT_Y[row] - d - CIRCUIT_FONT * 0.62                                # Unterkante des Textes
+            for k, text in enumerate(self._date_fields(era, spin, t, row)):
+                a = dim * flick * (1.0 if spin <= 0.0 else 0.75 + 0.25 * np.sin(t * 50.0 + k))
+                out.append((text, CIRCUIT_FONT, CIRCUIT_X[row][k], y, color, a))
         if not self.driving:
             out.append(("Z E I T S P R U N G", 0.05, 0.5, 0.74, (255, 170, 60), 0.7 + 0.3 * np.sin(t * 2.0)))
             wait = max(0.0, self.auto_start_at - now)
@@ -496,6 +521,6 @@ class Controller:
                     out.append((f"{ERA_NAMES[self.era]} - {ERA_LABELS[self.era]}", 0.03, 0.5, 0.45, (255, 220, 160), a))
             if now - self.honk_t0 < 1.2:
                 out.append(("HUPE", 0.025, 0.5, 0.80, (255, 255, 200), 1.0 - (now - self.honk_t0) / 1.2))
-            if rattle and jt >= JUMP_LEN:
+            if spin_circ > 0.0 and jt >= JUMP_LEN:
                 out.append((f"ZIEL: {ERA_NAMES[self.era_next]} {ERA_LABELS[self.era_next]}", 0.022, 0.5, 0.80, (255, 70, 50), 0.9))
         return out

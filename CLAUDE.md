@@ -288,7 +288,9 @@ Zeitkreise und das Tempo geht auf `MPH_JUMP` 88 -> `jump()` (`uJumpT` 0..3 s, We
 `timejump_cockpit.png` (Alpha aus der schwarzen Scheibe, `_windshield_mask`, `SHIELD_Y0` 0.45; `cockpit_drop` schiebt das Bild
 nach unten, Shader bekommt `uShield` = Scheibenkante auf dem Schirm + Drop in .w), Epochen `uEra0..3Tex` (`uEraA/uEraB/uEraMix`),
 Verkehr `timejump_traffic.png` 8x4 à 192 (Reihe = Epoche) als `uMov0..9`/`uMovP0..9`. `EVENTS` je Epoche + Gewitter (`uEvent/
-uEventT/uEventLen`). Overlay Zeitkreise (`CIRCUIT_X/CIRCUIT_Y` minus Drop, rot/grün/gelb) und "NN MPH" (`MPH_X/MPH_Y`). `KITT_TIMEJUMP_ERA` = Startepoche.
+uEventT/uEventLen`). Overlay Zeitkreise: je Zeile fünf Felder MONTH/DAY/YEAR/HOUR/MIN einzeln in ihren Fenstern (`CIRCUIT_X[row][k]`,
+`CIRCUIT_Y` Fenstermitte minus Drop, Text mit Unterkante gesetzt, `CIRCUIT_FONT`), beim Sprung und Knüppel unten laufen sie als
+Zählwerk durch (`_date_fields(era, spin, t, row)`, rasten von links nach rechts ein), und "NN MPH" (`MPH_X/MPH_Y`). `KITT_TIMEJUMP_ERA` = Startepoche.
 Test: `python -m visualizers.engine timejump --test-signal --demo`.
 
 ### Fluxkompensator (`visualizers/scenes/flux.py`, Taste 3)
