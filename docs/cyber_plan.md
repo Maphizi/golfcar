@@ -258,3 +258,76 @@ Erzeuge die Bilder aus `docs/cyber_plan.md`, Abschnitt "Prompts Runde 2": `neonr
 Reihenzahl, gleich große Zellen, reines Schwarz als Hintergrund; `blackice_screens` als Raster mit dünnen schwarzen Rändern,
 jede Kachel bis zum Rand gefüllt. Die sechs `rooftop_light_*` sollen dieselbe Ansicht wie `rooftop_scene.png` zeigen (bei
 Bild-zu-Bild-Fähigkeit diese als Vorlage nehmen). Kein lesbarer Text. Danach auf `claude/new-session-3cbx1m` committen.
+
+---
+
+# Runde 3 – Das Orakel: ein Hauptkopf mit Gesten, Masken beim Drop, Datenmüll-Erbrechen
+
+Statt 24 wechselnder Köpfe ein **Hauptkopf** (immer dieselbe Figur), der viele Gesten kann und auf die Musik und den Knüppel
+reagiert: Knüppel links/rechts/oben/unten = Kopf schaut/dreht sich dorthin (dazu passende Geste), Beat = Nicken/Zucken,
+Bass = Mund/Kiefer, Höhen = Augen flackern, Stille = schläft. Beim **Drop** setzt er sich eine zufällige **Maske** auf
+(Reihe aus `oracle_masks`) und wackelt dabei heftig im Takt, nach 8-16 Beats nimmt er sie wieder ab. **Knüppel links** =
+er **übergibt sich mit Datenmüll** (Pose-Folge "würgen -> Mund weit auf -> Schwall", aus dem Mund quillt ein Strom aus
+Pixelblöcken, kaputten Glyphen, Fehlerzeichen, Kabelstücken; der Strom fließt nach unten über die Tafeln und tropft von ihnen).
+Die acht Tafeln bleiben wie in Runde 2 (strikt auf den Beat).
+
+Bilder (Bot, nach `assets/cyber/raw/`):
+- `oracle_main` (8x4 Bogen, 32 Zellen, **immer dieselbe Figur**): Gesten/Blickrichtungen, Reihe für Reihe:
+  Reihe 1: geradeaus neutral, schaut links, schaut rechts, schaut oben, schaut unten, Kopf nach links geneigt, Kopf nach
+  rechts geneigt, Kopf im Halbprofil links;
+  Reihe 2: Halbprofil rechts, Kinn hoch (herablassend), Kinn runter (lauernd), Augen zu (schläft), Zwinkern, Augenbraue
+  hoch, Augen weit (Schreck), Lächeln;
+  Reihe 3: breites Grinsen, Lachen Mund offen, Zorn, Schrei Mund weit auf, Sprechen Mund halb offen, Sprechen Mund rund,
+  Zunge raus, Backen aufgeblasen;
+  Reihe 4: schwindelig (Augen verdreht), Glitch (Gesicht zerreißt), Nicken nach vorn, Würgen (Hand vor dem Mund, gekrümmt),
+  Übergeben Mund weit auf nach vorn geneigt, Übergeben mit Schwall aus dem Mund, erschöpft nach dem Übergeben (Wischen),
+  Brüllen mit Hals nach oben.
+- `oracle_masks` (8x2 Bogen, 16 Masken, **nur die Maske**, frontal, gleiche Größe und Lage wie das Gesicht des Hauptkopfs
+  in Zelle 1 von `oracle_main`, sodass sie passend darüber liegt): Oni rot, Kitsune, Gasmaske, VR-Visor, Porzellan lächelnd,
+  Chrom-Schädel, Samurai-Mempo, Hockeymaske, Pestdoktor, Neonkatze, Clown, Glitch-Maske aus Streifen, Goldene Totenmaske,
+  Hologramm-Geisha, Drahtgitter, Schweißermaske mit Neonschlitz.
+- `oracle_garbage` (8x2 Bogen, 16 Datenmüll-Teile für den Schwall): Pixelblock cyan, Pixelblock magenta, kaputte Glyphe,
+  Fehlerzeichen (Dreieck ohne Text), Kabelstück mit Stecker, Chip, zerbrochene Diskette, Binärklumpen, Schädel-Emoji
+  neon, Datei-Icon zerrissen, Ladebalken-Fragment, Zahnrad glitch, Auge-Pixel, Herz-Pixel kaputt, Totenkopf-Bit, Blob aus
+  Scanlinien.
+
+## Prompts Runde 3
+
+**oracle_main**
+```
+Character sprite sheet, exactly 8 columns and 4 rows, 32 cells of identical size, pure black background, every cell shows
+THE SAME character: a female android oracle with smooth chrome-silver skin, a sharp black bob haircut with cyan glowing
+strands, glowing cyan eyes, a thin glowing magenta circuit line on each cheek, a black high collar; head and shoulders only,
+same scale and same position in every cell, frontal lighting, photorealistic with holographic sheen. Row 1: neutral looking
+straight, looking left, looking right, looking up, looking down, head tilted left, head tilted right, half profile to the
+left. Row 2: half profile to the right, chin raised arrogant, chin lowered lurking, eyes closed sleeping, winking, one
+eyebrow raised, eyes wide in shock, soft smile. Row 3: wide grin, laughing with open mouth, angry, screaming with mouth
+wide open, talking with mouth half open, talking with rounded mouth, tongue out, cheeks puffed. Row 4: dizzy with rolled
+eyes, face tearing apart in glitch stripes, nodding forward, retching with hand in front of the mouth bent forward,
+vomiting bent forward with mouth wide open, vomiting with a stream of glowing pixels pouring from the mouth, exhausted
+wiping the mouth, roaring with the throat stretched up. No text, no borders, no grid lines
+```
+**oracle_masks**
+```
+Sprite sheet, exactly 8 columns and 2 rows, 16 cells of identical size, pure black background, each cell ONE mask only (no
+face, no head behind it), frontal, all masks the same size and position in the cell, sized to cover a human face, glowing
+cyberpunk style: red oni demon mask, white kitsune fox mask with red lines, black gas mask with neon filters, mirrored VR
+visor, smiling porcelain mask, chrome skull mask, samurai mempo half mask, white hockey mask with neon cracks, plague doctor
+beak mask, neon lucky cat mask, creepy clown mask, mask made of glitch stripes, golden death mask, holographic geisha mask,
+wireframe mask, welding mask with a neon slit. No text, no borders
+```
+**oracle_garbage**
+```
+Sprite sheet, exactly 8 columns and 2 rows, 16 cells of identical size, pure black background, each cell one small glowing
+piece of digital garbage centered, same scale: cyan pixel block, magenta pixel block, broken glyph fragment, warning triangle
+without text, torn cable with plug, microchip, broken floppy disk, clump of binary blocks, neon skull emoji, torn file icon,
+fragment of a loading bar, glitching gear, pixel eye, broken pixel heart, skull made of bits, blob of scanlines. No text
+```
+
+## Anweisung an den Bot (Runde 3)
+
+Erzeuge die drei Bilder aus `docs/cyber_plan.md`, Abschnitt "Prompts Runde 3": `oracle_main` (8x4), `oracle_masks` (8x2),
+`oracle_garbage` (8x2), als PNG unter `assets/cyber/raw/<name>.png`. Wichtig bei `oracle_main`: in allen 32 Zellen exakt
+dieselbe Figur, gleiche Größe und Position (Kopf und Schultern), nur die Geste ändert sich; bei `oracle_masks` nur die
+Maske ohne Gesicht dahinter, so groß wie das Gesicht in `oracle_main`. Reines Schwarz als Hintergrund, kein Text. Danach
+`git pull --no-rebase origin claude/new-session-3cbx1m`, committen und pushen.
