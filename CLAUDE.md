@@ -147,7 +147,10 @@ Test: `python -m visualizers.engine hearttree --test-signal --demo`.
 `trip_assets.py grid ... 4 3 256 1`), dazu `assets/trip/gods.png` (Horror-Gott), `assets/trip/face.png`, Eule aus
 `assets/woodeye/figures.png`. Phasen `PH_WARN/POISON/HORROR/BLACKOUT` in Wellen (`PHASE_LEN`), `uPoison` 0..1 steuert
 Doppelbild/Giftfarbe/Tunnel/Ranken (prozedural). Wesen `uCreN` (x, y, Größe, Zelle) / `uCrePN` (Alter, Sprung, Hue, Spiegel),
-springen auf Beats (`lunge_t0`). Beat = `uCut` Bildsprung + Negativ, Drop = `uFlash` + alle Wesen. Knüppel L/R Gegengift
+zucken selten auf Beats (`lunge_t0`; höchstens `MAX_CRE` 2 kleine Wesen am Rand, nicht überlagernd). Phasenlängen je Welle
+zufällig (`PHASE_JITTER`), Ereignisse kommen von selbst (`AUTO_EVENT` 18-40 s: Erbrechen, Augen zu, Hilfe, Schock, Gegengift,
+nur wenn 12 s keine Taste). Verschwimmen: kreisende Schmierunschärfe + drei Geisterbilder + Schmelzen (Shader).
+Beat = `uCut` Bildsprung + Negativ, Drop = `uFlash` + alle Wesen. Knüppel L/R Gegengift
 (`uRelief`, Rückfall nach 4 s), OBEN `uVomitT`, UNTEN `uEyes`, ENTER `uHelpT` (Eule), SPACE/BACKSPACE `uShock`.
 WLED `overdose`, `overdose_horror`, `overdose_drop`, `overdose_blackout`, `overdose_help`. `WHISPERS`, `ANTIDOTES`.
 Test: `python -m visualizers.engine overdose --test-signal --demo`.
