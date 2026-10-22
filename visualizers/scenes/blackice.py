@@ -38,7 +38,7 @@ from pathlib import Path
 import numpy as np
 import pygame
 
-from visualizers.engine import images
+from visualizers.engine import blobs, images
 
 from launcher import wled
 
@@ -92,40 +92,46 @@ def _find_screens(img: np.ndarray, min_area: float = 0.003, thr: int = 3, erode:
     black = luma < thr
     rects: list[tuple[float, float, float, float]] = []
     mask = np.zeros((h, w), dtype=bool)
-    try:
-        from scipy import ndimage
-        core = ndimage.binary_erosion(black, structure=np.ones((erode, erode)))
-        lab, n = ndimage.label(core)
-        if n > 0:
-            sizes = ndimage.sum(core, lab, index=np.arange(1, n + 1))
-            objs = ndimage.find_objects(lab)
-            found = []
-            for k in np.flatnonzero(sizes >= min_area * h * w):
-                sl = objs[k]
-                y0, y1 = max(0, sl[0].start - erode), min(h, sl[0].stop + erode)
-                x0, x1 = max(0, sl[1].start - erode), min(w, sl[1].stop + erode)
-                sub = black[y0:y1, x0:x1]
-                slab, sn = ndimage.label(sub)
-                if sn == 0:
-                    continue
-                ssz = ndimage.sum(sub, slab, index=np.arange(1, sn + 1))
-                best = int(np.argmax(ssz)) + 1
-                part = slab == best
-                ys, xs = np.nonzero(part)
-                by0, by1, bx0, bx1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
-                fill = ssz[best - 1] / float((by1 - by0) * (bx1 - bx0))
-                if fill < 0.8:                                                # Schirme sind (fast) volle Rechtecke
-                    continue
-                area = ssz[best - 1] / float(h * w)
-                found.append((area, (x0 + bx0) / w, (y0 + by0) / h, (x0 + bx1) / w, (y0 + by1) / h))
-                mask[y0:y1, x0:x1] |= part
-            found.sort(reverse=True)
-            rects = [r[1:] for r in found[:N_SCREENS]]
-        alpha = ndimage.uniform_filter((~mask).astype(np.float32), size=3)
-    except Exception as exc:
-        log.info("Bildschirm-Suche ohne scipy (%s)", exc)
-        alpha = (~mask).astype(np.float32)
+    core = blobs.erode(black, erode)
+    lab, n = blobs.label(core)
+    if n > 0:
+        szs = blobs.sizes(lab, n)
+        objs = blobs.boxes(lab, n)
+        found = []
+        for k in np.flatnonzero(szs >= min_area * h * w):
+            if objs[k] is None:
+                continue
+            oy0, oy1, ox0, ox1 = objs[k]
+            y0, y1 = max(0, oy0 - erode), min(h, oy1 + erode)
+            x0, x1 = max(0, ox0 - erode), min(w, ox1 + erode)
+            sub = black[y0:y1, x0:x1]
+            slab, sn = blobs.label(sub)
+            if sn == 0:
+                continue
+            ssz = blobs.sizes(slab, sn)
+            best = int(np.argmax(ssz)) + 1
+            part = slab == best
+            ys, xs = np.nonzero(part)
+            by0, by1, bx0, bx1 = ys.min(), ys.max() + 1, xs.min(), xs.max() + 1
+            fill = ssz[best - 1] / float((by1 - by0) * (bx1 - bx0))
+            if fill < 0.8:                                                # Schirme sind (fast) volle Rechtecke
+                continue
+            area = ssz[best - 1] / float(h * w)
+            found.append((area, (x0 + bx0) / w, (y0 + by0) / h, (x0 + bx1) / w, (y0 + by1) / h))
+            mask[y0:y1, x0:x1] |= part
+        found.sort(reverse=True)
+        rects = [r[1:] for r in found[:N_SCREENS]]
+    alpha = blobs.blur3((~mask).astype(np.float32))
     return rects, np.clip(alpha * 255.0, 0, 255).astype(np.uint8)
+
+
+def find_screens_cached(img: np.ndarray, min_area: float = 0.003, thr: int = 3):
+    """`_find_screens` mit Ergebnis-Cache unter .cache/img (Schlüssel: Szenenbild + Parameter), spart ~1 s je Start."""
+    def compute():
+        rects, alpha = _find_screens(img, min_area, thr)
+        return {"rects": np.array(rects, dtype=np.float64).reshape(-1, 4), "alpha": alpha}
+    out = images.derived("blackice_screens", ASSETS / "blackice_scene.png", f"{min_area}|{thr}|{N_SCREENS}", compute)
+    return [tuple(float(v) for v in r) for r in out["rects"]], out["alpha"]
 
 
 class Screen:
@@ -152,7 +158,7 @@ class Controller:
         self.figs = _load_rgba(ASSETS / "oracle_figures.png")
         self.rects: list[tuple[float, float, float, float]] = []
         if self.scene is not None:
-            self.rects, self.scene[..., 3] = _find_screens(
+            self.rects, self.scene[..., 3] = find_screens_cached(
                 self.scene, float(scene_cfg.get("screen_min_area", 0.003)), int(scene_cfg.get("screen_black", 3)))
             for i, r in enumerate(self.rects):
                 log.info("Bildschirm %d: x %.3f-%.3f, y %.3f-%.3f (von unten)", i, r[0], r[2], r[1], r[3])

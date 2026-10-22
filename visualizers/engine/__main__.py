@@ -119,6 +119,7 @@ def main() -> int:
     last_log = t0
     frames = 0
     shot_done = False
+    first_logged = False
     under_launcher = bool(os.environ.get("KITT_MODE"))
     rc = 0
     try:
@@ -147,7 +148,8 @@ def main() -> int:
                 shot_done = True
             pygame.display.flip()
             frames += 1
-            if frames == 1:
+            if not first_logged:                       # frames wird je fps-Log zurückgesetzt, daher eigenes Flag
+                first_logged = True
                 phase("erstes Bild")
                 log.info("Start %s: %s (gesamt %.1f s ab main)", args.scene, ", ".join(phases), time.monotonic() - t_main)
             if now - last_log >= log_interval:

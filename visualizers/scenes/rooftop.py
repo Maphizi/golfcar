@@ -3,7 +3,7 @@
 Blick von einer Dachterrasse über die Neon-Megacity. Kern des Modus sind sieben Lichtzustände derselben Ansicht:
 das Grundbild assets/cyber/rooftop_scene.png (Zustand 0) und assets/cyber/rooftop_light_1..6.png (Zustände 1..6,
 siehe LIGHT_NAMES: Blackout, roter Alarm, Säure, Überlast, nur Werbung, Blitzschlag). Die Stadt spielt verrückt zum Beat: auf Beats schneidet sie hart für 1-3 Beats in einen anderen
-Lichtzustand und zurück (uLightA = Grund, uLightB = Zustand, uLightMix hart 0/1 mit 60 ms Überblendung); bei hoher
+Lichtzustand und zurück (uLightA = Grund, uLightB = Zustand, uLightMix; weiche Überblendung, hart nur nach dem Drop); bei hoher
 Energie wechselt der Zustand auf jedem Beat, bei ruhiger Musik nur auf jedem zweiten, bei Stille bleibt das Grundbild
 mit leichtem Flackern der Werbeflächen. Jedes Wetter (Knüppel links/rechts, wandert sonst alle cycle_minutes) hat
 seinen Heimzustand (Regen = 5 nur Werbung, Nebel = 1 Blackout abgedunkelt, Säure = 3, Asche = 2 roter Alarm), der
@@ -50,7 +50,9 @@ FIREWORK_SECONDS = 8.0
 BLACKOUT_SECONDS = 14.0
 EMP_SECONDS = 10.0
 EMP_RETURN_FROM = 3.5                          # ab hier zählen Beats die Blöcke zurück
-CUT_FADE = 0.06                                # Überblendung der Beat-Schnitte (s)
+CUT_FADE = 0.06                                # harte Schnitte (nur nach dem Drop): Überblendung in s
+SOFT_FADE = 0.9                                # weiche Übergänge sonst (s)
+DROP_BURST_BEATS = 6                           # nach dem Drop: so viele Beats harte Schnitte auf jedem Beat
 N_PULSES = 6
 # Grundbild (3:2, anderer Ausschnitt) auf die Lichtbilder (16:9) gelegt: uv_base = (uv - 0.5) * (sx, sy) + 0.5 + (ox, oy)
 BASE_FIT = (0.995, 0.89, 0.0, 0.0525)
@@ -106,6 +108,9 @@ class Controller:
         self.cut_t0 = -100.0
         self.cut_until = -100.0
         self.cut_last_state = 0
+        self.cut_fade = SOFT_FADE
+        self.next_change_beat = 0              # Beat-Nummer, ab der der nächste Zustandswechsel kommt
+        self.burst_until_beat = -1             # bis zu dieser Beat-Nummer: harte Schnitte auf jedem Beat (nach dem Drop)
         self.firework_t0 = -100.0
         self.firework_seed = 0.0
         self.blackout_t0 = -100.0
@@ -192,8 +197,9 @@ class Controller:
         self.firework_t0 = now
         self.firework_seed = self.rng.uniform(1.0, 100.0)
         if not self._event_active(now):
-            self._start_cut(now, 6, beats=2)   # Gewitterbild zum Blitz
-        log.info("Drop: Blitz, Werbeflächen wechseln, Feuerwerk, Gewitter-Schnitt")
+            self._start_cut(now, 6, beats=2, fade=CUT_FADE)   # Gewitterbild zum Blitz, dann harte Schnitte im Takt
+            self.burst_until_beat = self.beat_count + DROP_BURST_BEATS
+        log.info("Drop: Blitz, Werbeflächen wechseln, Feuerwerk, %d Beats harte Schnitte", DROP_BURST_BEATS)
 
     def handle_event(self, ev) -> None:
         if ev.type != pygame.KEYDOWN:
@@ -230,35 +236,44 @@ class Controller:
             pool = [i for i in range(1, N_LIGHTS + 1) if self.lights[i - 1] is not None] or [self.ground_a]
         return self.rng.choice(pool)
 
-    def _start_cut(self, now: float, state: int, beats: int) -> None:
+    def _start_cut(self, now: float, state: int, beats: int, fade: float = SOFT_FADE) -> None:
         self.cut_state = state
         self.cut_last_state = state
         self.cut_t0 = now
-        self.cut_until = now + self._beat_interval() * beats * 0.95
+        self.cut_fade = fade
+        self.cut_until = now + self._beat_interval() * (beats + 1.0)      # Zeit-Rückfall, falls die Beats ausbleiben
+        self.next_change_beat = self.beat_count + beats
 
-    def _end_cut(self) -> None:
+    def _end_cut(self, fade: float = SOFT_FADE) -> None:
         self.cut_state = 0
+        self.cut_fade = fade
         self.cut_until = -100.0
 
+    def _hold_beats(self, in_state: bool) -> int:
+        """Wie viele Beats der Lichtzustand (bzw. das Grundbild) stehen bleibt: ruhig lang, wild kürzer."""
+        if self.energy > 0.45:
+            return self.rng.randint(6, 10) if in_state else self.rng.randint(2, 4)
+        if self.energy > 0.2:
+            return self.rng.randint(6, 12) if in_state else self.rng.randint(4, 8)
+        return self.rng.randint(8, 16) if in_state else self.rng.randint(8, 16)
+
     def _on_beat(self, now: float) -> None:
-        """Die Stadt schneidet zum Beat in einen anderen Lichtzustand: ruhig = jeder zweite Beat, wild = jeder Beat."""
+        """Lichtzustände wechseln im Takt, aber selten und weich: ein Zustand bleibt mehrere Beats stehen, dazwischen das
+        Grundbild. Harte Schnitte auf jedem Beat gibt es nur in den DROP_BURST_BEATS nach einem Drop."""
         if self._event_active(now):
             return
-        wild = self.energy > 0.45
-        if self.cut_state:
-            if wild:                                                     # wild: Zustand wechselt auf jedem Beat
-                self._start_cut(now, self._pick_state((self.ground_a, self.cut_state)), 1)
+        if self.beat_count <= self.burst_until_beat:                      # nach dem Drop: Schnitt auf jedem Beat
+            self._start_cut(now, self._pick_state((self.ground_a, self.cut_state)), 1, fade=CUT_FADE)
             return
-        if wild:
-            chance, beats = 0.9, 1
-        elif self.energy > 0.2:
-            chance, beats = 0.55, self.rng.randint(1, 3)
+        if self.beat_count < self.next_change_beat:
+            return
+        if self.cut_state:
+            self._end_cut()
+            self.next_change_beat = self.beat_count + self._hold_beats(False)
+        elif self.energy > 0.08:
+            self._start_cut(now, self._pick_state((self.ground_a, self.cut_last_state)), self._hold_beats(True))
         else:
-            if self.beat_count % 2:                                      # ruhig: nur jeder zweite Beat
-                return
-            chance, beats = 0.5, self.rng.randint(1, 2)
-        if self.rng.random() < chance:
-            self._start_cut(now, self._pick_state((self.ground_a, self.cut_last_state)), beats)
+            self.next_change_beat = self.beat_count + 4
 
     # -- Engine ------------------------------------------------------------
     def images(self) -> dict:
@@ -328,10 +343,10 @@ class Controller:
             self.hue_target = 0.0
         self.search_t += dt * (0.15 + 0.6 * self.mid_s + 0.8 * self.beat_pulse)
         self.traffic_t += dt * (0.2 + 1.5 * self.energy)
-        # Beat-Schnitt: harter Wechsel mit 60 ms Überblendung, endet nach 1-3 Beats oder bei Stille
-        if self.cut_state and (now >= self.cut_until or (not live and now - self.cut_t0 > 1.0)):
+        # Lichtzustand: weiche Überblendung (SOFT_FADE), hart nur nach dem Drop; Zeit-Rückfall, wenn die Beats ausbleiben
+        if self.cut_state and (now >= self.cut_until or (not live and now - self.cut_t0 > 2.0)):
             self._end_cut()
-        self.cut_mix = min(1.0, self.cut_mix + dt / CUT_FADE) if self.cut_state else max(0.0, self.cut_mix - dt / CUT_FADE)
+        self.cut_mix = min(1.0, self.cut_mix + dt / self.cut_fade) if self.cut_state else max(0.0, self.cut_mix - dt / self.cut_fade)
         # Wetter wandert, Heimzustand folgt (über das Grundbild aus- und wieder eingeblendet)
         if self.weather_target is not None:
             self.weather += (self.weather_target - self.weather) * min(1.0, dt / 1.5)

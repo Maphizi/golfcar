@@ -22,7 +22,7 @@ from pathlib import Path
 import numpy as np
 import pygame
 
-from visualizers.engine import images
+from visualizers.engine import blobs, images
 
 from launcher import wled
 
@@ -82,17 +82,11 @@ def _windshield_mask(img: np.ndarray, rect) -> np.ndarray:
     inside = np.zeros((h, w), dtype=bool)
     inside[max(0, int(y0 * h) - 8):int(y1 * h) + 1, int(x0 * w):int(x1 * w) + 1] = True     # Zeilen von unten
     shield = black & inside
-    try:
-        from scipy import ndimage
-        lab, n = ndimage.label(shield)
-        if n > 0:
-            sizes = ndimage.sum(shield, lab, index=np.arange(1, n + 1))
-            keep = np.flatnonzero(sizes >= 0.002 * h * w) + 1                                  # nur große Flächen
-            shield = np.isin(lab, keep)
-        alpha = ndimage.uniform_filter((~shield).astype(np.float32), size=3)
-    except Exception as exc:                                                                   # ohne scipy: harte Kante
-        log.info("Scheibenmaske ohne scipy (%s)", exc)
-        alpha = (~shield).astype(np.float32)
+    lab, n = blobs.label(shield)
+    if n > 0:
+        keep = np.flatnonzero(blobs.sizes(lab, n) >= 0.002 * h * w) + 1                     # nur große Flächen
+        shield = np.isin(lab, keep)
+    alpha = blobs.blur3((~shield).astype(np.float32))
     return np.clip(alpha * 255.0, 0, 255).astype(np.uint8)
 
 

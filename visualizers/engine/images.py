@@ -58,3 +58,40 @@ def load_rgba(path) -> np.ndarray | None:
     except OSError as exc:
         log.debug("Bild-Cache nicht schreibbar: %s", exc)
     return arr
+
+
+def cache_key(path, params: str = "") -> str | None:
+    """Cache-Schlüssel für Ergebnisse, die aus einem Bild berechnet werden (Pfad + Änderungszeit + Größe + Parameter)."""
+    p = Path(path)
+    try:
+        st = p.stat()
+    except OSError:
+        return None
+    try:
+        rel = str(p.resolve().relative_to(ROOT))
+    except ValueError:
+        rel = str(p.resolve())
+    return hashlib.sha1(f"{rel}|{st.st_mtime_ns}|{st.st_size}|{params}".encode()).hexdigest()[:20]
+
+
+def derived(name: str, path, params: str, compute):
+    """Aus einem Bild abgeleitete Arrays (z. B. erkannte Bildschirme) als npz unter .cache/img ablegen und wiederverwenden.
+    `compute()` liefert ein dict {Name: Array}; zurück kommt dasselbe dict (aus dem Cache oder frisch berechnet)."""
+    key = cache_key(path, params)
+    cache = CACHE / f"{name}_{key}.npz" if key else None
+    if cache and cache.exists():
+        try:
+            with np.load(cache) as z:
+                return {k: z[k] for k in z.files}
+        except Exception as exc:
+            log.warning("Cache %s defekt (%s), rechne neu", cache.name, exc)
+    out = compute()
+    if cache:
+        try:
+            CACHE.mkdir(parents=True, exist_ok=True)
+            tmp = cache.with_suffix(".tmp.npz")
+            np.savez(tmp, **out)
+            os.replace(tmp, cache)
+        except OSError as exc:
+            log.debug("Cache nicht schreibbar: %s", exc)
+    return out

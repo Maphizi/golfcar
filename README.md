@@ -744,8 +744,9 @@ Test: `python -m visualizers.engine cyberslots --test-signal`.
 
 **Dachterrasse (Taste 6 im Thema CYBERPUNK, `rooftop`):** Das Gegenstück zum Lagerfeuer. Blick von einem Dach über
 die Skyline (`assets/cyber/rooftop_scene.png`) und sechs Lichtzustände derselben Stadt (`rooftop_light_1..6.png`:
-Blackout, roter Alarm, Säuregrün, Überlast, nur Werbung, Blitzschlag). Die Stadt spielt verrückt: auf Beats schneidet
-sie hart in einen anderen Zustand und zurück, bei lauter Musik auf jedem Beat ein neuer, bei Stille nur das Grundbild
+Blackout, roter Alarm, Säuregrün, Überlast, nur Werbung, Blitzschlag). Die Stadt wechselt im Takt ihr Licht: ein Zustand
+bleibt ein paar Takte stehen und blendet weich zurück, bei lauter Musik öfter, bei Stille nur das Grundbild; nur nach einem
+Drop schneidet sie ein paar Beats lang hart auf jedem Schlag
 mit flackernden Werbeflächen. Vier Wetter (Regen, Nebel, Säureregen, Asche; Knüppel links/rechts, sonst
 `cycle_minutes`) haben je einen Heimzustand. Unten = Stromausfall (14 s): die Stadt geht aus, Beats holen Blöcke
 zurück, jeder Block mit einem anderen Lichtzustand, am Ende ein Überlast-Knall. Startknopf = EMP (10 s): Ring vom

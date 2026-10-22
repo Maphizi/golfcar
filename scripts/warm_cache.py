@@ -21,6 +21,15 @@ def main() -> int:
             continue
         if images.load_rgba(p) is not None:
             n += 1
+    # abgeleitete Ergebnisse (Bildschirm-Suche von Black Ice)
+    try:
+        from visualizers.scenes import blackice
+        scene = images.load_rgba(blackice.ASSETS / "blackice_scene.png")
+        if scene is not None:
+            rects, _ = blackice.find_screens_cached(scene)
+            print(f"Black Ice: {len(rects)} Bildschirme erkannt")
+    except Exception as exc:
+        print(f"Bildschirm-Suche übersprungen: {exc}")
     # alte Cache-Dateien (Bilder, die es so nicht mehr gibt) aufräumen
     keep = set()
     for p in sorted(ROOT.glob("assets/**/*.png")):
@@ -34,7 +43,7 @@ def main() -> int:
     removed = 0
     if images.CACHE.exists():
         for f in images.CACHE.glob("*.npy"):
-            if f.name not in keep:
+            if f.name not in keep and f.suffix == ".npy":
                 f.unlink(missing_ok=True)
                 removed += 1
     print(f"Bild-Cache: {n} Bilder bereit, {removed} alte entfernt, {time.monotonic() - t0:.1f} s")

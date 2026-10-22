@@ -53,7 +53,7 @@ vec3 state(float idx, vec2 uv) {
     if (idx < 1.5) return plateOf(uLight0Tex, uLight0Size, uv);
     if (idx < 2.5) return plateOf(uLight1Tex, uLight1Size, uv);
     if (idx < 3.5) return plateOf(uLight2Tex, uLight2Size, uv);
-    if (idx < 4.5) return plateOf(uLight3Tex, uLight3Size, uv);
+    if (idx < 4.5) return plateOf(uLight3Tex, uLight3Size, uv) * 0.72;          // ÜBERLAST ist im Bild schon gleißend
     if (idx < 5.5) return plateOf(uLight4Tex, uLight4Size, uv);
     return plateOf(uLight5Tex, uLight5Size, uv);
 }
@@ -99,7 +99,7 @@ void main() {
         inside = smoothstep(empFront + 0.005, empFront - 0.03, empR);
         uv -= normalize(empD + 1e-4) / vec2(aspect, 1.0) * exp(max(-sq((empR - empFront) / (3.0 * w)), -60.0)) * 0.03 * (1.0 - smoothstep(2.0, 3.5, uEmpT));
     }
-    // ---- Grundbild oder Beat-Schnitt (hart, 60 ms Überblendung)
+    // ---- Grundbild oder Lichtzustand (weich überblendet, hart nur nach dem Drop)
     vec3 plate;
     if (uLightMix > 0.998) plate = state(uLightB, uv);
     else {
@@ -120,7 +120,7 @@ void main() {
         vec3 dark = state(1.0, uv) * (0.22 + 0.06 * sin(t * 2.0 + h * 9.0));
         vec3 c = dark;
         if (back > 0.002) c = mix(dark, state(st, uv), back);
-        if (bang > 0.002) c = mix(c, state(4.0, uv) * 1.3 + 0.2, bang);
+        if (bang > 0.002) c = mix(c, state(4.0, uv) * 1.1 + 0.1, bang);
         c = mix(plate, c, off);
         if (endfade > 0.002) c = mix(c, plate, endfade);
         c *= 0.75 + 0.25 * blockSoft(uv, n);
@@ -146,7 +146,7 @@ void main() {
         plate = mix(plate, c, inside);
         // Gewitterbild blitzt beim Auslösen
         float e = exp(max(-uEmpT * 4.0, -60.0));
-        if (e > 0.01) plate = mix(plate, state(6.0, uv) * 1.3, min(1.0, e * 1.6));
+        if (e > 0.01) plate = mix(plate, state(6.0, uv) * 1.05, min(1.0, e * 1.6));
         black = max(black, inside * (1.0 - show) * (1.0 - endfade));
     }
     vec3 col = plate;
@@ -203,7 +203,7 @@ void main() {
     // ---- Blitz (Drop): Himmel wird weiß, verästelte Linie
     if (uLightT >= 0.0) {
         float e = exp(-uLightT * 5.0) * (0.6 + 0.4 * step(0.5, fract(uLightT * 30.0)));
-        col += vec3(0.8, 0.85, 1.0) * e * smoothstep(0.5, 1.0, uv.y) * 0.8;
+        col += vec3(0.8, 0.85, 1.0) * e * smoothstep(0.5, 1.0, uv.y) * 0.5;
         float x = uLightX + 0.03 * sin(uv.y * 40.0 + uSeed) + 0.015 * sin(uv.y * 120.0);
         float bolt = smoothstep(0.004, 0.0, abs(uv.x - x)) * smoothstep(0.6, 1.0, uv.y);
         col += vec3(0.9, 0.95, 1.0) * bolt * e * 3.0;
@@ -267,6 +267,6 @@ void main() {
     col += uFlash * 0.25 * vec3(0.9, 0.95, 1.0) * exp(max(-(1.0 - uFlash) * 6.0, -60.0));
     col *= 0.75 + 0.25 * live;
     col *= 1.0 - 0.3 * pow(length(vUv - 0.5) * 1.3, 2.5);
-    col = col / (1.0 + col * 0.15);
+    col = col / (1.0 + max(col - 0.75, 0.0) * 1.2);                                    // Lichter weich begrenzen statt ausbrennen
     fragColor = vec4(col, 1.0);
 }

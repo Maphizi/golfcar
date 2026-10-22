@@ -75,6 +75,11 @@ Bleibt stehen, bis die erste Taste kommt: jeder KEYDOWN (Knüppel, Startknopf, K
 endet, der Launcher startet Home; Board-Tasten wechseln über den Launcher direkt den Modus. `boot_seconds > 0` in
 `settings.toml` bleibt der Schalter, ob der Startbildschirm überhaupt kommt. Test: `python -m visualizers.engine splash --test-signal`.
 
+## Bildschirme von Black Ice ohne scipy (`visualizers/engine/blobs.py`)
+Der Pi hat kein scipy. `blobs.erode/label/sizes/boxes/blur3` ersetzen `ndimage` (Zeilenläufe + Union-Find), genutzt von
+`blackice._find_screens` und `timejump._windshield_mask`. Das Ergebnis der Bildschirm-Suche liegt als npz im Bild-Cache
+(`images.derived`, `blackice.find_screens_cached`, `warm_cache.py` wärmt es mit).
+
 ## Moduswechsel und Startzeit (`visualizers/engine/images.py`, `launcher/process_manager.py`)
 Jeder Modus ist ein eigener Prozess; die Zeit bis zum ersten Bild steht im Log `logs/viz_<szene>.log` als Zeile
 "Start <szene>: Imports, Fenster, Controller, Shader, Bilder, Audio, erstes Bild". Bilder laden alle Szenen über
@@ -230,9 +235,10 @@ Test: `python -m visualizers.engine cyberslots --test-signal`.
 Lichtzustände `LIGHT_NAMES`: 0 Grundbild `uSceneTex` (per `uBaseFit`/`BASE_FIT` auf die Lichtbilder gelegt), 1-6
 `rooftop_light_1..6.png` als `uLight0..5Tex` (BLACKOUT, ROTER ALARM, SÄURE, ÜBERLAST, NUR WERBUNG, BLITZSCHLAG). Shader liest
 je Pixel höchstens drei Bilder (`state(idx, uv)`). `WEATHER` REGEN/NEBEL/SÄUREREGEN/ASCHE (`uWeather`, LINKS/RECHTS,
-`cycle_minutes`) mit Heimzuständen `WEATHER_HOME = [5, 1, 3, 2]` / `WEATHER_HOME_MIX` (`uLightA`, `uGroundMix`). Beat-Schnitte:
-`uLightB`, `uLightMix` 0/1 (60 ms Rampe), `uCutT`; Energie > 0.45 jeder Beat, mittel 55 % für 1-3 Beats, ruhig jeder 2.,
-Stille keiner. UNTEN Stromausfall `uBlackT`/`uBlackBeats` (Basis 1, Blöcke 9x5 aus Zuständen 2-6, Knall = 4), ENTER EMP
+`cycle_minutes`) mit Heimzuständen `WEATHER_HOME = [5, 1, 3, 2]` / `WEATHER_HOME_MIX` (`uLightA`, `uGroundMix`). Lichtwechsel:
+`uLightB`, `uLightMix` (weich `SOFT_FADE` 0.9 s), `uCutT`; ein Zustand bleibt `_hold_beats` stehen (wild 6-10 Beats, mittel 6-12,
+ruhig 8-16, dazwischen Grundbild 2-16 Beats), harte Schnitte (`CUT_FADE` 60 ms) auf jedem Beat nur `DROP_BURST_BEATS` 6 nach
+dem Drop. ÜBERLAST im Shader auf 0.72 gedämpft, Lichter werden weich begrenzt (kein Ausbrennen). UNTEN Stromausfall `uBlackT`/`uBlackBeats` (Basis 1, Blöcke 9x5 aus Zuständen 2-6, Knall = 4), ENTER EMP
 `uEmpT/uEmpBeats/uEmpSeed` (Ring, Basis 1, Blöcke 12x7, auch von selbst `emp_auto` 90-180 s bei `emp_min_energy`), Drop = Blitz
 `uLightT/uLightX` + Feuerwerk `uFireT` + 2 Beats Zustand 6, OBEN Feuerwerk, SPACE/BACKSPACE `uLook`. Partikel
 `rooftop_particles.png` 8x3 à 160. WLED `rooftop`, je Wetter `rooftop_rain|fog|acid|ash`, `rooftop_fireworks|blackout|lightning`.
