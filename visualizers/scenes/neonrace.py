@@ -12,8 +12,8 @@ schneller), unten = Rückspiegel. Schilder: Hologramme und Neonstellen des Fotos
 die Fassaden auf den Beat (uStep/uStepPhase/uPattern wie beim Orakel).
 Ereignisse alle 30-60 s (EVENTS): Polizeidrohnen, Werbeblimp, Regensturm, Tunnel, Konzernturm, Straßenmarkt,
 Kirschblütenallee. Hologramme assets/cyber/neonrace_holo.png (8x3 à 160), Verkehr neonrace_traffic.png (8x2 à 192:
-Reihe 0 Fahrzeuge, Reihe 1 Flieger), Hindernisse neonrace_obstacles.png (8x2 à 192, Zellen laut OBS_NAMES; OBS_CELLS stehen auf der Straße,
-CROSS_CELLS queren sie; fehlt der Bogen, bleibt die Textur leer; KITT_NEONRACE_OBSTACLES=Pfad zum Testen).
+Reihe 0 Fahrzeuge, Reihe 1 Flieger), Hindernisse neonrace_obstacles.png (8x2 à 192: Reihe 0 steht auf der Straße,
+Reihe 1 quert die Straße; fehlt der Bogen, bleibt die Textur leer; KITT_NEONRACE_OBSTACLES=Pfad zum Testen).
 """
 from __future__ import annotations
 
@@ -44,9 +44,9 @@ EVENTS = [
 EV_DRONES, EV_BLIMP, EV_STORM, EV_TUNNEL, EV_TOWER, EV_MARKET, EV_BLOSSOM = range(7)
 CAR_CELLS, FLY_CELLS = list(range(8)), list(range(8, 16))
 CELL_POLICE, CELL_BLIMP, CELL_DRONE, CELL_BLOSSOM, CELL_GLIDER = 4, 9, 8, 12, 10
-OBS_CELLS, CROSS_CELLS = (7, 10, 11, 13, 14, 15), (0, 8, 9, 10, 11)   # steht auf der Straße / quert sie (Zellen laut OBS_NAMES)
-OBS_NAMES = ["DROHNE", "WERBEBLIMP", "GEWITTERWOLKE", "TUNNEL", "KONZERNTURM", "STRASSENMARKT", "KIRSCHBAUM", "HÜTCHEN",
-             "PFÜTZE", "SUCHSCHEINWERFER", "HÄNDLERKARREN", "BIKER-GANG", "REGENWAND", "TRÜMMER", "BUNKER", "AMPEL"]
+OBS_CELLS, CROSS_CELLS = tuple(range(8)), tuple(range(8, 16))      # Reihe 0 steht auf der Straße, Reihe 1 quert sie
+OBS_NAMES = ["BARRIERE", "KISTE", "DROHNE", "HÜTCHEN", "HOLO-SCHILD", "MÜLL", "FASS", "PANNENWAGEN",
+             "FUSSGÄNGER", "KATZE", "HÄNDLERKARREN", "POLIZEIDROHNE", "PFÜTZE", "WERBESÄULE", "ROLLER", "LASTROBOTER"]
 KIND_HOLO, KIND_CAR, KIND_FLY, KIND_OBS, KIND_CROSS = range(5)
 LANE_SLOTS = (-1.0, -0.5, 0.0, 0.5, 1.0)                             # Kandidaten des Autopiloten
 LANE_HALF = 0.42                                                     # halbe Wagenbreite in Spureinheiten

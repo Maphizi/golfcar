@@ -37,9 +37,9 @@ plate blackice_scene blackice_scene.png
 slice blackice_daemons blackice_daemons.png 4 3 256
 echo "== Runde 2 =="
 slice neonrace_obstacles neonrace_obstacles.png 8 2 192
-slice oracle_heads oracle_heads.png 8 2 192     # Bot lieferte 2 Reihen (Köpfe, Glitch-Köpfe)
+slice oracle_heads oracle_heads.png 8 3 192
 for i in 1 2 3 4 5 6; do plate rooftop_light_$i rooftop_light_$i.png; done
-# Bildschirminhalte: Raster mit dünnen schwarzen Stegen (geliefert 4x4) -> Kacheln erkennen, je 512x288, Atlas 4x4
+# Bildschirminhalte: Raster mit dünnen schwarzen Stegen (8x4) -> Kacheln erkennen, je 384x216
 s=$(f blackice_screens); [ -n "$s" ] && $PY - "$s" "$OUT/blackice_screens.png" <<'PYEOF' 2>/dev/null
 import sys, pygame, numpy as np
 pygame.init()
@@ -54,7 +54,7 @@ def bands(prof):
     cuts = [0] + [int(np.mean(g)) for g in groups if len(g) >= 3 and 0 < g[0] < len(prof) - 1] + [len(prof)]
     return [(cuts[i], cuts[i + 1]) for i in range(len(cuts) - 1) if cuts[i + 1] - cuts[i] > 40]
 rows = bands((a > 20).mean(axis=1)); cols = bands((a > 20).mean(axis=0))
-TW, TH = 512, 288
+TW, TH = 384, 216
 out = pygame.Surface((TW * len(cols), TH * len(rows)))
 for r, (y0, y1) in enumerate(rows):
     for c, (x0, x1) in enumerate(cols):
