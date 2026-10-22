@@ -169,3 +169,44 @@ cycle_minutes = 5          # Minuten je Wetter
 shader = "blackice"
 controller = "blackice"    # Black Ice (Cyber-Taste 7)
 render_scale = 0.6
+
+# ── Thema ZURÜCK IN DIE ZUKUNFT (docs/future_plan.md) ─────────────────────────
+[scenes.timejump]
+shader = "timejump"
+controller = "timejump"    # Zeitsprung (Zukunft-Taste 2)
+render_scale = 0.6
+vanish = [0.5, 0.42]       # Fluchtpunkt der Straße (Anteile, y von unten)
+windshield = [0.0, 1.0, 0.36, 1.0]   # Scheibenbereich im Cockpitbild: x0, x1, y0, y1 (y von unten)
+
+[scenes.flux]
+shader = "flux"
+controller = "flux"        # Fluxkompensator (Zukunft-Taste 3)
+render_scale = 0.6
+center = [0.5, 0.5]        # Mitte des Y (Anteile, y von unten)
+radius = 0.12
+
+[scenes.clocktower]
+shader = "clocktower"
+controller = "clocktower"  # Uhrturm (Zukunft-Taste 4)
+render_scale = 0.6
+clock = [0.5, 0.72, 0.09]                # Zifferblatt x, y, Radius
+windows = [0.2, 0.8, 0.2, 0.05]          # Schaufenster: x erste, x letzte, y, Breite
+
+[scenes.almanacslots]
+shader = "almanacslots"
+controller = "almanacslots"   # Almanach (Zukunft-Taste 5)
+render_scale = 0.6
+windows = [[0.316, 0.412], [0.447, 0.546], [0.581, 0.678]]
+window_y = [0.414, 0.666]
+
+[scenes.square]
+shader = "square"
+controller = "square"      # Marktplatz (Zukunft-Taste 6)
+render_scale = 0.6
+clock = [0.5, 0.62]        # Uhrturm (Blitzziel)
+cycle_minutes = 4          # Minuten je Epoche
+
+[scenes.paradox]
+shader = "paradox"
+controller = "paradox"     # Paradoxon (Zukunft-Taste 7)
+render_scale = 0.6

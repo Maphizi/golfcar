@@ -106,6 +106,42 @@ command = ["{python}", "-m", "visualizers.engine", "blackice"]
 cwd = "{root}"
 stop_timeout = 3
 
+[modes.timejump]
+label = "ZEITSPRUNG"
+command = ["{python}", "-m", "visualizers.engine", "timejump"]
+cwd = "{root}"
+stop_timeout = 3
+
+[modes.flux]
+label = "FLUXKOMPENSATOR"
+command = ["{python}", "-m", "visualizers.engine", "flux"]
+cwd = "{root}"
+stop_timeout = 3
+
+[modes.clocktower]
+label = "UHRTURM"
+command = ["{python}", "-m", "visualizers.engine", "clocktower"]
+cwd = "{root}"
+stop_timeout = 3
+
+[modes.almanacslots]
+label = "ALMANACH"
+command = ["{python}", "-m", "visualizers.engine", "almanacslots"]
+cwd = "{root}"
+stop_timeout = 3
+
+[modes.square]
+label = "MARKTPLATZ"
+command = ["{python}", "-m", "visualizers.engine", "square"]
+cwd = "{root}"
+stop_timeout = 3
+
+[modes.paradox]
+label = "PARADOXON"
+command = ["{python}", "-m", "visualizers.engine", "paradox"]
+cwd = "{root}"
+stop_timeout = 3
+
 [modes.viz_crt]
 label = "ZIELCOMPUTER"
 command = ["{python}", "-m", "visualizers.engine", "crt"]

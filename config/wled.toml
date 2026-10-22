@@ -157,6 +157,54 @@ col2 = [0, 40, 60]
 sx  = 150
 ix  = 200
 
+[modes.timejump]            # Zeitsprung: Bernstein-Armaturen, langsames Atmen (Fahrt unten)
+bri = 180
+fx  = 2
+col = [255, 150, 40]
+col2 = [20, 5, 0]
+sx  = 50
+ix  = 150
+
+[modes.flux]                # Fluxkompensator: elektrisches Weißblau, zuckend
+bri = 200
+fx  = 2
+col = [160, 200, 255]
+col2 = [10, 20, 60]
+sx  = 120
+ix  = 200
+
+[modes.clocktower]          # Uhrturm: Gewitterblau mit warmem Zifferblatt
+bri = 170
+fx  = 2
+col = [255, 220, 150]
+col2 = [10, 20, 60]
+sx  = 40
+ix  = 150
+
+[modes.almanacslots]        # Almanach: Casino-Gold mit Rot
+bri = 200
+fx  = 162
+col = [255, 200, 40]
+col2 = [120, 0, 20]
+sx  = 110
+ix  = 160
+
+[modes.square]              # Marktplatz: warmes Laternenlicht (Epochen unten)
+bri = 160
+fx  = 2
+col = [255, 190, 110]
+col2 = [20, 10, 30]
+sx  = 40
+ix  = 140
+
+[modes.paradox]             # Paradoxon: Sepia und Blitzblau, unruhig
+bri = 190
+fx  = 2
+col = [200, 150, 90]
+col2 = [40, 80, 255]
+sx  = 140
+ix  = 200
+
 [modes.blackhole]           # Schwarzes Loch: oranges Glühen der Akkretionsscheibe, langsam kreisend
 bri = 170
 fx  = 76          # Meteor
@@ -633,4 +681,216 @@ fx  = 2
 col = [180, 80, 255]
 col2 = [20, 0, 40]
 sx  = 70
+ix  = 150
+
+# ── Zukunft-Ereignisse ────────────────────────────────────────────────────────
+[modes.timejump_start]      # Gas geben (3 s): bernsteinfarbener Scanner
+bri = 230
+fx  = 40
+col = [255, 180, 60]
+col2 = [30, 10, 0]
+sx  = 200
+ix  = 128
+
+[modes.timejump_jump]       # Zeitsprung (3 s): blau-weißes Stroboskop
+bri = 255
+fx  = 23
+col = [200, 230, 255]
+col2 = [60, 120, 255]
+sx  = 240
+ix  = 128
+
+[modes.timejump_honk]       # Hupe (1,5 s): alles weiß
+bri = 255
+fx  = 0
+col = [255, 255, 255]
+
+[modes.timejump_storm]      # Gewitter (14 s): weiße Blitze auf Dunkelblau
+bri = 240
+fx  = 57
+col = [255, 255, 255]
+col2 = [0, 10, 60]
+sx  = 120
+ix  = 128
+
+[modes.flux_throw]          # Objekt fliegt hinein (3 s): Feuerspur, orange auf Blau
+bri = 240
+fx  = 40
+col = [255, 140, 30]
+col2 = [40, 80, 255]
+sx  = 200
+ix  = 160
+
+[modes.flux_eject]          # Paradoxon (8 s): Sepia-Flackern
+bri = 220
+fx  = 1
+col = [200, 150, 90]
+col2 = [0, 0, 0]
+sx  = 120
+ix  = 128
+
+[modes.flux_overload]       # 1,21 Gigawatt (2,5 s): weißes Stroboskop
+bri = 255
+fx  = 23
+col = [255, 255, 255]
+col2 = [120, 160, 255]
+sx  = 240
+ix  = 128
+
+[modes.clocktower_doc]      # Professor am Zeiger: warmes Weiß, wischend
+bri = 200
+fx  = 3
+col = [255, 240, 200]
+col2 = [20, 20, 60]
+sx  = 120
+ix  = 128
+
+[modes.clocktower_car]      # Zeitmaschine rast: Feuerspur-Kometen
+bri = 230
+fx  = 59
+col = [255, 150, 40]
+col2 = [40, 80, 255]
+sx  = 200
+ix  = 200
+
+[modes.clocktower_both]     # der große Moment: Blitz-Stroboskop
+bri = 255
+fx  = 57
+col = [255, 255, 255]
+col2 = [255, 150, 40]
+sx  = 160
+ix  = 128
+
+[modes.clocktower_dance]    # Tanzball: Girlanden in Pastell
+bri = 200
+fx  = 65
+col = [255, 120, 180]
+col2 = [120, 200, 255]
+col3 = [255, 230, 120]
+pal = 3
+sx  = 60
+ix  = 128
+
+[modes.clocktower_strike]   # 22:04 (4 s): Weißblitz, dann Nachglühen
+bri = 255
+fx  = 23
+col = [255, 255, 255]
+col2 = [200, 220, 255]
+sx  = 250
+ix  = 128
+
+[modes.almanacslots_win]    # großer Gewinn (5 s): Gold-Rot-Funkeln
+bri = 255
+fx  = 20
+col = [255, 210, 60]
+col2 = [200, 20, 20]
+sx  = 220
+ix  = 220
+
+[modes.almanacslots_jackpot]  # 22:04 dreifach (8 s): Blitz-Feuerwerk
+bri = 255
+fx  = 42
+col = [255, 255, 255]
+col2 = [120, 160, 255]
+col3 = [255, 200, 60]
+pal = 3
+sx  = 200
+ix  = 200
+
+[modes.square_1885]         # Wilder Westen: Öllampen-Orange
+bri = 150
+fx  = 2
+col = [255, 150, 50]
+col2 = [40, 15, 0]
+sx  = 30
+ix  = 150
+
+[modes.square_1955]         # 1955: Diner-Neon Türkis und Rosa
+bri = 180
+fx  = 2
+col = [80, 230, 220]
+col2 = [255, 100, 160]
+sx  = 50
+ix  = 150
+
+[modes.square_1985]         # 1985: Natriumdampf-Orange und Videothek-Magenta
+bri = 170
+fx  = 2
+col = [255, 170, 60]
+col2 = [200, 40, 160]
+sx  = 60
+ix  = 150
+
+[modes.square_2015]         # 2015: Hologramm-Blau und Violett
+bri = 200
+fx  = 2
+col = [80, 160, 255]
+col2 = [160, 60, 255]
+sx  = 80
+ix  = 160
+
+[modes.square_jump]         # Zeitsprung (3 s): blau-weißes Stroboskop mit Feuer
+bri = 255
+fx  = 23
+col = [200, 230, 255]
+col2 = [255, 140, 30]
+sx  = 240
+ix  = 128
+
+[modes.square_fireworks]    # Feuerwerk (8 s)
+bri = 255
+fx  = 42
+col = [255, 80, 80]
+col2 = [80, 255, 120]
+col3 = [120, 160, 255]
+pal = 3
+sx  = 200
+ix  = 200
+
+[modes.square_blackout]     # Stromausfall (14 s): fast aus
+bri = 30
+fx  = 2
+col = [60, 40, 20]
+col2 = [0, 0, 0]
+sx  = 20
+ix  = 128
+
+[modes.square_lightning]    # Blitz (2 s): weiß
+bri = 255
+fx  = 23
+col = [255, 255, 255]
+col2 = [20, 40, 120]
+sx  = 240
+ix  = 128
+
+[modes.paradox_horror]      # 1,21 Gigawatt (20 s): blau-weißes Stroboskop
+bri = 240
+fx  = 23
+col = [120, 160, 255]
+col2 = [40, 20, 0]
+sx  = 90
+ix  = 128
+
+[modes.paradox_drop]        # Drop (2 s): weißes Stroboskop
+bri = 255
+fx  = 23
+col = [255, 255, 255]
+col2 = [200, 150, 90]
+sx  = 220
+ix  = 128
+
+[modes.paradox_blackout]    # Auslöschung (8 s): fast aus, Sepia-Glimmen
+bri = 40
+fx  = 2
+col = [120, 80, 30]
+col2 = [0, 0, 0]
+sx  = 30
+ix  = 150
+
+[modes.paradox_help]        # der Professor kommt (5 s): warmes Weiß mit Feuerspur
+bri = 220
+fx  = 2
+col = [255, 220, 160]
+col2 = [255, 120, 30]
+sx  = 80
 ix  = 150

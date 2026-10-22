@@ -52,7 +52,8 @@ tint = [0.45, 0.75, 0.3]
 
 [[themes]]
 name = "future"
-content = "space"
+content = "future"
+modes = { viz_psychedelic = "timejump", blackhole = "flux", hal = "clocktower", slots = "almanacslots", campfire = "square", error = "paradox" }
 title = "ZURÜCK IN DIE ZUKUNFT"
 tagline = "88 MEILEN PRO STUNDE BIS LOCH 19"
 dir = "future"

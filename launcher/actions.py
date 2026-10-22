@@ -36,6 +36,12 @@ class Action(str, Enum):
     CYBERSLOTS = "cyberslots"  # Cyber: Pachinko
     ROOFTOP = "rooftop"        # Cyber: Dachterrasse
     BLACKICE = "blackice"      # Cyber: Black Ice
+    TIMEJUMP = "timejump"      # Zukunft: Zeitsprung
+    FLUX = "flux"              # Zukunft: Fluxkompensator
+    CLOCKTOWER = "clocktower"  # Zukunft: Uhrturm
+    ALMANACSLOTS = "almanacslots"  # Zukunft: Almanach
+    SQUARE = "square"          # Zukunft: Marktplatz
+    PARADOX = "paradox"        # Zukunft: Paradoxon
     TALK = "talk"              # Sprechtaste: bei HAL Musik leise + Mikrofon an/aus (Taste F15 an den Modus)
 
 
@@ -66,6 +72,12 @@ ACTION_TO_MODE = {
     Action.CYBERSLOTS: "cyberslots",
     Action.ROOFTOP: "rooftop",
     Action.BLACKICE: "blackice",
+    Action.TIMEJUMP: "timejump",
+    Action.FLUX: "flux",
+    Action.CLOCKTOWER: "clocktower",
+    Action.ALMANACSLOTS: "almanacslots",
+    Action.SQUARE: "square",
+    Action.PARADOX: "paradox",
     Action.HOME: "home",
 }
 

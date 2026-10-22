@@ -242,3 +242,77 @@ planeten = [
     "Sternenhimmel über der Stadt. Alles Hologramm. Alles schön.",
 ]
 kitt = []
+
+[themes.future]
+voice = "de_DE-karlsson-low"     # der Professor: männlich, schnell, etwas höher, atemlos, Hauch Werkstatt-Hall
+tts = { pitch_factor = 1.08, length_scale = 0.82, robot = false, echo_ms = 60, echo_mix = 0.1, echo_decay = 0.3 }
+
+[themes.future.lines]
+theme = [
+    "Großer Gott! Die Zeitkreise sind an. Achtundachtzig Meilen pro Stunde, und wir sehen uns in der Zukunft.",
+    "Zurück in die Zukunft. Wo wir hinfahren, brauchen wir keine Straßen. Fairways reichen.",
+    "Plutonium ist im Kofferraum, der Fluxkompensator fluxt. Einsteigen, Marty. Äh, Fahrer.",
+]
+boot = [
+    "Zeitkreise hochgefahren. Zielzeit: Loch neunzehn. Jetztzeit: zu spät. Zuletzt abgefahren: egal.",
+    "Großer Gott, es funktioniert! Die Maschine läuft. Bitte nicht die Flügeltüren im Gewitter öffnen.",
+    "Eins Komma einundzwanzig Gigawatt. Hab ich. Blitz fehlt noch. Fahr einfach los.",
+]
+home = [
+    "Zurück am Taxistand. Welches Jahr haben wir? Egal, der Kaffee ist derselbe.",
+    "Taxistand, Jetztzeit. Die Zeitkreise bleiben an, für alle Fälle.",
+    "Am Stand. Wenn das hier 1955 ist, bitte niemandem sagen, wer du bist.",
+]
+timejump = [
+    "Zeitsprung. Gas geben, achtundachtzig Meilen, und die Straße ist ein anderes Jahr. Festhalten!",
+    "Zeitkreise an. Der Tacho folgt der Musik. Bei achtundachtzig wird es ernst.",
+    "Wo wir hinfahren, brauchen wir keine Straßen. Trotzdem: Spur halten.",
+]
+flux = [
+    "Der Fluxkompensator. Er macht Zeitreisen möglich. Und er frisst alles, was du hineinwirfst.",
+    "Fluxkompensator online. Bitte den Hund nicht hineinwerfen. Er war schon mal in der Zukunft.",
+    "Drei Lichtarme, ein Y, eins Komma einundzwanzig Gigawatt. Was kann schon schiefgehen?",
+]
+clocktower = [
+    "Der Uhrturm. Zweiundzwanzig Uhr vier. Der Blitz kommt, das Kabel hält hoffentlich.",
+    "Uhrturm. Der Sekundenzeiger tanzt zur Musik. Ich hänge am Zifferblatt. Nicht schon wieder.",
+    "Rettet den Uhrturm! Oder lasst den Blitz einschlagen. Beides geht.",
+]
+almanacslots = [
+    "Der Almanach. Ein Casino aus dem falschen 1985. Hier gewinnt immer der Falsche.",
+    "Hebel ziehen. Wer den Sportalmanach hat, kennt das Ergebnis. Du hast ihn nicht.",
+    "Casino. Zweiundzwanzig Uhr vier dreifach ist der Jackpot. Der Blitz zahlt aus.",
+]
+square = [
+    "Der Marktplatz. Vier Epochen, ein Rathaus, immer dieselbe Uhr. Knüppel links ist früher, rechts ist später.",
+    "Marktplatz. 1885, 1955, 1985, 2015. Such dir ein Jahr aus, der Turm bleibt.",
+    "Hier stand ich schon mit Kabel in der Hand. Die Uhr geht immer noch falsch.",
+]
+paradox = [
+    "Paradoxon! Die Zeitlinie bricht. Dein Foto verblasst. Das ist schlecht. Großer Gott, das ist sehr schlecht.",
+    "Zeitkreise defekt. Dinosaurier im Jahr 1985. Das hatte ich nicht berechnet.",
+    "Du hast deine Eltern verhindert. Zumindest fast. Schnell, das Foto!",
+]
+error = [
+    "Störung in den Zeitkreisen. Das Plutonium ist alle. Bitte an den nächsten Blitz fahren.",
+]
+gaming = [
+    "Arcade. Wild Gunman. Wie ein Babyspielzeug, sagen die Kinder aus 2015.",
+    "Spielhalle 1985. Münzen rein, Jahrzehnt raus.",
+]
+droid = [
+    "Der Bord-Droide. Hab ich 2015 gekauft. Kommt mit Kaffeefunktion.",
+]
+news = [
+    "Nachrichten. Aus welchem Jahr? Nimm die Zeitung vom Almanach, die stimmt immer.",
+]
+viz_crt = [
+    "Zielcomputer. Bildröhre aus 1985. Ziel: der Uhrturm, zweiundzwanzig Uhr vier.",
+]
+viz_eye = [
+    "Scanner. Libyer in Reichweite: keine. Gut. Weiter.",
+]
+planeten = [
+    "Sternenhimmel von 1955. Dieselben Sterne, anderer Fahrer.",
+]
+kitt = []
