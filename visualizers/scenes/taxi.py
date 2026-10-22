@@ -17,6 +17,8 @@ import time
 import numpy as np
 import pygame
 
+from visualizers.engine import images
+
 from launcher import config as lcfg, pxn_led, theme as ltheme, wled
 
 log = logging.getLogger("taxi")
@@ -69,19 +71,8 @@ def _license(rng: random.Random) -> str:
 
 
 def _load_rgba(path) -> np.ndarray | None:
-    """Bild als RGBA (Zeile 0 unten, für GL). None wenn nicht ladbar."""
-    try:
-        surf = pygame.image.load(str(path))
-        w, h = surf.get_size()
-        rgb = pygame.surfarray.array3d(surf).transpose(1, 0, 2)
-        try:
-            alpha = pygame.surfarray.array_alpha(surf).T
-        except ValueError:
-            alpha = np.full((h, w), 255, dtype=np.uint8)
-        return np.ascontiguousarray(np.dstack((rgb, alpha)).astype(np.uint8)[::-1])
-    except Exception as exc:
-        log.warning("Bild %s nicht ladbar: %s", path, exc)
-        return None
+    """Bild als RGBA (Zeile 0 unten, für GL) aus dem npy-Cache (visualizers.engine.images)."""
+    return images.load_rgba(path)
 
 
 class Controller:

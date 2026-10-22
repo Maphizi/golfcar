@@ -16,3 +16,5 @@ vendor/
 # eigene Themenplakate bleiben auf dem Pi (Rechte!)
 assets/themes/
 assets/sponsor.png
+# Bild- und Shader-Cache (visualizers/engine/images.py, Mesa)
+.cache/

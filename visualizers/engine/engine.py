@@ -42,7 +42,8 @@ def create_window(settings: dict, viz_cfg: dict, title: str):
     driver = disp.get("sdl_videodriver", "auto")
     if driver and driver != "auto":
         os.environ["SDL_VIDEODRIVER"] = driver
-    pygame.init()
+    pygame.display.init()                 # nicht pygame.init(): das würde auch SDL-Audio/Mixer öffnen (kann auf dem Pi hängen)
+    pygame.font.init()
     size = (int(eng.get("width", 0) or disp.get("width", 0)), int(eng.get("height", 0) or disp.get("height", 0)))
     flags = pygame.OPENGL | pygame.DOUBLEBUF | pygame.FULLSCREEN
     if os.environ.get("KITT_VIZ_WINDOWED"):

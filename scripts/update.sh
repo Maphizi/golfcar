@@ -21,5 +21,9 @@ if [ -x scripts/announce_build.sh ] && [ -d models/piper ]; then
   echo "== Ansagen =="
   scripts/announce_build.sh 2>&1 | tail -1
 fi
+if [ -x .venv/bin/python ]; then
+  echo "== Bild-Cache =="
+  SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy .venv/bin/python scripts/warm_cache.py 2>&1 | tail -1
+fi
 echo "== Launcher neu starten =="
 systemctl --user restart kitt-launcher.service && echo "ok"

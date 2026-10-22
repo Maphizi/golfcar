@@ -24,6 +24,8 @@ from pathlib import Path
 
 import numpy as np
 import pygame
+
+from visualizers.engine import images
 import pygame.image
 
 from launcher import config as lcfg, wled
@@ -77,18 +79,8 @@ def _sheet_tiles(path, keyed: bool) -> np.ndarray | None:
 
 
 def _load_rgba(path) -> np.ndarray | None:
-    """Bild als RGBA (H x W x 4, Zeile 0 unten) mit echter Alpha, None bei Fehler."""
-    try:
-        surf = pygame.image.load(str(path))
-        rgb = pygame.surfarray.array3d(surf).transpose(1, 0, 2)
-        try:
-            alpha = pygame.surfarray.array_alpha(surf).transpose(1, 0)
-        except ValueError:
-            alpha = np.full(rgb.shape[:2], 255, dtype=np.uint8)
-        return np.ascontiguousarray(np.dstack([rgb, alpha]).astype(np.uint8)[::-1])
-    except Exception as exc:
-        log.warning("Bild %s nicht ladbar: %s", path, exc)
-        return None
+    """Bild als RGBA (Zeile 0 unten, für GL) aus dem npy-Cache (visualizers.engine.images)."""
+    return images.load_rgba(path)
 
 
 def load_frame(path) -> np.ndarray | None:

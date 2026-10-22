@@ -75,6 +75,14 @@ Bleibt stehen, bis die erste Taste kommt: jeder KEYDOWN (Knüppel, Startknopf, K
 endet, der Launcher startet Home; Board-Tasten wechseln über den Launcher direkt den Modus. `boot_seconds > 0` in
 `settings.toml` bleibt der Schalter, ob der Startbildschirm überhaupt kommt. Test: `python -m visualizers.engine splash --test-signal`.
 
+## Moduswechsel und Startzeit (`visualizers/engine/images.py`, `launcher/process_manager.py`)
+Jeder Modus ist ein eigener Prozess; die Zeit bis zum ersten Bild steht im Log `logs/viz_<szene>.log` als Zeile
+"Start <szene>: Imports, Fenster, Controller, Shader, Bilder, Audio, erstes Bild". Bilder laden alle Szenen über
+`images.load_rgba()` mit npy-Cache unter `.cache/img/` (Schlüssel Pfad+mtime+Größe; `scripts/warm_cache.py` wärmt ihn in
+`update.sh` vor). Der Prozessmanager setzt `MESA_SHADER_CACHE_DIR=.cache/mesa`, damit V3D die Shader nur einmal compiliert.
+Die Engine ruft `pygame.display.init()`/`font.init()` statt `pygame.init()` (kein SDL-Audio/Mixer). Launcher-Log: "Beende
+Modus ... / Modus beendet" zeigt die Stoppzeit (`stop_timeout` in modes.toml).
+
 ## Lagerfeuer (`visualizers/scenes/campfire.py`)
 Cinemagraph: Foto `assets/campfire/scene.png` + Flammen-Spritesheet `assets/campfire/flames.png` (8x5). Feuerstelle
 `[scenes.campfire] fire = [x, y, w, h]`; uDay Farbstimmung über `cycle_minutes`, uWind, uSpark, uBassS. Neue Bilder:

@@ -64,6 +64,11 @@ class ProcessManager:
         if extra_env:
             env.update(extra_env)
         env["KITT_MODE"] = name
+        cache = Path(__file__).resolve().parents[1] / ".cache"
+        env.setdefault("MESA_SHADER_CACHE_DIR", str(cache / "mesa"))      # compilierte Shader bleiben zwischen Starts erhalten
+        env.setdefault("MESA_SHADER_CACHE_MAX_SIZE", "512M")
+        env.setdefault("MESA_GLSL_CACHE_DIR", str(cache / "mesa"))        # älterer Name derselben Einstellung
+        env.setdefault("XDG_CACHE_HOME", str(cache))
         logpath = self.logs_dir / f"{name}.log"
         try:
             if logpath.exists() and logpath.stat().st_size > 2_000_000:

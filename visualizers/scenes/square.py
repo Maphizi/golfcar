@@ -22,6 +22,8 @@ from pathlib import Path
 import numpy as np
 import pygame
 
+from visualizers.engine import images
+
 from launcher import wled
 
 log = logging.getLogger("square")
@@ -38,17 +40,8 @@ N_PULSES = 6
 
 
 def _load_rgba(path) -> np.ndarray | None:
-    try:
-        surf = pygame.image.load(str(path))
-        rgb = pygame.surfarray.array3d(surf).transpose(1, 0, 2)
-        try:
-            alpha = pygame.surfarray.array_alpha(surf).transpose(1, 0)
-        except ValueError:
-            alpha = np.full(rgb.shape[:2], 255, dtype=np.uint8)
-        return np.ascontiguousarray(np.dstack([rgb, alpha]).astype(np.uint8)[::-1])
-    except Exception as exc:
-        log.warning("Bild %s nicht ladbar: %s", path, exc)
-        return None
+    """Bild als RGBA (Zeile 0 unten, für GL) aus dem npy-Cache (visualizers.engine.images)."""
+    return images.load_rgba(path)
 
 
 class Controller:

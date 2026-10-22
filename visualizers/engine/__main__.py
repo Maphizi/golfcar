@@ -22,6 +22,7 @@ from visualizers.engine.audio_capture import AudioCapture  # noqa: E402
 
 
 def main() -> int:
+    t_main = time.monotonic()
     ap = argparse.ArgumentParser()
     ap.add_argument("scene", choices=["psychedelic", "crt", "eye", "campfire", "kitt", "hyperspace", "target", "tactical", "navcomputer", "error", "slots", "taxi", "blackhole", "hal", "droid", "newsroom", "trip", "pond", "woodeye", "forestslots", "hearttree", "overdose", "neonrace", "core", "oracle", "cyberslots", "rooftop", "blackice", "timejump", "flux", "clocktower", "almanacslots", "square", "paradox", "splash"])
     ap.add_argument("--test-signal", action="store_true")
@@ -53,10 +54,21 @@ def main() -> int:
     if args.source:
         audio_cfg.setdefault("capture", {})["source"] = args.source
 
+    t_phase = time.monotonic()
+    phases = []
+
+    def phase(name):
+        nonlocal t_phase
+        now_ = time.monotonic()
+        phases.append(f"{name} {now_ - t_phase:.1f}s")
+        t_phase = now_
+
     import pygame
     from visualizers.engine import engine as eng
+    phase("Imports")
 
     screen = eng.create_window(settings, viz_cfg, f"KITT VIZ {args.scene}")
+    phase("Fenster")
     w, h = screen.get_size()
     scene_cfg = viz_cfg.get("scenes", {}).get(args.scene, {})
     # Optionaler Szenen-Controller (Eingabe, Zustand, Overlays), z. B. der Navigationscomputer
@@ -65,6 +77,7 @@ def main() -> int:
     if ctrl_name:
         import importlib
         ctrl = importlib.import_module(f"visualizers.scenes.{ctrl_name}").Controller(scene_cfg, demo=args.demo)
+        phase("Controller")
     scene = eng.Scene(args.scene, scene_cfg, bool(viz_cfg.get("engine", {}).get("hot_reload", True)),
                       (tuple(ctrl.uniform_names()) if ctrl else ()) + tuple(fixed))
     try:
@@ -72,6 +85,7 @@ def main() -> int:
     except eng.GLError as exc:
         log.error("%s", exc)
         return 2
+    phase("Shader")
     renderer = eng.Renderer(scene, w, h)
     overlays: dict[int, eng.TextOverlay] = {}
     image_versions: dict[str, int] = {}
@@ -91,8 +105,11 @@ def main() -> int:
             overlays[px] = eng.TextOverlay(px)
         return overlays[px]
 
+    sync_images()
+    phase("Bilder")
     cap = AudioCapture(audio_cfg)
     cap.start()
+    phase("Audio")
     analyzer = Analyzer(cap.rate, audio_cfg)
 
     fps_cap = int(viz_cfg.get("engine", {}).get("fps_cap", 60))
@@ -130,6 +147,9 @@ def main() -> int:
                 shot_done = True
             pygame.display.flip()
             frames += 1
+            if frames == 1:
+                phase("erstes Bild")
+                log.info("Start %s: %s (gesamt %.1f s ab main)", args.scene, ", ".join(phases), time.monotonic() - t_main)
             if now - last_log >= log_interval:
                 fps = frames / (now - last_log)
                 log.info("fps %.1f  audio=%s level=%.4f rms=%.2f bass=%.2f mid=%.2f high=%.2f beat=%.2f%s",
