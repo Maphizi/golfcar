@@ -3,6 +3,7 @@
 # Pro Eintrag wird zufällig ein Satz gewählt. Leere Liste = keine Ansage.
 
 enabled = true
+volume = 0.6
 
 [lines]
 boot = [
