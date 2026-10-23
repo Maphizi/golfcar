@@ -136,6 +136,7 @@ shader = "neonrace"
 controller = "neonrace"    # Neonfahrt (Cyber-Taste 2)
 render_scale = 0.6
 vanish = [0.5, 0.5]        # Fluchtpunkt der Straße
+district_every = [70, 120] # Sekunden Fahrt zwischen zwei Stadtteilwechseln (Lichttor)
 
 [scenes.core]
 shader = "core"

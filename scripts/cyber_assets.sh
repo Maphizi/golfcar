@@ -15,6 +15,7 @@ grid() { s=$(f "$1"); [ -n "$s" ] && $T grid "$OUT/$2" "$s" $3 $4 $5 $6 2>/dev/n
 slice() { s=$(f "$1"); [ -n "$s" ] && $T slice "$OUT/$2" "$s" $3 $4 $5 2>/dev/null | tail -1 || echo "  fehlt: $1"; }
 echo "== Neonfahrt =="
 plate neonrace_scene neonrace_scene.png
+for i in 1 2 3 4 5 6; do plate neonrace_district_$i neonrace_district_$i.png; done
 slice neonrace_holo neonrace_holo.png 8 3 160
 slice neonrace_traffic neonrace_traffic.png 8 2 192
 echo "== Der Kern =="

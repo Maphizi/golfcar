@@ -33,6 +33,16 @@ from launcher import wled
 log = logging.getLogger("neonrace")
 ASSETS = Path(__file__).resolve().parents[2] / "assets" / "cyber"
 N_HOLO, N_CARS, N_FLY, N_OBS = 10, 6, 6, 6
+# Stadtteile: Bild, Name, Zeile; Nummer 0 = neonrace_scene.png, 1-6 = neonrace_district_N.png (fehlende werden übersprungen)
+DISTRICTS = [("neonrace_scene.png", "REGENSTRASSE", "DIE ALTE STRECKE"),
+             ("neonrace_district_1.png", "CHINATOWN", "LATERNEN UND DAMPF"),
+             ("neonrace_district_2.png", "KONZERNVIERTEL", "GLAS, KÄLTE, KAMERAS"),
+             ("neonrace_district_3.png", "INDUSTRIEHAFEN", "FUNKEN UND RAUCH"),
+             ("neonrace_district_4.png", "UNTERSTADT", "KEIN SIGNAL, KEIN AUSGANG"),
+             ("neonrace_district_5.png", "VERGNÜGUNGSMEILE", "ALLES BLINKT, NICHTS IST ECHT"),
+             ("neonrace_district_6.png", "HOCHSTRASSE", "DIE STADT LIEGT UNTER DIR")]
+DISTRICT_EVERY = (70.0, 120.0)        # s Fahrt zwischen zwei Stadtteilwechseln
+DISTRICT_LEN = 3.2                    # s Lichttor (Überblendung in der Mitte)
 EVENT_EVERY = (30.0, 60.0)
 EVENTS = [
     ("POLIZEIDROHNEN", 14.0, "ROT UND BLAU IM RÜCKSPIEGEL"),
@@ -90,7 +100,16 @@ class Controller:
         self.rng = random.Random()
         self.demo = demo
         self.blank = np.zeros((4, 4, 4), dtype=np.uint8)
-        self.scene = _load_rgba(ASSETS / "neonrace_scene.png")
+        self.districts = [(i, _load_rgba(ASSETS / f)) for i, (f, _, _) in enumerate(DISTRICTS) if (ASSETS / f).exists()]
+        self.districts = [(i, img) for i, img in self.districts if img is not None]
+        self.district = 0                               # Index in self.districts
+        self.district_next = 0
+        self.district_t0 = -10.0
+        self.scene = self.districts[0][1] if self.districts else None
+        self.scene_b = self.scene
+        self.scene_ver = 1
+        self.scene_b_ver = 1
+        self.next_district_at = time.monotonic() + self.rng.uniform(*DISTRICT_EVERY)
         self.holo = _load_rgba(ASSETS / "neonrace_holo.png")
         self.traffic = _load_rgba(ASSETS / "neonrace_traffic.png")
         obs_path = Path(os.environ.get("KITT_NEONRACE_OBSTACLES") or (ASSETS / "neonrace_obstacles.png"))
@@ -98,6 +117,7 @@ class Controller:
         if self.obs_tex is None:
             log.warning("Hindernis-Bogen %s fehlt: Hindernisse bleiben unsichtbar (Autopilot weicht trotzdem aus)", obs_path)
         self.vanish = tuple(float(v) for v in scene_cfg.get("vanish", [0.5, 0.5]))
+        self.district_every = tuple(float(v) for v in scene_cfg.get("district_every", DISTRICT_EVERY))
         self.auto_start = float(scene_cfg.get("auto_start", AUTO_START))
         self.restart_after = float(scene_cfg.get("restart_after", RESTART_AFTER))
         self.seed = self.rng.uniform(1.0, 100.0)
@@ -336,14 +356,37 @@ class Controller:
         self.evade_name = OBS_NAMES[m.cell] if m.kind in (KIND_OBS, KIND_CROSS) else "VERKEHR"
 
     # -- Engine ------------------------------------------------------------
+    def change_district(self, now: float) -> None:
+        """Lichttor in einen anderen Stadtteil (nie derselbe), wenn mehr als einer vorhanden ist."""
+        if len(self.districts) < 2 or now - self.district_t0 < DISTRICT_LEN + 2.0:
+            return
+        pool = [k for k in range(len(self.districts)) if k != self.district]
+        self.district_next = self.rng.choice(pool)
+        self.district_t0 = now
+        self.scene_b = self.districts[self.district_next][1]
+        self.scene_b_ver += 1
+        log.info("Stadtteil: %s -> %s", DISTRICTS[self.districts[self.district][0]][1], DISTRICTS[self.districts[self.district_next][0]][1])
+
+    def _district_tick(self, now: float) -> None:
+        k = now - self.district_t0
+        if self.district_next != self.district and k >= DISTRICT_LEN * 0.55:      # Mitte des Tors: Bild A wird das neue
+            self.district = self.district_next
+            self.scene = self.districts[self.district][1]
+            self.scene_ver += 1
+        if self.driving and now >= self.next_district_at:
+            self.next_district_at = now + self.rng.uniform(*self.district_every) * (0.25 if self.demo else 1.0)
+            self.change_district(now)
+
     def images(self) -> dict:
-        return {"uSceneTex": (self.scene if self.scene is not None else self.blank, 1),
+        return {"uSceneTex": (self.scene if self.scene is not None else self.blank, self.scene_ver),
+                "uSceneBTex": (self.scene_b if self.scene_b is not None else self.blank, self.scene_b_ver),
                 "uHoloTex": (self.holo if self.holo is not None else self.blank, 1),
                 "uTrafficTex": (self.traffic if self.traffic is not None else self.blank, 1),
                 "uObsTex": (self.obs_tex if self.obs_tex is not None else self.blank, 1)}
 
     def uniform_names(self):
-        names = ["uSceneTex", "uHoloTex", "uTrafficTex", "uObsTex", "uSceneSize", "uHoloSize", "uTrafficSize", "uObsSize",
+        names = ["uSceneTex", "uSceneBTex", "uHoloTex", "uTrafficTex", "uObsTex", "uSceneSize", "uSceneBSize", "uHoloSize",
+                 "uTrafficSize", "uObsSize", "uDistT", "uDistMix",
                  "uSeed", "uVanish", "uBassS", "uMidS", "uHighS", "uEnergy", "uLive", "uBeatPulse", "uBeatStep", "uBoost",
                  "uHueAll", "uStep", "uStepPhase", "uPattern", "uSpeed", "uDist", "uLane", "uLaneVel", "uAuto", "uEvadeT",
                  "uGraze", "uNear", "uHonkT", "uMirror", "uWiperT", "uNitro", "uEvent", "uEventT", "uEventLen", "uDriving"]
@@ -439,8 +482,17 @@ class Controller:
         size = lambda a: (float(a.shape[1]), float(a.shape[0])) if a is not None else (1.0, 1.0)
         ev = self.event
         manual = now < self.manual_until
+        self._district_tick(now)
+        dist_k = now - self.district_t0
+        dist_t = dist_k if dist_k < DISTRICT_LEN else -1.0
+        # Überblendung A -> B um die Mitte des Tors; nach dem Umschalten ist A schon das neue Bild (Mix wieder 0)
+        if dist_k < DISTRICT_LEN * 0.55 and self.district_next != self.district:
+            dist_mix = max(0.0, min(1.0, (dist_k - DISTRICT_LEN * 0.3) / (DISTRICT_LEN * 0.25)))
+        else:
+            dist_mix = 0.0
         out = {
-            "uSceneSize": size(self.scene), "uHoloSize": size(self.holo), "uTrafficSize": size(self.traffic),
+            "uSceneSize": size(self.scene), "uSceneBSize": size(self.scene_b), "uHoloSize": size(self.holo), "uTrafficSize": size(self.traffic),
+            "uDistT": dist_t, "uDistMix": dist_mix,
             "uObsSize": size(self.obs_tex),
             "uSeed": self.seed, "uVanish": self.vanish, "uBassS": self.bass_s, "uMidS": self.mid_s, "uHighS": self.high_s,
             "uEnergy": self.energy, "uLive": self.live_s, "uBeatPulse": self.beat_pulse, "uBeatStep": float(self.beat_step),
@@ -482,6 +534,12 @@ class Controller:
                 out.append((f"MANUELL ({int(rest) + 1} S)", 0.018, 0.5, 0.08, (255, 220, 120), 0.75))
             else:
                 out.append(("AUTOPILOT", 0.018, 0.5, 0.08, (120, 255, 200), 0.45 + 0.15 * np.sin(t * 3.0)))
+            dk = now - self.district_t0
+            if dk < DISTRICT_LEN + 3.0 and len(self.districts) > 1:
+                name, line = DISTRICTS[self.districts[self.district][0]][1:3]
+                a = min(1.0, max(0.0, (dk - DISTRICT_LEN * 0.55) * 2.0)) * min(1.0, (DISTRICT_LEN + 3.0 - dk) / 1.0)
+                out.append((name, 0.034, 0.5, 0.74, (120, 240, 255), 0.9 * a))
+                out.append((line, 0.018, 0.5, 0.69, (200, 240, 255), 0.8 * a))
             if self.event:
                 name, length, line = EVENTS[self.event["kind"]]
                 k = (now - self.event["t0"]) / length

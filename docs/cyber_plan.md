@@ -331,3 +331,43 @@ Erzeuge die drei Bilder aus `docs/cyber_plan.md`, Abschnitt "Prompts Runde 3": `
 dieselbe Figur, gleiche Größe und Position (Kopf und Schultern), nur die Geste ändert sich; bei `oracle_masks` nur die
 Maske ohne Gesicht dahinter, so groß wie das Gesicht in `oracle_main`. Reines Schwarz als Hintergrund, kein Text. Danach
 `git pull --no-rebase origin claude/new-session-3cbx1m`, committen und pushen.
+
+
+---
+
+# Runde 4 – Neonfahrt: Stadtteile
+
+Die Fahrt führt durch mehrere Stadtteile: alle 70-120 s Fahrt (Config `district_every`) wechselt die Straße per Lichttor
+(`uDistT`: Tunnel aus Lichtstreifen, Überblendung in der Mitte) in einen anderen Stadtteil; der Startstadtteil ist das
+bisherige Bild (REGENSTRASSE). Alle Stadtteile brauchen DIESELBE Kamera wie `neonrace_scene`: Blick aus der Windschutzscheibe,
+gerade Straße, Fluchtpunkt genau in der Bildmitte (halbe Höhe), Armaturenbrett leicht unten im Bild, Regen auf der Scheibe.
+
+Bilder (Bot, nach `assets/cyber/raw/`, 16:9, mindestens 1600 px breit, kein lesbarer Text), Dateinamen:
+- `neonrace_district_1` CHINATOWN: enge Gasse voller roter Laternen und gestapelter Neonschilder, Garküchen mit Dampf, Markisen
+- `neonrace_district_2` KONZERNVIERTEL: breite saubere Hochstraße zwischen Glastürmen, kaltes Weiß und Blau, Hologramm-Logos ohne Text
+- `neonrace_district_3` INDUSTRIEHAFEN: Kräne, Container, Rohre, orangenes Natriumlicht, Rauch und Funken, nasse Betonstraße
+- `neonrace_district_4` UNTERSTADT: Slums unter Hochbahntrassen, Gerüste, Kabelgewirr, giftgrünes Neon, Dampf aus Gullys
+- `neonrace_district_5` VERGNÜGUNGSMEILE: Casinos und Clubs, pink und violett, Hologramm-Tänzerinnen, Lichterbögen über der Straße
+- `neonrace_district_6` HOCHSTRASSE: Fahrt auf einer Hochstraße über der Stadt, Skyline tief unten, Flugverkehr, Regen, kaltes Cyan
+
+## Prompts Runde 4
+
+Allen Prompts voran (gleiche Kamera für alle sechs):
+```
+Photorealistic first-person view through the windshield of a car at night in the rain, perfectly straight road vanishing
+to a point exactly at the center of the image, dashboard slightly visible at the bottom, rain streaks on the glass,
+cinematic, 16:9, no readable text, no people in the foreground
+```
+**neonrace_district_1** `... driving through a narrow Chinatown alley: red paper lanterns strung across the street, stacked neon signs on every facade, steaming food stalls under awnings, puddles reflecting red and gold`
+**neonrace_district_2** `... driving on a wide clean elevated expressway between glass corporate towers, cold white and blue light, holographic corporate logos without text floating above, sterile and shiny`
+**neonrace_district_3** `... driving through an industrial harbor district: cranes, stacked containers, pipes and chimneys, orange sodium lights, smoke and sparks from welding, wet concrete road`
+**neonrace_district_4** `... driving through an undercity slum beneath elevated train tracks: scaffolding, tangled cables, sick green neon, steam from manholes, graffiti walls, makeshift shops`
+**neonrace_district_5** `... driving down an entertainment strip: casinos and nightclubs, pink and violet neon, holographic dancers above the entrances, arches of lights spanning the street, confetti in the rain`
+**neonrace_district_6** `... driving on a highway high above the city: the skyline far below, flying vehicles with lights, rain clouds, cold cyan light, the road edge with glowing rails`
+
+## Anweisung an den Bot (Runde 4)
+
+Erzeuge die sechs Bilder aus `docs/cyber_plan.md`, Abschnitt "Prompts Runde 4": `neonrace_district_1` bis `_6`, jeweils der
+gemeinsame Kamera-Prompt plus der Zusatz des Stadtteils, als PNG unter `assets/cyber/raw/<name>.png`. Wichtig: in allen
+sechs Bildern dieselbe Perspektive wie `neonrace_scene`, gerade Straße, Fluchtpunkt genau in der Bildmitte, Armaturenbrett
+unten, kein lesbarer Text. Danach `git pull --no-rebase origin claude/new-session-3cbx1m`, committen und pushen.

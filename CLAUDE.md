@@ -209,7 +209,12 @@ Hindernissen aus (`_arm_reaction`: bei hohem Tempo gelegentlich zu spät = BEINA
 (MANUELL), OBEN Hupe `uHonkT`, UNTEN Rückspiegel `uMirror`. `Mover` kinds 0 Holo / 1 Auto / 2 Flieger / 3 Hindernis / 4 Querung
 -> `uHolo0..9`, `uCar0..5`, `uFly0..5`, `uObs0..5` (+ `uObsTex` `neonrace_obstacles.png` 8x2 à 192: Reihe 0 steht auf der
 Straße, Reihe 1 quert; `OBS_NAMES`). Schilder: je Hologramm eigener Hue-Versatz, springt je Beat (`uBeatStep`), Drop alle;
-Lauflicht `uStep/uStepPhase/uPattern` durch die Fassaden. `EVENTS` alle 30-60 s. `[scenes.neonrace] vanish`, `auto_start`.
+Lauflicht `uStep/uStepPhase/uPattern` durch die Fassaden. `EVENTS` alle 30-60 s. Stadtteile `DISTRICTS` (0 = `neonrace_scene.png`,
+1-6 = `neonrace_district_N.png`, Prompts `docs/cyber_plan.md` Runde 4, fehlende werden übersprungen): alle `district_every`
+70-120 s Fahrt `change_district()` -> Lichttor `uDistT` (3,2 s: Lichtstreifen aus dem Fluchtpunkt, Ränder dunkel, Blitz),
+Überblendung `uDistMix` von innen nach außen zwischen `uSceneTex` (A) und `uSceneBTex` (B), in der Tormitte wird A das neue
+Bild (`_district_tick`, Texturversionen `scene_ver`/`scene_b_ver`); Name/Zeile als Overlay. `[scenes.neonrace] vanish`,
+`auto_start`, `district_every`.
 Test: `python -m visualizers.engine neonrace --test-signal --demo`.
 
 ### Der Kern (`visualizers/scenes/core.py`, Taste 3)

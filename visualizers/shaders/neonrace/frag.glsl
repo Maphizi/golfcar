@@ -13,8 +13,9 @@ uniform float iTime;
 uniform vec2 iResolution;
 uniform float uRms, uBass, uMid, uHigh, uBeat, uSilent;
 uniform sampler2D uAudioTex;
-uniform sampler2D uSceneTex, uHoloTex, uTrafficTex, uObsTex;
-uniform vec2 uSceneSize, uHoloSize, uTrafficSize, uObsSize, uVanish;
+uniform sampler2D uSceneTex, uSceneBTex, uHoloTex, uTrafficTex, uObsTex;
+uniform vec2 uSceneSize, uSceneBSize, uHoloSize, uTrafficSize, uObsSize, uVanish;
+uniform float uDistT, uDistMix;                    // Stadtteilwechsel: Alter des Lichttors (-1 = keins), Überblendung A -> B
 uniform float uSeed, uBassS, uMidS, uHighS, uEnergy, uLive, uBeatPulse, uBeatStep, uBoost, uHueAll;
 uniform float uStep, uStepPhase, uPattern;
 uniform float uSpeed, uDist, uLane, uLaneVel, uAuto, uEvadeT, uHonkT, uMirror;
@@ -43,7 +44,16 @@ vec4 bilin(sampler2D tex, vec2 px, vec2 size, vec2 lo, vec2 hi) {
     vec4 c = texture(tex, (vec2(i.x, i1.y) + 0.5) / size), d = texture(tex, (i1 + 0.5) / size);
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }
-vec3 scene(vec2 uv) { return bilin(uSceneTex, clamp(uv, 0.0, 1.0) * uSceneSize, uSceneSize, vec2(0.0), uSceneSize - 1.0).rgb; }
+vec3 sceneA(vec2 uv) { return bilin(uSceneTex, clamp(uv, 0.0, 1.0) * uSceneSize, uSceneSize, vec2(0.0), uSceneSize - 1.0).rgb; }
+vec3 sceneB(vec2 uv) { return bilin(uSceneBTex, clamp(uv, 0.0, 1.0) * uSceneBSize, uSceneBSize, vec2(0.0), uSceneBSize - 1.0).rgb; }
+// Stadtteil: beim Lichttor blendet das Bild vom Fluchtpunkt nach außen in den nächsten Stadtteil über
+vec3 scene(vec2 uv) {
+    if (uDistMix <= 0.001) return sceneA(uv);
+    if (uDistMix >= 0.999) return sceneB(uv);
+    float rr = length((uv - uVanish) * vec2(iResolution.x / iResolution.y, 1.0));
+    float k = smoothstep(uDistMix * 1.3 + 0.08, uDistMix * 1.3 - 0.08, rr);        // innen zuerst das neue Bild
+    return mix(sceneA(uv), sceneB(uv), k);
+}
 vec4 holoCell(float idx, vec2 d) {
     if (abs(d.x) >= 1.0 || abs(d.y) >= 1.0) return vec4(0.0);
     float ci = mod(idx, 8.0), ri = floor(idx / 8.0);
@@ -130,6 +140,19 @@ void main() {
     float flick = 1.0 - 0.5 * uHighS * step(0.6, hash12(vec2(floor(uv.y * 60.0), floor(t * 24.0))));
     col += col * neon * (0.5 * uBassS + 0.9 * run + 0.3 * uBeatPulse + 1.5 * honk) * uLive * flick;
     col += col * neon * 0.15 * (1.0 - uLive) * (0.5 + 0.5 * sin(t * 1.3 + uv.x * 5.0));
+    // ---- Lichttor in den nächsten Stadtteil: Lichtstreifen rasen aus dem Fluchtpunkt, Ränder dunkel, Weißblitz in der Mitte
+    if (uDistT >= 0.0) {
+        float dk = uDistT / 3.2;
+        float gate = smoothstep(0.0, 0.25, dk) * smoothstep(1.0, 0.7, dk);
+        vec2 gq = (uv - van) * vec2(aspect, 1.0);
+        float ga = atan(gq.y, gq.x), gr = length(gq);
+        float streaks = step(0.93, hash12(vec2(floor(ga * 40.0), 7.0))) * smoothstep(0.05, 0.3, gr)
+                      * step(0.5, fract(gr * 6.0 - uDistT * 9.0 + hash12(vec2(floor(ga * 40.0), 9.0))));
+        col = mix(col, col * 0.4, gate * smoothstep(0.1, 0.5, gr));
+        col += mix(vec3(0.3, 0.9, 1.0), vec3(1.0, 0.4, 0.9), hash12(vec2(floor(ga * 40.0), 3.0))) * streaks * gate * 1.4;
+        col += vec3(0.8, 0.95, 1.0) * exp(-gr * 6.0) * gate * 0.5;
+        col += vec3(1.0) * exp(max(-pow((dk - 0.5) * 9.0, 2.0), -60.0)) * 0.7;        // Blitz beim Durchfahren
+    }
     // ---- Ereignisse: Tunnel, Konzernturm, Sturm, Kirschblüten, Markt
     if (ev == 4) {                                                                       // Tunnel: Seiten dunkel, Lichtbänder
         float side = smoothstep(0.15, 0.45, abs(q.x));
