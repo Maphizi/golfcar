@@ -64,3 +64,12 @@ action = "quit"
 [[bindings]]
 code   = 269
 action = "horn"         # Hupe des Themas + LED-Blitz
+
+# ── Autopilot-Schalter (Kippschalter, Code 275): KEY_F16 = AN, KEY_F17 = AUS ─────────────────────
+[[bindings]]
+key    = "KEY_F16"
+action = "attract_on"  # Autopilot an (Schalter unten)
+
+[[bindings]]
+key    = "KEY_F17"
+action = "attract_off" # Autopilot aus (Schalter oben)

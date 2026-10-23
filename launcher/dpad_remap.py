@@ -31,10 +31,12 @@ HAT_TO_KEY = {
 KIPP_KEY_AN  = ecodes.KEY_SPACE      # Kippschalter AN  -> Losfliegen / scharf
 KIPP_KEY_AUS = ecodes.KEY_BACKSPACE  # Kippschalter AUS -> Stoppen
 START_KEY = ecodes.KEY_ENTER
-TALK_KEY = ecodes.KEY_F15            # Sprechtaste: HAL 3000 Musik leise + Mikrofon an/aus
+TALK_KEY       = ecodes.KEY_F15  # Sprechtaste: HAL 3000 Musik leise + Mikrofon an/aus
+ATTRACT_KEY_ON  = ecodes.KEY_F16  # Autopilot-Schalter AN
+ATTRACT_KEY_OFF = ecodes.KEY_F17  # Autopilot-Schalter AUS
 
-ALL_KEYS = list(HAT_TO_KEY.values()) + [START_KEY, KIPP_KEY_AN, KIPP_KEY_AUS, TALK_KEY]
-DEFAULTS = {"start_code": 266, "kipp_code": 267, "kipp_mode": "toggle", "talk_code": 0, "debounce_ms": 300}
+ALL_KEYS = list(HAT_TO_KEY.values()) + [START_KEY, KIPP_KEY_AN, KIPP_KEY_AUS, TALK_KEY, ATTRACT_KEY_ON, ATTRACT_KEY_OFF]
+DEFAULTS = {"start_code": 266, "kipp_code": 267, "kipp_mode": "toggle", "talk_code": 0, "attract_code": 0, "debounce_ms": 300}
 
 
 class DPadRemap(threading.Thread):
@@ -48,11 +50,12 @@ class DPadRemap(threading.Thread):
         self.start_code = int(c["start_code"])
         self.kipp_code = int(c["kipp_code"])
         self.kipp_mode = str(c["kipp_mode"]).lower()
-        self.talk_code = int(c["talk_code"])
+        self.talk_code    = int(c["talk_code"])
+        self.attract_code = int(c["attract_code"])
         self.debounce = max(0.0, float(c["debounce_ms"]) / 1000.0)
         self._last_press: dict[int, float] = {}
-        log.info("Tasten: Start=%d, Kippschalter=%d (%s), Sprechtaste=%s, Entprellung %.0f ms",
-                 self.start_code, self.kipp_code, self.kipp_mode, self.talk_code or "keine", self.debounce * 1000)
+        log.info("Tasten: Start=%d, Kippschalter=%d (%s), Sprechtaste=%s, Autopilot=%s, Entprellung %.0f ms",
+                 self.start_code, self.kipp_code, self.kipp_mode, self.talk_code or "keine", self.attract_code or "keine", self.debounce * 1000)
 
     def inject_talk(self) -> bool:
         """Sprechtaste an den laufenden Modus schicken (vom Launcher-Thread aufgerufen)."""
@@ -137,6 +140,12 @@ class DPadRemap(threading.Thread):
                     # Kippschalter als echter Schalter: Zustand aus value (1 = unten/AN, 0 = oben/AUS)
                     if ev.code == self.kipp_code and self.kipp_mode == "state" and ev.value in (0, 1):
                         self._kipp(ui, ev.value == 1)
+                        continue
+                    # Autopilot-Schalter (echter Kippschalter, state): 1 = unten/AN, 0 = oben/AUS
+                    if self.attract_code and ev.code == self.attract_code and ev.value in (0, 1):
+                        key = ATTRACT_KEY_ON if ev.value == 1 else ATTRACT_KEY_OFF
+                        self._inject(ui, key)
+                        log.info("Autopilot-Schalter %s -> %s", "AN" if ev.value == 1 else "AUS", ecodes.KEY.get(key))
                         continue
                     if ev.value != 1:                # nur Tastendruck, keine Repeats (2) oder Loslassen (0)
                         continue
