@@ -145,8 +145,22 @@ class LedStream:
             self.flick = np.ones(n)
             self.beat_mask = np.zeros(n)
             self.terr = np.ones(n)                                # Fehlerprogramm: Besitz je LED (-1 rot .. 1 grün)
-            self.onmask = (self.nrng.random(n) < 0.2).astype(float)
-            self.level = self.nrng.uniform(0.25, 0.85, n)
+            # Abschnitte von 3-30 LEDs mit eigenem Lebenslauf: aus -> an (ruhig) -> flackern -> tot -> aus
+            seg_id, i, k = [], 0, 0
+            while i < n:
+                w = int(self.nrng.integers(3, 31))
+                seg_id += [k] * min(w, n - i)
+                i += w
+                k += 1
+            self.seg_id = np.array(seg_id)
+            self.nseg = int(self.seg_id.max()) + 1
+            self.seg_state = np.zeros(self.nseg, dtype=int)       # 0 aus, 1 an, 2 flackert, 3 tot
+            self.seg_next = self.nrng.uniform(0.0, 3.0, self.nseg)  # Zeitpunkt des nächsten Zustandswechsels (relativ zu jetzt)
+            self.seg_lvl = self.nrng.uniform(0.3, 0.9, self.nseg)
+            self.seg_flick = np.ones(self.nseg)
+            self.seg_t0 = -1.0                                    # Zeitbasis der seg_next-Werte
+            self.onmask = np.zeros(n)
+            self.level = np.full(n, 0.5)
             self.noise_ph = self.nrng.uniform(0.0, 6.28, 4)
             self.push = 0.0
             self.ev_next = 0.0
@@ -154,6 +168,8 @@ class LedStream:
             self.sweep = (-10.0, 1.0, "red", 0.4)
             self.black_until = 0.0
             self.storm = (0, 0, 0.0)
+            self.storm_noise = None
+            self.storm_tick = -1
 
     # -- Ereignisse ----------------------------------------------------------------------------------------------
     def event(self, name: str, profile: dict) -> None:
@@ -294,7 +310,8 @@ class LedStream:
         """Systemfehler: Kampf zwischen Grün (System) und Rot (Fehler). Jede LED gehört einer Seite (`terr` -1 rot .. +1
         grün); die Front liegt auf einem langsam wandernden Rauschfeld (Blasen statt Sortierung), ihr Anteil folgt der Phase,
         Beats stoßen die stärkere Seite vor, der Bass heizt den Kampf an. Umkämpfte LEDs sirren schnell rot/grün. Es sieht
-        kaputt aus: nur ein Teil der LEDs arbeitet (`onmask`, wechselt zuckend), gedimmt und flackernd; Kurzschluss-Blöcke
+        kaputt aus: Abschnitte von 3-30 LEDs mit eigenem Lebenslauf (aus -> ruhig an -> flackern -> tot), nur ein Teil
+        arbeitet, gedimmt; alles eher träge als hektisch; Kurzschluss-Blöcke
         blitzen voll und sterben, Störlinien rasen durch, kurze Totalausfälle, Rauschstürme, Ausfälle je LED (`dead`)."""
         n = self.n
         x = self._idx()
@@ -332,7 +349,7 @@ class LedStream:
         else:                                                     # reboot
             target, sev = 0.0, 0.3
         # Gelände: wanderndes Rauschfeld; Virus/Schilde von hinten her
-        self.noise_ph += dt * np.array([0.15, 0.27, 0.41, 0.63]) * (0.4 + 1.2 * sev + 0.8 * bass)
+        self.noise_ph += dt * np.array([0.15, 0.27, 0.41, 0.63]) * (0.12 + 0.35 * sev + 0.25 * bass)
         field = (np.sin(x * 2.0 * math.pi * 1.5 + self.noise_ph[0]) + 0.6 * np.sin(x * 2.0 * math.pi * 3.7 + self.noise_ph[1])
                  + 0.35 * np.sin(x * 2.0 * math.pi * 7.3 + self.noise_ph[2]) + 0.2 * np.sin(x * 2.0 * math.pi * 13.1 + self.noise_ph[3]))
         if phase in ("virus", "shields"):
@@ -347,7 +364,7 @@ class LedStream:
             red_now = np.ones(n, dtype=bool)
         else:
             red_now = field < np.quantile(field, target) + self.push
-        self.terr += (np.where(red_now, -1.0, 1.0) - self.terr) * min(1.0, (0.08 + 0.3 * bass + 0.3 * sev) * dt * 25.0 * 0.4)
+        self.terr += (np.where(red_now, -1.0, 1.0) - self.terr) * min(1.0, (0.03 + 0.12 * bass + 0.1 * sev) * dt * 25.0 * 0.4)
         if phase == "intruder":                                   # roter Läufer hinterlässt eine Spur, Grün heilt sie
             self.hunt = (self.hunt + dt * (0.5 + 1.5 * pct)) % 1.0
             self.terr[np.abs(x - self.hunt) < 0.02] = -1.0
@@ -356,31 +373,63 @@ class LedStream:
         contested = (1.0 - np.abs(self.terr)) ** 2
         # Arbeitende LEDs: wenige, gedimmt, zuckend
         p_on = 0.06 + 0.18 * sev + 0.12 * bass * live               # wenige LEDs arbeiten überhaupt
-        reroll = r.random(n) < (0.03 + 0.12 * sev)
-        self.onmask = np.where(reroll, (r.random(n) < p_on).astype(float), self.onmask)
-        self.level = np.where(reroll, r.uniform(0.25, 0.85, n), self.level)
-        twitch = 1.0 - (0.3 + 0.5 * sev) * r.random(n)
-        work = self.onmask * self.level * twitch * (0.6 + 0.4 * live)
+        if self.seg_t0 < 0.0:
+            self.seg_t0 = now
+        due = np.where(now - self.seg_t0 >= self.seg_next)[0]
+        if len(due):
+            on_frac = float(np.mean(self.seg_state == 1) + np.mean(self.seg_state == 2))
+            for si in due:
+                stt = self.seg_state[si]
+                if stt == 0:                                      # aus: nur anschalten, wenn zu wenige arbeiten
+                    if on_frac < p_on * 1.3 and r.random() < 0.7:
+                        self.seg_state[si] = 1
+                        self.seg_lvl[si] = r.uniform(0.3, 0.9)
+                        self.seg_next[si] = now - self.seg_t0 + r.uniform(3.0, 12.0) * (1.4 - 0.8 * sev)   # bleibt länger an
+                        on_frac += 1.0 / self.nseg
+                    else:
+                        self.seg_next[si] = now - self.seg_t0 + r.uniform(0.5, 3.0)
+                elif stt == 1:                                    # an -> flackern
+                    self.seg_state[si] = 2
+                    self.seg_next[si] = now - self.seg_t0 + r.uniform(1.0, 4.0)
+                elif stt == 2:                                    # flackern -> tot (oder doch noch einmal ruhig)
+                    if r.random() < 0.25:
+                        self.seg_state[si] = 1
+                        self.seg_next[si] = now - self.seg_t0 + r.uniform(1.0, 4.0)
+                    else:
+                        self.seg_state[si] = 3
+                        self.seg_next[si] = now - self.seg_t0 + r.uniform(1.0, 5.0)
+                else:                                             # tot -> aus
+                    self.seg_state[si] = 0
+                    self.seg_next[si] = now - self.seg_t0 + r.uniform(0.2, 2.0)
+        # Flackern: träge gefilterter Zufall je Abschnitt, mit Aussetzern
+        target_f = np.where(self.seg_state == 2, r.random(self.nseg), 1.0)
+        self.seg_flick += (target_f - self.seg_flick) * 0.35
+        flick = np.where(self.seg_state == 2, np.where(self.seg_flick < 0.3, 0.0, self.seg_flick), 1.0)
+        seg_on = ((self.seg_state == 1) | (self.seg_state == 2)).astype(float)
+        self.onmask = seg_on[self.seg_id]
+        self.level = (self.seg_lvl * flick)[self.seg_id]
+        work = self.onmask * self.level * (0.6 + 0.4 * live) * (1.0 - 0.08 * sev * r.random(n))
         frame = np.outer(work * red, RED) + np.outer(work * green, GREEN)
         # Kampf an der Front: schnelles Sirren rot/grün, mit dem Bass heller
-        side = np.sin(now * 37.0 + x * 90.0) > 0.0
-        fight = contested * (0.5 + 0.5 * bass) * (0.6 + 0.4 * sev)
+        side = np.sin(now * (6.0 + 6.0 * bass) + x * 40.0 + self.noise_ph[1] * 3.0) > 0.0
+        fight = contested * (0.4 + 0.6 * bass) * (0.5 + 0.5 * sev) * (0.5 + 0.5 * self.onmask)
         frame += np.outer(fight * side, RED) + np.outer(fight * ~side, GREEN)
         # Störungen
         if now >= self.ev_next:
-            self.ev_next = now + r.uniform(0.5, 3.0) / (0.4 + 1.2 * sev)
+            self.ev_next = now + r.uniform(2.0, 8.0) / (0.6 + 0.8 * sev)
             kind = r.choice(["strobe", "sweep", "black", "storm", "strobe", "sweep"])
             if kind == "strobe":                                  # Kurzschluss: Block blitzt voll und stirbt
                 i0 = r.integers(0, n); w = int(r.integers(8, max(9, n // 12)))
-                self.strobe = (i0, min(n, i0 + w), now + 0.1, "red" if r.random() < target + 0.2 else "green")
-                self.dead[i0:min(n, i0 + w)] = now + 0.1 + r.uniform(0.3, 1.5)
+                hold = r.uniform(0.15, 0.5)
+                self.strobe = (i0, min(n, i0 + w), now + hold, "red" if r.random() < target + 0.2 else "green")
+                self.dead[i0:min(n, i0 + w)] = now + hold + r.uniform(1.0, 5.0)
             elif kind == "sweep":                                 # Störlinie rast durch
-                self.sweep = (now, 1.0 if r.random() < 0.5 else -1.0, "red" if r.random() < target + 0.3 else "green", r.uniform(0.25, 0.6))
+                self.sweep = (now, 1.0 if r.random() < 0.5 else -1.0, "red" if r.random() < target + 0.3 else "green", r.uniform(0.8, 2.0))
             elif kind == "black":
-                self.black_until = now + r.uniform(0.08, 0.25)
+                self.black_until = now + r.uniform(0.15, 0.6)
             else:                                                 # Rauschsturm in einem Bereich
                 i0 = r.integers(0, n); w = int(r.integers(n // 10, max(n // 10 + 1, n // 3)))
-                self.storm = (i0, min(n, i0 + w), now + r.uniform(0.4, 1.2))
+                self.storm = (i0, min(n, i0 + w), now + r.uniform(1.0, 3.0))
         i0, i1, until, colr = self.strobe
         if now < until:
             frame[i0:i1] = (RED if colr == "red" else GREEN) * (0.85 + 0.15 * math.sin(now * 90.0))
@@ -392,7 +441,9 @@ class LedStream:
             frame += np.outer(w, RED if colr == "red" else GREEN)
         i0, i1, until = self.storm
         if now < until:
-            noise = r.random(i1 - i0)
+            if self.storm_noise is None or len(self.storm_noise) != i1 - i0 or int(now * 8.0) != self.storm_tick:
+                self.storm_noise, self.storm_tick = r.random(i1 - i0), int(now * 8.0)
+            noise = self.storm_noise
             frame[i0:i1] = np.outer((noise > 0.7) * noise, RED) + np.outer((noise < 0.25) * (1.0 - noise), GREEN) * 0.7
         if phase == "reboot":                                     # Neustart: grüne Linie fegt von vorne, dahinter ruhiges Grün
             w = np.exp(-((x - k) / 0.03) ** 2)

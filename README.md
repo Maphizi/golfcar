@@ -1241,9 +1241,9 @@ ein Drop blitzt alles weiß, bei Stille wandert eine einzelne LED langsam atmend
 Feuer-Modi flackern je LED, Scanner-Modi laufen als KITT-Licht im Takt, Regenbogen-Modi drehen mit der Energie. Im Systemfehler
 ist das Board ein Kampf zwischen Grün (das System) und Rot (der Fehler), sonst nichts: Die Front wandert in Blasen über die
 Kette, je nach Phase gewinnt Rot (Zusammenbruch, Alarm) oder Grün (Erholung), jeder Beat ist ein Vorstoß der stärkeren Seite,
-der Bass heizt den Kampf an, umkämpfte Stellen sirren rot-grün. Und es sieht kaputt aus: nur ein kleiner Teil der LEDs arbeitet
-überhaupt, gedimmt und zuckend, Kurzschluss-Blöcke blitzen auf und sterben, Störlinien rasen durch, kurze Totalausfälle,
-Rauschstürme. Der Virus frisst sich von hinten durch, der Eindringling ist ein roter Läufer, dessen Spur Grün wieder heilt,
+der Bass heizt den Kampf an, umkämpfte Stellen sirren rot-grün. Und es sieht kaputt aus, aber träge statt hektisch: Abschnitte von ein paar LEDs
+gehen an, bleiben eine Weile ruhig, fangen an zu flackern und fallen aus, andere kommen dazu; nur ein kleiner Teil arbeitet
+überhaupt, gedimmt. Dazwischen Kurzschluss-Blöcke, die aufblitzen und sterben, Störlinien, kurze Totalausfälle, Rauschstürme. Der Virus frisst sich von hinten durch, der Eindringling ist ein roter Läufer, dessen Spur Grün wieder heilt,
 der Neustart eine grüne Linie von vorne, danach ruhiges grünes Atmen.
 Endet der Modus, fällt WLED nach zwei Sekunden von selbst auf das Profil zurück. Beim Senden setzt der Launcher immer
 auch die Palette (sonst bliebe die letzte, etwa der Regenbogen, in jedem Effekt hängen), stoppt Playlists, schaltet den

@@ -399,8 +399,10 @@ Weißblitz höchstens alle 8 s, Stille = eine wandernde LED atmet; Beat-Welle l�
 Cart, `[controller].reverse` dreht um; Virus frisst von hinten, Neustart scannt von vorne); `Controller.led_state()` mit
 `program = "error"` (`error.py`): nur Rot und Grün, Kampf: `terr` je LED (-1 rot .. 1 grün), Front auf einem wandernden
 Rauschfeld (`noise_ph`, Quantil = Rotanteil `target` je Phase, Virus/Schilde von hinten), Beat = Vorstoß `push`, Bass heizt an,
-umkämpfte LEDs sirren rot/grün; kaputt: nur `onmask` (p_on 6-36 %) arbeitet, gedimmt (`level`) und zuckend, Störungen `ev_next`
-(Kurzschluss-Block `strobe` + tot, Störlinie `sweep`, Totalausfall `black_until`, Rauschsturm `storm`), Ausfälle `dead`;
+umkämpfte LEDs sirren rot/grün (6-12 Hz); kaputt und träge: Abschnitte von 3-30 LEDs (`seg_id`) mit Lebenslauf `seg_state`
+0 aus -> 1 ruhig an (3-12 s) -> 2 flackern (1-4 s, träger Zufall `seg_flick` mit Aussetzern) -> 3 tot (1-5 s) -> aus, nur so viele
+an wie `p_on` (6-36 %), gedimmt `seg_lvl`; Störungen `ev_next` alle 2-8 s (Kurzschluss-Block `strobe` 0,15-0,5 s + 1-5 s tot,
+Störlinie `sweep` 0,8-2 s, Totalausfall `black_until`, Rauschsturm `storm` 1-3 s), Ausfälle `dead`;
 Eindringling = roter Läufer mit Spur, Neustart = grüne Linie von vorne, stabil = ruhiges grünes Atmen. Ereignis-Profile (`wled.apply_mode_async`) laufen über `wled.set_stream_hook` als Blitz in der Profilfarbe.
 Gesamtdämpfung `[controller] dim` 0.7 für HTTP-Profile (`payload_for`) und Stream. HAL 3000 (kein Engine-Prozess) behält das Profil.
 `payload_for` setzt immer `pal` (Profil, sonst 3 mit col2 / 2 ohne: sonst bleibt die letzte Palette, z. B. Regenbogen, und viele
