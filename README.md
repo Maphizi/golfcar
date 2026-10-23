@@ -1261,7 +1261,11 @@ Ausprobieren ohne Eintrag: `scripts/wledctl.py set --col 0,255,0 --fx 2 --bri 20
 **Hupe und Effekte:** Die Aktionen `horn` und `fx` lassen sich in `config/keymap.toml` auf freie Tasten legen. `horn` spielt die
 Hupe des Themas (Raumschiff-Klaxon, Cyber-Sirene, 80er-Autohupe mit Flux-Brummen, Alphorn), `fx` einen zufälligen Effekt
 (Laser, Warp, Roboter-Piepsen; Glitch, Alarm, Synth; Zeitkreis-Piepser, Donner, Knistern; Eule, Frosch, Windspiel), beide mit
-LED-Blitz. Klänge: `assets/sfx/`, erzeugt von `scripts/sfx_build.py`. Lautstärke `settings.toml` `[sfx]`.
+LED-Blitz. Klänge: echte Aufnahmen aus der Scratch-Soundbibliothek (scratch.mit.edu, CC BY-SA 2.0; Autohupe, Polizeisirene,
+Gans, Raumschiff, Teleport, Alarm, Uhr, Gewitter, Eule, Wolf, Grillen), `scripts/sfx_fetch.py` lädt sie beim `update.sh` auf dem Pi
+nach `assets/sfx/raw/` und baut je Thema `assets/sfx/real/` (Space: Hupe tiefer mit Hall; Cyberpunk: verzerrte Tiefhupe mit
+Sirene; Zukunft: Autohupe pur; Natur: Gans). Fehlen sie, laufen die synthetischen aus `assets/sfx/` (`scripts/sfx_build.py`).
+Lautstärke `settings.toml` `[sfx]`.
 
 **Vorführmodus:** Kommt fünf Minuten keine Eingabe, wechselt das System alle drei Minuten von selbst durch die Modi des
 Themas (Tasten 2 bis 7, mit Ansage). Jede Taste beendet ihn. Einstellungen `settings.toml` `[attract]`. Mit dem

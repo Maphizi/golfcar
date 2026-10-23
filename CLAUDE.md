@@ -69,7 +69,10 @@ Nicht auf dem Board, über `scripts/kittctl <modus>`: droid (BIBO), news, viz_cr
 ## Hupe, Effekte und Vorführmodus (`launcher/sfx.py`, `scripts/sfx_build.py`, `launcher/core.py`)
 Aktionen `horn` und `fx` (`config/keymap.toml`, Beispiele am Ende der Datei; Taste frei wählbar) spielen die Hupe bzw. einen
 zufälligen Effekt des aktuellen Themas aus `assets/sfx/<thema>_horn.wav` / `<thema>_fx1..3.wav` (synthetisch erzeugt von
-`scripts/sfx_build.py`, 22 kHz mono; pw-play/aplay nicht-blockierend, `settings.toml` `[sfx] enabled/volume`) und blitzen die
+`scripts/sfx_build.py`, 22 kHz mono; davor `assets/sfx/real/` aus `scripts/sfx_fetch.py`: echte Aufnahmen der Scratch-Soundbibliothek
+(CC BY-SA 2.0, `SOUNDS` Name -> md5, URL `assets.scratch.mit.edu/internalapi/asset/<md5>.wav/get/`, Rohdateien `assets/sfx/raw/`,
+Rezepte `recipes()`; beides gitignored, `update.sh` ruft es auf, `--rebuild` baut neu; fehlt eine Quelle, bleibt die synthetische
+Datei); pw-play/aplay nicht-blockierend, `settings.toml` `[sfx] enabled/volume`) und blitzen die
 LEDs (WLED-Profile `horn`/`fx`, PXN weiß; `led_back_at` setzt danach das Modusprofil zurück). Vorführmodus `[attract]`:
 nach `idle_minutes` 5 ohne Eingabe (Launcher-Actions und Board-Events via `DPadRemap.last_event`) wechselt `_attract_tick()`
 alle `every_seconds` 180 zufällig durch `ATTRACT_BASE` (Tasten 2-7 im aktuellen Thema, nie dieselbe zweimal, mit Ansage);

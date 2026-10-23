@@ -1,4 +1,5 @@
-"""Hupe und Effekte je Thema (assets/sfx/<thema>_horn.wav, <thema>_fx1..3.wav aus scripts/sfx_build.py).
+"""Hupe und Effekte je Thema: assets/sfx/real/<thema>_horn.wav, <thema>_fx1..3.wav (echte Klänge, scripts/sfx_fetch.py),
+sonst die synthetischen aus assets/sfx/ (scripts/sfx_build.py).
 
 `play("horn")` spielt die Hupe des aktuellen Themas, `play("fx")` einen zufälligen Effekt (nie zweimal derselbe
 hintereinander), nicht-blockierend über pw-play (PipeWire) oder aplay. Lautstärke: settings.toml [sfx] volume.
@@ -38,7 +39,9 @@ def path_for(kind: str) -> tuple[str, "lcfg.Path | None"]:
         name = f"{th}_fx{i}"
     else:
         name = f"{th}_horn"
-    p = SFX_DIR / f"{name}.wav"
+    p = SFX_DIR / "real" / f"{name}.wav"                  # echte Klänge (scripts/sfx_fetch.py) vor den synthetischen
+    if not p.exists():
+        p = SFX_DIR / f"{name}.wav"
     if not p.exists():
         p = SFX_DIR / f"spacetaxi_{'horn' if kind != 'fx' else 'fx1'}.wav"
     return name, (p if p.exists() else None)

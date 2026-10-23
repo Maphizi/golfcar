@@ -16,5 +16,8 @@ vendor/
 # eigene Themenplakate bleiben auf dem Pi (Rechte!)
 assets/themes/
 assets/sponsor.png
+# echte Klänge (scripts/sfx_fetch.py lädt sie auf dem Pi)
+assets/sfx/raw/
+assets/sfx/real/
 # Bild- und Shader-Cache (visualizers/engine/images.py, Mesa)
 .cache/

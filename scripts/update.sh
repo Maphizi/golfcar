@@ -22,6 +22,8 @@ if [ -x scripts/announce_build.sh ] && [ -d models/piper ]; then
   scripts/announce_build.sh 2>&1 | tail -1
 fi
 if [ -x .venv/bin/python ]; then
+  echo "== Klänge (Hupe/Effekte) =="
+  .venv/bin/python scripts/sfx_fetch.py 2>&1 | tail -1
   echo "== Bild-Cache =="
   SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy .venv/bin/python scripts/warm_cache.py 2>&1 | tail -1
 fi
