@@ -45,6 +45,8 @@ class Action(str, Enum):
     TALK = "talk"              # Sprechtaste: bei HAL Musik leise + Mikrofon an/aus (Taste F15 an den Modus)
     HORN = "horn"              # Hupe des Themas (assets/sfx/<thema>_horn.wav) + LED-Blitz
     FX = "fx"                  # zufälliger Effekt des Themas (assets/sfx/<thema>_fx1..3.wav) + LED-Blitz
+    ATTRACT_ON  = "attract_on"  # Autopilot-Schalter unten (an)
+    ATTRACT_OFF = "attract_off" # Autopilot-Schalter oben (aus)
 
 
 # Welche Action startet welchen Modus (Modus-Namen siehe config/modes.toml)

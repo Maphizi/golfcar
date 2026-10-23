@@ -239,6 +239,19 @@ class Launcher:
             else:
                 log.info("Sprechtaste ignoriert: läuft %s, Sprechmodus nur bei %s", cur, ", ".join(TALK_MODES))
             return
+        if action == Action.ATTRACT_ON:
+            self.attract_enabled = True
+            if not self.attract_on:
+                self.attract_on = True
+                self.attract_next = time.monotonic()
+                log.info("Autopilot-Schalter AN: Vorfuehrmodus sofort aktiv")
+            return
+        if action == Action.ATTRACT_OFF:
+            self.attract_enabled = False
+            if self.attract_on:
+                self.attract_on = False
+                log.info("Autopilot-Schalter AUS: Vorfuehrmodus beendet")
+            return
         mode = ACTION_TO_MODE.get(action)
         if mode:
             log.info("Action %s -> Modus %s", action.value, mode)
