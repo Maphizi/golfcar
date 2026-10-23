@@ -105,7 +105,7 @@ Schnitt `scripts/campfire_assets.sh`: plate, `cut 8 4 128 256 0 glow` für die v
 14 Sternschnuppe, 15 Glut). Feuerstufe `level` 0..3 folgt der Energie mit `LEVEL_TAU` 4 s (`_flame_mix`: 0-1 kleine Flammen
 klein und blass = Glut, 1-2 klein->mittel, 2-3 mittel->groß) -> `uFlame` (Bogen A, B, Mischung, Größe), `uFlameK` (Deckkraft,
 Blauanteil, Bild A, Bild B), `uFrameMix`; Holz `throw()` (OBEN, von selbst `LOG_EVERY` 2-4 min): Flug `flights` -> `_land`:
-`boost` (klingt über `BOOST_DECAY` 90 s ab) + Funken; Kristall (`CRYSTAL_EVERY` 5-8 min oder Drop bei Energie > 0.5) =
+`boost` (klingt über `BOOST_DECAY` 90 s ab) + Funken; Kristall (`CRYSTAL_EVERY` 2,5-3,5 min oder Drop bei Energie > 0.5) =
 `blue_until` 30-60 s blaue Flammen. Funken `Spark` (bis `N_SPARKS` 24, `uSp0..23` = x, y, Zelle, Größe; `star` = am Ende
 Sternfunke), UNTEN `poke()` Funkenwolke + `ember`, LINKS/RECHTS `gust()` Wind `uWind` (Böen von selbst `GUST_EVERY`), ENTER
 `marshmallow()` (`uMallow`, Röstgrad aus Feuerstufe, `mallow_result`), Motten `uMoth0..2` (Anzahl mit den Höhen), Alien
