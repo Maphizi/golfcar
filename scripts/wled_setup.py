@@ -14,6 +14,10 @@ der eingestellten Anzahl bekommen nie Daten und bleiben mit Zufallsfarben an.
                                                                 schicken; Pflicht für die Farben der Programme), 1 heller,
                                                                 2 genau, 3 beides, 4 alt. Steht es nicht auf 0, wird aus
                                                                 Gold oder Warmweiß ein weißes Leuchten.
+    .venv/bin/python scripts/wled_setup.py --fix rot,weiss,gruen,blau --apply
+                                                                rechnet aus dem Ergebnis von --test (gesehene Farbe bei
+                                                                Test 1, 2, 3, 4) die passende Farbreihenfolge samt Weiß-Tausch
+                                                                aus und setzt sie; danach --test wiederholen.
     .venv/bin/python scripts/wled_setup.py --order 1 --apply    Farbreihenfolge: 0 GRB (WS2812), 1 RGB (viele 24-V-Ketten),
                                                                 2 BRG, 3 RBG, 4 BGR, 5 GBR. Zeigt der Test statt ROT ein GRÜN,
                                                                 ist die Reihenfolge falsch (GRB <-> RGB).
@@ -33,6 +37,50 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from launcher import wled  # noqa: E402
 
 
+ORDERS = ("GRB", "RGB", "BRG", "RBG", "BGR", "GBR")
+SWAPS = {0: "", 1: "B", 2: "G", 3: "R"}            # oberes Nibble: W tauscht mit B / G / R
+
+
+def _color_key(v: str):
+    v = v.strip().lower().replace("ü", "u").replace("ß", "ss")
+    for key, names in (("R", ("rot", "red", "r")), ("G", ("gruen", "grun", "green", "g")), ("B", ("blau", "blue", "b")),
+                       ("W", ("weiss", "weis", "white", "w"))):
+        if v in names:
+            return key
+    return None
+
+
+def _positions(order: int) -> dict:
+    """Byteposition je logischer Farbe (R, G, B, W) für einen WLED-order-Wert."""
+    base = ORDERS[order & 0x0F] if (order & 0x0F) < len(ORDERS) else "GRB"
+    pos = {c: base.index(c) for c in "RGB"}
+    pos["W"] = 3
+    sw = SWAPS.get(order >> 4, "")
+    if sw:
+        pos[sw], pos["W"] = pos["W"], pos[sw]
+    return pos
+
+
+def _order_name(order: int) -> str:
+    base = ORDERS[order & 0x0F] if (order & 0x0F) < len(ORDERS) else "?"
+    sw = SWAPS.get(order >> 4, "")
+    return base + ("W" if not sw else f"W, W<->{sw}")
+
+
+def _solve_order(cur: int, seen: list) -> int | None:
+    """seen[i] = gesehener Chip bei Test i (logisch R, G, B, W). Gesucht: order, bei dem jede Farbe auf ihrem Chip landet."""
+    logical = "RGBW"
+    pos_cur = _positions(cur)
+    chip_at = {pos_cur[logical[i]]: seen[i] for i in range(4)}       # Byteposition -> physischer Chip
+    want = {chip: p for p, chip in chip_at.items()}                   # Chip -> Byteposition, die ihn erreicht
+    for o in range(6):
+        for sw in range(4):
+            cand = o | (sw << 4)
+            if all(_positions(cand)[c] == want[c] for c in logical):
+                return cand
+    return None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--leds", type=int, default=0, help="LED-Anzahl des ersten Ausgangs")
@@ -40,6 +88,7 @@ def main() -> int:
     ap.add_argument("--order", type=int, default=-1, help="Farbreihenfolge 0 GRB, 1 RGB, 2 BRG, 3 RBG, 4 BGR, 5 GBR")
     ap.add_argument("--type", type=int, default=-1, help="LED-Typ: 22 WS2812 RGB, 30 SK6812 RGBW, 24 WS2811 400k, 31 TM1814")
     ap.add_argument("--white", type=int, default=-1, help="Auto-Weiß je Ausgang: 0 aus, 1 heller, 2 genau, 3 beides, 4 alt")
+    ap.add_argument("--fix", default="", help="gesehene Farben bei Test 1-4, z. B. rot,weiss,gruen,blau")
     ap.add_argument("--test", action="store_true", help="Farbtest rot/grün/blau je 4 s")
     ap.add_argument("--apply", action="store_true", help="wirklich senden (sonst nur anzeigen)")
     args = ap.parse_args()
@@ -90,6 +139,18 @@ def main() -> int:
         payload["hw"]["led"]["total"] = args.leds + sum(int(o.get("len", 0)) for o in ins[1:])
     if args.maxpwr >= 0:
         payload["hw"]["led"]["maxpwr"] = args.maxpwr
+    if args.fix:
+        seen = [_color_key(v) for v in args.fix.replace(";", ",").split(",")]
+        if len(seen) != 4 or None in seen or len(set(seen)) != 4:
+            print("--fix braucht vier verschiedene Farben aus rot, gruen, blau, weiss (gesehen bei Test 1, 2, 3, 4)")
+            return 1
+        cur = int(ins[0].get("order", 0))
+        new = _solve_order(cur, seen)
+        if new is None:
+            print("Keine Reihenfolge gefunden, die das ergibt; bitte den Test wiederholen")
+            return 1
+        print(f"Reihenfolge: aktuell {cur} ({_order_name(cur)}) -> neu {new} ({_order_name(new)})")
+        args.order = new
     if args.order >= 0:
         new_ins = payload["hw"]["led"].get("ins") or [dict(o) for o in ins]
         for o in new_ins:
