@@ -690,7 +690,7 @@ daraus die Szenenbilder und Atlanten unter `assets/cyber/` (nach neuen Rohbilder
 
 **Neonfahrt (Taste 2 im Thema CYBERPUNK, `neonrace`):** Das Gegenstück zum Navigationscomputer. Blick durch die
 Windschutzscheibe auf eine regennasse Neonstraße (`assets/cyber/neonrace_scene.png`). Der Wagen fährt nach fünf
-Sekunden von selbst los (AUTOPILOT), Startknopf startet sofort, Kippschalter AN = Autopilot, AUS = anhalten und stehen bleiben (kurz "AUTOPILOT AN/AUS" auf dem Schirm). Das Tempo folgt der Energie der
+Sekunden von selbst los (AUTOPILOT), Startknopf startet sofort, Kippschalter hält an. Das Tempo folgt der Energie der
 Musik, Beats geben einen Schub, Drops zünden Nitro. Der Autopilot wählt die Spur fließend und weicht Verkehr und
 Hindernissen aus (`neonrace_obstacles.png`, 8x2: Barriere, Kiste, Hütchen, Fass, Pannenwagen, dazu querende Fußgänger,
 Katzen, Händlerkarren, Roller), knapp vorbeiziehende Objekte rucken, bei hohem Tempo reagiert er gelegentlich zu spät
@@ -799,7 +799,7 @@ Epochenstraße dahinter; `cockpit_drop` schiebt die Armaturen etwas nach unten).
 (Startknopf = sofort), der Tacho folgt der Energie der Musik, laute Musik hält den Schub, Stille lässt ausrollen; spätestens
 nach 35 bis 60 Sekunden Fahrt laden die Zeitkreise und er zieht auf 88, beim Drop sofort. Bei 88 zündet der Zeitsprung: Blaulicht um die
 Scheibe, zwei Feuerspuren zum Fluchtpunkt, Weißblitz, und die Straße ist in einer anderen Epoche (`timejump_1885|1955|
-1985|2015.png`, nie zweimal dieselbe). Kippschalter AN = Autopilot fährt, AUS = anhalten und stehen bleiben (kurz "AUTOPILOT AN/AUS" auf dem Schirm). Knüppel links/rechts = Spur,
+1985|2015.png`, nie zweimal dieselbe). Kippschalter = anhalten (egal welche Richtung), nach 25 Sekunden fährt er wieder an. Knüppel links/rechts = Spur,
 oben = Hupe (Verkehr weicht, in 2015 steigt alles auf), unten = Zeitkreise umschalten (nächste Epoche vorwählen, die
 Anzeige rattert). Zeitkreis-Anzeige im Cockpit: ZIELZEIT rot, JETZTZEIT grün, ZULETZT gelb, Tacho "NN MPH" unten.
 Verkehr je Epoche aus `timejump_traffic.png` (8x4: Reiter und Kutschen, 50er-Autos, 80er-Autos, Flugautos und
