@@ -191,12 +191,91 @@ def green() -> None:
     write("green_fx3", chime)
 
 
+
+
+# ---- Autopilot-Schalter: AN (Schalter runter) und AUS (Schalter hoch) ----
+def spacetaxi_attract() -> None:
+    # AN: Autopilot engage – aufsteigender Sweep + Bestaetigungs-Doppelton
+    on = sweep(320, 880, 0.6, sine, 2.0) * env(int(SR * 0.6), 0.01, 0.05, 0.9, 0.15)
+    ding = np.zeros(int(SR * 0.9))
+    for k, f0 in enumerate((880, 1320)):
+        seg = sine(f0, t(0.12)) * env(int(SR * 0.12), 0.003, 0.04, 0.7, 0.05)
+        ding[int(k * 0.18 * SR):int(k * 0.18 * SR) + len(seg)] += seg
+    combo = on * 0.7
+    pad = int(SR * 0.3)
+    combo = np.pad(combo, (0, max(0, len(ding) - len(combo))))
+    combo[:len(ding)] += ding * 0.9
+    write("spacetaxi_attract_on", combo)
+    # AUS: Autopilot disengage – absteigender Sweep + dumpfer Abschluss
+    off = sweep(880, 220, 0.7, sine, 0.5) * env(int(SR * 0.7), 0.005, 0.05, 0.8, 0.25)
+    write("spacetaxi_attract_off", lowpass(off, 1800))
+
+
+def cyber_attract() -> None:
+    # AN: System-Aktivierung – saeger Synth steigt auf, kurzer Glitch-Burst
+    on = sweep(80, 440, 0.5, saw, 2.5)
+    on = clip(on, 4.0) * env(int(SR * 0.5), 0.01, 0.05, 0.9, 0.1)
+    glitch = np.zeros(int(SR * 0.3))
+    for _ in range(5):
+        dur = 0.025
+        i = int(rng.uniform(0, 0.25) * SR)
+        seg = square(rng.choice([240, 480, 960]), t(dur)) * 0.7
+        glitch[i:i + len(seg)] += seg[:len(glitch) - i]
+    full = np.concatenate([on, np.zeros(int(SR * 0.05)), glitch])
+    write("cyber_attract_on", lowpass(full, 3000))
+    # AUS: Power-Down – Frequenz bricht ein, Noise-Burst, dann Stille
+    off = sweep(440, 55, 0.6, saw, 0.4)
+    off = clip(off, 3.0) * env(int(SR * 0.6), 0.005, 0.1, 0.8, 0.35)
+    burst = highpass(noise(0.08), 800) * np.linspace(1, 0, int(SR * 0.08)) * 0.8
+    write("cyber_attract_off", lowpass(np.concatenate([burst, off]), 2500))
+
+
+def future_attract() -> None:
+    # AN: Fluxkompensator laedt – Brummen baut sich auf, Entladung
+    tt = t(1.0)
+    charge = sine(60 + 60 * tt, tt) + 0.5 * sine(120 + 120 * tt, tt)
+    charge *= np.linspace(0, 1.0, len(tt)) ** 1.5
+    crack = highpass(noise(0.06), 1200) * np.linspace(1, 0, int(SR * 0.06))
+    write("future_attract_on", np.concatenate([charge, crack * 2.0, np.zeros(int(SR * 0.1))]))
+    # AUS: Zeitkreise deaktivieren – absteigender Heuler + Klick
+    whine = sweep(1200, 180, 0.8, sine, 0.35) * env(int(SR * 0.8), 0.005, 0.05, 0.9, 0.3)
+    click = sine(2000, t(0.02)) * np.linspace(1, 0, int(SR * 0.02))
+    write("future_attract_off", np.concatenate([click, whine]))
+
+
+def green_attract() -> None:
+    # AN: Natur erwacht – aufsteigende Vogeltriller-Sequenz
+    birds = np.zeros(int(SR * 1.2))
+    for k in range(4):
+        f0 = rng.choice([1760, 2093, 2637, 3136])
+        dur = 0.15
+        seg = sweep(f0, f0 * 1.4, dur, sine) * env(int(SR * dur), 0.01, 0.05, 0.7, 0.06)
+        i = int(k * 0.22 * SR)
+        birds[i:i + len(seg)] += seg * 0.8
+    wind = lowpass(noise(1.2), 400) * 0.15 * np.linspace(0, 1, int(SR * 1.2))
+    write("green_attract_on", birds + wind)
+    # AUS: Natur zur Ruhe – absteigende Quinte, dann verklingendes Windspiel
+    tt = t(0.5)
+    settle = sine(523, tt) * 0.7 + sine(392, tt) * 0.5
+    settle *= env(len(tt), 0.02, 0.05, 0.85, 0.3)
+    chime = np.zeros(int(SR * 0.9))
+    for k, f0 in enumerate([2093, 1760, 1319]):
+        dur = 0.6
+        seg = sine(f0, t(dur)) * np.exp(-t(dur) * 4.0)
+        i = int(k * 0.12 * SR)
+        chime[i:i + len(seg)] += seg * 0.4
+    write("green_attract_off", np.concatenate([settle, chime]))
+
 def main() -> int:
     print("Klangeffekte nach", OUT)
     spacetaxi()
     cyber()
     future()
     green()
+    spacetaxi_attract()
+    cyber_attract()
+    future_attract()
+    green_attract()
     return 0
 
 

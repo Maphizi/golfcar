@@ -36,7 +36,7 @@ ATTRACT_KEY_ON  = ecodes.KEY_F16  # Autopilot-Schalter AN
 ATTRACT_KEY_OFF = ecodes.KEY_F17  # Autopilot-Schalter AUS
 
 ALL_KEYS = list(HAT_TO_KEY.values()) + [START_KEY, KIPP_KEY_AN, KIPP_KEY_AUS, TALK_KEY, ATTRACT_KEY_ON, ATTRACT_KEY_OFF]
-DEFAULTS = {"start_code": 266, "kipp_code": 267, "kipp_mode": "toggle", "talk_code": 0, "attract_code": 0, "debounce_ms": 300}
+DEFAULTS = {"start_code": 266, "kipp_code": 267, "kipp_mode": "toggle", "talk_code": 0, "attract_code": 0, "horn_code": 0, "debounce_ms": 300}
 
 
 class DPadRemap(threading.Thread):
@@ -47,16 +47,18 @@ class DPadRemap(threading.Thread):
         self._kipp_state = False  # False = AUS, True = AN
         self.last_event = time.monotonic()        # letzte Eingabe am Board (Vorführmodus des Launchers)
         self.on_attract = None                    # Launcher-Callback für den Autopilot-Schalter (das uinput-Gerät liest der Launcher nicht)
+        self.on_horn    = None                    # Launcher-Callback für den Hupe-Schalter (Code 269): True = runter, False = hoch
         self._ui = None
         self.start_code = int(c["start_code"])
         self.kipp_code = int(c["kipp_code"])
         self.kipp_mode = str(c["kipp_mode"]).lower()
         self.talk_code    = int(c["talk_code"])
         self.attract_code = int(c["attract_code"])
+        self.horn_code    = int(c["horn_code"])
         self.debounce = max(0.0, float(c["debounce_ms"]) / 1000.0)
         self._last_press: dict[int, float] = {}
-        log.info("Tasten: Start=%d, Kippschalter=%d (%s), Sprechtaste=%s, Autopilot=%s, Entprellung %.0f ms",
-                 self.start_code, self.kipp_code, self.kipp_mode, self.talk_code or "keine", self.attract_code or "keine", self.debounce * 1000)
+        log.info("Tasten: Start=%d, Kippschalter=%d (%s), Sprechtaste=%s, Autopilot=%s, Hupe=%s, Entprellung %.0f ms",
+                 self.start_code, self.kipp_code, self.kipp_mode, self.talk_code or "keine", self.attract_code or "keine", self.horn_code or "keine", self.debounce * 1000)
 
     def inject_talk(self) -> bool:
         """Sprechtaste an den laufenden Modus schicken (vom Launcher-Thread aufgerufen)."""
@@ -152,6 +154,15 @@ class DPadRemap(threading.Thread):
                             except Exception:
                                 log.exception("Autopilot-Schalter")
                         log.info("Autopilot-Schalter %s -> %s", "AN" if ev.value == 1 else "AUS", ecodes.KEY.get(key))
+                        continue
+                    # Hupe-Schalter (echter Kippschalter, state): 1 = unten/AN, 0 = oben/AUS
+                    if self.horn_code and ev.code == self.horn_code and ev.value in (0, 1):
+                        if self.on_horn:
+                            try:
+                                self.on_horn(ev.value == 1)
+                            except Exception:
+                                log.exception("Hupe-Schalter")
+                        log.info("Hupe-Schalter %s", "AN" if ev.value == 1 else "AUS")
                         continue
                     if ev.value != 1:                # nur Tastendruck, keine Repeats (2) oder Loslassen (0)
                         continue

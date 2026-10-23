@@ -61,9 +61,7 @@ key    = "KEY_ESC"
 action = "quit"
 
 # ── Hupe des Themas (Kippschalter unten, Code 269) ────────────────────────────────────────────────
-[[bindings]]
-code   = 269
-action = "horn"         # Hupe des Themas + LED-Blitz
+# Code 269 wird in config/settings.toml [buttons] horn_code verwaltet (dpad_remap, state-Modus)
 
 # ── Autopilot-Schalter (Kippschalter, Code 275): KEY_F16 = AN, KEY_F17 = AUS ─────────────────────
 [[bindings]]
