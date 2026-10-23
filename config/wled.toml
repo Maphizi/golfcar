@@ -12,7 +12,8 @@ host    = "192.168.2.150"
 port    = 80
 timeout = 2          # Sekunden; bei Timeout weiterfahren, LEDs nicht blockieren
 enabled = true
-dim     = 0.7        # Gesamthelligkeit aller Profile und des Live-Streams (0.7 = 30 % gedämpft)
+dim     = 0.7        # Gesamthelligkeit aller Profile und des Live-Streams (0.7 = 30 % gedämpft); je Modus zusätzlich bri:
+#                      Standard = 1/4 des ursprünglichen Werts, HAL 107 (= 56 %), Casino 1/4 (so abgenommen)
 # Live zur Musik (launcher/ledstream.py): jede Szene streamt 25 Bilder/s per UDP (WLED "UDP-Echtzeit empfangen" muss an sein)
 realtime = true
 udp_port = 21324
@@ -32,7 +33,7 @@ reverse  = false     # Kette beginnt vorne am Cart (Index 0) und endet hinten; t
 # ── Modi ──────────────────────────────────────────────────────────────────────
 
 [modes.boot]
-bri = 100
+bri = 50
 fx  = 40          # Scanner – der klassische KITT-Scan beim Hochfahren
 col = [255, 0, 0]
 col2 = [8, 0, 0]
@@ -40,7 +41,7 @@ sx  = 160
 ix  = 128
 
 [modes.home]                # Taxistand / Themenwahl: Taxischild-Gelb, atmend. Das gewählte Thema
-bri = 70                   # überschreibt die Farbe (Themenfarbe aus config/themes.toml).
+bri = 35                   # überschreibt die Farbe (Themenfarbe aus config/themes.toml).
 fx  = 2           # Breathe
 col = [255, 190, 0]
 col2 = [40, 20, 0]
@@ -48,14 +49,14 @@ sx  = 70
 ix  = 140
 
 [modes.menu]                # altes Hauptmenü: kühles Weißblau, ruhig
-bri = 55
+bri = 27
 fx  = 2
 col = [160, 200, 255]
 sx  = 60
 ix  = 120
 
 [modes.viz_psychedelic]     # Navigationscomputer: blau-cyan Kometen, als würde man durch den Sternenhimmel fliegen
-bri = 115
+bri = 57
 fx  = 59          # Multi Comet
 col = [0, 170, 255]
 col2 = [0, 20, 60]
@@ -65,7 +66,7 @@ sx  = 150
 ix  = 180
 
 [modes.planeten]            # Planeten / Warp: weißblaues Funkeln
-bri = 100
+bri = 50
 fx  = 20          # Sparkle
 col = [140, 180, 255]
 col2 = [0, 0, 30]
@@ -73,7 +74,7 @@ sx  = 150
 ix  = 160
 
 [modes.trip]                # Waldtresen / Reise: grün-violett wandernd
-bri = 100
+bri = 50
 fx  = 9           # Rainbow
 col = [90, 255, 60]
 col2 = [160, 40, 220]
@@ -81,7 +82,7 @@ sx  = 40
 ix  = 160
 
 [modes.pond]                # Moorsee: tiefes Blaugrün, langsam atmend
-bri = 80
+bri = 40
 fx  = 2
 col = [40, 160, 120]
 col2 = [5, 20, 40]
@@ -89,7 +90,7 @@ sx  = 35
 ix  = 150
 
 [modes.woodeye]             # Auge des Waldes: Myzel-Türkis, langsam atmend
-bri = 85
+bri = 42
 fx  = 2
 col = [30, 255, 170]
 col2 = [0, 20, 15]
@@ -97,7 +98,7 @@ sx  = 40
 ix  = 150
 
 [modes.forestslots]         # Pilzautomat: Pilzgold auf Moosgrün, pulsierend
-bri = 85
+bri = 42
 fx  = 162
 col = [255, 190, 60]
 col2 = [10, 50, 20]
@@ -105,7 +106,7 @@ sx  = 90
 ix  = 140
 
 [modes.hearttree]           # Herzbaum: Bernstein atmet wie ein Puls (Grundprofil, Jahreszeiten unten)
-bri = 85
+bri = 42
 fx  = 2
 col = [255, 170, 50]
 col2 = [0, 40, 30]
@@ -113,7 +114,7 @@ sx  = 60
 ix  = 160
 
 [modes.overdose]            # Überdosis: Giftgrün und Violett, unruhig atmend
-bri = 90
+bri = 45
 fx  = 2
 col = [120, 255, 60]
 col2 = [90, 0, 140]
@@ -121,7 +122,7 @@ sx  = 140
 ix  = 200
 
 [modes.neonrace]            # Neonfahrt: Magenta-Cyan-Kometen wie Neonschilder, die vorbeiziehen
-bri = 110
+bri = 55
 fx  = 59
 col = [255, 40, 200]
 col2 = [0, 10, 40]
@@ -131,7 +132,7 @@ sx  = 140
 ix  = 180
 
 [modes.core]                # Der Kern: Cyan-Magenta-Puls
-bri = 95
+bri = 47
 fx  = 2
 col = [60, 200, 255]
 col2 = [120, 0, 160]
@@ -139,7 +140,7 @@ sx  = 60
 ix  = 170
 
 [modes.oracle]              # Das Orakel: kühles Hologramm-Blau, atmend
-bri = 90
+bri = 45
 fx  = 2
 col = [80, 160, 255]
 col2 = [20, 0, 50]
@@ -147,7 +148,7 @@ sx  = 40
 ix  = 150
 
 [modes.cyberslots]          # Pachinko: Magenta-Pulser
-bri = 95
+bri = 47
 fx  = 162
 col = [255, 60, 220]
 col2 = [0, 40, 80]
@@ -155,7 +156,7 @@ sx  = 120
 ix  = 160
 
 [modes.rooftop]             # Dachterrasse: Stadtlichter, kühl (Grundprofil, Wetter unten)
-bri = 80
+bri = 40
 fx  = 2
 col = [120, 180, 255]
 col2 = [30, 0, 40]
@@ -163,7 +164,7 @@ sx  = 50
 ix  = 150
 
 [modes.blackice]            # Black Ice: Rot und Cyan, unruhig
-bri = 95
+bri = 47
 fx  = 2
 col = [255, 30, 40]
 col2 = [0, 40, 60]
@@ -171,7 +172,7 @@ sx  = 150
 ix  = 200
 
 [modes.timejump]            # Zeitsprung: Bernstein-Armaturen, langsames Atmen (Fahrt unten)
-bri = 90
+bri = 45
 fx  = 2
 col = [255, 150, 40]
 col2 = [20, 5, 0]
@@ -179,7 +180,7 @@ sx  = 50
 ix  = 150
 
 [modes.flux]                # Fluxkompensator: elektrisches Weißblau, zuckend
-bri = 100
+bri = 50
 fx  = 2
 col = [160, 200, 255]
 col2 = [10, 20, 60]
@@ -187,7 +188,7 @@ sx  = 120
 ix  = 200
 
 [modes.clocktower]          # Uhrturm: Gewitterblau mit warmem Zifferblatt
-bri = 85
+bri = 42
 fx  = 2
 col = [255, 220, 150]
 col2 = [10, 20, 60]
@@ -195,7 +196,7 @@ sx  = 40
 ix  = 150
 
 [modes.almanacslots]        # Almanach: Casino-Gold mit Rot
-bri = 100
+bri = 50
 fx  = 162
 col = [255, 200, 40]
 col2 = [120, 0, 20]
@@ -203,7 +204,7 @@ sx  = 110
 ix  = 160
 
 [modes.square]              # Marktplatz: warmes Laternenlicht (Epochen unten)
-bri = 80
+bri = 40
 fx  = 2
 col = [255, 190, 110]
 col2 = [20, 10, 30]
@@ -211,7 +212,7 @@ sx  = 40
 ix  = 140
 
 [modes.paradox]             # Paradoxon: Sepia und Blitzblau, unruhig
-bri = 95
+bri = 47
 fx  = 2
 col = [200, 150, 90]
 col2 = [40, 80, 255]
@@ -219,7 +220,7 @@ sx  = 140
 ix  = 200
 
 [modes.blackhole]           # Schwarzes Loch: oranges Glühen der Akkretionsscheibe, langsam kreisend
-bri = 85
+bri = 42
 fx  = 76          # Meteor
 col = [255, 110, 15]
 col2 = [20, 5, 0]
@@ -227,7 +228,7 @@ sx  = 45
 ix  = 190
 
 [modes.hal]                 # HAL 3000: tiefes rotes Atmen wie das Auge (live: launcher/ledstream.py `_hal`)
-bri = 142                   # 25 % dunkler als die anderen Modi
+bri = 107                   # 25 % dunkler als die anderen Modi
 fx  = 2
 col = [255, 15, 5]
 col2 = [25, 0, 0]
@@ -235,7 +236,7 @@ sx  = 35
 ix  = 150
 
 [modes.slots]               # Slotmaschine: Gold, pulsierend wie Casinolicht
-bri = 85
+bri = 42
 fx  = 162         # Pulser
 col = [255, 200, 70]
 col2 = [60, 30, 0]
@@ -243,7 +244,7 @@ sx  = 100
 ix  = 140
 
 [modes.campfire]            # Lagerfeuer
-bri = 105
+bri = 52
 fx  = 66          # Fire 2012
 col = [255, 90, 0]
 col2 = [255, 30, 0]
@@ -252,7 +253,7 @@ sx  = 120
 ix  = 200
 
 [modes.campfire_big]        # großes Feuer: heller, schneller
-bri = 127
+bri = 63
 fx  = 66
 col = [255, 120, 20]
 col2 = [255, 40, 0]
@@ -261,7 +262,7 @@ sx  = 180
 ix  = 240
 
 [modes.campfire_blue]       # fremder Brennstoff (6 s): blau-violettes Feuer
-bri = 110
+bri = 55
 fx  = 66
 col = [60, 80, 255]
 col2 = [140, 40, 255]
@@ -270,7 +271,7 @@ sx  = 140
 ix  = 220
 
 [modes.campfire_log]        # Holz nachgelegt (4 s): Funkenwolke
-bri = 120
+bri = 60
 fx  = 20
 col = [255, 160, 40]
 col2 = [120, 30, 0]
@@ -278,7 +279,7 @@ sx  = 220
 ix  = 230
 
 [modes.horn]                # Hupe (1,5 s): weißer Blitz
-bri = 127
+bri = 63
 fx  = 1
 col = [255, 255, 255]
 col2 = [255, 160, 0]
@@ -286,7 +287,7 @@ sx  = 255
 ix  = 255
 
 [modes.fx]                  # Effekt (1 s): buntes Flackern
-bri = 127
+bri = 63
 fx  = 74
 col = [255, 60, 200]
 col2 = [40, 220, 255]
@@ -294,7 +295,7 @@ sx  = 255
 ix  = 255
 
 [modes.error]               # Systemfehler: Alarm, nur Rot (dunkelrot als Gegenfarbe); live: launcher/ledstream.py
-bri = 110
+bri = 55
 fx  = 1           # Blink
 col = [255, 0, 0]
 col2 = [40, 0, 0]
@@ -302,14 +303,14 @@ sx  = 170
 ix  = 128
 
 [modes.gaming]              # Holo-Arcade: bunt und lebendig
-bri = 110
+bri = 55
 fx  = 94          # Sinelon Rainbow
 col = [0, 200, 255]
 sx  = 180
 ix  = 200
 
 [modes.kitt]                # Bordcomputer: KITT-Scanner in Rot
-bri = 100
+bri = 50
 fx  = 40
 col = [255, 0, 0]
 col2 = [8, 0, 0]
@@ -317,7 +318,7 @@ sx  = 200
 ix  = 128
 
 [modes.news]                # Galaktische Nachrichten: Studioblau
-bri = 65
+bri = 32
 fx  = 2
 col = [40, 120, 255]
 col2 = [0, 10, 40]
@@ -325,7 +326,7 @@ sx  = 60
 ix  = 128
 
 [modes.droid]               # BIBO: verspielt orange
-bri = 90
+bri = 45
 fx  = 59
 col = [255, 150, 30]
 col2 = [40, 10, 0]
@@ -333,7 +334,7 @@ sx  = 150
 ix  = 160
 
 [modes.viz_crt]             # CRT: grüner Phosphor
-bri = 90
+bri = 45
 fx  = 59
 col = [0, 255, 60]
 col2 = [0, 20, 5]
@@ -341,7 +342,7 @@ sx  = 140
 ix  = 160
 
 [modes.viz_eye]             # Auge: violettes Pulsieren
-bri = 100
+bri = 50
 fx  = 162
 col = [180, 0, 255]
 col2 = [20, 0, 40]
@@ -351,7 +352,7 @@ ix  = 180
 # ── Ereignisse innerhalb eines Modus (werden vom Modus selbst geschickt) ─────
 
 [modes.hal_astronaut]       # Knüppel links: Astronaut – kühles Weiß mit rotem Grund
-bri = 95
+bri = 47
 fx  = 2
 col = [220, 230, 255]
 col2 = [60, 0, 0]
@@ -359,7 +360,7 @@ sx  = 45
 ix  = 120
 
 [modes.hal_alien]           # Knüppel rechts: Alien – giftgrünes Atmen
-bri = 95
+bri = 47
 fx  = 2
 col = [90, 255, 60]
 col2 = [40, 0, 0]
@@ -367,7 +368,7 @@ sx  = 50
 ix  = 140
 
 [modes.hal_both]            # Knüppel oben: beide – Weiß und Grün als Kometen auf Rot
-bri = 100
+bri = 50
 fx  = 59
 col = [220, 230, 255]
 col2 = [60, 0, 0]
@@ -377,7 +378,7 @@ sx  = 90
 ix  = 150
 
 [modes.slots_win]           # großer Gewinn (5 s): Gold funkelt
-bri = 127
+bri = 63
 fx  = 20          # Sparkle
 col = [255, 215, 60]
 col2 = [80, 40, 0]
@@ -385,7 +386,7 @@ sx  = 220
 ix  = 220
 
 [modes.slots_jackpot]       # Jackpot (8 s): Feuerwerk
-bri = 127
+bri = 63
 fx  = 42          # Fireworks
 col = [255, 220, 80]
 col2 = [255, 60, 0]
@@ -395,7 +396,7 @@ sx  = 200
 ix  = 230
 
 [modes.blackhole_eject]     # Umkehrung (8 s): weiß-blaues Stroboskop, dann Meteor
-bri = 127
+bri = 63
 fx  = 23          # Strobe
 col = [200, 220, 255]
 col2 = [255, 120, 20]
@@ -403,7 +404,7 @@ sx  = 150
 ix  = 128
 
 [modes.blackhole_throw]     # Planet / Schwarm geworfen: kurzer heller Meteor
-bri = 110
+bri = 55
 fx  = 76
 col = [255, 170, 60]
 col2 = [20, 5, 0]
@@ -411,7 +412,7 @@ sx  = 120
 ix  = 220
 
 [modes.woodeye_fox]         # Knüppel links: der Fuchs tanzt – Fuchsrot auf Türkis
-bri = 100
+bri = 50
 fx  = 2
 col = [255, 110, 20]
 col2 = [0, 40, 25]
@@ -419,7 +420,7 @@ sx  = 60
 ix  = 150
 
 [modes.woodeye_owl]         # Knüppel rechts: die Eule kreist – warmes Weiß, Kometen
-bri = 95
+bri = 47
 fx  = 59
 col = [255, 220, 160]
 col2 = [0, 30, 20]
@@ -427,7 +428,7 @@ sx  = 70
 ix  = 150
 
 [modes.woodeye_both]        # Knüppel oben: beide – Rot und Weiß als Kometen auf Türkis
-bri = 105
+bri = 52
 fx  = 59
 col = [255, 110, 20]
 col2 = [0, 40, 25]
@@ -437,7 +438,7 @@ sx  = 90
 ix  = 160
 
 [modes.woodeye_chorus]      # Startknopf: Froschchor (4 s) – grünes Funkeln
-bri = 115
+bri = 57
 fx  = 20
 col = [120, 255, 80]
 col2 = [0, 30, 10]
@@ -445,7 +446,7 @@ sx  = 200
 ix  = 200
 
 [modes.forestslots_win]     # großer Gewinn (5 s): grün-goldenes Funkeln
-bri = 127
+bri = 63
 fx  = 20
 col = [120, 255, 90]
 col2 = [60, 40, 0]
@@ -453,7 +454,7 @@ sx  = 220
 ix  = 220
 
 [modes.forestslots_jackpot] # Lichthirsch (8 s): Feuerwerk in Gold und Grün
-bri = 127
+bri = 63
 fx  = 42
 col = [255, 220, 80]
 col2 = [90, 255, 90]
@@ -463,7 +464,7 @@ sx  = 200
 ix  = 230
 
 [modes.hearttree_spring]    # Frühling: Blütenrosa und Zartgrün, atmend
-bri = 85
+bri = 42
 fx  = 2
 col = [255, 170, 200]
 col2 = [40, 80, 20]
@@ -471,7 +472,7 @@ sx  = 60
 ix  = 160
 
 [modes.hearttree_summer]    # Sommer: Bernstein und Türkis, Puls
-bri = 90
+bri = 45
 fx  = 2
 col = [255, 170, 50]
 col2 = [0, 60, 40]
@@ -479,7 +480,7 @@ sx  = 70
 ix  = 170
 
 [modes.hearttree_autumn]    # Herbst: Rot-Gold, langsam
-bri = 85
+bri = 42
 fx  = 2
 col = [255, 90, 20]
 col2 = [60, 25, 0]
@@ -487,7 +488,7 @@ sx  = 45
 ix  = 160
 
 [modes.hearttree_winter]    # Winter: Eisblau, ruhiges Funkeln
-bri = 75
+bri = 37
 fx  = 20
 col = [170, 210, 255]
 col2 = [0, 10, 40]
@@ -495,7 +496,7 @@ sx  = 60
 ix  = 120
 
 [modes.hearttree_roots]     # Knüppel unten: Wurzeln / Myzel (9 s) – Türkis läuft
-bri = 110
+bri = 55
 fx  = 59
 col = [40, 255, 170]
 col2 = [0, 30, 20]
@@ -503,7 +504,7 @@ sx  = 110
 ix  = 180
 
 [modes.hearttree_beat]      # Startknopf: großer Herzschlag (2,5 s) – Bernstein-Blitz
-bri = 127
+bri = 63
 fx  = 1
 col = [255, 200, 90]
 col2 = [40, 15, 0]
@@ -511,7 +512,7 @@ sx  = 200
 ix  = 128
 
 [modes.overdose_horror]     # Horrorphase (20 s): rotes Stroboskop, langsam
-bri = 115
+bri = 57
 fx  = 23
 col = [255, 20, 40]
 col2 = [40, 0, 60]
@@ -519,7 +520,7 @@ sx  = 90
 ix  = 128
 
 [modes.overdose_drop]       # Drop (2 s): weißes Stroboskop
-bri = 127
+bri = 63
 fx  = 23
 col = [255, 255, 255]
 col2 = [120, 0, 40]
@@ -527,7 +528,7 @@ sx  = 220
 ix  = 128
 
 [modes.overdose_blackout]   # Blackout (8 s): fast aus, violettes Glimmen
-bri = 20
+bri = 10
 fx  = 2
 col = [80, 0, 120]
 col2 = [0, 0, 0]
@@ -535,7 +536,7 @@ sx  = 30
 ix  = 150
 
 [modes.overdose_help]       # Hilferuf (5 s): warmes Eulen-Weiß
-bri = 100
+bri = 50
 fx  = 2
 col = [255, 230, 170]
 col2 = [40, 20, 0]
@@ -544,7 +545,7 @@ ix  = 150
 
 # ── Cyber-Ereignisse ──────────────────────────────────────────────────────────
 [modes.neonrace_start]      # Losfahren (3 s): weißer Scanner
-bri = 115
+bri = 57
 fx  = 40
 col = [255, 255, 255]
 col2 = [40, 0, 60]
@@ -552,7 +553,7 @@ sx  = 220
 ix  = 128
 
 [modes.neonrace_nitro]      # Nitro (3 s): gelb-weißes Stroboskop
-bri = 127
+bri = 63
 fx  = 23
 col = [255, 255, 160]
 col2 = [255, 40, 200]
@@ -560,12 +561,12 @@ sx  = 220
 ix  = 128
 
 [modes.neonrace_honk]       # Lichthupe (1,5 s): alles weiß
-bri = 127
+bri = 63
 fx  = 0
 col = [255, 255, 255]
 
 [modes.neonrace_police]     # Polizeidrohnen (14 s): Rot-Blau-Blinken
-bri = 120
+bri = 60
 fx  = 1
 col = [255, 0, 0]
 col2 = [0, 40, 255]
@@ -573,7 +574,7 @@ sx  = 200
 ix  = 128
 
 [modes.core_throw]          # Objekt geworfen (3 s): Cyan-Meteor
-bri = 110
+bri = 55
 fx  = 76
 col = [80, 220, 255]
 col2 = [20, 0, 40]
@@ -581,7 +582,7 @@ sx  = 130
 ix  = 220
 
 [modes.core_eject]          # Überlast (8 s): weiß-magenta Stroboskop
-bri = 127
+bri = 63
 fx  = 23
 col = [220, 230, 255]
 col2 = [255, 40, 200]
@@ -589,7 +590,7 @@ sx  = 150
 ix  = 128
 
 [modes.core_emp]            # EMP (2,5 s): weiß, dann aus
-bri = 127
+bri = 63
 fx  = 12
 col = [255, 255, 255]
 col2 = [0, 0, 0]
@@ -597,7 +598,7 @@ sx  = 40
 ix  = 255
 
 [modes.oracle_samurai]      # Knüppel links: Samurai – Rot auf Blau
-bri = 100
+bri = 50
 fx  = 2
 col = [255, 60, 80]
 col2 = [0, 20, 80]
@@ -605,7 +606,7 @@ sx  = 70
 ix  = 160
 
 [modes.oracle_cat]          # Knüppel rechts: Katze – Violett
-bri = 95
+bri = 47
 fx  = 2
 col = [180, 60, 255]
 col2 = [0, 20, 60]
@@ -613,7 +614,7 @@ sx  = 60
 ix  = 150
 
 [modes.oracle_both]         # beide: Rot und Violett als Kometen
-bri = 105
+bri = 52
 fx  = 59
 col = [255, 60, 80]
 col2 = [0, 20, 60]
@@ -623,7 +624,7 @@ sx  = 100
 ix  = 160
 
 [modes.oracle_mask]         # Maske auf (4 s): Magenta-Rot-Stroboskop
-bri = 115
+bri = 57
 fx  = 23
 col = [255, 40, 160]
 col2 = [255, 60, 40]
@@ -631,7 +632,7 @@ sx  = 220
 ix  = 220
 
 [modes.oracle_vomit]        # Übergeben (5 s): giftgrün-cyan Tropfen
-bri = 100
+bri = 50
 fx  = 43
 col = [60, 255, 120]
 col2 = [0, 160, 200]
@@ -639,7 +640,7 @@ sx  = 160
 ix  = 200
 
 [modes.oracle_speak]        # Orakel spricht (6 s): weißes Flackern
-bri = 115
+bri = 57
 fx  = 20
 col = [220, 240, 255]
 col2 = [20, 0, 80]
@@ -647,7 +648,7 @@ sx  = 200
 ix  = 200
 
 [modes.cyberslots_win]      # großer Gewinn (5 s): Magenta-Cyan-Funkeln
-bri = 127
+bri = 63
 fx  = 20
 col = [255, 80, 240]
 col2 = [0, 60, 120]
@@ -655,7 +656,7 @@ sx  = 220
 ix  = 220
 
 [modes.cyberslots_jackpot]  # KI-Kern (8 s): Feuerwerk
-bri = 127
+bri = 63
 fx  = 42
 col = [80, 240, 255]
 col2 = [255, 60, 220]
@@ -665,7 +666,7 @@ sx  = 200
 ix  = 230
 
 [modes.rooftop_rain]        # Regen: kühles Blau, ruhig
-bri = 80
+bri = 40
 fx  = 2
 col = [100, 160, 255]
 col2 = [20, 0, 40]
@@ -673,7 +674,7 @@ sx  = 50
 ix  = 150
 
 [modes.rooftop_fog]         # Nebel: gedämpftes Grau-Blau
-bri = 55
+bri = 27
 fx  = 2
 col = [150, 170, 200]
 col2 = [20, 20, 40]
@@ -681,7 +682,7 @@ sx  = 30
 ix  = 120
 
 [modes.rooftop_acid]        # Säureregen: Giftgrün
-bri = 85
+bri = 42
 fx  = 43
 col = [120, 255, 60]
 col2 = [0, 30, 10]
@@ -689,7 +690,7 @@ sx  = 150
 ix  = 160
 
 [modes.rooftop_ash]         # Asche: warmes Grau mit Glut
-bri = 70
+bri = 35
 fx  = 20
 col = [255, 120, 60]
 col2 = [40, 30, 30]
@@ -697,7 +698,7 @@ sx  = 60
 ix  = 100
 
 [modes.rooftop_fireworks]   # Feuerwerk (8 s)
-bri = 127
+bri = 63
 fx  = 42
 col = [255, 120, 240]
 col2 = [80, 220, 255]
@@ -707,7 +708,7 @@ sx  = 200
 ix  = 230
 
 [modes.rooftop_blackout]    # Stromausfall (14 s): fast aus
-bri = 15
+bri = 7
 fx  = 2
 col = [40, 0, 60]
 col2 = [0, 0, 0]
@@ -715,7 +716,7 @@ sx  = 30
 ix  = 150
 
 [modes.rooftop_lightning]   # Blitz (1,5 s): weiß
-bri = 127
+bri = 63
 fx  = 23
 col = [255, 255, 255]
 col2 = [40, 40, 80]
@@ -723,7 +724,7 @@ sx  = 240
 ix  = 128
 
 [modes.blackice_horror]     # Black ICE (20 s): rotes Stroboskop
-bri = 120
+bri = 60
 fx  = 23
 col = [255, 20, 30]
 col2 = [0, 20, 40]
@@ -731,7 +732,7 @@ sx  = 90
 ix  = 128
 
 [modes.blackice_drop]       # Drop (2 s): weißes Stroboskop
-bri = 127
+bri = 63
 fx  = 23
 col = [255, 255, 255]
 col2 = [255, 0, 40]
@@ -739,7 +740,7 @@ sx  = 220
 ix  = 128
 
 [modes.blackice_blackout]   # Flatline (8 s): fast aus, rotes Glimmen
-bri = 20
+bri = 10
 fx  = 2
 col = [120, 0, 10]
 col2 = [0, 0, 0]
@@ -747,7 +748,7 @@ sx  = 30
 ix  = 150
 
 [modes.blackice_help]       # Fixer (5 s): Violett
-bri = 100
+bri = 50
 fx  = 2
 col = [180, 80, 255]
 col2 = [20, 0, 40]
@@ -756,7 +757,7 @@ ix  = 150
 
 # ── Zukunft-Ereignisse ────────────────────────────────────────────────────────
 [modes.timejump_start]      # Gas geben (3 s): bernsteinfarbener Scanner
-bri = 115
+bri = 57
 fx  = 40
 col = [255, 180, 60]
 col2 = [30, 10, 0]
@@ -764,7 +765,7 @@ sx  = 200
 ix  = 128
 
 [modes.timejump_jump]       # Zeitsprung (3 s): blau-weißes Stroboskop
-bri = 127
+bri = 63
 fx  = 23
 col = [200, 230, 255]
 col2 = [60, 120, 255]
@@ -772,12 +773,12 @@ sx  = 240
 ix  = 128
 
 [modes.timejump_honk]       # Hupe (1,5 s): alles weiß
-bri = 127
+bri = 63
 fx  = 0
 col = [255, 255, 255]
 
 [modes.timejump_storm]      # Gewitter (14 s): weiße Blitze auf Dunkelblau
-bri = 120
+bri = 60
 fx  = 57
 col = [255, 255, 255]
 col2 = [0, 10, 60]
@@ -785,7 +786,7 @@ sx  = 120
 ix  = 128
 
 [modes.flux_throw]          # Objekt fliegt hinein (3 s): Feuerspur, orange auf Blau
-bri = 120
+bri = 60
 fx  = 40
 col = [255, 140, 30]
 col2 = [40, 80, 255]
@@ -793,7 +794,7 @@ sx  = 200
 ix  = 160
 
 [modes.flux_storm]          # Gewitter (14 s): weiße Blitze auf Dunkelblau
-bri = 120
+bri = 60
 fx  = 57
 col = [255, 255, 255]
 col2 = [10, 20, 80]
@@ -801,7 +802,7 @@ sx  = 120
 ix  = 128
 
 [modes.flux_eject]          # Paradoxon (8 s): Sepia-Flackern
-bri = 110
+bri = 55
 fx  = 1
 col = [200, 150, 90]
 col2 = [0, 0, 0]
@@ -809,7 +810,7 @@ sx  = 120
 ix  = 128
 
 [modes.flux_overload]       # 1,21 Gigawatt (2,5 s): weißes Stroboskop
-bri = 127
+bri = 63
 fx  = 23
 col = [255, 255, 255]
 col2 = [120, 160, 255]
@@ -817,7 +818,7 @@ sx  = 240
 ix  = 128
 
 [modes.clocktower_doc]      # Professor am Zeiger: warmes Weiß, wischend
-bri = 100
+bri = 50
 fx  = 3
 col = [255, 240, 200]
 col2 = [20, 20, 60]
@@ -825,7 +826,7 @@ sx  = 120
 ix  = 128
 
 [modes.clocktower_car]      # Zeitmaschine rast: Feuerspur-Kometen
-bri = 115
+bri = 57
 fx  = 59
 col = [255, 150, 40]
 col2 = [40, 80, 255]
@@ -833,7 +834,7 @@ sx  = 200
 ix  = 200
 
 [modes.clocktower_both]     # der große Moment: Blitz-Stroboskop
-bri = 127
+bri = 63
 fx  = 57
 col = [255, 255, 255]
 col2 = [255, 150, 40]
@@ -841,7 +842,7 @@ sx  = 160
 ix  = 128
 
 [modes.clocktower_dance]    # Tanzball: Girlanden in Pastell
-bri = 100
+bri = 50
 fx  = 65
 col = [255, 120, 180]
 col2 = [120, 200, 255]
@@ -851,7 +852,7 @@ sx  = 60
 ix  = 128
 
 [modes.clocktower_strike]   # 22:04 (4 s): Weißblitz, dann Nachglühen
-bri = 127
+bri = 63
 fx  = 23
 col = [255, 255, 255]
 col2 = [200, 220, 255]
@@ -859,7 +860,7 @@ sx  = 250
 ix  = 128
 
 [modes.almanacslots_win]    # großer Gewinn (5 s): Gold-Rot-Funkeln
-bri = 127
+bri = 63
 fx  = 20
 col = [255, 210, 60]
 col2 = [200, 20, 20]
@@ -867,7 +868,7 @@ sx  = 220
 ix  = 220
 
 [modes.almanacslots_jackpot]  # 22:04 dreifach (8 s): Blitz-Feuerwerk
-bri = 127
+bri = 63
 fx  = 42
 col = [255, 255, 255]
 col2 = [120, 160, 255]
@@ -877,7 +878,7 @@ sx  = 200
 ix  = 200
 
 [modes.square_1885]         # Wilder Westen: Öllampen-Orange
-bri = 75
+bri = 37
 fx  = 2
 col = [255, 150, 50]
 col2 = [40, 15, 0]
@@ -885,7 +886,7 @@ sx  = 30
 ix  = 150
 
 [modes.square_1955]         # 1955: Diner-Neon Türkis und Rosa
-bri = 90
+bri = 45
 fx  = 2
 col = [80, 230, 220]
 col2 = [255, 100, 160]
@@ -893,7 +894,7 @@ sx  = 50
 ix  = 150
 
 [modes.square_1985]         # 1985: Natriumdampf-Orange und Videothek-Magenta
-bri = 85
+bri = 42
 fx  = 2
 col = [255, 170, 60]
 col2 = [200, 40, 160]
@@ -901,7 +902,7 @@ sx  = 60
 ix  = 150
 
 [modes.square_2015]         # 2015: Hologramm-Blau und Violett
-bri = 100
+bri = 50
 fx  = 2
 col = [80, 160, 255]
 col2 = [160, 60, 255]
@@ -909,7 +910,7 @@ sx  = 80
 ix  = 160
 
 [modes.square_jump]         # Zeitsprung (3 s): blau-weißes Stroboskop mit Feuer
-bri = 127
+bri = 63
 fx  = 23
 col = [200, 230, 255]
 col2 = [255, 140, 30]
@@ -917,7 +918,7 @@ sx  = 240
 ix  = 128
 
 [modes.square_fireworks]    # Feuerwerk (8 s)
-bri = 127
+bri = 63
 fx  = 42
 col = [255, 80, 80]
 col2 = [80, 255, 120]
@@ -927,7 +928,7 @@ sx  = 200
 ix  = 200
 
 [modes.square_blackout]     # Stromausfall (14 s): fast aus
-bri = 15
+bri = 7
 fx  = 2
 col = [60, 40, 20]
 col2 = [0, 0, 0]
@@ -935,7 +936,7 @@ sx  = 20
 ix  = 128
 
 [modes.square_lightning]    # Blitz (2 s): weiß
-bri = 127
+bri = 63
 fx  = 23
 col = [255, 255, 255]
 col2 = [20, 40, 120]
@@ -943,7 +944,7 @@ sx  = 240
 ix  = 128
 
 [modes.paradox_horror]      # 1,21 Gigawatt (20 s): blau-weißes Stroboskop
-bri = 120
+bri = 60
 fx  = 23
 col = [120, 160, 255]
 col2 = [40, 20, 0]
@@ -951,7 +952,7 @@ sx  = 90
 ix  = 128
 
 [modes.paradox_drop]        # Drop (2 s): weißes Stroboskop
-bri = 127
+bri = 63
 fx  = 23
 col = [255, 255, 255]
 col2 = [200, 150, 90]
@@ -959,7 +960,7 @@ sx  = 220
 ix  = 128
 
 [modes.paradox_blackout]    # Auslöschung (8 s): fast aus, Sepia-Glimmen
-bri = 20
+bri = 10
 fx  = 2
 col = [120, 80, 30]
 col2 = [0, 0, 0]
@@ -967,7 +968,7 @@ sx  = 30
 ix  = 150
 
 [modes.paradox_help]        # der Professor kommt (5 s): warmes Weiß mit Feuerspur
-bri = 110
+bri = 55
 fx  = 2
 col = [255, 220, 160]
 col2 = [255, 120, 30]

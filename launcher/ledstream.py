@@ -158,12 +158,7 @@ class LedStream:
         self.fronts: list[dict] = []                              # Zeitsprung: Farbfronten (col, pos)
         self.front_next = 0.0
         self.front_col_i = 0
-        if self.base == "hal":
-            self.bri *= 0.75                                      # HAL 3000: 25 % dunkler
-        elif scene in ("slots", "forestslots", "cyberslots", "almanacslots"):
-            self.bri *= 0.5                                       # Casino: halbe Helligkeit
-        else:
-            self.bri *= 0.5                                       # alle übrigen Modi: halbe Helligkeit
+        # Helligkeit je Modus steht allein im Profil-bri (wled.toml), damit Stream und HTTP-Rückfall gleich hell sind
         self.scr_acc = None
         self.scr_target = None
         self.step_s = 0.0                                         # Beat-Schritt: 1 2 3 4, weich eingerastet (Muster rückt nach hinten)

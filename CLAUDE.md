@@ -425,8 +425,8 @@ zweiter in der Akzentfarbe mit 1,9x), `cross` (zwei Läufer kreuzen sich), Marki
 col3, sonst `wave` in der Profilfarbe; Zustandsprofile `STATE_PROFILE` (rooftop_rain|fog|acid|ash, hearttree_<Jahreszeit>,
 square_<Jahr>, campfire_big) setzen die Grundfarbe (`tint`), das Modusprofil selbst setzt sie zurück. Drop = weicher Aufheller
 (0.55, höchstens alle 12 s).
-Gesamtdämpfung `[controller] dim` 0.7 für HTTP-Profile (`payload_for`) und Stream. Dazu je Modus: Casino und alle übrigen Szenen `bri *= 0.5`
-(Profile bri halbiert), HAL `bri *= 0.75`. HAL 3000 streamt über `kitt/ui/persona.py`
+Gesamtdämpfung `[controller] dim` 0.7 für HTTP-Profile (`payload_for`) und Stream. Die Helligkeit je Modus steht allein im Profil-bri
+(Stream nimmt denselben Wert): Standard 1/4 des ursprünglichen Werts, HAL 107, Casino 1/4. HAL 3000 streamt über `kitt/ui/persona.py`
 (gleiche Schleife wie die Engine, `kitt/hal/app.py` `led_state` -> Programm `hal`): 8 Paare dunkel-/hellroter Felder
 (`hal_phase`, blockig) ziehen immer von vorne nach hinten (0,035-0,085 Kette/s), Bass hebt die hellen; 25 % dunkler
 (`bri *= 0.75`, Profil bri 142), alle 40-90 s ein einzelnes Feld (`field`, ~14 LEDs, heller), das im Beat-Schritt (1/95 je Beat,
