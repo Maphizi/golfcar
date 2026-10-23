@@ -134,11 +134,23 @@ def _rgb(v: Any, default: list[int]) -> list[int]:
         return default
 
 
+def _col_remap(rgb: list[int]) -> list[int]:
+    """Kanal-Remap für Strip mit Drahtfolge W,R,G,B: [R,G,B] → [R,W=0,G,B] als 4-Kanal-Col."""
+    remap = _load_cfg().get("controller", {}).get("col_remap", None)
+    if remap is None:
+        return rgb  # kein Remap konfiguriert
+    src = list(rgb) + [0] * (4 - len(rgb))   # auf 4 Kanäle auffüllen (W=0)
+    try:
+        return [src[i] for i in remap]
+    except (IndexError, TypeError):
+        return rgb
+
+
 def payload_for(profile: dict[str, Any], col: list[int] | None = None) -> dict:
     """JSON-Zustand für ein Profil; col überschreibt die Hauptfarbe (z. B. Themenfarbe)."""
-    c1 = _rgb(col, _rgb(profile.get("col"), [255, 255, 255]))
-    c2 = _rgb(profile.get("col2"), [0, 0, 0])
-    c3 = _rgb(profile.get("col3"), [0, 0, 0])
+    c1 = _col_remap(_rgb(col, _rgb(profile.get("col"), [255, 255, 255])))
+    c2 = _col_remap(_rgb(profile.get("col2"), [0, 0, 0]))
+    c3 = _col_remap(_rgb(profile.get("col3"), [0, 0, 0]))
     seg: dict[str, Any] = {
         "id":  0, "start": 0, "grp": 1, "spc": 0, "of": 0, "on": True, "bri": 255, "frz": False, "sel": True,
         "rev": False, "mi": False,
