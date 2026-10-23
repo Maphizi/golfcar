@@ -59,7 +59,8 @@ MASK_NAMES = ["ONI", "KITSUNE", "GASMASKE", "VR-VISIER", "PORZELLAN", "CHROMSCH�
               "PESTDOKTOR", "NEONKATZE", "CLOWN", "GLITCHMASKE", "GOLDENE TOTENMASKE", "GEISHA", "DRAHTGITTER", "SCHWEISSER"]
 MASK_BEATS = (8, 16)
 MASK_MEMORY = 6
-MASK_AUTO_AFTER = 120.0                 # s ohne Drop: Maske kommt auch von selbst (bei Energie > 0.4)
+MASK_AUTO_AFTER = 120.0                 # s ohne Drop: Maske kommt auch über die Ereignis-Automatik (bei Energie > 0.4)
+MASK_EVERY = (45.0, 90.0)               # eigener Takt: so oft setzt sie sich bei Musik (Energie > 0.2) von selbst eine Maske auf
 N_GARB = 16
 GARB_GRAVITY = 3.2                      # in Kopf-Einheiten je s²
 GARB_FLOOR = -2.9                       # unterhalb (Kopf-Einheiten) verschwinden die Teile
@@ -193,6 +194,7 @@ class Controller:
         self.mask_t0 = -100.0
         self.mask_off_beat = -1
         self.mask_recent: list[int] = []
+        self.mask_next = now + self.rng.uniform(*MASK_EVERY) * (0.3 if demo else 1.0)
         self.wobble = 0.0
         # Übergeben
         self.vomit_t0 = -100.0
@@ -376,6 +378,7 @@ class Controller:
         self.hue_target = self.rng.choice((0.6, -0.6, 1.2, -1.2, 2.4, 3.6))
         if now - self.vomit_t0 >= sum(d for _, d in VOMIT_SEQ):
             self.mask_on(now, "Drop")
+            self.mask_next = now + self.rng.uniform(*MASK_EVERY)
         else:
             self.set_pose(19, glitch=1.0, length=0.5)
         log.info("Drop: Datenexplosion, Muster %s", PATTERN_NAMES[self.pattern])
@@ -558,6 +561,10 @@ class Controller:
             self._vomit_tick(now, dt)
         if self.mask >= 0 and not live and now - self.mask_t0 > 4.0:
             self.mask_off()
+        if now >= self.mask_next:                                         # Maske im eigenen Takt, nicht nur beim Drop
+            self.mask_next = now + self.rng.uniform(*MASK_EVERY) * (0.3 if self.demo else 1.0)
+            if self.mask < 0 and live and self.energy > 0.2 and not self._busy(now):
+                self.mask_on(now, "Takt")
         self.mask_k += ((1.0 if self.mask >= 0 else 0.0) - self.mask_k) * min(1.0, dt / 0.22)
         self.wobble = max(0.0, self.wobble - dt / 0.5) if self.mask >= 0 else max(0.0, self.wobble - dt / 0.25)
         self.hue += (self.hue_target - self.hue) * min(1.0, dt / 1.5)

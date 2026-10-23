@@ -257,7 +257,8 @@ Zellenausschnitt, gefüllte Silhouette, gleiche Lage in jeder Zelle; `GESTURE_NA
 Drahtgitter), Schultern lösen sich im Shader unten auf. Gestensätze: `G_LEFT/G_RIGHT/G_UP/G_DOWN` (Knüppel, `gesture_dir`,
 hält `MANUAL_HOLD` 2,2 s, nochmal = nächste), `IDLE_CALM/MID/WILD` nach Energie (Wechsel `_beat`: ruhig jeder 4., mittel
 jeder 2., wild jeder Beat), `SPEAK_CYCLE` (ENTER, 7 Hz), Blinzeln `next_blink` 3-6 s (SCHLAF/ZWINKERN 0,14 s). Beat-Nicken
-`uWobble.y`. Maske: `mask_on` beim Drop (und `_auto_event` "mask", wenn `MASK_AUTO_AFTER` 120 s kein Drop), `oracle_masks.png`
+`uWobble.y`. Maske: `mask_on` beim Drop, im eigenen Takt `MASK_EVERY` 45-90 s bei Musik (`mask_next`, Energie > 0.2) und über
+`_auto_event` "mask" nach `MASK_AUTO_AFTER` 120 s ohne Drop; `oracle_masks.png`
 8x2 à 256 (`grid ... 8 2 256 12`, `MASK_NAMES`), `uMaskP` = (Index, Einblendung `mask_k`, Alter), Lage `[scenes.oracle]
 mask_fit` = (dx, dy, Größe in Kopf-Einheiten), Wackeln `uWobble.x` (jeder Beat neu), Gesten `MASK_GESTURES`, ab nach
 `MASK_BEATS` 8-16 Beats (`mask_off_beat`). Übergeben `vomit()` (SPACE / Kippschalter AN, `_auto_event` "vomit" bei Energie >
