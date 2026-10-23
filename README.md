@@ -495,7 +495,7 @@ die Steine (drei Flammenbögen `flames_small|mid|big.png`, weich gemischt), Stil
 vier Minuten fliegt von selbst ein Scheit ins Feuer (Funkenwolke, das Feuer wird eine Weile größer), etwa alle drei Minuten ein
 glühender Kristall: dann brennt es 30 bis 60 Sekunden blau-violett (`flames_blue.png`). Funken steigen auf, driften im Wind und werden am
 Himmel kurz zu Sternen. Der Kessel dampft, Raummotten kreisen (mehr mit den Höhen), ein kleines Alien lugt ab und zu hinter dem
-Stein hervor, das Taxi blinkt alle paar Minuten mit den Positionslichtern, Sternschnuppen, das Polarlicht pulst mit dem Bass, die
+Stein hervor, das Taxi blinkt alle paar Minuten mit den Positionslichtern, Sternschnuppen, das Polarlicht wogt in Vorhängen und Strahlen über den Horizont und pulst mit dem Bass, die
 Sterne funkeln mit den Höhen. Knüppel links/rechts = Windstoß (Flammen und Rauch legen sich), oben = Holz nachlegen, unten = im
 Feuer stochern, Startknopf = Marshmallow am Stock (röstet je nach Feuer: roh, golden oder verkohlt), Kippschalter AN =
 Nahaufnahme, AUS = zurück. Board `campfire`, `campfire_big`, `campfire_blue`, `campfire_log`. Bilder vom Bot nach

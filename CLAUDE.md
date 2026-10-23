@@ -111,7 +111,8 @@ Sternfunke), UNTEN `poke()` Funkenwolke + `ember`, LINKS/RECHTS `gust()` Wind `u
 `marshmallow()` (`uMallow`, Röstgrad aus Feuerstufe, `mallow_result`), Motten `uMoth0..2` (Anzahl mit den Höhen), Alien
 `ALIEN_EVERY` 90-200 s, Taxi-Lichter `uTaxiT` alle `TAXI_EVERY`, Sternschnuppen `uShoot` alle `SHOOT_EVERY`, Himmel steigt
 `uSkyRise` über `cycle_minutes`, SPACE/BACKSPACE `uZoom`. Shader: Feuerlicht `near`/`lightK` auf Steinen (Glut = dunkler als
-das Foto), Hitzeflimmern, Rauch im Wind, Kesseldampf `uKettle`, Sterne funkeln mit Höhen, Polarlicht mit Bass. Demo = 8x
+das Foto), Hitzeflimmern, Rauch im Wind, Kesseldampf `uKettle`, Sterne funkeln mit Höhen, Polarlicht bewegt sich (Band über dem
+Horizont, nur grüne Pixel `gm`: Foto verschoben abgetastet = wogende Vorhänge, `rays` ziehen durch, Tempo mit der Energie, Bass). Demo = 8x
 schneller. Der Bogen bringt unten eigene Scheite mit: dunkle Pixel im unteren Zellenteil werden ausgeblendet (`lumF`), die
 Scheite kommen aus dem Foto; der Kessel liegt vor den Flammen (`kettleMask`: Ellipse `kettle_box` = Mitte x, y, Radius x, y,
 plus Henkelbogen und Tülle). `KITT_CAMPFIRE_CAL=1` zeichnet Flammenzelle (rot), Kesselform (blau) sowie Planet und Ring (grün) zum Einmessen auf dem

@@ -130,6 +130,19 @@ void main() {
             col += col * ring * glint * 0.9;
         }
     }
+    // ---- Polarlicht bewegt sich: Vorhänge wogen (das Foto wird im grünen Band verschoben abgetastet), Strahlen ziehen
+    //      langsam durch, Rhythmus mit dem Bass
+    float band = smoothstep(uHorizon - 0.02, uHorizon + 0.05, uv.y) * (1.0 - smoothstep(uHorizon + 0.16, uHorizon + 0.32, uv.y));
+    if (band > 0.001) {
+        float gm = smoothstep(0.02, 0.1, col.g - max(col.r, col.b));                      // nur das grüne Licht, keine Sterne
+        float drift = t * (0.22 + 0.25 * uEnergy);
+        float wave = sin(suv.x * 13.0 + drift * 1.5 + 2.5 * fbm(vec2(suv.x * 2.5 - drift * 0.2, drift * 0.25)));
+        vec2 off = vec2(0.011 * wave + 0.005 * sin(suv.y * 45.0 + drift * 2.0),
+                        0.008 * sin(suv.x * 8.0 - drift * 0.8 + 4.0 * fbm(suv * 4.0 + drift * 0.1))) * band * gm;
+        col = mix(col, scene(suv + off), band * gm);
+        float rays = fbm(vec2(suv.x * 28.0 - drift * 0.5 + 6.0 * fbm(vec2(suv.x * 2.0, drift * 0.15)), suv.y * 2.0));
+        col += col * gm * band * (rays - 0.42) * (0.9 + 0.5 * uBassS * live);
+    }
     vec3 plate = col;
     float lum = max(col.r, max(col.g, col.b));
     float sat = lum - min(col.r, min(col.g, col.b));
