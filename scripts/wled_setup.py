@@ -45,10 +45,13 @@ def main() -> int:
     args = ap.parse_args()
     if args.test:
         import time
-        for name, col in (("ROT", [255, 0, 0]), ("GRÜN", [0, 255, 0]), ("BLAU", [0, 0, 255])):
-            print(f"Jetzt sollte die ganze Kette {name} sein ...")
-            wled.send(wled.payload_for({"col": col, "col2": [0, 0, 0], "fx": 0, "bri": int(120 / max(0.01, wled.dim())), "pal": 2}))
-            time.sleep(4)
+        for name, col in (("1 ROT", [255, 0, 0, 0]), ("2 GRÜN", [0, 255, 0, 0]), ("3 BLAU", [0, 0, 255, 0]), ("4 WEISS (nur W-Kanal)", [0, 0, 0, 255])):
+            print(f"Test {name}: Jetzt sollte die ganze Kette {name.split(' ', 1)[1]} sein ... (5 s)")
+            payload = wled.payload_for({"col": [0, 0, 0], "col2": [0, 0, 0], "fx": 0, "bri": int(120 / max(0.01, wled.dim())), "pal": 2})
+            payload["seg"][0]["col"] = [col, [0, 0, 0, 0], [0, 0, 0, 0]]
+            wled.send(payload)
+            time.sleep(5)
+        print("Bitte melden, welche Farbe bei 1, 2, 3 und 4 wirklich zu sehen war (z. B. '1 grün, 2 weiß, 3 blau, 4 rot').")
         wled.apply_mode("home")
         print("Stimmt die Farbe nicht (z. B. GRÜN statt ROT): --order 1 --apply (RGB) bzw. --order 0 --apply (GRB)")
         return 0
