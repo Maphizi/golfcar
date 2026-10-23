@@ -18,6 +18,8 @@ der eingestellten Anzahl bekommen nie Daten und bleiben mit Zufallsfarben an.
                                                                 rechnet aus dem Ergebnis von --test (gesehene Farbe bei
                                                                 Test 1, 2, 3, 4) die passende Farbreihenfolge samt Weiß-Tausch
                                                                 aus und setzt sie; danach --test wiederholen.
+                                                                (Tauschtabelle des Weiß-Kanals unsicher; verlässlich: --test --loop
+                                                                und in WLED Color Order/Swap probieren; am Cart passt order 34 oder 50)
     .venv/bin/python scripts/wled_setup.py --order 1 --apply    Farbreihenfolge: 0 GRB (WS2812), 1 RGB (viele 24-V-Ketten),
                                                                 2 BRG, 3 RBG, 4 BGR, 5 GBR. Zeigt der Test statt ROT ein GRÜN,
                                                                 ist die Reihenfolge falsch (GRB <-> RGB).

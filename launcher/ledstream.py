@@ -120,6 +120,9 @@ class LedStream:
         self.mq_rot = 0
         self.mq_beats = 0
         self.mq_flip_at = 0.0
+        self.sp_next = time.monotonic() + self.rng.uniform(15.0, 30.0)   # Specials: einzelner Läufer, Überholer, Kreuzung
+        self.runners: list[dict] = []
+        self.sp_kind = ""
         wled.set_stream_hook(self.event)
         if self.enabled:
             threading.Thread(target=self._setup, name="leds-setup", daemon=True).start()
@@ -280,6 +283,39 @@ class LedStream:
         frame = colors * level[:, None]
         gold = self.marquee[0]
         white = self.marquee[1]
+        acc = self.marquee[2]
+        # Specials: ab und zu läuft ein einzelner heller Punkt durch; wird der Beat dabei kräftiger, überholt ihn ein
+        # zweiter in der Akzentfarbe; oder zwei Läufer von beiden Enden kreuzen sich in der Mitte
+        if now >= self.sp_next and win == 0 and not spinning:
+            self.sp_next = now + self.rng.uniform(20.0, 45.0)
+            d = self.rng.choice((1.0, -1.0))
+            spd = self.rng.uniform(0.2, 0.35)                     # Anteil der Kette je Sekunde
+            if self.rng.random() < 0.7:
+                self.sp_kind = "runner"
+                self.runners = [{"t0": now, "start": 0.0 if d > 0 else 1.0, "dir": d, "speed": spd, "col": white, "e0": self.e_fast, "b0": bass}]
+            else:
+                self.sp_kind = "cross"
+                self.runners = [{"t0": now, "start": 0.0, "dir": 1.0, "speed": spd, "col": white},
+                                {"t0": now, "start": 1.0, "dir": -1.0, "speed": spd, "col": acc}]
+        if self.sp_kind == "runner" and len(self.runners) == 1:
+            r0 = self.runners[0]
+            prog = (now - r0["t0"]) * r0["speed"]
+            rising = (is_beat and bass > r0["b0"] + 0.12) or self.e_fast > r0["e0"] + 0.15
+            if rising and 0.15 < prog < 0.6:                       # Beat zieht an: Überholer startet
+                self.runners.append({"t0": now, "start": r0["start"], "dir": r0["dir"], "speed": r0["speed"] * 1.9, "col": acc})
+        if self.runners:
+            frame = frame * 0.6                                   # Markise zurück, damit die Läufer stechen
+            keep = []
+            for rn in self.runners:
+                pos = rn["start"] + rn["dir"] * rn["speed"] * (now - rn["t0"])
+                if -0.05 <= pos <= 1.05:
+                    keep.append(rn)
+                    head = np.exp(-((x - pos) / 0.012) ** 2)
+                    tail = np.exp(-((x - (pos - rn["dir"] * 0.035)) / 0.03) ** 2) * 0.35
+                    frame += np.outer(head * 1.3 + tail, rn["col"])
+            self.runners = keep
+            if not keep:
+                self.sp_kind = ""
         if win == 1 and age < 1.2:                                # kleiner Gewinn: zweimal aufblitzen
             if int(age * 5.0) % 2 == 0 and age < 0.8:
                 frame = np.outer(np.ones(n), gold)

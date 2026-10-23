@@ -408,7 +408,10 @@ Eindringling = roter Läufer mit Spur, Neustart = grüne Linie von vorne, stabil
 (`slots.py` `led_state`, alle vier Automaten): Casino-Markise `_slots`: Blöcke von 3 LEDs in Farbe A / Warmweiß / Farbe B des gewählten Automaten
 (`colors` aus `slots_themes.py` über `led_state`, sonst `marquee` aus col, col3 oder col2), alle an, Helligkeit wandert leicht (`twinkle`, Bass), Muster fährt `mq_pos` 2,5-6,5 Schritte/s
 (Stille 1,5, Drehen 10), Richtung `mq_dir` kehrt alle 16 Beats, bei kräftigem Bass oder alle 6-14 s um, Farben rücken alle 4 Beats
-(`mq_rot`); Gewinn 1 = zweimal Gold, 2 = weißer Lauf von vorne + schnell, >= 3 = Gold/Weiß-Strobo 3 s + Funkeln. Ereignis-Profile (`wled.apply_mode_async`) laufen über `wled.set_stream_hook` als Blitz in der Profilfarbe.
+(`mq_rot`); Gewinn 1 = zweimal Gold, 2 = weißer Lauf von vorne + schnell, >= 3 = Gold/Weiß-Strobo 3 s + Funkeln. Specials alle
+`sp_next` 20-45 s (nicht beim Drehen/Gewinn): `runner` = ein weißer Punkt läuft durch (0,2-0,35 Kette/s), zieht der Beat
+währenddessen an (Bass +0,12 auf Beat oder Energie +0,15, Fortschritt 15-60 %), startet ein Überholer in der Akzentfarbe mit
+1,9x Tempo; `cross` = zwei Läufer von beiden Enden kreuzen sich; Markise derweil auf 60 %. Ereignis-Profile (`wled.apply_mode_async`) laufen über `wled.set_stream_hook` als Blitz in der Profilfarbe.
 Gesamtdämpfung `[controller] dim` 0.7 für HTTP-Profile (`payload_for`) und Stream. HAL 3000 (kein Engine-Prozess) behält das Profil.
 `payload_for` setzt immer `pal` (Profil, sonst 3 mit col2 / 2 ohne: sonst bleibt die letzte Palette, z. B. Regenbogen, und viele
 Effekte malen damit), Segment 0 über die ganze Kette (`led_count()` aus `/json/info` oder `[controller].leds`), `pl = -1`

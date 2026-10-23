@@ -1241,7 +1241,9 @@ ein Drop blitzt alles weiß, bei Stille wandert eine einzelne LED langsam atmend
 Feuer-Modi flackern je LED, Scanner-Modi laufen als KITT-Licht im Takt, Regenbogen-Modi drehen mit der Energie. Die
 Slotmaschinen leuchten wie ein Casino-Eingang: Blöcke von drei LEDs in Gold, Warmweiß und Akzentfarbe, alle an, die Helligkeit
 wandert nur leicht, das Muster fährt langsam mal vor, mal zurück, beim Drehen schnell, alle paar Beats rücken die Farben weiter;
-kleiner Gewinn blitzt zweimal, großer Gewinn schickt einen weißen Lauf von vorne, Jackpot ist Gold-Weiß-Stroboskop mit Funkeln. Im Systemfehler
+kleiner Gewinn blitzt zweimal, großer Gewinn schickt einen weißen Lauf von vorne, Jackpot ist Gold-Weiß-Stroboskop mit Funkeln. Als Specials alle 20 bis 45 Sekunden: Ein einzelner heller Punkt läuft über die ganze Kette, und zieht der Beat
+währenddessen an, startet ein zweiter in der Akzentfarbe und überholt ihn; oder zwei Läufer kommen von beiden Enden und kreuzen
+sich in der Mitte. Im Systemfehler
 ist das Board ein Kampf zwischen Grün (das System) und Rot (der Fehler), sonst nichts: Die Front wandert in Blasen über die
 Kette, je nach Phase gewinnt Rot (Zusammenbruch, Alarm) oder Grün (Erholung), jeder Beat ist ein Vorstoß der stärkeren Seite,
 der Bass heizt den Kampf an, umkämpfte Stellen sirren rot-grün. Und es sieht kaputt aus, aber träge statt hektisch: Abschnitte von ein paar LEDs
