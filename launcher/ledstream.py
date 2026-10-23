@@ -129,7 +129,7 @@ class LedStream:
         self.hunt = 0.0
         # Casino-Markise (Slotmaschinen): drei Farben in Blöcken, Hauptfarbe, Warmweiß, Akzent
         acc = self.col3 if (self.col3.max() > 40 and not np.array_equal(self.col3, WHITE)) else (self.col2 if self.col2.max() > 120 else np.array([255.0, 40.0, 10.0]))
-        self.marquee = [self.col, np.array([255.0, 225.0, 170.0]), acc]
+        self.marquee = [_saturate(self.col, 1.4), _saturate(self.col * 0.5 + acc * 0.5, 1.6), _saturate(acc, 1.4)]
         self.mq_pos = 0.0
         self.mq_target = 0.0                                      # Blockschritte (je Beat einer)
         self.mq_pos_s = 0.0
@@ -398,8 +398,7 @@ class LedStream:
 
     # -- Programme -----------------------------------------------------------------------------------------------
     def _slots(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
-        """Casino-Markise wie ein Vegas-Eingang: Blöcke von 3 LEDs in derselben Farbe (Hauptfarbe, Warmweiß, Akzent im
-        Wechsel), alle an, nur die Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat weiter (1 2 3 4), weich eingerastet, mal vor, mal zurück,
+        """Casino-Markise wie ein Vegas-Eingang: Blöcke in derselben Farbe (Farbe A, satte Mischfarbe, Farbe B im Wechsel, kein Weiß), alle an, nur die Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat weiter (1 2 3 4), weich eingerastet, mal vor, mal zurück,
         beim Drehen läuft es schnell von selbst; alle paar Beats wechseln die Farben durch, ab und zu kehrt die Richtung um. Gewinn: klein = zweimal
         Blitzen, groß = heller Lauf von vorne, Jackpot = Gold/Weiß-Stroboskop und Funkeln."""
         n = self.n
@@ -409,11 +408,10 @@ class LedStream:
         win = int(st.get("win", 0))
         cols = st.get("colors") or []
         if len(cols) >= 2:                                        # Lichtfarben des Automaten auf dem Schirm: A, Warmweiß, B
-            a, b = np.array(cols[0], dtype=float), np.array(cols[1], dtype=float)
-            for c in (a, b):
-                if c.max() > 0:
-                    c *= 255.0 / c.max()                          # volle Leuchtkraft je Farbe
-            self.marquee = [a, np.array([255.0, 225.0, 170.0]), b]
+            a = _saturate(np.array(cols[0], dtype=float), 1.5)   # satt, kein Weiß
+            b = _saturate(np.array(cols[1], dtype=float), 1.5)
+            mid = _saturate(a * 0.5 + b * 0.5, 1.6)               # dritter Block: satte Mischfarbe statt Warmweiß
+            self.marquee = [a, mid, b]
         age = float(st.get("win_age", 0.0))
         if is_beat:
             self.mq_beats += 1
@@ -449,7 +447,7 @@ class LedStream:
             level = twinkle * 1.0
         frame = colors * level[:, None]
         gold = self.marquee[0]
-        white = self.marquee[1]
+        white = _saturate(self.marquee[0] * 0.7 + WHITE * 0.3, 1.2)   # Glanzlicht: aufgehellte Hauptfarbe statt Weiß
         acc = self.marquee[2]
         # Specials: ab und zu läuft ein einzelner heller Punkt durch; wird der Beat dabei kräftiger, überholt ihn ein
         # zweiter in der Akzentfarbe; oder zwei Läufer von beiden Enden kreuzen sich in der Mitte

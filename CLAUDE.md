@@ -409,8 +409,8 @@ Fackellicht (255,175,95), träges Glimmen je LED (`embers`), Wabern `gust`, Hell
 mit dem Bass. `breathe` (taxi, oracle, clocktower, woodeye, trip, hearttree, square): langsames Atmen + zwei wandernde Wolken.
 `rain` (rooftop): Tropfen von hinten nach vorne. `glitch` (blackice, paradox, overdose): das Störprogramm `_error` in den
 Themenfarben (`c_red`/`c_green` aus col/col2) mit eigenem 40-s-Phasenzyklus. `error` = Systemfehler (oben beschrieben). `slots` (`slots.py` `led_state`, alle vier Automaten): Casino-Markise `_slots`:
-Blöcke (Blockgröße `n // 60`, 784 LEDs -> 13) in Farbe A / Warmweiß / Farbe B des gewählten Automaten (`colors` aus
-`slots_themes.py`), alle an, Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat (`mq_target`/`mq_pos_s`, weich
+Blöcke (Blockgröße `n // 60`, 784 LEDs -> 13) in Farbe A / satter Mischfarbe / Farbe B des gewählten Automaten (`colors` aus
+`slots_themes.py`, `_saturate` 1.5, kein Weiß; Glanzlichter = aufgehellte Farbe A), alle an, Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat (`mq_target`/`mq_pos_s`, weich
 eingerastet; ohne Beats alle 0,6 s; Drehen = 4 Blöcke/s von selbst), Richtung `mq_dir` kehrt alle 16 Beats, bei kräftigem Bass
 oder alle 6-14 s um, Farben rücken alle 4 Beats (`mq_rot`); Gewinn 1 = zweimal Gold, 2 = weißer Lauf von vorne + schnell, >= 3 =
 Gold/Weiß-Strobo 3 s + Funkeln; Specials `sp_next` 20-45 s: `runner` (ein Punkt läuft durch, zieht der Beat an, überholt ein
