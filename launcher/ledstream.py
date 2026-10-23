@@ -157,8 +157,10 @@ class LedStream:
         self.hal_phase = 0.0                                      # Lauf der Korridorfelder
         if self.base == "hal":
             self.bri *= 0.75                                      # HAL 3000: 25 % dunkler
-        if scene in ("slots", "forestslots", "cyberslots", "almanacslots"):
+        elif scene in ("slots", "forestslots", "cyberslots", "almanacslots"):
             self.bri *= 0.5                                       # Casino: halbe Helligkeit
+        else:
+            self.bri *= 0.5                                       # alle übrigen Modi: halbe Helligkeit
         self.scr_acc = None
         self.scr_target = None
         self.step_s = 0.0                                         # Beat-Schritt: 1 2 3 4, weich eingerastet (Muster rückt nach hinten)
