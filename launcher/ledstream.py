@@ -31,6 +31,8 @@ log = logging.getLogger("leds")
 
 DRGB = 2                                     # bis 490 LEDs in einem Paket
 DNRGB = 4                                    # mit Startindex, 489 LEDs je Paket (Ketten über 490 LEDs)
+DRGBW = 3                                    # 4 Kanäle je LED (nur mit col_remap)
+DNRGBW = 5                                   # 4 Kanäle mit Startindex
 CHUNK = 489
 MAX_LEDS = 2000
 GREEN = np.array([0.0, 150.0, 4.0])      # sattes, nicht zu helles Grün (reiner Kanal, gedimmt)
