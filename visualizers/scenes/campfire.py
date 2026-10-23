@@ -142,7 +142,7 @@ class Controller:
         self.zoom_target = 0.0
         self.last_key = -100.0
         self.led_back_at: float | None = None
-        self.led_state = "campfire"
+        self.led_profile = "campfire"
         s = self.speedup
         self.log_next = now + self.rng.uniform(*LOG_EVERY) / s
         self.crystal_next = now + self.rng.uniform(*CRYSTAL_EVERY) / s
@@ -250,6 +250,10 @@ class Controller:
         for i, name in enumerate(("uFlameSTex", "uFlameMTex", "uFlameBTex", "uFlameXTex")):
             out[name] = (self.sheets[i] if self.sheets[i] is not None else self.blank, 1)
         return out
+
+    def led_state(self) -> dict:
+        """Für launcher/ledstream.py: Feuerprogramm, Feuerstufe und Blauanteil."""
+        return {"program": "fire", "level": self.level, "blue": self.blue_k}
 
     def uniform_names(self):
         names = ["uSceneTex", "uFlameSTex", "uFlameMTex", "uFlameBTex", "uFlameXTex", "uSparkTex", "uItemTex",
@@ -378,8 +382,8 @@ class Controller:
             wled.apply_mode_async("campfire")
         if self.led_back_at is None:                      # Dauerprofil folgt der Feuerstufe
             want_led = "campfire_big" if self.level > 2.4 else "campfire"
-            if want_led != self.led_state:
-                self.led_state = want_led
+            if want_led != self.led_profile:
+                self.led_profile = want_led
                 wled.apply_mode_async(want_led)
         if self.demo and now >= self.demo_next:
             self.demo_next = now + 6.0

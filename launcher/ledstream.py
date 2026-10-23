@@ -18,6 +18,7 @@ import json
 import logging
 import math
 import random
+import re
 import socket
 import threading
 import time
@@ -29,6 +30,19 @@ from launcher import wled
 
 log = logging.getLogger("leds")
 
+# Grundprogramm je Szene (ruhig; Specials kommen aus den Ereignissen der Szene über wled.apply_mode_async / led_state)
+SCENE_BASE = {
+    "navcomputer": "stars", "planets": "stars", "timejump": "stars", "neonrace": "stars", "splash": "stars",
+    "campfire": "fire",
+    "blackhole": "vortex", "core": "vortex", "flux": "vortex", "pond": "vortex",
+    "rooftop": "rain",
+    "taxi": "breathe", "oracle": "breathe", "clocktower": "breathe", "woodeye": "breathe", "trip": "breathe",
+    "hearttree": "breathe", "square": "breathe",
+    "blackice": "glitch", "paradox": "glitch", "overdose": "glitch",
+}
+PLANET_COLORS = ([235.0, 160.0, 60.0], [70.0, 120.0, 255.0], [220.0, 60.0, 40.0], [90.0, 200.0, 110.0],
+                 [170.0, 90.0, 255.0], [180.0, 230.0, 255.0], [255.0, 200.0, 120.0])
+STATE_PROFILE = re.compile(r"^(rooftop_(rain|fog|acid|ash)|hearttree_(spring|summer|autumn|winter)|square_\d+|campfire_big)$")
 DRGB = 2                                     # bis 490 LEDs in einem Paket
 DNRGB = 4                                    # mit Startindex, 489 LEDs je Paket (Ketten über 490 LEDs)
 DRGBW = 3                                    # 4 Kanäle je LED (nur mit col_remap)
@@ -121,6 +135,23 @@ class LedStream:
         self.mq_beats = 0
         self.mq_flip_at = 0.0
         self.sp_next = time.monotonic() + self.rng.uniform(15.0, 30.0)   # Specials: einzelner Läufer, Überholer, Kreuzung
+        self.base = SCENE_BASE.get(scene, "")
+        self.specials: list[dict] = []                            # aktive Specials (kind, t0, len, col, ...)
+        self.tint = None                                          # Grundfarbe überschrieben (Wetter, Jahreszeit, blaues Feuer)
+        self.tint_until = 0.0
+        self.boost_until = 0.0                                    # Sterne schneller/heller (Start, Nitro, Zeitsprung)
+        self.planet_next = time.monotonic() + self.rng.uniform(25.0, 45.0)
+        self.stars = None
+        self.drips: list[list] = []
+        self.drip_next = 0.0
+        self.vdots = None
+        self.c_red, self.c_green = RED.copy(), GREEN.copy()       # Farben des Störprogramms (Systemfehler rot/grün, sonst Thema)
+        if self.base == "glitch":
+            a, b = self.col.copy(), self.col2.copy()
+            for c in (a, b):
+                if c.max() > 0:
+                    c *= 200.0 / c.max()
+            self.c_red, self.c_green = a, b
         self.runners: list[dict] = []
         self.sp_kind = ""
         wled.set_stream_hook(self.event)
@@ -154,6 +185,7 @@ class LedStream:
             n = self.n
             self.glow = np.zeros(n)
             self.fire = self.nrng.random(n)
+            self.embers = np.clip(self.nrng.random(n) * 1.4 - 0.2, 0.0, 1.0) ** 1.5   # nicht jede LED glüht gleich
             self.order = np.array(self.rng.sample(range(n), n))
             self.dead = np.zeros(n)
             self.red = np.zeros(n)
@@ -189,10 +221,59 @@ class LedStream:
 
     # -- Ereignisse ----------------------------------------------------------------------------------------------
     def event(self, name: str, profile: dict) -> None:
-        """Ereignis-Profil einer Szene (wled.apply_mode_async): kurzer Blitz in der Profilfarbe."""
-        self.flash = 1.0
-        self.flash_col = _rgb(profile.get("col"), [255, 255, 255])
-        self.event_until = time.monotonic() + 1.5
+        """Ereignis-Profil einer Szene (wled.apply_mode_async) -> passendes Special statt Blitz: throw = verschluckt,
+        eject/emp/overload = Druckwelle von der Mitte, lightning/strike/storm = Blitz mit Grollen, fireworks, blackout,
+        log = Funken, blue = blaue Tönung, start/nitro/jump = Schub, horn = Doppelblink, Wetter/Jahreszeit/Epoche =
+        neue Grundfarbe, alles andere = eine Welle in der Profilfarbe."""
+        now = time.monotonic()
+        col = _rgb(profile.get("col"), [255, 255, 255])
+        col2 = _rgb(profile.get("col2"), [0, 0, 0])
+        n = name.lower()
+        if STATE_PROFILE.match(n):
+            self.tint, self.tint_until = (col, col2), now + 1e9
+            return
+        if n in ("campfire", "rooftop", "hearttree", "square", "woodeye", "oracle", "clocktower", "blackhole", "core",
+                 "flux", "neonrace", "timejump", "slots") and self.tint is not None:
+            self.tint = None                                      # zurück auf das Modusprofil
+            return
+        if "throw" in n:
+            self._add(now, "swallow", 2.2, col, d=self.rng.choice((1.0, -1.0)))
+        elif "eject" in n or "emp" in n or "overload" in n or "discharge" in n:
+            self._add(now, "burst", 1.6, col)
+        elif "lightning" in n or "strike" in n or "storm" in n:
+            self._add(now, "lightning", 1.8, col)
+        elif "fireworks" in n:
+            self._add(now, "fireworks", 3.5, col)
+        elif "blackout" in n:
+            self._add(now, "blackout", 3.0, col)
+        elif "log" in n:
+            self._add(now, "sparks", 2.5, col)
+        elif "blue" in n:
+            self.tint, self.tint_until = (col, col2), now + 30.0
+        elif "jump" in n:
+            self.boost_until = now + 3.0
+            self._add(now, "lightning", 1.2, col)
+        elif "start" in n or "nitro" in n:
+            self.boost_until = now + 3.0
+            self._add(now, "wave", 1.4, col, d=1.0)
+        elif n == "horn":
+            self._add(now, "blink2", 0.7, col)
+        elif n == "fx":
+            self._add(now, "wave", 1.5, self.col3, d=self.rng.choice((1.0, -1.0)))
+        else:
+            self._add(now, "wave", 1.8, col, d=self.rng.choice((1.0, -1.0)))
+
+    def _add(self, now: float, kind: str, length: float, col, **p) -> None:
+        if len(self.specials) >= 4:
+            self.specials.pop(0)
+        sp = {"kind": kind, "t0": now, "len": length, "col": np.array(col, dtype=float)}
+        if kind == "fireworks":
+            sp["blooms"] = [(self.rng.random(), self.rng.uniform(0.0, length - 1.0), np.array(self.rng.choice(PLANET_COLORS)))
+                            for _ in range(6)]
+        if kind == "blackout":
+            sp["back"] = self.nrng.uniform(0.0, 1.0, self.n) if self.n else None
+        sp.update(p)
+        self.specials.append(sp)
 
     # -- je Bild -------------------------------------------------------------------------------------------------
     def update(self, now: float, f, state: dict | None = None) -> None:
@@ -215,27 +296,44 @@ class LedStream:
         if is_beat:
             self.last_beat = now
             self.beats += 1
-        if live and self.e_fast > 1.5 * self.energy + 0.15 and self.energy > 0.1 and now - self.last_drop > 8.0:
+        if live and self.e_fast > 1.5 * self.energy + 0.15 and self.energy > 0.1 and now - self.last_drop > 12.0:
             self.last_drop = now
-            self.flash = 1.0                                      # Drop: alles blitzt
+            self.flash = 0.55                                     # Drop: ein weicher Aufheller, kein Stroboskop
             self.flash_col = self.col3
-        self.flash *= 0.82
+        self.flash *= 0.86
         self.glow *= 0.80
-        program = (state or {}).get("program", "")
+        st = state or {}
+        program = st.get("program", "") or self.base
+        if not program:
+            program = "fire" if self.fx in (45, 66, 42) else ("scanner" if self.fx == 40 else ("rainbow" if self.fx in (9, 94) else "pulse"))
         if program == "error":
-            frame = self._error(now, dt, state or {}, bass, high, is_beat, live)
+            frame = self._error(now, dt, st, bass, high, is_beat, live)
+        elif program == "glitch":                                 # Black Ice, Paradoxon, Überdosis: Störprogramm in Themenfarben
+            cyc = (now * 0.025) % 1.0
+            phase, k = (("code", cyc / 0.3) if cyc < 0.3 else ("break", (cyc - 0.3) / 0.25) if cyc < 0.55 else
+                        ("error", (cyc - 0.55) / 0.2) if cyc < 0.75 else ("recovery", (cyc - 0.75) / 0.25))
+            frame = self._error(now, dt, {"phase": phase, "k": k, "pct": k, "good": False}, bass, high, is_beat, live)
         elif program == "slots":
-            frame = self._slots(now, dt, state or {}, bass, high, is_beat, live)
-        elif self.fx in (45, 66, 42):
+            frame = self._slots(now, dt, st, bass, high, is_beat, live)
+        elif program == "stars":
+            frame = self._stars(now, dt, st, bass, high, is_beat, live)
+        elif program == "vortex":
+            frame = self._vortex(now, dt, st, bass, high, is_beat, live)
+        elif program == "breathe":
+            frame = self._breathe(now, dt, st, bass, high, is_beat, live)
+        elif program == "rain":
+            frame = self._rain(now, dt, st, bass, high, is_beat, live)
+        elif program == "fire":
             frame = self._fire(now, dt, bass, high, is_beat, live)
-        elif self.fx == 40:
+        elif program == "scanner":
             frame = self._scanner(now, dt, bass, high, is_beat, live)
-        elif self.fx in (9, 94):
+        elif program == "rainbow":
             frame = self._rainbow(now, dt, bass, high, is_beat, live)
         else:
             frame = self._music(now, dt, bass, high, is_beat, live)
+        frame = self._apply_specials(frame, now, dt, bass)
         if self.flash > 0.02:
-            fc = RED if program == "error" else self.flash_col
+            fc = self.c_red if program in ("error", "glitch") else self.flash_col
             frame = frame + (fc - frame) * self.flash
         frame = np.clip(frame * self.bri, 0, 255).astype(np.uint8)
         self._send(frame, now)
@@ -340,82 +438,240 @@ class LedStream:
         x = np.arange(self.n) / max(1, self.n - 1)
         return 1.0 - x if self.reverse else x
 
+    def _base_col(self) -> tuple:
+        """Grund- und Akzentfarbe (Tönung durch Wetter/Jahreszeit/blaues Feuer berücksichtigt)."""
+        if self.tint is not None and time.monotonic() < self.tint_until:
+            a, b = self.tint
+            return a, (b if b.max() > 8 else self.col2)
+        return self.col, self.col2
+
     def _music(self, now, dt, bass, high, is_beat, live) -> np.ndarray:
-        """Grundzustand dunkel. Bass = Pegel von der Mitte nach außen (VU-Meter) in der Modusfarbe, Beat = kurzer Blitz
-        einer zufälligen LED-Gruppe, Höhen = selten ein einzelner Funke, Stille = eine LED atmet langsam."""
+        """Rückfall für Szenen ohne eigenes Programm: Pegel vom Bass von der Mitte nach außen, Beat = sanfte Welle."""
         n = self.n
         x = self._idx()
+        col, col2 = self._base_col()
         if is_beat:
-            self.pulses.append((now, 1))                          # Welle von vorne nach hinten (Fahrtrichtung)
-            if bass > 0.55:                                       # kräftiger Beat: dazu eine zufällige Gruppe
-                k = max(1, int(n * (0.15 + 0.15 * self.e_fast)))
-                self.beat_mask = np.zeros(n)
-                self.beat_mask[self.rng.sample(range(n), k)] = 1.0
-                self.beat_glow = 1.0
-        self.beat_glow *= 0.72
-        travel = 0.9 - 0.45 * self.e_fast                         # schneller bei lauter Musik
+            self.pulses.append((now, 1))
+        travel = 1.2 - 0.4 * self.e_fast
         self.pulses = [(t0, d) for t0, d in self.pulses if now - t0 < travel + 0.2]
         vu = min(1.0, self.bass_s * 1.15) * live
-        dist = np.abs(x - 0.5) * 2.0                              # 0 Mitte .. 1 Rand
+        dist = np.abs(x - 0.5) * 2.0
         meter = np.clip((vu - dist) / (2.0 / max(2, n)) + 0.5, 0.0, 1.0)
-        frame = np.outer(meter * (0.35 + 0.65 * vu), self.col)
-        frame += np.outer(self.beat_mask * self.beat_glow, self.col * 0.6 + WHITE * 0.4) * 0.9
+        frame = np.outer(meter * (0.3 + 0.5 * vu), col)
         for t0, _ in self.pulses:
             pos = (now - t0) / travel
-            w = np.exp(-((x - pos) / 0.045) ** 2) * max(0.0, 1.0 - pos * 0.6)
-            frame += np.outer(w, self.col * 0.7 + WHITE * 0.3)
-        if high > 0.35 and self.rng.random() < high * high * 0.35:
-            self.glow[self.rng.randrange(n)] = 1.0
-        frame += np.outer(self.glow, self.col * 0.5 + WHITE * 0.5) * 0.6
-        if live < 0.5:                                            # Stille: eine LED wandert und atmet
+            w = np.exp(-((x - pos) / 0.05) ** 2) * max(0.0, 1.0 - pos * 0.6)
+            frame += np.outer(w, col * 0.7 + col2 * 0.3) * 0.7
+        if live < 0.5:
             pos = (math.sin(now * 0.15) * 0.5 + 0.5)
-            w = np.exp(-((x - pos) / 0.06) ** 2) * (0.2 + 0.15 * math.sin(now * 1.2))
-            frame = np.outer(w, self.col)
+            frame = np.outer(np.exp(-((x - pos) / 0.06) ** 2) * (0.2 + 0.15 * math.sin(now * 1.2)), col)
+        return frame
+
+    def _stars(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Sternenflug: wenige Sterne ziehen von vorne nach hinten (Tempo mit der Energie), Beat hebt sie kurz an, dazu
+        ein Hauch Grundfarbe. Specials: alle 25-45 s zieht ein Planet vorbei (weiche Kugel, füllt im Vorbeiflug kurz die
+        ganze Kette in seiner Farbe); Szenen-Ereignisse (Navigationscomputer): Kometenschauer = schnelle Kometen,
+        Asteroidenfeld = graue Brocken, Wurmloch/Sonne/Nebel = Tönung; Start/Nitro/Zeitsprung = Schub."""
+        n = self.n
+        x = self._idx()
+        col, col2 = self._base_col()
+        r = self.nrng
+        if self.stars is None:
+            k = max(6, n // 40)
+            self.stars = np.stack([r.uniform(0.0, 1.0, k), r.uniform(0.05, 0.12, k), r.uniform(0.35, 1.0, k)], axis=1)
+        ev = str(st.get("event", "")).upper()
+        flying = bool(st.get("flying", True))
+        boost = 1.0 if now >= self.boost_until else 3.0
+        speed = ((0.25 + 0.9 * self.e_fast) * live + (1.0 - live) * 0.3) * boost * (1.0 if flying else 0.3)
+        if "ASTEROID" in ev:
+            speed *= 1.8
+        self.stars[:, 0] += self.stars[:, 1] * speed * dt
+        wrap = self.stars[:, 0] > 1.05
+        self.stars[wrap, 0] = -0.05
+        self.stars[wrap, 2] = r.uniform(0.35, 1.0, int(wrap.sum()))
+        lift = 1.0 + 0.35 * max(0.0, 1.0 - (now - self.last_beat) * 3.0)
+        star_col = col * 0.45 + WHITE * 0.55
+        if "ASTEROID" in ev:
+            star_col = np.array([150.0, 150.0, 140.0])
+        frame = np.outer(np.full(n, 0.03 + 0.05 * self.bass_s), col)
+        pos = self.stars[:, 0][:, None]
+        g = np.exp(-((x[None, :] - pos) / 0.004) ** 2) * self.stars[:, 2][:, None]
+        frame += np.outer(g.sum(axis=0) * lift * (0.9 if boost < 2 else 1.3), star_col)
+        if "KOMET" in ev and r.random() < 1.6 * dt:               # Kometenschauer: schnelle Kometen mit Schweif
+            self._add(now, "comet", 1.2, np.array([200.0, 230.0, 255.0]), d=1.0)
+        if "WURMLOCH" in ev:
+            frame = frame * 0.6 + np.outer(np.full(n, 0.12 + 0.1 * math.sin(now * 2.0)), np.array([170.0, 80.0, 255.0]))
+        elif "SONNE" in ev:
+            frame += np.outer(np.full(n, 0.12 + 0.08 * math.sin(now * 0.7)), np.array([255.0, 140.0, 30.0]))
+        elif "NEBEL" in ev:
+            frame += np.outer(0.5 + 0.5 * np.sin(x * 6.0 + now * 0.4), _hsv((now * 0.05) % 1.0, 0.8, 0.25))
+        if now >= self.planet_next and not ev:                    # Planet zieht vorbei
+            self.planet_next = now + self.rng.uniform(25.0, 45.0)
+            self._add(now, "planet", 3.6, np.array(self.rng.choice(PLANET_COLORS)), d=1.0)
+        return frame
+
+    def _vortex(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Strudel: schwache Punkte driften von beiden Enden zur Mitte, die Mitte glimmt mit dem Bass in der Akzentfarbe.
+        Specials aus der Szene: Objekt geworfen = Punkt läuft zur Mitte und wird verschluckt (Aufleuchten), Umkehrung/EMP =
+        Druckwelle von der Mitte nach außen."""
+        n = self.n
+        x = self._idx()
+        col, col2 = self._base_col()
+        r = self.nrng
+        if self.vdots is None:
+            k = max(6, n // 50)
+            self.vdots = np.stack([r.uniform(0.0, 1.0, k), r.uniform(0.03, 0.07, k)], axis=1)
+        speed = (0.6 + 1.2 * self.e_fast) * live + (1.0 - live) * 0.4
+        d = self.vdots[:, 0]
+        d += np.where(d < 0.5, 1.0, -1.0) * self.vdots[:, 1] * speed * dt
+        gone = np.abs(d - 0.5) < 0.02
+        self.vdots[gone, 0] = np.where(r.random(int(gone.sum())) < 0.5, 0.0, 1.0)
+        g = np.exp(-((x[None, :] - d[:, None]) / 0.005) ** 2)
+        frame = np.outer(g.sum(axis=0) * 0.6, col)
+        centre = np.exp(-((x - 0.5) / (0.05 + 0.1 * self.bass_s)) ** 2) * (0.2 + 0.6 * self.bass_s) * live
+        frame += np.outer(centre, col2 if col2.max() > 60 else col * 0.6 + WHITE * 0.4)
+        frame += np.outer(np.full(n, 0.02), col)
+        if is_beat and bass > 0.6:                                # kräftiger Beat: die Mitte zieht einmal an
+            frame += np.outer(np.exp(-((x - 0.5) / 0.15) ** 2) * 0.25, col)
+        return frame
+
+    def _breathe(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Atmen: die Kette atmet langsam in der Grundfarbe, zwei weiche Wolken in der Akzentfarbe wandern,
+        der Bass hebt das Ganze, Höhen setzen seltene Funken. Specials: Wellen aus den Szenen-Ereignissen."""
+        n = self.n
+        x = self._idx()
+        col, col2 = self._base_col()
+        breath = 0.08 + 0.07 * math.sin(now * 0.5) + 0.25 * self.bass_s * live
+        frame = np.outer(np.full(n, breath), col)
+        for i, (f, ph) in enumerate(((0.07, 0.0), (0.05, 2.1))):
+            c = 0.5 + 0.45 * math.sin(now * f + ph)
+            w = np.exp(-((x - c) / 0.12) ** 2) * (0.12 + 0.2 * self.bass_s)
+            frame += np.outer(w, col2 if col2.max() > 60 else col)
+        if high > 0.4 and self.rng.random() < high * 0.15:
+            self.glow[self.nrng.integers(0, n)] = 1.0
+        frame += np.outer(self.glow, col * 0.5 + WHITE * 0.5) * 0.5
+        return frame
+
+    def _rain(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Regen auf der Dachterrasse: Tropfen laufen von hinten nach vorne, mehr mit der Energie, Grund in der
+        Akzentfarbe; Wetter kommt als Tönung aus der Szene. Specials: Blitz mit Grollen, Feuerwerk, Stromausfall."""
+        n = self.n
+        x = self._idx()
+        col, col2 = self._base_col()
+        if now >= self.drip_next:
+            self.drip_next = now + self.rng.uniform(0.25, 0.9) / (0.4 + 1.2 * self.e_fast + 0.2)
+            self.drips.append([now, self.rng.uniform(0.3, 0.5), self.rng.uniform(0.5, 1.0)])
+        frame = np.outer(np.full(n, 0.04 + 0.1 * self.bass_s), col2 if col2.max() > 40 else col * 0.4)
+        keep = []
+        for dr in self.drips:
+            pos = 1.0 - (now - dr[0]) * dr[1]
+            if pos > -0.05:
+                keep.append(dr)
+                frame += np.outer(np.exp(-((x - pos) / 0.006) ** 2) * dr[2], col)
+        self.drips = keep[-40:]
         return frame
 
     def _fire(self, now, dt, bass, high, is_beat, live) -> np.ndarray:
-        """Feuerflackern: jede LED hat ihr eigenes Glühen zwischen col (Glut) und col2 (Flamme), mehr mit der Energie."""
+        """Feuer: träges Glühen je LED zwischen Glut (col) und Flamme (col2), mehr mit der Energie, Beat = kurzes
+        Aufflackern. Specials aus der Szene: Holz = Funken, Kristall = blaue Tönung."""
         n = self.n
-        self.fire += (self.nrng.random(n) - self.fire) * (0.25 + 0.4 * self.e_fast)
-        heat = np.clip(0.05 + 0.95 * self.fire * (0.3 + 0.7 * self.bass_s) * live + (1.0 - live) * 0.12 * self.fire, 0, 1)
-        if is_beat:
-            heat = np.clip(heat + 0.35, 0, 1)
-        frame = np.outer(heat, self.col) * 0.7 + np.outer(heat * heat, self.col2) * 0.6
-        if high > 0.3:
-            i = self.rng.randrange(n)
-            self.glow[i] = 1.0
-        frame += np.outer(self.glow, self.col3) * 0.7
+        col, col2 = self._base_col()
+        self.fire += (self.nrng.random(n) - self.fire) * (0.06 + 0.12 * self.e_fast)
+        heat = np.clip((0.02 + 0.95 * self.fire * (0.3 + 0.7 * self.bass_s)) * live + (1.0 - live) * 0.15 * self.fire, 0, 1) * self.embers
+        if is_beat and bass > 0.5:
+            heat = np.clip(heat + 0.15, 0, 1)
+        frame = np.outer(heat, col) * 0.7 + np.outer(heat * heat, col2 if col2.max() > 40 else col) * 0.5
         return frame
 
     def _scanner(self, now, dt, bass, high, is_beat, live) -> np.ndarray:
-        """KITT-Scanner: läuft hin und her, Tempo mit der Energie, Beat = Richtungswechsel und Aufblitzen."""
+        """KITT-Scanner: läuft hin und her, Tempo mit der Energie, kräftiger Beat = Richtungswechsel."""
         n = self.n
-        speed = (0.5 + 2.0 * self.e_fast) * live + 0.3 * (1.0 - live)
+        col, col2 = self._base_col()
+        speed = (0.4 + 1.2 * self.e_fast) * live + 0.25 * (1.0 - live)
         self.scan_pos += self.scan_dir * speed * dt
         if self.scan_pos > 1.0 or self.scan_pos < 0.0:
             self.scan_dir *= -1.0
             self.scan_pos = min(1.0, max(0.0, self.scan_pos))
-        if is_beat:
+        if is_beat and bass > 0.7:
             self.scan_dir *= -1.0
         x = self._idx()
-        w = np.exp(-((x - self.scan_pos) / (0.06 + 0.08 * self.bass_s)) ** 2)
-        frame = np.outer(np.full(n, 0.02 + 0.06 * self.bass_s), self.col) + np.outer(w, self.col) * (0.7 + 0.3 * self.bass_s)
-        if is_beat:
-            frame += self.col * 0.25
-        return frame
+        w = np.exp(-((x - self.scan_pos) / (0.06 + 0.06 * self.bass_s)) ** 2)
+        return np.outer(np.full(n, 0.02 + 0.05 * self.bass_s), col) + np.outer(w, col) * (0.7 + 0.3 * self.bass_s)
 
     def _rainbow(self, now, dt, bass, high, is_beat, live) -> np.ndarray:
         n = self.n
-        self.hue = (self.hue + dt * (0.03 + 0.25 * self.e_fast)) % 1.0
-        if is_beat:
-            self.hue = (self.hue + 0.12) % 1.0
+        self.hue = (self.hue + dt * (0.02 + 0.12 * self.e_fast)) % 1.0
         x = self._idx()
         h = (self.hue + x * 0.7) % 1.0
         frame = np.array([_hsv(hh, 1.0, 1.0) for hh in h])
-        level = (0.2 + 0.6 * self.bass_s) * live + (1.0 - live) * 0.1
-        frame = frame * level + np.outer(self.glow, WHITE) * 0.6
-        if high > 0.3 and self.rng.random() < high:
-            self.glow[self.rng.randrange(n)] = 1.0
+        level = (0.15 + 0.5 * self.bass_s) * live + (1.0 - live) * 0.1
+        return frame * level
+
+    # -- Specials --------------------------------------------------------------------------------------------------
+    def _apply_specials(self, frame: np.ndarray, now: float, dt: float, bass: float) -> np.ndarray:
+        n = self.n
+        x = self._idx()
+        keep = []
+        for sp in self.specials:
+            k = now - sp["t0"]
+            if k > sp["len"]:
+                continue
+            keep.append(sp)
+            u = k / sp["len"]
+            col = sp["col"]
+            kind = sp["kind"]
+            d = float(sp.get("d", 1.0))
+            if kind == "planet":                                  # weiche Kugel zieht vorbei und füllt kurz alles
+                pos = u if d > 0 else 1.0 - u
+                body = np.exp(-((x - pos) / 0.1) ** 2)
+                flood = math.exp(-((u - 0.5) / 0.14) ** 2) * 0.75
+                frame = frame * (1.0 - 0.5 * flood) + np.outer(body * 0.9 + flood, col)
+            elif kind == "wave":
+                pos = u if d > 0 else 1.0 - u
+                frame += np.outer(np.exp(-((x - pos) / 0.07) ** 2) * (1.0 - 0.5 * u), col)
+            elif kind == "comet":
+                pos = u * 1.1 if d > 0 else 1.0 - u * 1.1
+                head = np.exp(-((x - pos) / 0.006) ** 2)
+                tail = np.exp(-((x - (pos - d * 0.04)) / 0.035) ** 2) * 0.4
+                frame += np.outer(head + tail, col)
+            elif kind == "swallow":                               # Punkt zur Mitte, dann Aufleuchten in der Mitte
+                if u < 0.6:
+                    pos = (0.0 if d > 0 else 1.0) + d * 0.5 * (u / 0.6)
+                    frame += np.outer(np.exp(-((x - pos) / 0.01) ** 2), col)
+                else:
+                    g = (1.0 - (u - 0.6) / 0.4)
+                    frame += np.outer(np.exp(-((x - 0.5) / (0.06 + 0.2 * (1.0 - g))) ** 2) * g, col)
+            elif kind == "burst":                                 # Druckwelle von der Mitte nach außen
+                rad = u * 0.55
+                band = np.exp(-((np.abs(x - 0.5) - rad) / 0.05) ** 2) * (1.0 - u)
+                frame += np.outer(band, col)
+            elif kind == "lightning":                             # zwei kurze Blitze, dann Grollen
+                if k < 0.08 or 0.2 < k < 0.32:
+                    frame = frame * 0.3 + np.outer(np.ones(n), col * 0.4 + WHITE * 0.6) * 0.9
+                elif k > 0.4:
+                    rum = (1.0 - u) * 0.25
+                    frame += np.outer((self.nrng.random(n) < 0.3) * rum, col * 0.5 + WHITE * 0.5)
+            elif kind == "fireworks":                             # Blüten gehen auf und verblassen
+                for pos, t0, c in sp["blooms"]:
+                    kk = k - t0
+                    if 0.0 <= kk < 1.2:
+                        w = 0.01 + 0.09 * kk
+                        frame += np.outer(np.exp(-((x - pos) / w) ** 2) * (1.0 - kk / 1.2) * 0.9, c)
+            elif kind == "blackout":                              # alles aus, dann kommen Abschnitte zögernd zurück
+                if k < 1.5:
+                    frame = frame * 0.0
+                else:
+                    back = sp["back"]
+                    if back is not None and len(back) == n:
+                        frame = frame * (back < (k - 1.5) / (sp["len"] - 1.5))[:, None]
+            elif kind == "sparks":                                # Funken poppen auf und verglühen
+                if self.nrng.random() < 0.9:
+                    self.glow[self.nrng.integers(0, n, size=max(1, n // 80))] = 1.0
+                frame += np.outer(self.glow, col) * 0.8
+            elif kind == "blink2":
+                if k < 0.12 or 0.3 < k < 0.42:
+                    frame = frame * 0.2 + np.outer(np.ones(n), col) * 0.8
+        self.specials = keep
         return frame
 
     def _error(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
@@ -428,6 +684,7 @@ class LedStream:
         n = self.n
         x = self._idx()
         r = self.nrng
+        RED_, GREEN_ = self.c_red, self.c_green                 # Systemfehler rot/grün, Black Ice/Paradoxon/Überdosis Themenfarben
         phase = st.get("phase", "code")
         k = float(st.get("k", 0.0))
         pct = float(st.get("pct", 0.0))
@@ -534,11 +791,11 @@ class LedStream:
         self.onmask = seg_on[self.seg_id]
         self.level = (self.seg_lvl * flick)[self.seg_id]
         work = self.onmask * self.level * (0.6 + 0.4 * live) * (1.0 - 0.03 * sev * r.random(n))
-        frame = np.outer(work * red, RED) + np.outer(work * green, GREEN)
+        frame = np.outer(work * red, RED_) + np.outer(work * green, GREEN_)
         # Kampf an der Front: schnelles Sirren rot/grün, mit dem Bass heller
         side = np.sin(now * (2.0 + 2.5 * bass) + x * 40.0 + self.noise_ph[1] * 3.0) > 0.0        # langsames Wabern an der Front
         fight = contested * (0.3 + 0.5 * bass) * (0.4 + 0.4 * sev) * (0.15 + 0.85 * self.onmask)
-        frame += np.outer(fight * side, RED) + np.outer(fight * ~side, GREEN)
+        frame += np.outer(fight * side, RED_) + np.outer(fight * ~side, GREEN_)
         # Störungen
         if now >= self.ev_next:
             self.ev_next = now + r.uniform(4.0, 14.0) / (0.6 + 0.6 * sev)
@@ -557,31 +814,31 @@ class LedStream:
                 self.storm = (i0, min(n, i0 + w), now + r.uniform(1.0, 3.0))
         i0, i1, until, colr = self.strobe
         if now < until:
-            frame[i0:i1] = (RED if colr == "red" else GREEN) * (0.85 + 0.15 * math.sin(now * 90.0))
+            frame[i0:i1] = (RED_ if colr == "red" else GREEN_) * (0.85 + 0.15 * math.sin(now * 90.0))
         t0, d, colr, dur = self.sweep
         if now - t0 < dur:
             pos = (now - t0) / dur
             pos = pos if d > 0 else 1.0 - pos
             w = np.exp(-((x - pos) / 0.02) ** 2)
-            frame += np.outer(w, RED if colr == "red" else GREEN)
+            frame += np.outer(w, RED_ if colr == "red" else GREEN_)
         i0, i1, until = self.storm
         if now < until:
             if self.storm_noise is None or len(self.storm_noise) != i1 - i0 or int(now * 8.0) != self.storm_tick:
                 self.storm_noise, self.storm_tick = r.random(i1 - i0), int(now * 8.0)
             noise = self.storm_noise
-            frame[i0:i1] = np.outer((noise > 0.7) * noise, RED) + np.outer((noise < 0.25) * (1.0 - noise), GREEN) * 0.7
+            frame[i0:i1] = np.outer((noise > 0.7) * noise, RED_) + np.outer((noise < 0.25) * (1.0 - noise), GREEN_) * 0.7
         if phase == "reboot":                                     # Neustart: grüne Linie fegt von vorne, dahinter ruhiges Grün
             w = np.exp(-((x - k) / 0.03) ** 2)
-            frame = np.outer((x < k).astype(float) * 0.3 * self.onmask, GREEN) + np.outer(w, GREEN)
+            frame = np.outer((x < k).astype(float) * 0.3 * self.onmask, GREEN_) + np.outer(w, GREEN_)
         elif phase == "stable":
             breath = 0.25 + 0.15 * math.sin(now * 1.5) + 0.2 * self.bass_s
-            frame = np.outer(self.onmask * breath, GREEN) + np.outer(self.glow, GREEN) * 0.6
+            frame = np.outer(self.onmask * breath, GREEN_) + np.outer(self.glow, GREEN_) * 0.6
             if r.random() < 0.3:
                 self.glow[r.integers(0, n)] = 1.0
         if now < self.black_until:                                # Totalausfall
             frame[:] = 0.0
         if phase in ("error", "alarm") and is_beat:               # Alarm: alles Rote zuckt auf den Beat
-            frame += np.outer(red * self.onmask, RED) * 0.5
+            frame += np.outer(red * self.onmask, RED_) * 0.5
         alive = (self.dead < now).astype(float)
         return frame * alive[:, None]
 

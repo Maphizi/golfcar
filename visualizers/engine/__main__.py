@@ -157,7 +157,7 @@ def main() -> int:
             renderer.draw(t, f, {**(ctrl.uniforms(t, f) if ctrl else {}), **fixed})   # --uniform überstimmt den Controller
             if leds is not None:
                 led_state = None
-                if ctrl and hasattr(ctrl, "led_state"):
+                if ctrl and callable(getattr(ctrl, "led_state", None)):
                     try:
                         led_state = ctrl.led_state()
                     except Exception:

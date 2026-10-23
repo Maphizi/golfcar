@@ -1234,16 +1234,17 @@ Das beleuchtete Buttonboard hängt an einem WLED-Controller (`config/wled.toml` 
 (`launcher/wled.py`): Helligkeit, Effekt, Haupt-, Zweit- und Drittfarbe, Geschwindigkeit, Intensität,
 optional Palette; alle Profile sind über `[controller] dim` (0.7 = 30 %) gedämpft. **Live zur Musik:** Sobald ein
 Modus läuft, streamt er 25 Bilder pro Sekunde eigene LED-Bilder per UDP an den Controller (WLED-Echtzeit, dafür muss in WLED
-"UDP-Echtzeit empfangen" an sein, Standard). Das Board bleibt dunkel und leuchtet nur in der Modusfarbe: der Bass lässt LEDs von der
-Mitte nach außen aufleuchten wie ein Pegelmesser, jeder Beat schickt eine Lichtwelle von vorne nach hinten über den Cart (die Kette beginnt vorne), kräftige Beats blitzen
-dazu eine zufällige LED-Gruppe, die Höhen setzen einzelne Funken,
-ein Drop blitzt alles weiß, bei Stille wandert eine einzelne LED langsam atmend über das Board.
-Feuer-Modi flackern je LED, Scanner-Modi laufen als KITT-Licht im Takt, Regenbogen-Modi drehen mit der Energie. Die
-Slotmaschinen leuchten wie ein Casino-Eingang: Blöcke von drei LEDs in Gold, Warmweiß und Akzentfarbe, alle an, die Helligkeit
-wandert nur leicht, das Muster fährt langsam mal vor, mal zurück, beim Drehen schnell, alle paar Beats rücken die Farben weiter;
-kleiner Gewinn blitzt zweimal, großer Gewinn schickt einen weißen Lauf von vorne, Jackpot ist Gold-Weiß-Stroboskop mit Funkeln. Als Specials alle 20 bis 45 Sekunden: Ein einzelner heller Punkt läuft über die ganze Kette, und zieht der Beat
-währenddessen an, startet ein zweiter in der Akzentfarbe und überholt ihn; oder zwei Läufer kommen von beiden Enden und kreuzen
-sich in der Mitte. Im Systemfehler
+"UDP-Echtzeit empfangen" an sein, Standard). Jeder Modus hat ein ruhiges Grundprogramm, und die Specials kommen aus dem, was auf dem Schirm passiert:
+Beim Flug (Navigationscomputer, Planeten, Zeitsprung, Neonfahrt) ziehen Sterne von vorne nach hinten über den Cart, schneller
+mit der Musik, und alle halbe Minute zieht ein Planet vorbei, der im Vorbeiflug kurz die ganze Kette in seiner Farbe füllt;
+Kometenschauer schickt Kometen, das Asteroidenfeld graue Brocken, Wurmloch, Sonne und Nebel färben alles. Das Lagerfeuer glüht
+träge je LED, Holz nachlegen wirft Funken, der Kristall färbt blau. Schwarzes Loch, Kern, Fluxkompensator und Moorsee sind ein
+Strudel: Punkte driften von beiden Enden zur Mitte, die Mitte glimmt mit dem Bass, ein geworfenes Objekt läuft zur Mitte und wird
+verschluckt, die Umkehrung ist eine Druckwelle nach außen. Taxistand, Orakel, Uhrturm, Auge des Waldes, Waldtresen, Herzbaum
+und Marktplatz atmen langsam mit zwei wandernden Wolken, Jahreszeit und Epoche färben die Kette, Ereignisse laufen als Welle
+durch. Auf der Dachterrasse regnet es von hinten nach vorne, das Wetter färbt, Blitze schlagen zweimal ein und grollen nach,
+Feuerwerk geht in Blüten auf, der Stromausfall macht alles aus und lässt es zögernd zurückkommen. Black Ice, Paradoxon und
+Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. Im Systemfehler
 ist das Board ein Kampf zwischen Grün (das System) und Rot (der Fehler), sonst nichts: Die Front wandert in Blasen über die
 Kette, je nach Phase gewinnt Rot (Zusammenbruch, Alarm) oder Grün (Erholung), jeder Beat ist ein Vorstoß der stärkeren Seite,
 der Bass heizt den Kampf an, umkämpfte Stellen sirren rot-grün. Und es sieht kaputt aus, aber träge statt hektisch: Abschnitte von ein paar LEDs

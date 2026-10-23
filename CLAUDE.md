@@ -392,26 +392,23 @@ Profil je Modus `[modes.<modus>]` (bri, fx, col, col2, col3, sx, ix, pal); Ereig
 über `wled.apply_mode_async()`. Home nimmt die Themenfarbe (WLED und PXN-Tasten, schon beim Blättern am Taxistand). Test: `scripts/wledctl.py set --col R,G,B --fx N`.
 Live zur Musik (`launcher/ledstream.py`, `LedStream`): jede Engine-Szene streamt unter dem Launcher (oder `KITT_LEDS=1`) 25 Bilder/s
 per UDP (WLED-Echtzeit DRGB, `[controller] udp_port` 21324, `realtime_timeout` 2 s, LED-Anzahl aus `/json/info` oder `leds`);
-`__main__.py` ruft je Bild `leds.update(now, f, ctrl.led_state())`. Programme aus dem fx des Modusprofils: Feuer (45/66/42) =
-Flackern je LED, Scanner (40) = KITT-Lauf (Tempo Energie, Beat = Umkehr), Rainbow (9/94), sonst VU-Meter in der Modusfarbe (Grund dunkel, Bass
-lässt LEDs von der Mitte nach außen leuchten, Beat = Blitz einer zufälligen LED-Gruppe, Höhen = einzelne Funken, Drop =
-Weißblitz höchstens alle 8 s, Stille = eine wandernde LED atmet; Beat-Welle läuft von vorne nach hinten, `_idx()` 0 = vorne am
-Cart, `[controller].reverse` dreht um; Virus frisst von hinten, Neustart scannt von vorne); `Controller.led_state()` mit
-`program = "error"` (`error.py`): nur Rot und Grün, Kampf: `terr` je LED (-1 rot .. 1 grün), Front auf einem wandernden
-Rauschfeld (`noise_ph`, Quantil = Rotanteil `target` je Phase, Virus/Schilde von hinten), Beat = Vorstoß `push`, Bass heizt an,
-umkämpfte LEDs sirren rot/grün (6-12 Hz); kaputt und träge: Abschnitte von 3-30 LEDs (`seg_id`) mit Lebenslauf `seg_state`
-0 aus -> 1 ruhig an (3-12 s) -> 2 flackern (1-4 s, träger Zufall `seg_flick` mit Aussetzern) -> 3 tot (1-5 s) -> aus, Wechsel
-nur auf dem Beat (`tick`, ohne Beats alle 2 s; je Beat wandert ein Sechstel der Leuchtenden zu einem Nachbarabschnitt), nur so
-viele an wie `p_on` (5-30 %), gedimmt `seg_lvl`; Front ruht fast, Beats stoßen (`push`); Störungen `ev_next` alle 4-14 s (Kurzschluss-Block `strobe` 0,15-0,5 s + 1-5 s tot,
-Störlinie `sweep` 0,8-2 s, Totalausfall `black_until`, Rauschsturm `storm` 1-3 s), Ausfälle `dead`;
-Eindringling = roter Läufer mit Spur, Neustart = grüne Linie von vorne, stabil = ruhiges grünes Atmen. `program = "slots"`
-(`slots.py` `led_state`, alle vier Automaten): Casino-Markise `_slots`: Blöcke von 3 LEDs in Farbe A / Warmweiß / Farbe B des gewählten Automaten
-(`colors` aus `slots_themes.py` über `led_state`, sonst `marquee` aus col, col3 oder col2), alle an, Helligkeit wandert leicht (`twinkle`, Bass), Muster fährt `mq_pos` 2,5-6,5 Schritte/s
-(Stille 1,5, Drehen 10), Richtung `mq_dir` kehrt alle 16 Beats, bei kräftigem Bass oder alle 6-14 s um, Farben rücken alle 4 Beats
-(`mq_rot`); Gewinn 1 = zweimal Gold, 2 = weißer Lauf von vorne + schnell, >= 3 = Gold/Weiß-Strobo 3 s + Funkeln. Specials alle
-`sp_next` 20-45 s (nicht beim Drehen/Gewinn): `runner` = ein weißer Punkt läuft durch (0,2-0,35 Kette/s), zieht der Beat
-währenddessen an (Bass +0,12 auf Beat oder Energie +0,15, Fortschritt 15-60 %), startet ein Überholer in der Akzentfarbe mit
-1,9x Tempo; `cross` = zwei Läufer von beiden Enden kreuzen sich; Markise derweil auf 60 %. Ereignis-Profile (`wled.apply_mode_async`) laufen über `wled.set_stream_hook` als Blitz in der Profilfarbe.
+`__main__.py` ruft je Bild `leds.update(now, f, ctrl.led_state())` (nur wenn `led_state` aufrufbar ist). Grundprogramm je
+Szene `SCENE_BASE` (sonst nach fx des Profils: Feuer 45/66/42, Scanner 40, Rainbow 9/94, sonst `_music` Pegelmesser), alle ruhig,
+Stroboskop nur als Special: `stars` (navcomputer, planets, timejump, neonrace, splash): wenige Sterne ziehen von vorne nach
+hinten, Tempo mit der Energie, Beat hebt sie kurz; alle 25-45 s `planet` (weiche Kugel zieht vorbei und füllt im Vorbeiflug
+kurz alles in ihrer Farbe); `navcomputer.led_state()` liefert `flying` und das laufende Ereignis: KOMETENSCHAUER = `comet`-Läufer,
+ASTEROIDENFELD = graue Brocken schneller, WURMLOCH/SONNE/NEBEL = Tönung. `fire` (campfire, `led_state` level/blue): träges
+Glühen je LED, `embers`-Maske. `vortex` (blackhole, core, flux, pond): Punkte driften von beiden Enden zur Mitte, Mitte glimmt
+mit dem Bass. `breathe` (taxi, oracle, clocktower, woodeye, trip, hearttree, square): langsames Atmen + zwei wandernde Wolken.
+`rain` (rooftop): Tropfen von hinten nach vorne. `glitch` (blackice, paradox, overdose): das Störprogramm `_error` in den
+Themenfarben (`c_red`/`c_green` aus col/col2) mit eigenem 40-s-Phasenzyklus. `error` und `slots` wie oben. Specials
+(`_add`/`_apply_specials`, max. 4 gleichzeitig) aus den Ereignis-Profilen der Szenen (`wled.apply_mode_async` -> `event()`):
+*throw* = `swallow` (Punkt zur Mitte, Aufleuchten), *eject/emp/overload/discharge* = `burst` (Druckwelle von der Mitte),
+*lightning/strike/storm* = `lightning` (zwei Blitze, Grollen), *fireworks* = Blüten, *blackout* = aus und zögernd zurück,
+*log* = `sparks`, *blue* = Tönung 30 s, *jump* = Schub + Blitz, *start/nitro* = Schub + Welle, `horn` = `blink2`, `fx` = Welle in
+col3, sonst `wave` in der Profilfarbe; Zustandsprofile `STATE_PROFILE` (rooftop_rain|fog|acid|ash, hearttree_<Jahreszeit>,
+square_<Jahr>, campfire_big) setzen die Grundfarbe (`tint`), das Modusprofil selbst setzt sie zurück. Drop = weicher Aufheller
+(0.55, höchstens alle 12 s).
 Gesamtdämpfung `[controller] dim` 0.7 für HTTP-Profile (`payload_for`) und Stream. HAL 3000 (kein Engine-Prozess) behält das Profil.
 `payload_for` setzt immer `pal` (Profil, sonst 3 mit col2 / 2 ohne: sonst bleibt die letzte Palette, z. B. Regenbogen, und viele
 Effekte malen damit), Segment 0 über die ganze Kette (`led_count()` aus `/json/info` oder `[controller].leds`), `pl = -1`

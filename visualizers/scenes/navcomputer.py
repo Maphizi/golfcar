@@ -291,6 +291,14 @@ class Controller:
                 self.next_event_at = now + self.rng.uniform(*EVENT_EVERY)
                 log.info("Ereignis vorbei: %s", EVENTS[kind][0])
 
+    def led_state(self) -> dict:
+        """Für launcher/ledstream.py: Sternenflug; laufendes Ereignis (Name) für die Specials."""
+        ev = self.event
+        name = ""
+        if ev is not None and ev.get("started"):
+            name = EVENTS[ev["kind"]][0]
+        return {"program": "stars", "flying": self.phase in (PHASE_LAUNCH, PHASE_CRUISE), "event": name}
+
     def uniform_names(self):
         return ("uPhase", "uPhaseT", "uSlide", "uPlanetType", "uColA", "uColB", "uPlanetSize", "uRings", "uMoons", "uLaunchS", "uCruiseS", "uArriveS",
                 "uFly", "uFlyType", "uFlySize", "uFlyRings", "uFlySide", "uFlyColA", "uFlyColB", "uSponsorTex", "uSponsorOK",
