@@ -20,6 +20,20 @@ from typing import Any
 log = logging.getLogger("wled")
 
 _cfg: dict | None = None   # geladen beim ersten Aufruf
+_stream_hook = None        # LedStream der laufenden Szene: Ereignis-Profile werden auch dort gespielt
+
+
+def set_stream_hook(fn) -> None:
+    global _stream_hook
+    _stream_hook = fn
+
+
+def dim() -> float:
+    """Gesamtdämpfung aller Profile ([controller].dim, 0.7 = 30 % leiser)."""
+    try:
+        return max(0.0, min(1.0, float(_load_cfg().get("controller", {}).get("dim", 1.0))))
+    except (TypeError, ValueError):
+        return 1.0
 
 
 def _load_cfg() -> dict:
@@ -79,7 +93,7 @@ def payload_for(profile: dict[str, Any], col: list[int] | None = None) -> dict:
     }
     if "pal" in profile:
         seg["pal"] = int(profile["pal"])
-    return {"on": True, "bri": int(profile.get("bri", 128)), "seg": [seg]}
+    return {"on": True, "bri": max(1, int(int(profile.get("bri", 128)) * dim())), "seg": [seg]}
 
 
 def profiles() -> dict[str, dict]:
@@ -107,6 +121,11 @@ def apply_mode(mode: str, col: list[int] | None = None) -> bool:
     if not mode_cfg:
         log.debug("Kein WLED-Profil für '%s', übersprungen", mode)
         return False
+    if _stream_hook is not None:
+        try:
+            _stream_hook(mode, mode_cfg)
+        except Exception:
+            log.exception("LED-Stream-Ereignis %s", mode)
     payload = payload_for(mode_cfg, col)
     return send(payload, f"'{mode}' -> fx={payload['seg'][0]['fx']} bri={payload['bri']} col={payload['seg'][0]['col'][0]}")
 

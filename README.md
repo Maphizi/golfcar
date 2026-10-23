@@ -1232,7 +1232,16 @@ und 3 Sätze begrenzt mit Abbruch der Generierung; Prompt-Cache im llama-server;
 Das beleuchtete Buttonboard hängt an einem WLED-Controller (`config/wled.toml` `[controller]`, Host
 192.168.2.150). Beim Moduswechsel schickt der Launcher das Profil `[modes.<modus>]` per HTTP-API
 (`launcher/wled.py`): Helligkeit, Effekt, Haupt-, Zweit- und Drittfarbe, Geschwindigkeit, Intensität,
-optional Palette. Jeder Modus hat sein eigenes Licht: Taxistand gelb atmend (und in der Farbe des
+optional Palette; alle Profile sind über `[controller] dim` (0.7 = 30 %) gedämpft. **Live zur Musik:** Sobald ein
+Modus läuft, streamt er 25 Bilder pro Sekunde eigene LED-Bilder per UDP an den Controller (WLED-Echtzeit, dafür muss in WLED
+"UDP-Echtzeit empfangen" an sein, Standard). Die Grundfarbe des Modus atmet mit dem Bass, jeder Beat schickt eine Welle in der
+Akzentfarbe über das Board, die Höhen lassen einzelne LEDs funkeln, ein Drop blitzt alles weiß, bei Stille atmet es nur leise.
+Feuer-Modi flackern je LED, Scanner-Modi laufen als KITT-Licht im Takt, Regenbogen-Modi drehen mit der Energie. Im Systemfehler
+ist das Board grün wie der Code: einzelne LEDs fallen aus und flackern, beim Zusammenbruch immer mehr, bei roten Fehlern und
+Alarm werden es Schritt für Schritt mehr rote LEDs, die auf den Beat aufblitzen, bei der Erholung kommen sie zurück und der
+Neustart läuft als Scanner; die Eingabe-Aufforderung blinkt gelb mit einem Balken für die Restzeit, der Virus frisst sich rot
+von einem Ende her durch, die Schilde sind ein blauer Balken in Prozent, der Eindringling ein orangener Punkt auf der Jagd.
+Endet der Modus, fällt WLED nach zwei Sekunden von selbst auf das Profil zurück. Jeder Modus hat sein eigenes Licht: Taxistand gelb atmend (und in der Farbe des
 gewählten Themas, sobald eines bestätigt ist), Navigationscomputer blau-cyane Kometen, Schwarzes
 Loch oranger Meteor, HAL tiefrotes Atmen, Slotmaschine goldenes Pulsieren, Lagerfeuer Feuer,
 Systemfehler rot blinkend, Arcade Regenbogen, Bordcomputer KITT-Scanner, Planeten weißblaues

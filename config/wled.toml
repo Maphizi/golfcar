@@ -9,6 +9,13 @@ host    = "192.168.2.150"
 port    = 80
 timeout = 2          # Sekunden; bei Timeout weiterfahren, LEDs nicht blockieren
 enabled = true
+dim     = 0.7        # Gesamthelligkeit aller Profile und des Live-Streams (0.7 = 30 % gedämpft)
+# Live zur Musik (launcher/ledstream.py): jede Szene streamt 25 Bilder/s per UDP (WLED "UDP-Echtzeit empfangen" muss an sein)
+realtime = true
+udp_port = 21324
+fps      = 25
+realtime_timeout = 2  # s nach dem letzten Paket fällt WLED auf das Profil zurück (Moduswechsel)
+leds     = 0         # LED-Anzahl; 0 = beim Controller nachfragen (/json/info)
 
 # Pro Profil: bri Helligkeit 0-255, fx Effekt-ID, col Hauptfarbe [R,G,B], col2/col3 Zweit-/Drittfarbe
 # (bei vielen Effekten Hintergrund bzw. Akzent), sx Geschwindigkeit, ix Intensität, pal Palette (optional).

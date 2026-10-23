@@ -189,6 +189,15 @@ class Controller:
             self._next()
 
     # -- Schnittstelle zur Engine ----------------------------------------------
+    LED_PHASES = {CODE: "code", BREAK: "break", ERROR: "error", RECOVERY: "recovery", REBOOT: "reboot", PROMPT: "prompt",
+                  VIRUS: "virus", SHIELDS: "shields", STABLE: "stable", ALARM: "alarm", INTRUDER: "intruder"}
+
+    def led_state(self) -> dict:
+        """Für launcher/ledstream.py: Phase, Fortschritt, Prozent, Ausgang."""
+        k = (time.monotonic() - self.phase_t0) / max(0.1, self.phase_len)
+        return {"program": "error", "phase": self.LED_PHASES.get(self.phase, "code"), "k": max(0.0, min(1.0, k)),
+                "pct": self.pct, "good": bool(self.extra.get("good")) or self.outcome >= 0.5}
+
     def uniform_names(self):
         return ("uSeed", "uPhase", "uPhaseT", "uPhaseLen", "uCodeVar", "uErrVar", "uCodeT", "uCodeProg",
                 "uPrompt", "uOutcome", "uGlitch", "uPct", "uWordA", "uWordB")

@@ -121,6 +121,13 @@ def main() -> int:
     shot_done = False
     first_logged = False
     under_launcher = bool(os.environ.get("KITT_MODE"))
+    leds = None                                # LED-Board live zur Musik (nur unter dem Launcher oder KITT_LEDS=1)
+    if under_launcher or os.environ.get("KITT_LEDS"):
+        try:
+            from launcher.ledstream import LedStream
+            leds = LedStream(os.environ.get("KITT_MODE", args.scene), args.scene)
+        except Exception:
+            log.exception("LED-Stream nicht gestartet")
     banner = ""                                # Autopilot-Schalter (F16 AN / F17 AUS vom Launcher): kurze Anzeige
     banner_t0 = -1e9
     try:
@@ -147,6 +154,12 @@ def main() -> int:
             renderer.upload_audio(f.spectrum, f.wave)
             sync_images()
             renderer.draw(t, f, {**(ctrl.uniforms(t, f) if ctrl else {}), **fixed})   # --uniform überstimmt den Controller
+            if leds is not None:
+                try:
+                    leds.update(now, f, ctrl.led_state() if ctrl and hasattr(ctrl, "led_state") else None)
+                except Exception:
+                    log.exception("LED-Stream")
+                    leds = None
             if ctrl:
                 for text, size_frac, x_frac, y_frac, color, alpha in ctrl.overlays(t):
                     ov = overlay(size_frac)
@@ -180,6 +193,8 @@ def main() -> int:
         log.exception("Visualizer abgestürzt")
         rc = 1
     finally:
+        if leds is not None:
+            leds.stop()
         cap.stop()
         pygame.quit()
     return rc
