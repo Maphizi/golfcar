@@ -6,9 +6,9 @@
 
 [controller]
 host    = "192.168.2.150"
-# Kanal-Remap: Strip-Drahtfolge W,R,G,B statt G,R,B,W (WS2814)
-# [R,G,B,W]-Eingabe → sende [R,W,G,B] = Indizes [0,3,1,2]
-col_remap = [0, 3, 1, 2]
+# Kanal-Remap in Software (nur, wenn die Reihenfolge NICHT in WLED gesetzt werden kann; sonst doppelt korrigiert = falsch):
+# col_remap = [0, 3, 1, 2]   # [R,G,B,W] -> Drahtfolge W,R,G,B (WS2814). Standard: aus, die Reihenfolge steht in WLED
+# (scripts/wled_setup.py --test --loop und WLED -> Config -> LED Preferences -> Color Order / Swap).
 port    = 80
 timeout = 2          # Sekunden; bei Timeout weiterfahren, LEDs nicht blockieren
 enabled = true
