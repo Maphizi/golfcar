@@ -400,8 +400,9 @@ Cart, `[controller].reverse` dreht um; Virus frisst von hinten, Neustart scannt 
 `program = "error"` (`error.py`): nur Rot und Grün, Kampf: `terr` je LED (-1 rot .. 1 grün), Front auf einem wandernden
 Rauschfeld (`noise_ph`, Quantil = Rotanteil `target` je Phase, Virus/Schilde von hinten), Beat = Vorstoß `push`, Bass heizt an,
 umkämpfte LEDs sirren rot/grün (6-12 Hz); kaputt und träge: Abschnitte von 3-30 LEDs (`seg_id`) mit Lebenslauf `seg_state`
-0 aus -> 1 ruhig an (3-12 s) -> 2 flackern (1-4 s, träger Zufall `seg_flick` mit Aussetzern) -> 3 tot (1-5 s) -> aus, nur so viele
-an wie `p_on` (6-36 %), gedimmt `seg_lvl`; Störungen `ev_next` alle 2-8 s (Kurzschluss-Block `strobe` 0,15-0,5 s + 1-5 s tot,
+0 aus -> 1 ruhig an (3-12 s) -> 2 flackern (1-4 s, träger Zufall `seg_flick` mit Aussetzern) -> 3 tot (1-5 s) -> aus, Wechsel
+nur auf dem Beat (`tick`, ohne Beats alle 2 s; je Beat wandert ein Sechstel der Leuchtenden zu einem Nachbarabschnitt), nur so
+viele an wie `p_on` (5-30 %), gedimmt `seg_lvl`; Front ruht fast, Beats stoßen (`push`); Störungen `ev_next` alle 4-14 s (Kurzschluss-Block `strobe` 0,15-0,5 s + 1-5 s tot,
 Störlinie `sweep` 0,8-2 s, Totalausfall `black_until`, Rauschsturm `storm` 1-3 s), Ausfälle `dead`;
 Eindringling = roter Läufer mit Spur, Neustart = grüne Linie von vorne, stabil = ruhiges grünes Atmen. `program = "slots"`
 (`slots.py` `led_state`, alle vier Automaten): Casino-Markise `_slots`: Blöcke von 3 LEDs in Hauptfarbe / Warmweiß / Akzent
