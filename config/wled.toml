@@ -16,6 +16,7 @@ udp_port = 21324
 fps      = 25
 realtime_timeout = 2  # s nach dem letzten Paket fällt WLED auf das Profil zurück (Moduswechsel)
 leds     = 0         # LED-Anzahl; 0 = beim Controller nachfragen (/json/info)
+reverse  = false     # Kette beginnt vorne am Cart (Index 0) und endet hinten; true, wenn umgekehrt verlegt
 
 # Ohne pal nimmt der Launcher 2 (nur Hauptfarbe) bzw. 3 (Haupt- und Zweitfarbe), damit nie eine alte Palette
 # (Regenbogen) hängen bleibt; beim ersten Senden werden zusätzliche Segmente gelöscht und Playlists gestoppt.

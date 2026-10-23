@@ -5,7 +5,8 @@ Der Launcher setzt beim Moduswechsel weiter das Profil aus config/wled.toml per 
 zeigt WLED die Bilder von hier, und `timeout` Sekunden nach dem letzten Paket (Szene beendet) fällt es von selbst auf
 das Profil zurück. Farben kommen aus dem Modusprofil (col = Hauptfarbe, col2 = Akzent, col3 = Funkeln), Programm aus
 dem fx des Profils (Feuer-Effekte -> Feuer, Scanner -> KITT-Scanner, Rainbow -> Regenbogen, sonst VU-Meter in der
-Modusfarbe: Grund dunkel, Bass von der Mitte nach außen, Beat = Blitz einer LED-Gruppe, Höhen = einzelne Funken) oder aus
+Modusfarbe: Grund dunkel, Bass von der Mitte nach außen, Beat = Welle von vorne nach hinten, kräftige Beats dazu eine
+LED-Gruppe, Höhen = einzelne Funken). Kette: Index 0 = vorne am Cart ([controller].reverse dreht um) oder aus
 `Controller.led_state()` der Szene (z. B. "error": nur Rot, Ausfälle, Flackern, wachsendes Hellrot). Ereignis-Profile, die Szenen
 über wled.apply_mode_async() schicken (slots_jackpot, campfire_log ...), spielt der Stream als kurzen Blitz in der
 Profilfarbe. Gesamthelligkeit: Profil-bri x [controller].dim. In WLED muss "UDP-Echtzeit empfangen" an sein (Standard).
@@ -61,6 +62,7 @@ class LedStream:
         self.timeout = max(1, int(ctrl.get("realtime_timeout", 2)))
         self.dim = float(ctrl.get("dim", 1.0))
         self.n = int(ctrl.get("leds", 0))                         # 0 = beim Controller nachfragen
+        self.reverse = bool(ctrl.get("reverse", False))         # Kette: Index 0 = vorne am Cart, Ende = hinten; reverse dreht um
         prof = wled.profiles().get(mode) or wled.profiles().get(scene) or {}
         self.col = _rgb(prof.get("col"), [255, 255, 255])
         if mode == "home":                                        # Taxistand: Themenfarbe wie beim Launcher
@@ -196,7 +198,9 @@ class LedStream:
 
     # -- Programme -----------------------------------------------------------------------------------------------
     def _idx(self) -> np.ndarray:
-        return np.arange(self.n) / max(1, self.n - 1)
+        """0 = vorne am Cart .. 1 = hinten."""
+        x = np.arange(self.n) / max(1, self.n - 1)
+        return 1.0 - x if self.reverse else x
 
     def _music(self, now, dt, bass, high, is_beat, live) -> np.ndarray:
         """Grundzustand dunkel. Bass = Pegel von der Mitte nach außen (VU-Meter) in der Modusfarbe, Beat = kurzer Blitz
@@ -204,16 +208,24 @@ class LedStream:
         n = self.n
         x = self._idx()
         if is_beat:
-            k = max(1, int(n * (0.25 + 0.2 * self.e_fast)))
-            self.beat_mask = np.zeros(n)
-            self.beat_mask[self.rng.sample(range(n), k)] = 1.0
-            self.beat_glow = 1.0
+            self.pulses.append((now, 1))                          # Welle von vorne nach hinten (Fahrtrichtung)
+            if bass > 0.55:                                       # kräftiger Beat: dazu eine zufällige Gruppe
+                k = max(1, int(n * (0.15 + 0.15 * self.e_fast)))
+                self.beat_mask = np.zeros(n)
+                self.beat_mask[self.rng.sample(range(n), k)] = 1.0
+                self.beat_glow = 1.0
         self.beat_glow *= 0.72
+        travel = 0.9 - 0.45 * self.e_fast                         # schneller bei lauter Musik
+        self.pulses = [(t0, d) for t0, d in self.pulses if now - t0 < travel + 0.2]
         vu = min(1.0, self.bass_s * 1.15) * live
         dist = np.abs(x - 0.5) * 2.0                              # 0 Mitte .. 1 Rand
         meter = np.clip((vu - dist) / (2.0 / max(2, n)) + 0.5, 0.0, 1.0)
         frame = np.outer(meter * (0.35 + 0.65 * vu), self.col)
         frame += np.outer(self.beat_mask * self.beat_glow, self.col * 0.6 + WHITE * 0.4) * 0.9
+        for t0, _ in self.pulses:
+            pos = (now - t0) / travel
+            w = np.exp(-((x - pos) / 0.045) ** 2) * max(0.0, 1.0 - pos * 0.6)
+            frame += np.outer(w, self.col * 0.7 + WHITE * 0.3)
         if high > 0.35 and self.rng.random() < high * high * 0.35:
             self.glow[self.rng.randrange(n)] = 1.0
         frame += np.outer(self.glow, self.col * 0.5 + WHITE * 0.5) * 0.6
@@ -308,8 +320,8 @@ class LedStream:
         rank = np.empty(n)
         rank[self.order] = np.arange(n)
         red_mask = (rank < want).astype(float)
-        if phase == "virus":                                      # Infektion breitet sich von einem Ende aus
-            red_mask = (np.arange(n) < want).astype(float)
+        if phase == "virus":                                      # Infektion frisst sich von hinten nach vorne
+            red_mask = (self._idx() > 1.0 - target).astype(float)
         self.red += (red_mask - self.red) * 0.35
         # Flackern: lebende LEDs zittern, stärker bei Alarm und auf den Bass
         jitter = self.nrng.random(n)
