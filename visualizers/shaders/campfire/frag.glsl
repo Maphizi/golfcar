@@ -210,8 +210,11 @@ void main() {
         fl.a *= uFlameK.x;
         // Der Bogen bringt unten seinen eigenen Holzstapel mit: dunkle Pixel im unteren Zellenteil ausblenden, nur die
         // Flammen bleiben, die Scheite kommen aus dem Foto
+        // (bei großem Feuer sind die Scheite des Bogens hell angestrahlt, daher zählt nur: hell UND satt wie eine Flamme)
         float lumF = max(fl.r, max(fl.g, fl.b));
-        fl.a *= mix(smoothstep(0.35, 0.6, lumF), 1.0, smoothstep(0.12, 0.3, p.y));
+        float satF = lumF - min(fl.r, min(fl.g, fl.b));
+        float flameLike = smoothstep(0.45, 0.75, lumF) * smoothstep(0.12, 0.3, satF);
+        fl.a *= mix(flameLike, 1.0, smoothstep(0.2, 0.42, p.y));
         vec3 before = col;
         col = mix(col, fl.rgb, fl.a);
         col += fl.rgb * fl.a * (0.25 + 0.2 * uBassS * live);

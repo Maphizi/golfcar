@@ -113,8 +113,8 @@ Sternfunke), UNTEN `poke()` Funkenwolke + `ember`, LINKS/RECHTS `gust()` Wind `u
 `uSkyRise` über `cycle_minutes`, SPACE/BACKSPACE `uZoom`. Shader: Feuerlicht `near`/`lightK` auf Steinen (Glut = dunkler als
 das Foto), Hitzeflimmern, Rauch im Wind, Kesseldampf `uKettle`, Sterne funkeln mit Höhen, Polarlicht bewegt sich (Band über dem
 Horizont, nur grüne Pixel `gm`: Foto verschoben abgetastet = wogende Vorhänge, `rays` ziehen durch, Tempo mit der Energie, Bass). Demo = 8x
-schneller. Der Bogen bringt unten eigene Scheite mit: dunkle Pixel im unteren Zellenteil werden ausgeblendet (`lumF`), die
-Scheite kommen aus dem Foto; der Kessel liegt vor den Flammen (`kettleMask`: Ellipse `kettle_box` = Mitte x, y, Radius x, y,
+schneller. Der Bogen bringt unten eigene Scheite mit (bei großem Feuer hell angestrahlt): im unteren Zellenteil bleibt nur, was
+hell UND satt wie eine Flamme ist (`flameLike` aus `lumF`/`satF`), die Scheite kommen aus dem Foto; der Kessel liegt vor den Flammen (`kettleMask`: Ellipse `kettle_box` = Mitte x, y, Radius x, y,
 plus Henkelbogen und Tülle). `KITT_CAMPFIRE_CAL=1` zeichnet Flammenzelle (rot), Kesselform (blau) sowie Planet und Ring (grün) zum Einmessen auf dem
 Gerät. Saturnring dreht sich: `[scenes.campfire] planet = [x, y, r]`, `ring = [a, b, Neigung, innen/a, dx, dy]` -> `uPlanet`, `uRing`,
 `uRingOff`; im Ring-Anulus (Ellipsenraum, hinten vom Planeten verdeckt, vorne davor) laufen Klumpen (Sinus-Harmonische in
