@@ -43,6 +43,8 @@ def main() -> int:
     n = int(info.get("leds", {}).get("count", 0))
     print(f"WLED {info.get('ver')} '{info.get('name')}', {n} LEDs, live={info.get('live')} ({info.get('lip', '')}), "
           f"fps={info.get('leds', {}).get('fps', '?')}")
+    print(f"  -> LEDs 1-{n} werden angesteuert; hat die Kette mehr (Verpackung), bleiben die übrigen mit Zufallsfarben an:"
+          f" scripts/wled_setup.py --leds <Anzahl> --apply")
     st = get(host, port, "/json/state")
     print(f"Zustand: on={st.get('on')} bri={st.get('bri')} Playlist={st.get('pl')} Preset={st.get('ps')} "
           f"lor={st.get('lor')} nl={st.get('nl', {}).get('on')}")
@@ -68,10 +70,12 @@ def main() -> int:
         t0 = time.monotonic()
         while time.monotonic() - t0 < 4.0:
             k = int(((time.monotonic() - t0) * 8) % n)
-            frame = bytearray([2, 2])
-            for i in range(min(n, 490)):
-                frame += bytes([0, 0, 0] if i == k else [255, 0, 0])
-            sock.sendto(bytes(frame), (host, udp_port))
+            pixels = b"".join(bytes([0, 0, 0] if i == k else [255, 0, 0]) for i in range(n))
+            if n <= 490:
+                sock.sendto(bytes([2, 2]) + pixels, (host, udp_port))
+            else:
+                for start in range(0, n, 489):                          # DNRGB mit Startindex
+                    sock.sendto(bytes([4, 2, (start >> 8) & 0xFF, start & 0xFF]) + pixels[start * 3:(start + 489) * 3], (host, udp_port))
             time.sleep(0.04)
         sock.close()
         try:

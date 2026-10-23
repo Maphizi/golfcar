@@ -9,7 +9,8 @@ Modusfarbe: Grund dunkel, Bass von der Mitte nach außen, Beat = Blitz einer LED
 `Controller.led_state()` der Szene (z. B. "error": nur Rot, Ausfälle, Flackern, wachsendes Hellrot). Ereignis-Profile, die Szenen
 über wled.apply_mode_async() schicken (slots_jackpot, campfire_log ...), spielt der Stream als kurzen Blitz in der
 Profilfarbe. Gesamthelligkeit: Profil-bri x [controller].dim. In WLED muss "UDP-Echtzeit empfangen" an sein (Standard).
-Test ohne Board: `KITT_LEDS=1 python -m visualizers.engine error --test-signal` loggt die Paketrate."""
+Ketten über 490 LEDs gehen als DNRGB-Pakete mit Startindex raus. Test ohne Board: `KITT_LEDS=1 python -m
+visualizers.engine error --test-signal` loggt die Paketrate."""
 from __future__ import annotations
 
 import json
@@ -27,8 +28,10 @@ from launcher import wled
 
 log = logging.getLogger("leds")
 
-DRGB = 2
-MAX_LEDS = 490                               # ein DRGB-Paket
+DRGB = 2                                     # bis 490 LEDs in einem Paket
+DNRGB = 4                                    # mit Startindex, 489 LEDs je Paket (Ketten über 490 LEDs)
+CHUNK = 489
+MAX_LEDS = 2000
 GREEN = np.array([30.0, 255.0, 50.0])
 RED = np.array([255.0, 18.0, 8.0])
 YELLOW = np.array([255.0, 170.0, 0.0])
@@ -47,6 +50,7 @@ def _rgb(v, default) -> np.ndarray:
 class LedStream:
     def __init__(self, mode: str, scene: str, rng: random.Random | None = None):
         self.rng = rng or random.Random()
+        self.nrng = np.random.default_rng(self.rng.randrange(1 << 30))
         cfg = wled._load_cfg()
         ctrl = cfg.get("controller", {})
         self.enabled = bool(ctrl.get("enabled", True)) and bool(ctrl.get("realtime", True)) and bool(ctrl.get("host"))
@@ -132,8 +136,7 @@ class LedStream:
         if self.glow is None or len(self.glow) != self.n:
             n = self.n
             self.glow = np.zeros(n)
-            self.fire = self.rng.choices(range(100), k=n)
-            self.fire = np.array(self.fire, dtype=float) / 100.0
+            self.fire = self.nrng.random(n)
             self.order = np.array(self.rng.sample(range(n), n))
             self.dead = np.zeros(n)
             self.red = np.zeros(n)
@@ -223,7 +226,7 @@ class LedStream:
     def _fire(self, now, dt, bass, high, is_beat, live) -> np.ndarray:
         """Feuerflackern: jede LED hat ihr eigenes Glühen zwischen col (Glut) und col2 (Flamme), mehr mit der Energie."""
         n = self.n
-        self.fire += (np.array([self.rng.random() for _ in range(n)]) - self.fire) * (0.25 + 0.4 * self.e_fast)
+        self.fire += (self.nrng.random(n) - self.fire) * (0.25 + 0.4 * self.e_fast)
         heat = np.clip(0.05 + 0.95 * self.fire * (0.3 + 0.7 * self.bass_s) * live + (1.0 - live) * 0.12 * self.fire, 0, 1)
         if is_beat:
             heat = np.clip(heat + 0.35, 0, 1)
@@ -285,9 +288,10 @@ class LedStream:
         rate = {"code": 0.15, "break": 2.0 + 6.0 * k, "error": 3.0, "alarm": 5.0, "recovery": 1.5 * (1.0 - k),
                 "virus": 1.0 + 3.0 * pct, "shields": 2.0 * (1.0 - pct), "intruder": 0.8, "prompt": 0.3 + k, "stable": 0.0,
                 "reboot": 0.0}.get(phase, 0.5)
-        if self.rng.random() < rate * dt:
-            i = self.rng.randrange(n)
-            self.dead[i] = now + self.rng.uniform(0.2, 1.5)
+        k_dead = self.nrng.poisson(rate * dt * max(1.0, n / 30.0))   # Rate gilt je 30 LEDs
+        if k_dead > 0:
+            idx = self.nrng.integers(0, n, size=int(k_dead))
+            self.dead[idx] = now + self.nrng.uniform(0.2, 1.5, size=len(idx))
         alive = (self.dead < now).astype(float)
         # Rotanteil: Fehler/Alarm -> in Reihenfolge `order` immer mehr rot; Erholung -> wieder zurück
         if phase in ("error", "alarm"):
@@ -308,7 +312,7 @@ class LedStream:
             red_mask = (np.arange(n) < want).astype(float)
         self.red += (red_mask - self.red) * 0.35
         # Flackern: lebende LEDs zittern, stärker bei Alarm und auf den Bass
-        jitter = np.array([self.rng.random() for _ in range(n)])
+        jitter = self.nrng.random(n)
         amp = {"code": 0.15, "break": 0.5, "error": 0.45, "alarm": 0.7, "recovery": 0.3, "stable": 0.05}.get(phase, 0.3)
         self.flick = 1.0 - amp * jitter * (0.5 + 0.5 * bass)
         base_level = (0.05 + 0.45 * self.bass_s) * live + (1.0 - live) * 0.1
@@ -346,9 +350,14 @@ class LedStream:
 
     # -- Senden --------------------------------------------------------------------------------------------------
     def _send(self, frame: np.ndarray, now: float) -> None:
-        data = bytes([DRGB, self.timeout]) + frame.tobytes()
         try:
-            self.sock.sendto(data, (self.host, self.udp_port))
+            if self.n <= 490:
+                self.sock.sendto(bytes([DRGB, self.timeout]) + frame.tobytes(), (self.host, self.udp_port))
+            else:
+                for start in range(0, self.n, CHUNK):            # DNRGB: Startindex (2 Byte, big endian) je Paket
+                    part = frame[start:start + CHUNK]
+                    head = bytes([DNRGB, self.timeout, (start >> 8) & 0xFF, start & 0xFF])
+                    self.sock.sendto(head + part.tobytes(), (self.host, self.udp_port))
             self.sent += 1
         except OSError as exc:
             if now - self.last_fail > 30.0:

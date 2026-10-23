@@ -1245,7 +1245,9 @@ von einem Ende her durch, die Schilde sind ein blauer Balken in Prozent, der Ein
 Endet der Modus, fällt WLED nach zwei Sekunden von selbst auf das Profil zurück. Beim Senden setzt der Launcher immer
 auch die Palette (sonst bliebe die letzte, etwa der Regenbogen, in jedem Effekt hängen), stoppt Playlists, schaltet den
 Live-Override aus und löscht zusätzliche Segmente. Tut das Board nicht, was es soll: `scripts/wled_check.py` auf dem Pi zeigt
-Version, LED-Anzahl, Segmente und Live-Status und fährt drei rote Tests (HTTP gedimmt, HTTP voll, UDP-Stream). Jeder Modus hat sein eigenes Licht: Taxistand gelb atmend (und in der Farbe des
+Version, LED-Anzahl, Segmente und Live-Status und fährt drei rote Tests (HTTP gedimmt, HTTP voll, UDP-Stream). Zeigt WLED weniger
+LEDs als die Kette hat, bleiben die übrigen mit Zufallsfarben an: `scripts/wled_setup.py --leds 784 --apply` setzt die Anzahl
+(oder im Browser unter Config, LED Preferences, Length). Jeder Modus hat sein eigenes Licht: Taxistand gelb atmend (und in der Farbe des
 gewählten Themas, sobald eines bestätigt ist), Navigationscomputer blau-cyane Kometen, Schwarzes
 Loch oranger Meteor, HAL tiefrotes Atmen, Slotmaschine goldenes Pulsieren, Lagerfeuer Feuer,
 Systemfehler nur Rot (auch live: Ausfälle, Flackern, wachsendes Hellrot), Arcade Regenbogen, Bordcomputer KITT-Scanner, Planeten weißblaues

@@ -404,7 +404,10 @@ Gesamtdämpfung `[controller] dim` 0.7 für HTTP-Profile (`payload_for`) und Str
 Effekte malen damit), Segment 0 über die ganze Kette (`led_count()` aus `/json/info` oder `[controller].leds`), `pl = -1`
 (Playlist aus), `lor = 0` (Live-Override aus), Nachtlicht aus; beim ersten Senden je Prozess löscht `_cleanup_segments()`
 Segmente mit id > 0. Systemfehler-Profil und LED-Programm sind rein rot. Diagnose auf dem Pi: `scripts/wled_check.py`
-(Info, Segmente, Playlist, lor, drei Tests: rot gedimmt/voll per HTTP, rot per UDP, danach `live`-Status).
+(Info, Segmente, Playlist, lor, drei Tests: rot gedimmt/voll per HTTP, rot per UDP, danach `live`-Status). LED-Anzahl in WLED
+setzen: `scripts/wled_setup.py --leds 784 --apply` (`/json/cfg` `hw.led.ins[0].len`; `--maxpwr` Strombegrenzung): LEDs hinter der
+eingestellten Anzahl bekommen nie Daten und bleiben bunt an. Ketten über 490 LEDs streamt `LedStream._send` als DNRGB-Pakete
+(Typ 4, Startindex, 489 je Paket); Ausfallrate im Fehlerprogramm gilt je 30 LEDs (`poisson`).
 
 ## Schwarzes Loch (`visualizers/scenes/blackhole.py`)
 D-Pad LINKS/RECHTS = Planet aus `config/planets.toml` von dieser Seite ins Loch werfen (wird über ~1 Minute zum
