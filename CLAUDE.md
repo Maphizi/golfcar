@@ -393,8 +393,9 @@ Profil je Modus `[modes.<modus>]` (bri, fx, col, col2, col3, sx, ix, pal); Ereig
 Live zur Musik (`launcher/ledstream.py`, `LedStream`): jede Engine-Szene streamt unter dem Launcher (oder `KITT_LEDS=1`) 25 Bilder/s
 per UDP (WLED-Echtzeit DRGB, `[controller] udp_port` 21324, `realtime_timeout` 2 s, LED-Anzahl aus `/json/info` oder `leds`);
 `__main__.py` ruft je Bild `leds.update(now, f, ctrl.led_state())`. Programme aus dem fx des Modusprofils: Feuer (45/66/42) =
-Flackern je LED, Scanner (40) = KITT-Lauf (Tempo Energie, Beat = Umkehr), Rainbow (9/94), sonst Musikpuls (Grund col atmet mit
-dem Bass, je Beat Welle in col2, Höhen funkeln col3, Drop = Weißblitz, Stille = leises Atmen); `Controller.led_state()` mit
+Flackern je LED, Scanner (40) = KITT-Lauf (Tempo Energie, Beat = Umkehr), Rainbow (9/94), sonst VU-Meter in der Modusfarbe (Grund dunkel, Bass
+lässt LEDs von der Mitte nach außen leuchten, Beat = Blitz einer zufälligen LED-Gruppe, Höhen = einzelne Funken, Drop =
+Weißblitz höchstens alle 8 s, Stille = eine wandernde LED atmet); `Controller.led_state()` mit
 `program = "error"` (`error.py`): Grün, Ausfälle (`dead`, Rate je Phase), Flackern, rote LEDs in Reihenfolge `order` immer mehr
 (Fehler/Alarm, Erholung zurück), Virus von einem Ende, Prompt gelb + Restzeitbalken, Schilde blauer Balken, Eindringling orange,
 Neustart Scanner. Ereignis-Profile (`wled.apply_mode_async`) laufen über `wled.set_stream_hook` als Blitz in der Profilfarbe.

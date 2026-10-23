@@ -4,7 +4,8 @@ Modusprozess heraus, 25 Bilder je Sekunde, direkt aus der Musikanalyse (Bass, Be
 Der Launcher setzt beim Moduswechsel weiter das Profil aus config/wled.toml per HTTP; sobald eine Szene streamt,
 zeigt WLED die Bilder von hier, und `timeout` Sekunden nach dem letzten Paket (Szene beendet) fällt es von selbst auf
 das Profil zurück. Farben kommen aus dem Modusprofil (col = Hauptfarbe, col2 = Akzent, col3 = Funkeln), Programm aus
-dem fx des Profils (Feuer-Effekte -> Feuer, Scanner -> KITT-Scanner, Rainbow -> Regenbogen, sonst Musikpuls) oder aus
+dem fx des Profils (Feuer-Effekte -> Feuer, Scanner -> KITT-Scanner, Rainbow -> Regenbogen, sonst VU-Meter in der
+Modusfarbe: Grund dunkel, Bass von der Mitte nach außen, Beat = Blitz einer LED-Gruppe, Höhen = einzelne Funken) oder aus
 `Controller.led_state()` der Szene (z. B. "error": Ausfälle, Flackern, wachsendes Rot). Ereignis-Profile, die Szenen
 über wled.apply_mode_async() schicken (slots_jackpot, campfire_log ...), spielt der Stream als kurzen Blitz in der
 Profilfarbe. Gesamthelligkeit: Profil-bri x [controller].dim. In WLED muss "UDP-Echtzeit empfangen" an sein (Standard).
@@ -83,7 +84,10 @@ class LedStream:
         self.e_fast = 0.0
         self.glow = None                                          # Nachleuchten je LED
         self.pulses: list[tuple[float, int]] = []                 # (Startzeit, Richtung) der Beat-Wellen
+        self.beat_mask = None                                     # LED-Gruppe des letzten Beats
+        self.beat_glow = 0.0
         self.last_beat = 0.0
+        self.last_drop = 0.0
         self.beats = 0
         self.flash = 0.0                                          # Drop/Ereignis-Blitz 0..1
         self.flash_col = WHITE.copy()
@@ -134,6 +138,7 @@ class LedStream:
             self.dead = np.zeros(n)
             self.red = np.zeros(n)
             self.flick = np.ones(n)
+            self.beat_mask = np.zeros(n)
 
     # -- Ereignisse ----------------------------------------------------------------------------------------------
     def event(self, name: str, profile: dict) -> None:
@@ -163,7 +168,8 @@ class LedStream:
         if is_beat:
             self.last_beat = now
             self.beats += 1
-        if live and self.e_fast > 1.4 * self.energy + 0.12 and self.energy > 0.05 and self.flash < 0.2:
+        if live and self.e_fast > 1.5 * self.energy + 0.15 and self.energy > 0.1 and now - self.last_drop > 8.0:
+            self.last_drop = now
             self.flash = 1.0                                      # Drop: alles blitzt
             self.flash_col = self.col3
         self.flash *= 0.82
@@ -189,36 +195,38 @@ class LedStream:
         return np.arange(self.n) / max(1, self.n - 1)
 
     def _music(self, now, dt, bass, high, is_beat, live) -> np.ndarray:
-        """Grundfarbe atmet mit dem Bass, je Beat läuft eine Welle in der Akzentfarbe durch, Höhen funkeln."""
+        """Grundzustand dunkel. Bass = Pegel von der Mitte nach außen (VU-Meter) in der Modusfarbe, Beat = kurzer Blitz
+        einer zufälligen LED-Gruppe, Höhen = selten ein einzelner Funke, Stille = eine LED atmet langsam."""
         n = self.n
         x = self._idx()
         if is_beat:
-            self.pulses.append((now, 1 if self.beats % 2 == 0 else -1))
-        self.pulses = [(t0, d) for t0, d in self.pulses if now - t0 < 1.2]
-        level = (0.12 + 0.55 * self.bass_s + 0.15 * self.e_fast) * live + (1.0 - live) * (0.08 + 0.05 * math.sin(now * 0.8))
-        frame = np.outer(np.full(n, level), self.col)
-        for t0, d in self.pulses:
-            k = (now - t0) / 0.9
-            pos = k if d > 0 else 1.0 - k
-            w = np.exp(-((x - pos) / 0.07) ** 2) * (1.0 - k)
-            frame += np.outer(w, self.col2) * 0.9
-        # Höhen: zufällige LEDs funkeln (Nachleuchten über glow)
-        if high > 0.15:
-            k = int(min(n, 1 + high * high * n * 0.3))
-            for i in self.rng.sample(range(n), k):
-                if self.rng.random() < high:
-                    self.glow[i] = 1.0
-        frame += np.outer(self.glow, self.col3) * 0.8
+            k = max(1, int(n * (0.25 + 0.2 * self.e_fast)))
+            self.beat_mask = np.zeros(n)
+            self.beat_mask[self.rng.sample(range(n), k)] = 1.0
+            self.beat_glow = 1.0
+        self.beat_glow *= 0.72
+        vu = min(1.0, self.bass_s * 1.15) * live
+        dist = np.abs(x - 0.5) * 2.0                              # 0 Mitte .. 1 Rand
+        meter = np.clip((vu - dist) / (2.0 / max(2, n)) + 0.5, 0.0, 1.0)
+        frame = np.outer(meter * (0.35 + 0.65 * vu), self.col)
+        frame += np.outer(self.beat_mask * self.beat_glow, self.col * 0.6 + WHITE * 0.4) * 0.9
+        if high > 0.35 and self.rng.random() < high * high * 0.35:
+            self.glow[self.rng.randrange(n)] = 1.0
+        frame += np.outer(self.glow, self.col * 0.5 + WHITE * 0.5) * 0.6
+        if live < 0.5:                                            # Stille: eine LED wandert und atmet
+            pos = (math.sin(now * 0.15) * 0.5 + 0.5)
+            w = np.exp(-((x - pos) / 0.06) ** 2) * (0.2 + 0.15 * math.sin(now * 1.2))
+            frame = np.outer(w, self.col)
         return frame
 
     def _fire(self, now, dt, bass, high, is_beat, live) -> np.ndarray:
         """Feuerflackern: jede LED hat ihr eigenes Glühen zwischen col (Glut) und col2 (Flamme), mehr mit der Energie."""
         n = self.n
         self.fire += (np.array([self.rng.random() for _ in range(n)]) - self.fire) * (0.25 + 0.4 * self.e_fast)
-        heat = np.clip(0.25 + 0.75 * self.fire * (0.4 + 0.6 * self.bass_s) * live + (1.0 - live) * 0.15 * self.fire, 0, 1)
+        heat = np.clip(0.05 + 0.95 * self.fire * (0.3 + 0.7 * self.bass_s) * live + (1.0 - live) * 0.12 * self.fire, 0, 1)
         if is_beat:
             heat = np.clip(heat + 0.35, 0, 1)
-        frame = np.outer(1.0 - heat, self.col) * 0.6 + np.outer(heat, self.col2)
+        frame = np.outer(heat, self.col) * 0.7 + np.outer(heat * heat, self.col2) * 0.6
         if high > 0.3:
             i = self.rng.randrange(n)
             self.glow[i] = 1.0
@@ -237,7 +245,7 @@ class LedStream:
             self.scan_dir *= -1.0
         x = self._idx()
         w = np.exp(-((x - self.scan_pos) / (0.06 + 0.08 * self.bass_s)) ** 2)
-        frame = np.outer(np.full(n, 0.05 + 0.1 * self.bass_s), self.col2) + np.outer(w, self.col) * (0.7 + 0.3 * self.bass_s)
+        frame = np.outer(np.full(n, 0.02 + 0.06 * self.bass_s), self.col) + np.outer(w, self.col) * (0.7 + 0.3 * self.bass_s)
         if is_beat:
             frame += self.col * 0.25
         return frame
@@ -301,7 +309,7 @@ class LedStream:
         jitter = np.array([self.rng.random() for _ in range(n)])
         amp = {"code": 0.15, "break": 0.5, "error": 0.45, "alarm": 0.7, "recovery": 0.3, "stable": 0.05}.get(phase, 0.3)
         self.flick = 1.0 - amp * jitter * (0.5 + 0.5 * bass)
-        base_level = (0.35 + 0.45 * self.bass_s) * live + (1.0 - live) * 0.3
+        base_level = (0.05 + 0.45 * self.bass_s) * live + (1.0 - live) * 0.1
         green = np.outer(np.full(n, base_level), GREEN)
         if phase == "code":                                       # Code läuft: einzelne LEDs blitzen wie Daten
             if self.rng.random() < (2.0 + 10.0 * high) * dt:

@@ -1234,8 +1234,9 @@ Das beleuchtete Buttonboard hängt an einem WLED-Controller (`config/wled.toml` 
 (`launcher/wled.py`): Helligkeit, Effekt, Haupt-, Zweit- und Drittfarbe, Geschwindigkeit, Intensität,
 optional Palette; alle Profile sind über `[controller] dim` (0.7 = 30 %) gedämpft. **Live zur Musik:** Sobald ein
 Modus läuft, streamt er 25 Bilder pro Sekunde eigene LED-Bilder per UDP an den Controller (WLED-Echtzeit, dafür muss in WLED
-"UDP-Echtzeit empfangen" an sein, Standard). Die Grundfarbe des Modus atmet mit dem Bass, jeder Beat schickt eine Welle in der
-Akzentfarbe über das Board, die Höhen lassen einzelne LEDs funkeln, ein Drop blitzt alles weiß, bei Stille atmet es nur leise.
+"UDP-Echtzeit empfangen" an sein, Standard). Das Board bleibt dunkel und leuchtet nur in der Modusfarbe: der Bass lässt LEDs von der
+Mitte nach außen aufleuchten wie ein Pegelmesser, jeder Beat blitzt eine zufällige LED-Gruppe, die Höhen setzen einzelne Funken,
+ein Drop blitzt alles weiß, bei Stille wandert eine einzelne LED langsam atmend über das Board.
 Feuer-Modi flackern je LED, Scanner-Modi laufen als KITT-Licht im Takt, Regenbogen-Modi drehen mit der Energie. Im Systemfehler
 ist das Board grün wie der Code: einzelne LEDs fallen aus und flackern, beim Zusammenbruch immer mehr, bei roten Fehlern und
 Alarm werden es Schritt für Schritt mehr rote LEDs, die auf den Beat aufblitzen, bei der Erholung kommen sie zurück und der
