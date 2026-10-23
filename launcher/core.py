@@ -247,12 +247,14 @@ class Launcher:
             self.attract_on = True
             self.attract_next = time.monotonic() + 2.0    # erst die Anzeige "AUTOPILOT AN", dann der erste Wechsel
             log.info("Autopilot-Schalter AN: Vorführmodus läuft")
+            from launcher import sfx as _sfx; _sfx.play("attract_on")
             return
         if action == Action.ATTRACT_OFF:
             self.attract_enabled = False
             self.attract_forced = False
             self.attract_on = False
             log.info("Autopilot-Schalter AUS: Vorführmodus beendet")
+            from launcher import sfx as _sfx; _sfx.play("attract_off")
             return
         mode = ACTION_TO_MODE.get(action)
         if mode:

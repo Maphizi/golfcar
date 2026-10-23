@@ -29,7 +29,7 @@ def _theme_name() -> str:
 
 
 def path_for(kind: str) -> tuple[str, "lcfg.Path | None"]:
-    """(Beschreibung, Pfad) für "horn" oder "fx" im aktuellen Thema."""
+    """(Beschreibung, Pfad) für "horn", "fx", "attract_on", "attract_off" im aktuellen Thema."""
     global _last_fx
     th = _theme_name()
     if kind == "fx":
@@ -38,12 +38,13 @@ def path_for(kind: str) -> tuple[str, "lcfg.Path | None"]:
         _last_fx = i
         name = f"{th}_fx{i}"
     else:
-        name = f"{th}_horn"
+        name = f"{th}_{kind}"
     p = SFX_DIR / "real" / f"{name}.wav"                  # echte Klänge (scripts/sfx_fetch.py) vor den synthetischen
     if not p.exists():
         p = SFX_DIR / f"{name}.wav"
     if not p.exists():
-        p = SFX_DIR / f"spacetaxi_{'horn' if kind != 'fx' else 'fx1'}.wav"
+        fallback = f"spacetaxi_{kind}" if kind not in ("fx",) else "spacetaxi_fx1"
+        p = SFX_DIR / f"{fallback}.wav"
     return name, (p if p.exists() else None)
 
 
