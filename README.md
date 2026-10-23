@@ -1239,10 +1239,12 @@ Mitte nach außen aufleuchten wie ein Pegelmesser, jeder Beat schickt eine Licht
 dazu eine zufällige LED-Gruppe, die Höhen setzen einzelne Funken,
 ein Drop blitzt alles weiß, bei Stille wandert eine einzelne LED langsam atmend über das Board.
 Feuer-Modi flackern je LED, Scanner-Modi laufen als KITT-Licht im Takt, Regenbogen-Modi drehen mit der Energie. Im Systemfehler
-ist das Board grün wie der Code: einzelne LEDs fallen aus und flackern, beim Zusammenbruch immer mehr, bei roten Fehlern und
-Alarm werden es Schritt für Schritt mehr rote LEDs, die auf den Beat aufblitzen, bei der Erholung kommen sie zurück und der
-Neustart läuft als Scanner; die Eingabe-Aufforderung blinkt gelb mit einem Balken für die Restzeit, der Virus frisst sich rot
-von einem Ende her durch, die Schilde sind ein blauer Balken in Prozent, der Eindringling ein orangener Punkt auf der Jagd.
+ist das Board ein Kampf zwischen Grün (das System) und Rot (der Fehler), sonst nichts: Die Front wandert in Blasen über die
+Kette, je nach Phase gewinnt Rot (Zusammenbruch, Alarm) oder Grün (Erholung), jeder Beat ist ein Vorstoß der stärkeren Seite,
+der Bass heizt den Kampf an, umkämpfte Stellen sirren rot-grün. Und es sieht kaputt aus: nur ein kleiner Teil der LEDs arbeitet
+überhaupt, gedimmt und zuckend, Kurzschluss-Blöcke blitzen auf und sterben, Störlinien rasen durch, kurze Totalausfälle,
+Rauschstürme. Der Virus frisst sich von hinten durch, der Eindringling ist ein roter Läufer, dessen Spur Grün wieder heilt,
+der Neustart eine grüne Linie von vorne, danach ruhiges grünes Atmen.
 Endet der Modus, fällt WLED nach zwei Sekunden von selbst auf das Profil zurück. Beim Senden setzt der Launcher immer
 auch die Palette (sonst bliebe die letzte, etwa der Regenbogen, in jedem Effekt hängen), stoppt Playlists, schaltet den
 Live-Override aus und löscht zusätzliche Segmente. Tut das Board nicht, was es soll: `scripts/wled_check.py` auf dem Pi zeigt

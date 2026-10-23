@@ -7,7 +7,7 @@ das Profil zurück. Farben kommen aus dem Modusprofil (col = Hauptfarbe, col2 = 
 dem fx des Profils (Feuer-Effekte -> Feuer, Scanner -> KITT-Scanner, Rainbow -> Regenbogen, sonst VU-Meter in der
 Modusfarbe: Grund dunkel, Bass von der Mitte nach außen, Beat = Welle von vorne nach hinten, kräftige Beats dazu eine
 LED-Gruppe, Höhen = einzelne Funken). Kette: Index 0 = vorne am Cart ([controller].reverse dreht um) oder aus
-`Controller.led_state()` der Szene (z. B. "error": nur Rot, Ausfälle, Flackern, wachsendes Hellrot). Ereignis-Profile, die Szenen
+`Controller.led_state()` der Szene (z. B. "error": Kampf Rot gegen Grün, kaputt flackernd). Ereignis-Profile, die Szenen
 über wled.apply_mode_async() schicken (slots_jackpot, campfire_log ...), spielt der Stream als kurzen Blitz in der
 Profilfarbe. Gesamthelligkeit: Profil-bri x [controller].dim. In WLED muss "UDP-Echtzeit empfangen" an sein (Standard).
 Ketten über 490 LEDs gehen als DNRGB-Pakete mit Startindex raus. Test ohne Board: `KITT_LEDS=1 python -m
@@ -144,6 +144,16 @@ class LedStream:
             self.red = np.zeros(n)
             self.flick = np.ones(n)
             self.beat_mask = np.zeros(n)
+            self.terr = np.ones(n)                                # Fehlerprogramm: Besitz je LED (-1 rot .. 1 grün)
+            self.onmask = (self.nrng.random(n) < 0.2).astype(float)
+            self.level = self.nrng.uniform(0.25, 0.85, n)
+            self.noise_ph = self.nrng.uniform(0.0, 6.28, 4)
+            self.push = 0.0
+            self.ev_next = 0.0
+            self.strobe = (0, 0, 0.0, "red")
+            self.sweep = (-10.0, 1.0, "red", 0.4)
+            self.black_until = 0.0
+            self.storm = (0, 0, 0.0)
 
     # -- Ereignisse ----------------------------------------------------------------------------------------------
     def event(self, name: str, profile: dict) -> None:
@@ -281,84 +291,123 @@ class LedStream:
         return frame
 
     def _error(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
-        """Systemfehler, nur Rot: dunkelrot als Grundzustand (Code), LEDs fallen aus und flackern, bei Fehlern und Alarm
-        werden es immer mehr hellrote; Eingabe-Aufforderung blinkt mit Restzeitbalken, Virus frisst sich von einem Ende
-        durch, Schilde als Balken, Eindringling als heller Punkt auf der Jagd, Neustart als Scanner."""
-        LO, HI, ACC = RED * 0.28, RED, np.array([255.0, 70.0, 40.0])
+        """Systemfehler: Kampf zwischen Grün (System) und Rot (Fehler). Jede LED gehört einer Seite (`terr` -1 rot .. +1
+        grün); die Front liegt auf einem langsam wandernden Rauschfeld (Blasen statt Sortierung), ihr Anteil folgt der Phase,
+        Beats stoßen die stärkere Seite vor, der Bass heizt den Kampf an. Umkämpfte LEDs sirren schnell rot/grün. Es sieht
+        kaputt aus: nur ein Teil der LEDs arbeitet (`onmask`, wechselt zuckend), gedimmt und flackernd; Kurzschluss-Blöcke
+        blitzen voll und sterben, Störlinien rasen durch, kurze Totalausfälle, Rauschstürme, Ausfälle je LED (`dead`)."""
         n = self.n
+        x = self._idx()
+        r = self.nrng
         phase = st.get("phase", "code")
-        k = float(st.get("k", 0.0))                               # Fortschritt der Phase 0..1
+        k = float(st.get("k", 0.0))
         pct = float(st.get("pct", 0.0))
         good = bool(st.get("good", False))
         if phase != self.err_phase:
             self.err_phase = phase
-            if phase in ("code", "stable", "reboot"):
+            self.ev_next = now + r.uniform(0.3, 1.2)
+            if phase == "reboot":
                 self.dead[:] = 0.0
-            if phase == "code":
-                self.red[:] = 0.0
-        # Ausfälle: zufällige LEDs sterben für 0,2-1,5 s, Rate je Phase (Code selten, Zusammenbruch viel)
-        rate = {"code": 0.15, "break": 2.0 + 6.0 * k, "error": 3.0, "alarm": 5.0, "recovery": 1.5 * (1.0 - k),
-                "virus": 1.0 + 3.0 * pct, "shields": 2.0 * (1.0 - pct), "intruder": 0.8, "prompt": 0.3 + k, "stable": 0.0,
-                "reboot": 0.0}.get(phase, 0.5)
-        k_dead = self.nrng.poisson(rate * dt * max(1.0, n / 30.0))   # Rate gilt je 30 LEDs
-        if k_dead > 0:
-            idx = self.nrng.integers(0, n, size=int(k_dead))
-            self.dead[idx] = now + self.nrng.uniform(0.2, 1.5, size=len(idx))
-        alive = (self.dead < now).astype(float)
-        # Rotanteil: Fehler/Alarm -> in Reihenfolge `order` immer mehr rot; Erholung -> wieder zurück
-        if phase in ("error", "alarm"):
-            target = 0.25 + 0.75 * k
+        # Ziel-Rotanteil und Schwere je Phase
+        if phase == "code":
+            target, sev = 0.06 + 0.06 * math.sin(now * 0.7), 0.25
+        elif phase == "break":
+            target, sev = 0.15 + 0.45 * k, 0.6 + 0.3 * k
+        elif phase == "error":
+            target, sev = 0.5 + 0.4 * k, 0.85
+        elif phase == "alarm":
+            target, sev = 0.9, 1.0
         elif phase == "recovery":
-            target = 0.8 * (1.0 - k)
+            target, sev = 0.75 * (1.0 - k), 0.5
+        elif phase == "prompt":
+            target, sev = 0.5 + 0.4 * math.sin(now * (2.0 + 8.0 * k)), 0.5 + 0.4 * k
         elif phase == "virus":
-            target = pct
-        elif phase == "intruder" and not good and k > 0.85:
-            target = 1.0
-        else:
-            target = 0.0
-        want = int(round(target * n))
-        rank = np.empty(n)
-        rank[self.order] = np.arange(n)
-        red_mask = (rank < want).astype(float)
-        if phase == "virus":                                      # Infektion frisst sich von hinten nach vorne
-            red_mask = (self._idx() > 1.0 - target).astype(float)
-        self.red += (red_mask - self.red) * 0.35
-        # Flackern: lebende LEDs zittern, stärker bei Alarm und auf den Bass
-        jitter = self.nrng.random(n)
-        amp = {"code": 0.15, "break": 0.5, "error": 0.45, "alarm": 0.7, "recovery": 0.3, "stable": 0.05}.get(phase, 0.3)
-        self.flick = 1.0 - amp * jitter * (0.5 + 0.5 * bass)
-        base_level = (0.05 + 0.45 * self.bass_s) * live + (1.0 - live) * 0.1
-        green = np.outer(np.full(n, base_level), LO)
-        if phase == "code":                                       # Code läuft: einzelne LEDs blitzen wie Daten
-            if self.rng.random() < (2.0 + 10.0 * high) * dt:
-                self.glow[self.rng.randrange(n)] = 1.0
-        frame = green * (1.0 - self.red[:, None]) + np.outer(self.red, HI) * (0.6 + 0.4 * self.bass_s)
-        if phase in ("error", "alarm") and is_beat:               # Alarm: alle roten blitzen auf den Beat
-            frame += np.outer(self.red, ACC) * 0.6
-        if phase == "alarm":
-            frame *= 0.6 + 0.4 * (1.0 if int(now * 6.0) % 2 == 0 else 0.3)
-        x = self._idx()
-        if phase == "prompt":                                     # gelb, blinkt schneller, Balken = Restzeit
-            blink = 1.0 if math.sin(now * (4.0 + 20.0 * k)) > 0.0 else 0.35
-            bar = (x <= 1.0 - k).astype(float)
-            frame = np.outer(bar * blink * 0.9 + 0.08, HI)
-        elif phase == "shields":                                  # blauer Balken = Schilde in Prozent
-            bar = (x <= pct).astype(float)
-            frame = np.outer(bar, HI) * (0.6 + 0.4 * self.bass_s) + np.outer((1.0 - bar) * self.flick, LO) * 0.5
-        elif phase == "intruder":                                 # ein orangener Punkt jagt durch das Board
-            self.hunt = (self.hunt + dt * (0.8 + 2.0 * pct) * (1.0 if int(now) % 2 == 0 else -1.0)) % 1.0
-            w = np.exp(-((x - self.hunt) / 0.05) ** 2)
-            frame = frame * 0.4 + np.outer(w, ACC)
-            if good and k >= 0.99:
-                frame = np.outer(np.full(n, 0.8), HI)
-        elif phase == "reboot":                                   # Scanner von rot nach grün, am Ende alles grün
-            w = np.exp(-((x - k) / 0.08) ** 2)
-            frame = np.outer((x < k).astype(float) * 0.5, LO) + np.outer(w, HI)
-            alive[:] = 1.0
+            target, sev = (pct if not good else pct * 0.6), 0.7
+        elif phase == "shields":
+            target, sev = 1.0 - pct, 0.6
+        elif phase == "intruder":
+            target, sev = 0.08, 0.45
         elif phase == "stable":
-            frame = np.outer(np.full(n, 0.5 + 0.3 * math.sin(now * 2.0) + 0.2 * self.bass_s), LO)
-        frame = frame * (alive * self.flick)[:, None] + np.outer(self.glow, ACC) * 0.8
-        return frame
+            target, sev = 0.0, 0.1
+        else:                                                     # reboot
+            target, sev = 0.0, 0.3
+        # Gelände: wanderndes Rauschfeld; Virus/Schilde von hinten her
+        self.noise_ph += dt * np.array([0.15, 0.27, 0.41, 0.63]) * (0.4 + 1.2 * sev + 0.8 * bass)
+        field = (np.sin(x * 2.0 * math.pi * 1.5 + self.noise_ph[0]) + 0.6 * np.sin(x * 2.0 * math.pi * 3.7 + self.noise_ph[1])
+                 + 0.35 * np.sin(x * 2.0 * math.pi * 7.3 + self.noise_ph[2]) + 0.2 * np.sin(x * 2.0 * math.pi * 13.1 + self.noise_ph[3]))
+        if phase in ("virus", "shields"):
+            field = 0.35 * field + (0.5 - x) * 3.0                 # hinten (x = 1) zuerst rot
+        if is_beat:                                               # Vorstoß der stärkeren Seite
+            self.push = (0.35 if target > 0.5 else -0.35) * (0.5 + 0.5 * bass)
+        self.push *= 0.85
+        target = min(1.0, max(0.0, target))
+        if target <= 0.0:
+            red_now = np.zeros(n, dtype=bool)
+        elif target >= 1.0:
+            red_now = np.ones(n, dtype=bool)
+        else:
+            red_now = field < np.quantile(field, target) + self.push
+        self.terr += (np.where(red_now, -1.0, 1.0) - self.terr) * min(1.0, (0.08 + 0.3 * bass + 0.3 * sev) * dt * 25.0 * 0.4)
+        if phase == "intruder":                                   # roter Läufer hinterlässt eine Spur, Grün heilt sie
+            self.hunt = (self.hunt + dt * (0.5 + 1.5 * pct)) % 1.0
+            self.terr[np.abs(x - self.hunt) < 0.02] = -1.0
+        red = np.clip(-self.terr, 0.0, 1.0)
+        green = np.clip(self.terr, 0.0, 1.0)
+        contested = (1.0 - np.abs(self.terr)) ** 2
+        # Arbeitende LEDs: wenige, gedimmt, zuckend
+        p_on = 0.06 + 0.18 * sev + 0.12 * bass * live               # wenige LEDs arbeiten überhaupt
+        reroll = r.random(n) < (0.03 + 0.12 * sev)
+        self.onmask = np.where(reroll, (r.random(n) < p_on).astype(float), self.onmask)
+        self.level = np.where(reroll, r.uniform(0.25, 0.85, n), self.level)
+        twitch = 1.0 - (0.3 + 0.5 * sev) * r.random(n)
+        work = self.onmask * self.level * twitch * (0.6 + 0.4 * live)
+        frame = np.outer(work * red, RED) + np.outer(work * green, GREEN)
+        # Kampf an der Front: schnelles Sirren rot/grün, mit dem Bass heller
+        side = np.sin(now * 37.0 + x * 90.0) > 0.0
+        fight = contested * (0.5 + 0.5 * bass) * (0.6 + 0.4 * sev)
+        frame += np.outer(fight * side, RED) + np.outer(fight * ~side, GREEN)
+        # Störungen
+        if now >= self.ev_next:
+            self.ev_next = now + r.uniform(0.5, 3.0) / (0.4 + 1.2 * sev)
+            kind = r.choice(["strobe", "sweep", "black", "storm", "strobe", "sweep"])
+            if kind == "strobe":                                  # Kurzschluss: Block blitzt voll und stirbt
+                i0 = r.integers(0, n); w = int(r.integers(8, max(9, n // 12)))
+                self.strobe = (i0, min(n, i0 + w), now + 0.1, "red" if r.random() < target + 0.2 else "green")
+                self.dead[i0:min(n, i0 + w)] = now + 0.1 + r.uniform(0.3, 1.5)
+            elif kind == "sweep":                                 # Störlinie rast durch
+                self.sweep = (now, 1.0 if r.random() < 0.5 else -1.0, "red" if r.random() < target + 0.3 else "green", r.uniform(0.25, 0.6))
+            elif kind == "black":
+                self.black_until = now + r.uniform(0.08, 0.25)
+            else:                                                 # Rauschsturm in einem Bereich
+                i0 = r.integers(0, n); w = int(r.integers(n // 10, max(n // 10 + 1, n // 3)))
+                self.storm = (i0, min(n, i0 + w), now + r.uniform(0.4, 1.2))
+        i0, i1, until, colr = self.strobe
+        if now < until:
+            frame[i0:i1] = (RED if colr == "red" else GREEN) * (0.85 + 0.15 * math.sin(now * 90.0))
+        t0, d, colr, dur = self.sweep
+        if now - t0 < dur:
+            pos = (now - t0) / dur
+            pos = pos if d > 0 else 1.0 - pos
+            w = np.exp(-((x - pos) / 0.02) ** 2)
+            frame += np.outer(w, RED if colr == "red" else GREEN)
+        i0, i1, until = self.storm
+        if now < until:
+            noise = r.random(i1 - i0)
+            frame[i0:i1] = np.outer((noise > 0.7) * noise, RED) + np.outer((noise < 0.25) * (1.0 - noise), GREEN) * 0.7
+        if phase == "reboot":                                     # Neustart: grüne Linie fegt von vorne, dahinter ruhiges Grün
+            w = np.exp(-((x - k) / 0.03) ** 2)
+            frame = np.outer((x < k).astype(float) * 0.3 * self.onmask, GREEN) + np.outer(w, GREEN)
+        elif phase == "stable":
+            breath = 0.25 + 0.15 * math.sin(now * 1.5) + 0.2 * self.bass_s
+            frame = np.outer(self.onmask * breath, GREEN) + np.outer(self.glow, GREEN) * 0.6
+            if r.random() < 0.3:
+                self.glow[r.integers(0, n)] = 1.0
+        if now < self.black_until:                                # Totalausfall
+            frame[:] = 0.0
+        if phase in ("error", "alarm") and is_beat:               # Alarm: alles Rote zuckt auf den Beat
+            frame += np.outer(red * self.onmask, RED) * 0.5
+        alive = (self.dead < now).astype(float)
+        return frame * alive[:, None]
 
     # -- Senden --------------------------------------------------------------------------------------------------
     def _send(self, frame: np.ndarray, now: float) -> None:

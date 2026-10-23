@@ -397,9 +397,11 @@ Flackern je LED, Scanner (40) = KITT-Lauf (Tempo Energie, Beat = Umkehr), Rainbo
 lässt LEDs von der Mitte nach außen leuchten, Beat = Blitz einer zufälligen LED-Gruppe, Höhen = einzelne Funken, Drop =
 Weißblitz höchstens alle 8 s, Stille = eine wandernde LED atmet; Beat-Welle läuft von vorne nach hinten, `_idx()` 0 = vorne am
 Cart, `[controller].reverse` dreht um; Virus frisst von hinten, Neustart scannt von vorne); `Controller.led_state()` mit
-`program = "error"` (`error.py`): Grün, Ausfälle (`dead`, Rate je Phase), Flackern, rote LEDs in Reihenfolge `order` immer mehr
-(Fehler/Alarm, Erholung zurück), Virus von einem Ende, Prompt gelb + Restzeitbalken, Schilde blauer Balken, Eindringling orange,
-Neustart Scanner. Ereignis-Profile (`wled.apply_mode_async`) laufen über `wled.set_stream_hook` als Blitz in der Profilfarbe.
+`program = "error"` (`error.py`): nur Rot und Grün, Kampf: `terr` je LED (-1 rot .. 1 grün), Front auf einem wandernden
+Rauschfeld (`noise_ph`, Quantil = Rotanteil `target` je Phase, Virus/Schilde von hinten), Beat = Vorstoß `push`, Bass heizt an,
+umkämpfte LEDs sirren rot/grün; kaputt: nur `onmask` (p_on 6-36 %) arbeitet, gedimmt (`level`) und zuckend, Störungen `ev_next`
+(Kurzschluss-Block `strobe` + tot, Störlinie `sweep`, Totalausfall `black_until`, Rauschsturm `storm`), Ausfälle `dead`;
+Eindringling = roter Läufer mit Spur, Neustart = grüne Linie von vorne, stabil = ruhiges grünes Atmen. Ereignis-Profile (`wled.apply_mode_async`) laufen über `wled.set_stream_hook` als Blitz in der Profilfarbe.
 Gesamtdämpfung `[controller] dim` 0.7 für HTTP-Profile (`payload_for`) und Stream. HAL 3000 (kein Engine-Prozess) behält das Profil.
 `payload_for` setzt immer `pal` (Profil, sonst 3 mit col2 / 2 ohne: sonst bleibt die letzte Palette, z. B. Regenbogen, und viele
 Effekte malen damit), Segment 0 über die ganze Kette (`led_count()` aus `/json/info` oder `[controller].leds`), `pl = -1`
