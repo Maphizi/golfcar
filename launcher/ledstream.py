@@ -131,6 +131,9 @@ class LedStream:
         acc = self.col3 if (self.col3.max() > 40 and not np.array_equal(self.col3, WHITE)) else (self.col2 if self.col2.max() > 120 else np.array([255.0, 40.0, 10.0]))
         self.marquee = [self.col, np.array([255.0, 225.0, 170.0]), acc]
         self.mq_pos = 0.0
+        self.mq_target = 0.0                                      # Blockschritte (je Beat einer)
+        self.mq_pos_s = 0.0
+        self.mq_tick = 0.0
         self.mq_dir = 1.0
         self.mq_rot = 0
         self.mq_beats = 0
@@ -378,7 +381,7 @@ class LedStream:
         elif program == "rain":
             frame = self._rain(now, dt, st, bass, high, is_beat, live)
         elif program == "fire":
-            frame = self._fire(now, dt, bass, high, is_beat, live)
+            frame = self._fire(now, dt, st, bass, high, is_beat, live)
         elif program == "scanner":
             frame = self._scanner(now, dt, bass, high, is_beat, live)
         elif program == "rainbow":
@@ -395,8 +398,8 @@ class LedStream:
     # -- Programme -----------------------------------------------------------------------------------------------
     def _slots(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
         """Casino-Markise wie ein Vegas-Eingang: Blöcke von 3 LEDs in derselben Farbe (Hauptfarbe, Warmweiß, Akzent im
-        Wechsel), alle an, nur die Helligkeit wandert leicht; das Muster fährt langsam, mal vor, mal zurück, beim Drehen
-        schnell; alle paar Beats wechseln die Farben durch, ab und zu kehrt die Richtung um. Gewinn: klein = zweimal
+        Wechsel), alle an, nur die Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat weiter (1 2 3 4), weich eingerastet, mal vor, mal zurück,
+        beim Drehen läuft es schnell von selbst; alle paar Beats wechseln die Farben durch, ab und zu kehrt die Richtung um. Gewinn: klein = zweimal
         Blitzen, groß = heller Lauf von vorne, Jackpot = Gold/Weiß-Stroboskop und Funkeln."""
         n = self.n
         x = self._idx()
@@ -421,12 +424,23 @@ class LedStream:
         if now >= self.mq_flip_at:                                # auch ohne Musik ab und zu umkehren
             self.mq_dir *= -1.0
             self.mq_flip_at = now + self.rng.uniform(6.0, 14.0)
-        speed = 10.0 if spinning else ((2.5 + 4.0 * self.e_fast) * live + (1.0 - live) * 1.5)   # LED-Schritte je Sekunde
-        self.mq_pos = (self.mq_pos + self.mq_dir * speed * dt) % 9.0
+        block = max(3, n // 60)                                   # Blockgröße nach LED-Dichte (784 LEDs -> 13 LEDs, ~8 cm)
+        period = 3 * block
+        if spinning:                                              # Walzen drehen: läuft von selbst, schnell
+            self.mq_pos += self.mq_dir * block * 4.0 * dt
+        else:                                                     # sonst genau ein Block je Beat, weich eingerastet (1 2 3 4)
+            if now - self.last_beat > 2.0 and now - self.mq_tick > 0.6:   # ohne Beats im eigenen langsamen Takt
+                self.mq_tick = now
+                self.mq_target += 1.0
+            if is_beat:
+                self.mq_target += 1.0
+            self.mq_pos_s += (self.mq_target - self.mq_pos_s) * min(1.0, dt * 5.0)
+            self.mq_pos = self.mq_dir * self.mq_pos_s * block
+        self.mq_pos %= period
         shift = idx + int(self.mq_pos)
         if self.reverse:
             shift = (n - 1 - idx) + int(self.mq_pos)
-        ci = ((shift // 3) + self.mq_rot) % 3
+        ci = ((shift // block) + self.mq_rot) % 3
         colors = np.array(self.marquee)[ci]
         twinkle = 0.8 + 0.2 * np.sin(now * 1.7 + idx * 0.35) * np.sin(now * 0.9 + idx * 0.11)
         level = twinkle * ((0.75 + 0.25 * self.bass_s) * live + (1.0 - live) * 0.5)
@@ -477,7 +491,7 @@ class LedStream:
                 w = np.exp(-((x - pos) / 0.12) ** 2)
                 frame = frame * 0.5 + np.outer(w, white)
             else:
-                self.mq_pos = (self.mq_pos + self.mq_dir * 12.0 * dt) % 9.0
+                self.mq_pos = (self.mq_pos + self.mq_dir * block * 3.0 * dt) % period
         elif win >= 3 and age < 7.0:                              # Jackpot: Stroboskop Gold/Weiß, dann Goldfunkeln
             if age < 3.0:
                 frame = np.outer(np.ones(n), gold if int(age * 8.0) % 2 == 0 else white)
@@ -660,16 +674,25 @@ class LedStream:
         self.drips = keep[-40:]
         return frame
 
-    def _fire(self, now, dt, bass, high, is_beat, live) -> np.ndarray:
-        """Feuer: träges Glühen je LED zwischen Glut (col) und Flamme (col2), mehr mit der Energie, Beat = kurzes
-        Aufflackern. Specials aus der Szene: Holz = Funken, Kristall = blaue Tönung."""
+    def _fire(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Lagerfeuer: warmweißes Fackellicht, das je LED träge glimmt und mit der Feuerstufe heller wird, dazu ein leises
+        Wabern der ganzen Kette wie Wind in den Flammen; brennt das Feuer blau (Kristall), wird das Licht so lange blau.
+        Specials aus der Szene: Holz = Funken."""
         n = self.n
-        col, col2 = self._base_col()
-        self.fire += (self.nrng.random(n) - self.fire) * (0.06 + 0.12 * self.e_fast)
-        heat = np.clip((0.02 + 0.95 * self.fire * (0.3 + 0.7 * self.bass_s)) * live + (1.0 - live) * 0.15 * self.fire, 0, 1) * self.embers
-        if is_beat and bass > 0.5:
-            heat = np.clip(heat + 0.15, 0, 1)
-        frame = np.outer(heat, col) * 0.7 + np.outer(heat * heat, col2 if col2.max() > 40 else col) * 0.5
+        warm = np.array([255.0, 175.0, 95.0])
+        blue = np.array([70.0, 120.0, 255.0])
+        bk = float(st.get("blue", 0.0)) if st else 0.0
+        if self.tint is not None and time.monotonic() < self.tint_until:  # campfire_blue-Profil (Rückfall ohne led_state)
+            bk = max(bk, 0.8)
+        col = warm * (1.0 - bk) + blue * bk
+        lvl = float(st.get("level", 1.5)) / 3.0 if st else 0.5
+        self.fire += (self.nrng.random(n) - self.fire) * (0.05 + 0.1 * self.e_fast)
+        gust = 0.85 + 0.15 * math.sin(now * 1.7) * math.sin(now * 0.43 + 1.0)                     # Wind in den Flammen
+        base = 0.25 + 0.45 * lvl + 0.15 * self.bass_s * live
+        heat = np.clip(base * (0.55 + 0.45 * self.fire) * gust, 0.0, 1.0) * (0.6 + 0.4 * self.embers)
+        if is_beat and bass > 0.6:
+            heat = np.clip(heat + 0.08, 0, 1)
+        frame = np.outer(heat, col)
         return frame
 
     def _scanner(self, now, dt, bass, high, is_beat, live) -> np.ndarray:

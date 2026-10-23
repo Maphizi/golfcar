@@ -404,11 +404,17 @@ Szene `SCENE_BASE` (sonst nach fx des Profils: Feuer 45/66/42, Scanner 40, Rainb
 Stroboskop nur als Special: `stars` (navcomputer, planets, timejump, neonrace, splash): wenige Sterne ziehen von vorne nach
 hinten, Tempo mit der Energie, Beat hebt sie kurz; alle 25-45 s `planet` (weiche Kugel zieht vorbei und füllt im Vorbeiflug
 kurz alles in ihrer Farbe); `navcomputer.led_state()` liefert `flying` und das laufende Ereignis: KOMETENSCHAUER = `comet`-Läufer,
-ASTEROIDENFELD = graue Brocken schneller, WURMLOCH/SONNE/NEBEL = Tönung. `fire` (campfire, `led_state` level/blue): träges
-Glühen je LED, `embers`-Maske. `vortex` (blackhole, core, flux, pond): Punkte driften von beiden Enden zur Mitte, Mitte glimmt
+ASTEROIDENFELD = graue Brocken schneller, WURMLOCH/SONNE/NEBEL = Tönung. `fire` (campfire, `led_state` level/blue): warmweißes
+Fackellicht (255,175,95), träges Glimmen je LED (`embers`), Wabern `gust`, Helligkeit mit der Feuerstufe, bei `blue` > 0 blau. `vortex` (blackhole, core, flux, pond): Punkte driften von beiden Enden zur Mitte, Mitte glimmt
 mit dem Bass. `breathe` (taxi, oracle, clocktower, woodeye, trip, hearttree, square): langsames Atmen + zwei wandernde Wolken.
 `rain` (rooftop): Tropfen von hinten nach vorne. `glitch` (blackice, paradox, overdose): das Störprogramm `_error` in den
-Themenfarben (`c_red`/`c_green` aus col/col2) mit eigenem 40-s-Phasenzyklus. `error` und `slots` wie oben. Specials
+Themenfarben (`c_red`/`c_green` aus col/col2) mit eigenem 40-s-Phasenzyklus. `error` = Systemfehler (oben beschrieben). `slots` (`slots.py` `led_state`, alle vier Automaten): Casino-Markise `_slots`:
+Blöcke (Blockgröße `n // 60`, 784 LEDs -> 13) in Farbe A / Warmweiß / Farbe B des gewählten Automaten (`colors` aus
+`slots_themes.py`), alle an, Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat (`mq_target`/`mq_pos_s`, weich
+eingerastet; ohne Beats alle 0,6 s; Drehen = 4 Blöcke/s von selbst), Richtung `mq_dir` kehrt alle 16 Beats, bei kräftigem Bass
+oder alle 6-14 s um, Farben rücken alle 4 Beats (`mq_rot`); Gewinn 1 = zweimal Gold, 2 = weißer Lauf von vorne + schnell, >= 3 =
+Gold/Weiß-Strobo 3 s + Funkeln; Specials `sp_next` 20-45 s: `runner` (ein Punkt läuft durch, zieht der Beat an, überholt ein
+zweiter in der Akzentfarbe mit 1,9x), `cross` (zwei Läufer kreuzen sich), Markise derweil 60 %. Specials
 (`_add`/`_apply_specials`, max. 4 gleichzeitig) aus den Ereignis-Profilen der Szenen (`wled.apply_mode_async` -> `event()`):
 *throw* = `swallow` (Punkt zur Mitte, Aufleuchten), *eject/emp/overload/discharge* = `burst` (Druckwelle von der Mitte),
 *lightning/strike/storm* = `lightning` (zwei Blitze, Grollen), *fireworks* = Blüten, *blackout* = aus und zögernd zurück,

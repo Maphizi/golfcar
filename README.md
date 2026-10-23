@@ -1240,8 +1240,9 @@ nach hinten, weich eingerastet, die Eins hebt kurz an, dazwischen treibt alles n
 Grundprogramm, und die Specials kommen aus dem, was auf dem Schirm passiert:
 Beim Flug (Navigationscomputer, Planeten, Zeitsprung, Neonfahrt) ziehen Sterne von vorne nach hinten über den Cart, schneller
 mit der Musik, und alle halbe Minute zieht ein Planet vorbei, der im Vorbeiflug kurz die ganze Kette in seiner Farbe füllt;
-Kometenschauer schickt Kometen, das Asteroidenfeld graue Brocken, Wurmloch, Sonne und Nebel färben alles. Das Lagerfeuer glüht
-träge je LED, Holz nachlegen wirft Funken, der Kristall färbt blau. Schwarzes Loch, Kern, Fluxkompensator und Moorsee sind ein
+Kometenschauer schickt Kometen, das Asteroidenfeld graue Brocken, Wurmloch, Sonne und Nebel färben alles. Am Lagerfeuer ist die
+Kette warmweißes Fackellicht, das träge glimmt und mit dem Feuer heller wird; brennt das Feuer blau, wird auch das Licht blau,
+Holz nachlegen wirft Funken. Schwarzes Loch, Kern, Fluxkompensator und Moorsee sind ein
 Strudel: Punkte driften von beiden Enden zur Mitte, die Mitte glimmt mit dem Bass, ein geworfenes Objekt läuft zur Mitte und wird
 verschluckt, die Umkehrung ist eine Druckwelle nach außen. Taxistand, Orakel, Uhrturm, Auge des Waldes, Waldtresen, Herzbaum
 und Marktplatz atmen langsam mit zwei wandernden Wolken, Jahreszeit und Epoche färben die Kette, Ereignisse laufen als Welle
@@ -1249,7 +1250,11 @@ durch. Auf der Dachterrasse regnet es von hinten nach vorne, das Wetter färbt, 
 Feuerwerk geht in Blüten auf, der Stromausfall macht alles aus und lässt es zögernd zurückkommen. Black Ice, Paradoxon und
 Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. HAL 3000 atmet tief und ein Viertel dunkler als
 der Rest, und ab und zu kommt von einem Ende ein einzelnes helles Feld, das im Takt Schritt für Schritt rund eine Minute
-über die ganze Kette wandert, mal von vorne, mal von hinten, mit gelegentlichem Schritt zurück. Im Systemfehler
+über die ganze Kette wandert, mal von vorne, mal von hinten, mit gelegentlichem Schritt zurück. Die Slotmaschinen leuchten wie ein Casino-Eingang in den Lichtfarben des
+gewählten Automaten: Blöcke in Farbe A, Warmweiß und Farbe B, alle an, das Muster rückt auf jedem Beat genau einen Block
+weiter, 1, 2, 3, 4, weich eingerastet, mal vor, mal zurück, beim Drehen läuft es schnell, alle paar Beats rücken die Farben
+weiter; kleiner Gewinn blitzt zweimal, großer Gewinn schickt einen weißen Lauf, Jackpot ist Gold-Weiß-Stroboskop mit Funkeln;
+als Specials läuft ab und zu ein einzelner Punkt durch, der bei anziehendem Beat überholt wird, oder zwei Läufer kreuzen sich. Im Systemfehler
 ist das Board ein Kampf zwischen Grün (das System) und Rot (der Fehler), sonst nichts: Die Front wandert in Blasen über die
 Kette, je nach Phase gewinnt Rot (Zusammenbruch, Alarm) oder Grün (Erholung), jeder Beat ist ein Vorstoß der stärkeren Seite,
 der Bass heizt den Kampf an, umkämpfte Stellen sirren rot-grün. Und es sieht kaputt aus, aber träge statt hektisch: Abschnitte von ein paar LEDs
