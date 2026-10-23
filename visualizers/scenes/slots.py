@@ -713,6 +713,13 @@ class Controller:
                 "uHighS", "uEnergy", "uLive", "uBeatPulse", "uFlash", "uDropT", "uStep", "uStepPhase", "uPattern", "uStake",
                 "uStakeT", "uSepia")
 
+    def led_state(self) -> dict:
+        """Für launcher/ledstream.py: Casino-Markise; Gewinnstufe nur in der Ergebnisphase."""
+        now = time.monotonic()
+        res = self.state == ST_RESULT
+        return {"program": "slots", "spinning": bool(self.spinning), "win": int(self.win) if res else 0,
+                "win_age": (now - self.state_t0) if res else 0.0}
+
     def uniform_names(self):
         return self.UNIFORMS
 

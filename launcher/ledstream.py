@@ -108,6 +108,14 @@ class LedStream:
         self.flick = None
         self.err_phase = ""
         self.hunt = 0.0
+        # Casino-Markise (Slotmaschinen): drei Farben in Blöcken, Hauptfarbe, Warmweiß, Akzent
+        acc = self.col3 if (self.col3.max() > 40 and not np.array_equal(self.col3, WHITE)) else (self.col2 if self.col2.max() > 120 else np.array([255.0, 40.0, 10.0]))
+        self.marquee = [self.col, np.array([255.0, 225.0, 170.0]), acc]
+        self.mq_pos = 0.0
+        self.mq_dir = 1.0
+        self.mq_rot = 0
+        self.mq_beats = 0
+        self.mq_flip_at = 0.0
         wled.set_stream_hook(self.event)
         if self.enabled:
             threading.Thread(target=self._setup, name="leds-setup", daemon=True).start()
@@ -208,6 +216,8 @@ class LedStream:
         program = (state or {}).get("program", "")
         if program == "error":
             frame = self._error(now, dt, state or {}, bass, high, is_beat, live)
+        elif program == "slots":
+            frame = self._slots(now, dt, state or {}, bass, high, is_beat, live)
         elif self.fx in (45, 66, 42):
             frame = self._fire(now, dt, bass, high, is_beat, live)
         elif self.fx == 40:
@@ -223,6 +233,60 @@ class LedStream:
         self._send(frame, now)
 
     # -- Programme -----------------------------------------------------------------------------------------------
+    def _slots(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Casino-Markise wie ein Vegas-Eingang: Blöcke von 3 LEDs in derselben Farbe (Hauptfarbe, Warmweiß, Akzent im
+        Wechsel), alle an, nur die Helligkeit wandert leicht; das Muster fährt langsam, mal vor, mal zurück, beim Drehen
+        schnell; alle paar Beats wechseln die Farben durch, ab und zu kehrt die Richtung um. Gewinn: klein = zweimal
+        Blitzen, groß = heller Lauf von vorne, Jackpot = Gold/Weiß-Stroboskop und Funkeln."""
+        n = self.n
+        x = self._idx()
+        idx = np.arange(n)
+        spinning = bool(st.get("spinning", False))
+        win = int(st.get("win", 0))
+        age = float(st.get("win_age", 0.0))
+        if is_beat:
+            self.mq_beats += 1
+            if self.mq_beats % 4 == 0:                            # alle vier Beats die Farben weiterrücken
+                self.mq_rot += 1
+            if self.mq_beats % 16 == 0 or (bass > 0.8 and self.rng.random() < 0.15):
+                self.mq_dir *= -1.0
+                self.mq_flip_at = now + self.rng.uniform(6.0, 14.0)
+        if now >= self.mq_flip_at:                                # auch ohne Musik ab und zu umkehren
+            self.mq_dir *= -1.0
+            self.mq_flip_at = now + self.rng.uniform(6.0, 14.0)
+        speed = 10.0 if spinning else ((2.5 + 4.0 * self.e_fast) * live + (1.0 - live) * 1.5)   # LED-Schritte je Sekunde
+        self.mq_pos = (self.mq_pos + self.mq_dir * speed * dt) % 9.0
+        shift = idx + int(self.mq_pos)
+        if self.reverse:
+            shift = (n - 1 - idx) + int(self.mq_pos)
+        ci = ((shift // 3) + self.mq_rot) % 3
+        colors = np.array(self.marquee)[ci]
+        twinkle = 0.8 + 0.2 * np.sin(now * 1.7 + idx * 0.35) * np.sin(now * 0.9 + idx * 0.11)
+        level = twinkle * ((0.75 + 0.25 * self.bass_s) * live + (1.0 - live) * 0.5)
+        if spinning:
+            level = twinkle * 1.0
+        frame = colors * level[:, None]
+        gold = self.marquee[0]
+        white = self.marquee[1]
+        if win == 1 and age < 1.2:                                # kleiner Gewinn: zweimal aufblitzen
+            if int(age * 5.0) % 2 == 0 and age < 0.8:
+                frame = np.outer(np.ones(n), gold)
+        elif win == 2 and age < 4.0:                              # großer Gewinn: heller Lauf von vorne, dann Markise schnell
+            if age < 1.2:
+                pos = age / 1.2
+                w = np.exp(-((x - pos) / 0.12) ** 2)
+                frame = frame * 0.5 + np.outer(w, white)
+            else:
+                self.mq_pos = (self.mq_pos + self.mq_dir * 12.0 * dt) % 9.0
+        elif win >= 3 and age < 7.0:                              # Jackpot: Stroboskop Gold/Weiß, dann Goldfunkeln
+            if age < 3.0:
+                frame = np.outer(np.ones(n), gold if int(age * 8.0) % 2 == 0 else white)
+            else:
+                if self.rng.random() < 0.9:
+                    self.glow[self.nrng.integers(0, n, size=max(1, n // 60))] = 1.0
+                frame = frame * 0.6 + np.outer(self.glow, white)
+        return frame
+
     def _idx(self) -> np.ndarray:
         """0 = vorne am Cart .. 1 = hinten."""
         x = np.arange(self.n) / max(1, self.n - 1)
