@@ -16,7 +16,20 @@ uniform sampler2D uSceneTex, uFlameSTex, uFlameMTex, uFlameBTex, uFlameXTex, uSp
 uniform vec2 uSceneSize, uFlameSize, uSparkSize, uItemSize, uKettle;
 uniform vec4 uFire, uTaxi, uFlame, uFlameK, uShoot, uMallow;
 uniform float uSeed, uHorizon, uBassS, uMidS, uHighS, uEnergy, uLive, uBeatPulse, uLevel, uFrameMix, uWind, uEmber, uPokeT;
-uniform float uSkyRise, uTaxiT, uZoom;
+uniform float uSkyRise, uTaxiT, uZoom, uCal;
+uniform vec4 uKettleBox;                                                  // Kesselbauch im Foto (Mitte x, y, Radius x, y): liegt vor den Flammen
+// Kesselform: Bauch als Ellipse, Henkel als Bogen darüber, Tülle rechts
+float kettleMask(vec2 uv) {
+    vec2 c = uKettleBox.xy, r = uKettleBox.zw;
+    vec2 d = (uv - c) / r;
+    float body = smoothstep(1.05, 0.95, length(d));
+    vec2 hc = vec2(c.x, c.y + r.y * 0.95);
+    vec2 hd = (uv - hc) / (r * vec2(0.62, 0.55));
+    float ring = smoothstep(0.3, 0.15, abs(length(hd) - 1.0)) * step(hc.y, uv.y);
+    vec2 sd = (uv - vec2(c.x + r.x * 1.12, c.y + r.y * 0.1)) / (r * vec2(0.28, 0.32));
+    float spout = smoothstep(1.1, 0.9, length(sd));
+    return max(body, max(ring, spout));
+}
 uniform vec4 uSp0, uSp1, uSp2, uSp3, uSp4, uSp5, uSp6, uSp7, uSp8, uSp9, uSp10, uSp11, uSp12, uSp13, uSp14, uSp15;
 uniform vec4 uSp16, uSp17, uSp18, uSp19, uSp20, uSp21, uSp22, uSp23;
 uniform vec4 uItem0, uItem1, uItem2, uItem3, uItemP0, uItemP1, uItemP2, uItemP3, uMoth0, uMoth1, uMoth2;
@@ -160,8 +173,16 @@ void main() {
             fl = mix(fl, fx, uFlameK.y);
         }
         fl.a *= uFlameK.x;
+        // Der Bogen bringt unten seinen eigenen Holzstapel mit: dunkle Pixel im unteren Zellenteil ausblenden, nur die
+        // Flammen bleiben, die Scheite kommen aus dem Foto
+        float lumF = max(fl.r, max(fl.g, fl.b));
+        fl.a *= mix(smoothstep(0.35, 0.6, lumF), 1.0, smoothstep(0.12, 0.3, p.y));
+        vec3 before = col;
         col = mix(col, fl.rgb, fl.a);
         col += fl.rgb * fl.a * (0.25 + 0.2 * uBassS * live);
+        // Kessel hängt vor dem Feuer: dunkle Kesselpixel des Fotos wieder nach vorn
+        float kettle = kettleMask(uv) * smoothstep(0.75, 0.5, max(plate.r, max(plate.g, plate.b)));
+        if (kettle > 0.001) col = mix(col, before * (1.0 + 0.25 * lv * flick), kettle);
         // Schein um die Flammen
         col += warm * exp(-fr * 9.0) * (0.08 + 0.25 * lv) * flick;
     }
@@ -212,6 +233,15 @@ void main() {
             if (i == 2 && uMallow.x >= 0.0) cc += vec3(1.0, 0.5, 0.2) * 0.25 * lv * (0.5 + 0.5 * sin(t * 7.0));
             col = mix(col, cc, c.a * ip.x);
         }
+    }
+    // ---- Kalibrierung (KITT_CAMPFIRE_CAL=1): Rahmen um Flammenzelle und Kessel
+    if (uCal > 0.5) {
+        vec2 c0 = vec2(fire.x - fw * 0.5, fire.y), c1 = vec2(fire.x + fw * 0.5, fire.y + fh);
+        float e = 0.002;
+        float box = step(c0.x, uv.x) * step(uv.x, c1.x) * step(c0.y, uv.y) * step(uv.y, c1.y);
+        float inner = step(c0.x + e, uv.x) * step(uv.x, c1.x - e) * step(c0.y + e, uv.y) * step(uv.y, c1.y - e);
+        col = mix(col, vec3(1.0, 0.2, 0.2), box - inner);
+        col = mix(col, vec3(0.2, 0.8, 1.0), kettleMask(uv) * 0.5);
     }
     // ---- Stille: alles kühler und dunkler, nur die Glut bleibt
     col *= 0.78 + 0.22 * live;

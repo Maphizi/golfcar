@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 import random
 import time
 
@@ -89,6 +90,8 @@ class Controller:
         self.items_tex = images.load_rgba(ASSETS / "items.png")
         self.fire = tuple(float(v) for v in scene_cfg.get("fire", [0.47, 0.27, 0.16]))           # x, Fuß y (von unten), Breite
         self.kettle = tuple(float(v) for v in scene_cfg.get("kettle", [0.44, 0.44]))             # Tülle des Kessels
+        self.kettle_box = tuple(float(v) for v in scene_cfg.get("kettle_box", [0.44, 0.419, 0.034, 0.051]))  # Kesselbauch vor den Flammen
+        self.cal = os.environ.get("KITT_CAMPFIRE_CAL", "") not in ("", "0")
         self.taxi = tuple(float(v) for v in scene_cfg.get("taxi", [0.02, 0.50, 0.30, 0.62]))     # Lichter des Taxis
         self.horizon = float(scene_cfg.get("horizon", 0.57))
         self.alien = tuple(float(v) for v in scene_cfg.get("alien", [0.72, 0.21, 0.09]))         # x, Fuß y, Größe
@@ -247,7 +250,7 @@ class Controller:
         names = ["uSceneTex", "uFlameSTex", "uFlameMTex", "uFlameBTex", "uFlameXTex", "uSparkTex", "uItemTex",
                  "uSceneSize", "uFlameSize", "uSparkSize", "uItemSize", "uSeed", "uFire", "uKettle", "uTaxi", "uHorizon",
                  "uBassS", "uMidS", "uHighS", "uEnergy", "uLive", "uBeatPulse", "uLevel", "uFlame", "uFlameK", "uFrameMix",
-                 "uWind", "uEmber", "uPokeT", "uSkyRise", "uShoot", "uTaxiT", "uZoom", "uMallow"]
+                 "uWind", "uEmber", "uPokeT", "uSkyRise", "uShoot", "uTaxiT", "uZoom", "uMallow", "uCal", "uKettleBox"]
         names += [f"uSp{i}" for i in range(N_SPARKS)]
         names += [f"uItem{i}" for i in range(N_ITEMS)] + [f"uItemP{i}" for i in range(N_ITEMS)]
         names += [f"uMoth{i}" for i in range(N_MOTHS)]
@@ -391,6 +394,7 @@ class Controller:
             "uShoot": ((now - self.shoot_t0) if now - self.shoot_t0 < 1.6 else -1.0, self.shoot[0], self.shoot[1], math.atan2(self.shoot[3], self.shoot[2])),
             "uTaxiT": (now - self.taxi_t0) if now - self.taxi_t0 < 3.0 else -1.0, "uZoom": self.zoom,
             "uMallow": (mk if mk < MALLOW_SECONDS else -1.0, float(self.mallow_grade), self.mallow[0], self.mallow[1]),
+            "uCal": 1.0 if self.cal else 0.0, "uKettleBox": self.kettle_box,
         }
         for i in range(N_SPARKS):
             if i < len(self.sparks):

@@ -112,7 +112,10 @@ Sternfunke), UNTEN `poke()` Funkenwolke + `ember`, LINKS/RECHTS `gust()` Wind `u
 `ALIEN_EVERY` 90-200 s, Taxi-Lichter `uTaxiT` alle `TAXI_EVERY`, Sternschnuppen `uShoot` alle `SHOOT_EVERY`, Himmel steigt
 `uSkyRise` über `cycle_minutes`, SPACE/BACKSPACE `uZoom`. Shader: Feuerlicht `near`/`lightK` auf Steinen (Glut = dunkler als
 das Foto), Hitzeflimmern, Rauch im Wind, Kesseldampf `uKettle`, Sterne funkeln mit Höhen, Polarlicht mit Bass. Demo = 8x
-schneller. `[scenes.campfire] fire = [x, y, Zellbreite]`, `kettle`, `taxi`, `horizon`, `alien`, `mallow`, `cycle_minutes`.
+schneller. Der Bogen bringt unten eigene Scheite mit: dunkle Pixel im unteren Zellenteil werden ausgeblendet (`lumF`), die
+Scheite kommen aus dem Foto; der Kessel liegt vor den Flammen (`kettleMask`: Ellipse `kettle_box` = Mitte x, y, Radius x, y,
+plus Henkelbogen und Tülle). `KITT_CAMPFIRE_CAL=1` zeichnet Flammenzelle (rot) und Kesselform (blau) zum Einmessen auf dem
+Gerät. `[scenes.campfire] fire = [x, y, Zellbreite]`, `kettle`, `kettle_box`, `taxi`, `horizon`, `alien`, `mallow`, `cycle_minutes`.
 WLED `campfire`, `campfire_big` (Stufe > 2.4), `campfire_blue`, `campfire_log`. Test: `python -m visualizers.engine campfire
 --test-signal --demo`.
 
