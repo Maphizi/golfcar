@@ -129,7 +129,7 @@ class LedStream:
         self.hunt = 0.0
         # Casino-Markise (Slotmaschinen): drei Farben in Blöcken, Hauptfarbe, Warmweiß, Akzent
         acc = self.col3 if (self.col3.max() > 40 and not np.array_equal(self.col3, WHITE)) else (self.col2 if self.col2.max() > 120 else np.array([255.0, 40.0, 10.0]))
-        self.marquee = [_saturate(self.col, 1.4), _saturate(self.col * 0.5 + acc * 0.5, 1.6), _saturate(acc, 1.4)]
+        self.marquee = [_saturate(self.col, 1.4), _saturate(self.col, 1.4) * 0.35, _saturate(acc, 1.4)]
         self.mq_pos = 0.0
         self.mq_target = 0.0                                      # Blockschritte (je Beat einer)
         self.mq_pos_s = 0.0
@@ -398,7 +398,7 @@ class LedStream:
 
     # -- Programme -----------------------------------------------------------------------------------------------
     def _slots(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
-        """Casino-Markise wie ein Vegas-Eingang: Blöcke in derselben Farbe (Farbe A, satte Mischfarbe, Farbe B im Wechsel, kein Weiß), alle an, nur die Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat weiter (1 2 3 4), weich eingerastet, mal vor, mal zurück,
+        """Casino-Markise wie ein Vegas-Eingang: Blöcke in derselben Farbe (Farbe A hell, Farbe A gedimmt, Farbe B hell im Wechsel, kein Weiß), alle an, nur die Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat weiter (1 2 3 4), weich eingerastet, mal vor, mal zurück,
         beim Drehen läuft es schnell von selbst; alle paar Beats wechseln die Farben durch, ab und zu kehrt die Richtung um. Gewinn: klein = zweimal
         Blitzen, groß = heller Lauf von vorne, Jackpot = Gold/Weiß-Stroboskop und Funkeln."""
         n = self.n
@@ -410,7 +410,7 @@ class LedStream:
         if len(cols) >= 2:                                        # Lichtfarben des Automaten auf dem Schirm: A, Warmweiß, B
             a = _saturate(np.array(cols[0], dtype=float), 1.5)   # satt, kein Weiß
             b = _saturate(np.array(cols[1], dtype=float), 1.5)
-            mid = _saturate(a * 0.5 + b * 0.5, 1.6)               # dritter Block: satte Mischfarbe statt Warmweiß
+            mid = a * 0.35                                        # dritter Block: Farbe A gedimmt (Mischung von Gegenfarben wäre weiß)
             self.marquee = [a, mid, b]
         age = float(st.get("win_age", 0.0))
         if is_beat:

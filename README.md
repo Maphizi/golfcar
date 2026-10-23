@@ -1251,7 +1251,7 @@ Feuerwerk geht in Blüten auf, der Stromausfall macht alles aus und lässt es z�
 Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. Bei HAL 3000 ziehen dunkel- und hellrote Felder wie die
 Zellen des Korridors langsam und immer in dieselbe Richtung vorbei, ein Viertel dunkler als der Rest, und ab und zu kommt von einem Ende ein einzelnes helles Feld, das im Takt Schritt für Schritt rund eine Minute
 über die ganze Kette wandert, mal von vorne, mal von hinten, mit gelegentlichem Schritt zurück. Die Slotmaschinen leuchten wie ein Casino-Eingang in den Lichtfarben des
-gewählten Automaten: Blöcke in Farbe A, einer satten Mischfarbe und Farbe B, kein Weiß, alle an, das Muster rückt auf jedem Beat genau einen Block
+gewählten Automaten: Blöcke in Farbe A hell, Farbe A gedimmt und Farbe B hell, kein Weiß, das Muster rückt auf jedem Beat genau einen Block
 weiter, 1, 2, 3, 4, weich eingerastet, mal vor, mal zurück, beim Drehen läuft es schnell, alle paar Beats rücken die Farben
 weiter; kleiner Gewinn blitzt zweimal, großer Gewinn schickt einen weißen Lauf, Jackpot ist Gold-Weiß-Stroboskop mit Funkeln;
 als Specials läuft ab und zu ein einzelner Punkt durch, der bei anziehendem Beat überholt wird, oder zwei Läufer kreuzen sich. Im Systemfehler
