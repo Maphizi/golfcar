@@ -62,6 +62,7 @@ OBS_NAMES = ["BARRIERE", "KISTE", "DROHNE", "HÜTCHEN", "HOLO-SCHILD", "MÜLL", 
 KIND_HOLO, KIND_CAR, KIND_FLY, KIND_OBS, KIND_CROSS = range(5)
 LANE_SLOTS = (-1.0, -0.5, 0.0, 0.5, 1.0)                             # Kandidaten des Autopiloten
 LANE_HALF = 0.42                                                     # halbe Wagenbreite in Spureinheiten
+FLASH_LEN = 2.5           # s Anzeige AUTOPILOT AN/AUS (Kippschalter)
 AUTO_START = 5.0                                                     # s bis der Autopilot von selbst losfährt
 RESTART_AFTER = 20.0                                                 # s Pause nach manuellem Anhalten
 MANUAL_SECONDS = 4.0
@@ -142,6 +143,8 @@ class Controller:
         self.pattern = 0
         self.pattern_next = now + self.rng.uniform(25.0, 45.0)
         self.driving = False
+        self.flash_text = ""
+        self.flash_t0 = -1e9
         self.auto_started = False
         self.speed = 0.0
         self.dist = 0.0
@@ -194,6 +197,18 @@ class Controller:
         log.info("Angehalten nach %d:%02d", secs // 60, secs % 60)
         wled.apply_mode_async("neonrace")
 
+    def autopilot(self, on: bool) -> None:
+        """Kippschalter: AN = Autopilot fährt, AUS = anhalten und stehen bleiben (bis AN oder Startknopf); kurze Anzeige."""
+        now = time.monotonic()
+        if on:
+            self.start(auto=True)
+        else:
+            self.stop()
+            self.auto_start_at = float("inf")
+        self.flash_text = "AUTOPILOT AN" if on else "AUTOPILOT AUS"
+        self.flash_t0 = now
+        log.info("Kippschalter: %s", self.flash_text)
+
     def change_lane(self, d: float) -> None:
         """Knüppel: halbe Spur je Druck, Autopilot für 4 s aus."""
         self.lane_target = max(-1.0, min(1.0, round((self.lane_target + d * 0.5) * 2.0) / 2.0))
@@ -223,8 +238,10 @@ class Controller:
             return
         if ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
             self.start()
-        elif ev.key in (pygame.K_SPACE, pygame.K_BACKSPACE):
-            self.stop()
+        elif ev.key == pygame.K_SPACE:
+            self.autopilot(True)
+        elif ev.key == pygame.K_BACKSPACE:
+            self.autopilot(False)
         elif ev.key in (pygame.K_LEFT, pygame.K_a):
             self.change_lane(-1.0)
         elif ev.key in (pygame.K_RIGHT, pygame.K_d):
@@ -519,9 +536,14 @@ class Controller:
     def overlays(self, t: float):
         now = time.monotonic()
         out = []
+        k = now - self.flash_t0
+        if k < FLASH_LEN:
+            a = min(1.0, (FLASH_LEN - k) / 0.6) * (0.8 + 0.2 * np.sin(t * 8.0))
+            colr = (120, 255, 200) if self.flash_text.endswith("AN") else (255, 120, 90)
+            out.append((self.flash_text, 0.05, 0.5, 0.45, colr, a))
         if not self.driving:
             out.append(("N E O N F A H R T", 0.05, 0.5, 0.62, (255, 60, 200), 0.7 + 0.3 * np.sin(t * 2.0)))
-            out.append(("STARTKNOPF = LOSFAHREN      KIPPSCHALTER = ANHALTEN", 0.02, 0.5, 0.55, (120, 220, 255), 0.7))
+            out.append(("STARTKNOPF = LOSFAHREN      KIPPSCHALTER AN = AUTOPILOT", 0.02, 0.5, 0.55, (120, 220, 255), 0.7))
             wait = self.auto_start_at - now
             if 0.0 < wait < 6.0:
                 out.append((f"AUTOPILOT IN {int(wait) + 1} S", 0.022, 0.5, 0.48, (255, 255, 160), 0.6 + 0.3 * np.sin(t * 6.0)))

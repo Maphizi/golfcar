@@ -34,6 +34,7 @@ JUMP_SWAP = 1.5
 CIRCUIT_LEN = 1.2         # Anzeige rattert (s)
 HONK_LEN = 1.5
 MPH_JUMP = 88.0
+FLASH_LEN = 2.5           # s Anzeige AUTOPILOT AN/AUS (Kippschalter)
 AUTO_START = 4.0          # s nach dem Start fährt der Wagen von selbst los (Autopilot)
 AUTO_RESTART = 25.0       # s nach dem Anhalten per Kippschalter fährt er wieder an
 JUMP_DUE = (35.0, 60.0)   # spätestens nach so vielen Sekunden Fahrt laden die Zeitkreise und er springt (bei Musik)
@@ -137,6 +138,8 @@ class Controller:
         self.drop_armed = False
         self.last_drop = -100.0
         self.driving = False
+        self.flash_text = ""
+        self.flash_t0 = -1e9
         self.mph = 0.0
         self.boost = 0.0
         self.dist = 0.0
@@ -193,6 +196,18 @@ class Controller:
         log.info("Angehalten nach %d:%02d, %d Zeitsprünge", secs // 60, secs % 60, self.jumps)
         wled.apply_mode_async("timejump")
 
+    def autopilot(self, on: bool) -> None:
+        """Kippschalter: AN = Autopilot fährt, AUS = anhalten und stehen bleiben (bis AN oder Startknopf); kurze Anzeige."""
+        now = time.monotonic()
+        if on:
+            self.start()
+        else:
+            self.stop()
+            self.auto_start_at = float("inf")
+        self.flash_text = "AUTOPILOT AN" if on else "AUTOPILOT AUS"
+        self.flash_t0 = now
+        log.info("Kippschalter: %s", self.flash_text)
+
     def change_lane(self, d: float) -> None:
         self.lane_target = max(-1.0, min(1.0, self.lane_target + d))
 
@@ -243,8 +258,10 @@ class Controller:
             return
         if ev.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
             self.start()
-        elif ev.key in (pygame.K_SPACE, pygame.K_BACKSPACE):
-            self.stop()
+        elif ev.key == pygame.K_SPACE:
+            self.autopilot(True)
+        elif ev.key == pygame.K_BACKSPACE:
+            self.autopilot(False)
         elif ev.key in (pygame.K_LEFT, pygame.K_a):
             self.change_lane(-1.0)
         elif ev.key in (pygame.K_RIGHT, pygame.K_d):
@@ -474,6 +491,11 @@ class Controller:
     def overlays(self, t: float):
         now = time.monotonic()
         out = []
+        k = now - self.flash_t0
+        if k < FLASH_LEN:
+            a = min(1.0, (FLASH_LEN - k) / 0.6) * (0.8 + 0.2 * np.sin(t * 8.0))
+            colr = (120, 255, 200) if self.flash_text.endswith("AN") else (255, 120, 90)
+            out.append((self.flash_text, 0.05, 0.5, 0.45, colr, a))
         jt = now - self.jump_t0
         dim = 1.0 if self.driving else 0.45
         # Zeitkreise in den drei Anzeigen des Cockpits (rechts): Ziel rot, Jetzt grün, Zuletzt gelb; beim Sprung drehen
@@ -497,7 +519,8 @@ class Controller:
         if not self.driving:
             out.append(("Z E I T S P R U N G", 0.05, 0.5, 0.74, (255, 170, 60), 0.7 + 0.3 * np.sin(t * 2.0)))
             wait = max(0.0, self.auto_start_at - now)
-            out.append((f"AUTOPILOT STARTET IN {int(wait + 0.99)} S      STARTKNOPF = SOFORT      KIPPSCHALTER = ANHALTEN", 0.018, 0.5, 0.67, (160, 220, 255), 0.7))
+            head = f"AUTOPILOT STARTET IN {int(wait + 0.99)} S" if wait < 1e6 else "AUTOPILOT AUS"
+            out.append((f"{head}      STARTKNOPF = SOFORT      KIPPSCHALTER AN = AUTOPILOT", 0.018, 0.5, 0.67, (160, 220, 255), 0.7))
             out.append((f"{ERA_NAMES[self.era]}  {ERA_LABELS[self.era]}", 0.022, 0.5, 0.60, (255, 220, 160), 0.6))
             out.append(("0 MPH", 0.05, MPH_X, MPH_Y, (255, 170, 60), 0.45))
         else:

@@ -233,8 +233,8 @@ alle Atlanten unter `assets/cyber/` (plate/slice aus `trip_assets.py`). Alle sec
 `visualizer.toml`, WLED-Profile `<modus>` + Ereignisse in `wled.toml`, Labels in `modes.toml`, Aktionen in `launcher/actions.py`.
 
 ### Neonfahrt (`visualizers/scenes/neonrace.py`, Taste 2)
-Autopilot: nach `AUTO_START` 5 s fährt der Wagen von selbst (ENTER sofort, SPACE/BACKSPACE = anhalten, Wiederanfahrt nach
-Pause). Tempo `uSpeed` = Energie + Beat-Schub `uBoost` + Nitro. Spur `uLane` fließend -1..1, `_best_lane()` weicht Verkehr und
+Autopilot: nach `AUTO_START` 5 s fährt der Wagen von selbst (ENTER sofort; Kippschalter `autopilot(on)`: SPACE = AN fährt los,
+BACKSPACE = AUS hält an und bleibt stehen bis AN/ENTER; Banner "AUTOPILOT AN/AUS" `FLASH_LEN` 2,5 s). Tempo `uSpeed` = Energie + Beat-Schub `uBoost` + Nitro. Spur `uLane` fließend -1..1, `_best_lane()` weicht Verkehr und
 Hindernissen aus (`_arm_reaction`: bei hohem Tempo gelegentlich zu spät = BEINAHE), Knüppel LINKS/RECHTS überstimmt 4 s
 (MANUELL), OBEN Hupe `uHonkT`, UNTEN Rückspiegel `uMirror`. `Mover` kinds 0 Holo / 1 Auto / 2 Flieger / 3 Hindernis / 4 Querung
 -> `uHolo0..9`, `uCar0..5`, `uFly0..5`, `uObs0..5` (+ `uObsTex` `neonrace_obstacles.png` 8x2 à 192: Reihe 0 steht auf der
@@ -320,8 +320,8 @@ Aktionen `launcher/actions.py`. Shader-Hinweis (llvmpipe): `pow(x, 2.0)` mit neg
 negativem Argument liefern NaN/weiße Blöcke, daher `sq()` statt pow und `exp(max(x, -60))`.
 
 ### Zeitsprung (`visualizers/scenes/timejump.py`, Taste 2)
-Wie Neonfahrt: Autopilot fährt nach `AUTO_START` 4 s von selbst (ENTER sofort, SPACE/BACKSPACE = anhalten, nach `AUTO_RESTART`
-25 s wieder los). `mph` folgt der Energie (30 + 70·Energie + Schub bis 40), spätestens nach `JUMP_DUE` 35-60 s Fahrt laden die
+Wie Neonfahrt: Autopilot fährt nach `AUTO_START` 4 s von selbst (ENTER sofort; Kippschalter SPACE = AN fährt los, BACKSPACE =
+AUS hält an und bleibt stehen; Banner "AUTOPILOT AN/AUS" `FLASH_LEN` 2,5 s; `AUTO_RESTART` nur nach `stop()` ohne Schalter). `mph` folgt der Energie (30 + 70·Energie + Schub bis 40), spätestens nach `JUMP_DUE` 35-60 s Fahrt laden die
 Zeitkreise und das Tempo geht auf `MPH_JUMP` 88 -> `jump()` (`uJumpT` 0..3 s, Weißblitz bei 1,5 s, `_swap_era()`), Drop = sofort, LINKS/RECHTS `uLane`, OBEN `uHonkT`, UNTEN `toggle_circuits` (`uCircuitT`). Cockpit
 `timejump_cockpit.png` (Alpha aus der schwarzen Scheibe, `_windshield_mask`, `SHIELD_Y0` 0.45; `cockpit_drop` schiebt das Bild
 nach unten, Shader bekommt `uShield` = Scheibenkante auf dem Schirm + Drop in .w), Epochen `uEra0..3Tex` (`uEraA/uEraB/uEraMix`),
