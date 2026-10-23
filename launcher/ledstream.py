@@ -58,6 +58,8 @@ class LedStream:
         self.host = str(ctrl.get("host", ""))
         self.http_port = int(ctrl.get("port", 80))
         self.udp_port = int(ctrl.get("udp_port", 21324))
+        remap_cfg = ctrl.get("col_remap", None)
+        self._col_remap = list(remap_cfg) if remap_cfg is not None else None  # Kanal-Remap für WS2814 etc.
         self.fps = float(ctrl.get("fps", 25))
         self.timeout = max(1, int(ctrl.get("realtime_timeout", 2)))
         self.dim = float(ctrl.get("dim", 1.0))
@@ -548,12 +550,27 @@ class LedStream:
     # -- Senden --------------------------------------------------------------------------------------------------
     def _send(self, frame: np.ndarray, now: float) -> None:
         try:
-            if self.n <= 490:
-                self.sock.sendto(bytes([DRGB, self.timeout]) + frame.tobytes(), (self.host, self.udp_port))
+            # Kanal-Remap falls konfiguriert (z. B. WS2814: Drahtfolge W,R,G,B → col_remap=[0,3,1,2])
+            remap = self._col_remap
+            if remap is not None:
+                src = np.zeros((frame.shape[0], 4), dtype=np.uint8)
+                src[:, :3] = frame                                # RGB in erste 3 Kanäle, W=0
+                frame4 = np.stack([src[:, i] for i in remap], axis=1)
             else:
-                for start in range(0, self.n, CHUNK):            # DNRGB: Startindex (2 Byte, big endian) je Paket
-                    part = frame[start:start + CHUNK]
-                    head = bytes([DNRGB, self.timeout, (start >> 8) & 0xFF, start & 0xFF])
+                frame4 = None
+            if self.n <= 490:
+                if frame4 is not None:
+                    self.sock.sendto(bytes([DRGBW, self.timeout]) + frame4.tobytes(), (self.host, self.udp_port))
+                else:
+                    self.sock.sendto(bytes([DRGB, self.timeout]) + frame.tobytes(), (self.host, self.udp_port))
+            else:
+                data = frame4 if frame4 is not None else frame
+                proto = DNRGBW if frame4 is not None else DNRGB
+                bpp = 4 if frame4 is not None else 3
+                chunk = CHUNK if bpp == 3 else (CHUNK * 3 // 4)
+                for start in range(0, self.n, chunk):             # Indexed: Startindex (2 Byte, big endian) je Paket
+                    part = data[start:start + chunk]
+                    head = bytes([proto, self.timeout, (start >> 8) & 0xFF, start & 0xFF])
                     self.sock.sendto(head + part.tobytes(), (self.host, self.udp_port))
             self.sent += 1
         except OSError as exc:
