@@ -487,14 +487,15 @@ der Mitte. Zeiten in `config/visualizer.toml` unter `[scenes.psychedelic]`. Die 
 weitere Welten einfach an die TOML anhängen.
 
 **Lagerfeuer (Taste 6, `campfire`): Rast am Rand der Galaxis.** Ein Lagerfeuer auf einem fremden Hochplateau unter der
-Milchstraße, ein Ringplanet geht über eine Stunde auf, zwei Monde, das Space-Taxi parkt im Hintergrund
+Milchstraße, ein Ringplanet geht über eine Stunde auf (sein Ring dreht sich langsam, innen schneller als außen, und glitzert
+mit den Höhen), zwei Monde, das Space-Taxi parkt im Hintergrund
 (`assets/campfire/scene.png`, Glut ohne Flammen). Das Feuer ist der ruhige Herzschlag und atmet mit der Musik, nie mit
 Sprüngen: bei leiser Musik Glut mit kleinen Flämmchen, bei mittlerer ein normales Lagerfeuer, bei lauter ein großes Feuer über
 die Steine (drei Flammenbögen `flames_small|mid|big.png`, weich gemischt), Stille lässt es zur Glut herunterbrennen. Alle zwei bis
 vier Minuten fliegt von selbst ein Scheit ins Feuer (Funkenwolke, das Feuer wird eine Weile größer), etwa alle drei Minuten ein
 glühender Kristall: dann brennt es 30 bis 60 Sekunden blau-violett (`flames_blue.png`). Funken steigen auf, driften im Wind und werden am
 Himmel kurz zu Sternen. Der Kessel dampft, Raummotten kreisen (mehr mit den Höhen), ein kleines Alien lugt ab und zu hinter dem
-Stein hervor, das Taxi blinkt alle paar Minuten mit den Positionslichtern, Sternschnuppen, das Polarlicht pulst mit dem Bass, die
+Stein hervor, das Taxi blinkt alle paar Minuten mit den Positionslichtern, Sternschnuppen, das Polarlicht wogt in Vorhängen und Strahlen über den Horizont und pulst mit dem Bass, die
 Sterne funkeln mit den Höhen. Knüppel links/rechts = Windstoß (Flammen und Rauch legen sich), oben = Holz nachlegen, unten = im
 Feuer stochern, Startknopf = Marshmallow am Stock (röstet je nach Feuer: roh, golden oder verkohlt), Kippschalter AN =
 Nahaufnahme, AUS = zurück. Board `campfire`, `campfire_big`, `campfire_blue`, `campfire_log`. Bilder vom Bot nach

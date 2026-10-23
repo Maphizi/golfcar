@@ -97,6 +97,11 @@ class Controller:
         self.alien = tuple(float(v) for v in scene_cfg.get("alien", [0.72, 0.21, 0.09]))         # x, Fuß y, Größe
         self.mallow = tuple(float(v) for v in scene_cfg.get("mallow", [0.56, 0.46]))             # Spitze des Stocks
         self.cycle_minutes = float(scene_cfg.get("cycle_minutes", 60.0))
+        self.planet = tuple(float(v) for v in scene_cfg.get("planet", [0.779, 0.755, 0.094]))   # Saturn: Mitte x, y, Radius (Breiten-Anteil)
+        ring = [float(v) for v in scene_cfg.get("ring", [0.196, 0.034, 21.4, 0.71, -0.016, 0.0])]  # a, b, Neigung Grad (positiv = rechts tiefer), innen/a, Versatz x, y
+        self.ring = (ring[0], ring[1], math.radians(ring[2]), ring[3])
+        self.ring_off = (ring[4], ring[5]) if len(ring) >= 6 else (0.0, 0.0)
+        self.ring_t = 0.0                                                                     # Ringzeit (läuft mit der Energie schneller)
         self.seed = self.rng.uniform(1.0, 100.0)
         now = time.monotonic()
         self.t0 = now
@@ -250,7 +255,8 @@ class Controller:
         names = ["uSceneTex", "uFlameSTex", "uFlameMTex", "uFlameBTex", "uFlameXTex", "uSparkTex", "uItemTex",
                  "uSceneSize", "uFlameSize", "uSparkSize", "uItemSize", "uSeed", "uFire", "uKettle", "uTaxi", "uHorizon",
                  "uBassS", "uMidS", "uHighS", "uEnergy", "uLive", "uBeatPulse", "uLevel", "uFlame", "uFlameK", "uFrameMix",
-                 "uWind", "uEmber", "uPokeT", "uSkyRise", "uShoot", "uTaxiT", "uZoom", "uMallow", "uCal", "uKettleBox"]
+                 "uWind", "uEmber", "uPokeT", "uSkyRise", "uShoot", "uTaxiT", "uZoom", "uMallow", "uCal", "uKettleBox",
+                 "uPlanet", "uRing", "uRingT", "uRingOff"]
         names += [f"uSp{i}" for i in range(N_SPARKS)]
         names += [f"uItem{i}" for i in range(N_ITEMS)] + [f"uItemP{i}" for i in range(N_ITEMS)]
         names += [f"uMoth{i}" for i in range(N_MOTHS)]
@@ -283,6 +289,7 @@ class Controller:
         self.live_s += (live - self.live_s) * min(1.0, dt / (0.5 if live else 3.0))
         e_fast = self.energy + (rms - self.energy) * min(1.0, dt / 0.3)
         self.energy += (rms - self.energy) * min(1.0, dt / 3.0)
+        self.ring_t += dt * (0.7 + 0.8 * self.energy) * self.speedup
         if beat > 0.5 and now - self.last_beat > 0.25:
             self.last_beat = now
             self.beat_pulse = 1.0
@@ -395,6 +402,7 @@ class Controller:
             "uTaxiT": (now - self.taxi_t0) if now - self.taxi_t0 < 3.0 else -1.0, "uZoom": self.zoom,
             "uMallow": (mk if mk < MALLOW_SECONDS else -1.0, float(self.mallow_grade), self.mallow[0], self.mallow[1]),
             "uCal": 1.0 if self.cal else 0.0, "uKettleBox": self.kettle_box,
+            "uPlanet": (self.planet[0], self.planet[1], self.planet[2], 0.0), "uRing": self.ring, "uRingT": self.ring_t, "uRingOff": self.ring_off,
         }
         for i in range(N_SPARKS):
             if i < len(self.sparks):

@@ -16,7 +16,9 @@ uniform sampler2D uSceneTex, uFlameSTex, uFlameMTex, uFlameBTex, uFlameXTex, uSp
 uniform vec2 uSceneSize, uFlameSize, uSparkSize, uItemSize, uKettle;
 uniform vec4 uFire, uTaxi, uFlame, uFlameK, uShoot, uMallow;
 uniform float uSeed, uHorizon, uBassS, uMidS, uHighS, uEnergy, uLive, uBeatPulse, uLevel, uFrameMix, uWind, uEmber, uPokeT;
-uniform float uSkyRise, uTaxiT, uZoom, uCal;
+uniform float uSkyRise, uTaxiT, uZoom, uCal, uRingT;
+uniform vec4 uPlanet, uRing;                                              // Planet (Mitte x, y, Radius) und Ring (a, b, Neigung, innen/a)
+uniform vec2 uRingOff;                                                    // Ringmitte gegenüber dem Planeten (gemalt leicht versetzt)
 uniform vec4 uKettleBox;                                                  // Kesselbauch im Foto (Mitte x, y, Radius x, y): liegt vor den Flammen
 // Kesselform: Bauch als Ellipse, Henkel als Bogen darüber, Tülle rechts
 float kettleMask(vec2 uv) {
@@ -108,6 +110,39 @@ void main() {
     float skyM = smoothstep(uHorizon, uHorizon + 0.08, uv.y);
     vec2 suv = uv - vec2(0.0, 0.03 * uSkyRise * skyM);
     vec3 col = scene(suv);
+    // ---- Saturnring dreht: Klumpen und Glitzern laufen um den Planeten (innen schneller als außen, Kepler),
+    //      vorne vor dem Planeten, hinten von ihm verdeckt; Tempo uRingT folgt der Energie
+    {
+        vec2 q = rot(-uRing.z) * ((suv - uPlanet.xy - uRingOff) * vec2(aspect, 1.0));
+        vec2 e = q / (uRing.xy * aspect);                                                  // Radien in Breiten-Anteilen
+        float r = length(e), ang = atan(e.y, e.x);
+        float ring = smoothstep(uRing.w - 0.04, uRing.w + 0.04, r) * smoothstep(1.03, 0.97, r);
+        float disc = smoothstep(uPlanet.z * aspect, uPlanet.z * aspect - 0.006, length((suv - uPlanet.xy) * vec2(aspect, 1.0)));
+        ring *= mix(1.0 - disc, 1.0, smoothstep(0.02, -0.02, e.y));                        // hinten hinter dem Planeten
+        if (ring > 0.001) {
+            float ph = uRingT * 0.0262 * pow(max(r, 0.3), -1.5);                           // außen ~1 Umdrehung in 4 min
+            float rad = noise(vec2(r * 38.0, 2.7)) * 0.6 + 0.4;
+            float clump = 0.5 * sin(ang * 7.0 - ph + r * 31.0) + 0.3 * sin(ang * 13.0 - ph * 1.1 + 2.0 + r * 17.0)
+                        + 0.2 * sin(ang * 23.0 - ph * 0.9 + r * 53.0);
+            float cell = hash12(vec2(floor((ang - ph) * 40.0), floor(r * 60.0)));
+            float glint = step(0.9, cell) * (0.5 + 0.5 * sin(t * 9.0 + cell * 50.0)) * (0.3 + 0.7 * uHighS);
+            col *= 1.0 + ring * (0.34 * clump * rad + 0.08 * uBassS * live);
+            col += col * ring * glint * 0.9;
+        }
+    }
+    // ---- Polarlicht bewegt sich: Vorhänge wogen (das Foto wird im grünen Band verschoben abgetastet), Strahlen ziehen
+    //      langsam durch, Rhythmus mit dem Bass
+    float band = smoothstep(uHorizon - 0.02, uHorizon + 0.05, uv.y) * (1.0 - smoothstep(uHorizon + 0.16, uHorizon + 0.32, uv.y));
+    if (band > 0.001) {
+        float gm = smoothstep(0.02, 0.1, col.g - max(col.r, col.b));                      // nur das grüne Licht, keine Sterne
+        float drift = t * (0.22 + 0.25 * uEnergy);
+        float wave = sin(suv.x * 13.0 + drift * 1.5 + 2.5 * fbm(vec2(suv.x * 2.5 - drift * 0.2, drift * 0.25)));
+        vec2 off = vec2(0.011 * wave + 0.005 * sin(suv.y * 45.0 + drift * 2.0),
+                        0.008 * sin(suv.x * 8.0 - drift * 0.8 + 4.0 * fbm(suv * 4.0 + drift * 0.1))) * band * gm;
+        col = mix(col, scene(suv + off), band * gm);
+        float rays = fbm(vec2(suv.x * 28.0 - drift * 0.5 + 6.0 * fbm(vec2(suv.x * 2.0, drift * 0.15)), suv.y * 2.0));
+        col += col * gm * band * (rays - 0.42) * (0.9 + 0.5 * uBassS * live);
+    }
     vec3 plate = col;
     float lum = max(col.r, max(col.g, col.b));
     float sat = lum - min(col.r, min(col.g, col.b));
@@ -175,8 +210,11 @@ void main() {
         fl.a *= uFlameK.x;
         // Der Bogen bringt unten seinen eigenen Holzstapel mit: dunkle Pixel im unteren Zellenteil ausblenden, nur die
         // Flammen bleiben, die Scheite kommen aus dem Foto
+        // (bei großem Feuer sind die Scheite des Bogens hell angestrahlt, daher zählt nur: hell UND satt wie eine Flamme)
         float lumF = max(fl.r, max(fl.g, fl.b));
-        fl.a *= mix(smoothstep(0.35, 0.6, lumF), 1.0, smoothstep(0.12, 0.3, p.y));
+        float satF = lumF - min(fl.r, min(fl.g, fl.b));
+        float flameLike = smoothstep(0.45, 0.75, lumF) * smoothstep(0.12, 0.3, satF);
+        fl.a *= mix(flameLike, 1.0, smoothstep(0.2, 0.42, p.y));
         vec3 before = col;
         col = mix(col, fl.rgb, fl.a);
         col += fl.rgb * fl.a * (0.25 + 0.2 * uBassS * live);
@@ -242,6 +280,11 @@ void main() {
         float inner = step(c0.x + e, uv.x) * step(uv.x, c1.x - e) * step(c0.y + e, uv.y) * step(uv.y, c1.y - e);
         col = mix(col, vec3(1.0, 0.2, 0.2), box - inner);
         col = mix(col, vec3(0.2, 0.8, 1.0), kettleMask(uv) * 0.5);
+        vec2 q = rot(-uRing.z) * ((suv - uPlanet.xy - uRingOff) * vec2(aspect, 1.0));
+        float r = length(q / (uRing.xy * aspect));
+        float lines = smoothstep(0.012, 0.0, abs(r - 1.0)) + smoothstep(0.012, 0.0, abs(r - uRing.w));
+        lines += smoothstep(0.003, 0.0, abs(length((suv - uPlanet.xy) * vec2(aspect, 1.0)) - uPlanet.z * aspect));
+        col = mix(col, vec3(0.2, 1.0, 0.3), clamp(lines, 0.0, 1.0));
     }
     // ---- Stille: alles kühler und dunkler, nur die Glut bleibt
     col *= 0.78 + 0.22 * live;
