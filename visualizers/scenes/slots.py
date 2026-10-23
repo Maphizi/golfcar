@@ -717,7 +717,7 @@ class Controller:
         """Für launcher/ledstream.py: Casino-Markise; Gewinnstufe nur in der Ergebnisphase."""
         now = time.monotonic()
         res = self.state == ST_RESULT
-        return {"program": "slots", "spinning": bool(self.spinning), "win": int(self.win) if res else 0,
+        return {"program": "slots", "spinning": self.state == ST_SPIN, "win": int(self.win) if res else 0,
                 "win_age": (now - self.state_t0) if res else 0.0}
 
     def uniform_names(self):

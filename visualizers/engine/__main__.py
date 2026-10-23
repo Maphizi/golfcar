@@ -122,6 +122,7 @@ def main() -> int:
     first_logged = False
     under_launcher = bool(os.environ.get("KITT_MODE"))
     leds = None                                # LED-Board live zur Musik (nur unter dem Launcher oder KITT_LEDS=1)
+    led_state_failed = False
     if under_launcher or os.environ.get("KITT_LEDS"):
         try:
             from launcher.ledstream import LedStream
@@ -155,8 +156,16 @@ def main() -> int:
             sync_images()
             renderer.draw(t, f, {**(ctrl.uniforms(t, f) if ctrl else {}), **fixed})   # --uniform überstimmt den Controller
             if leds is not None:
+                led_state = None
+                if ctrl and hasattr(ctrl, "led_state"):
+                    try:
+                        led_state = ctrl.led_state()
+                    except Exception:
+                        if not led_state_failed:
+                            log.exception("led_state der Szene (Stream läuft ohne Szenenzustand weiter)")
+                        led_state_failed = True
                 try:
-                    leds.update(now, f, ctrl.led_state() if ctrl and hasattr(ctrl, "led_state") else None)
+                    leds.update(now, f, led_state)
                 except Exception:
                     log.exception("LED-Stream")
                     leds = None
