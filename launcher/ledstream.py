@@ -689,7 +689,7 @@ class LedStream:
         Wabern der ganzen Kette wie Wind in den Flammen; brennt das Feuer blau (Kristall), wird das Licht so lange blau.
         Specials aus der Szene: Holz = Funken."""
         n = self.n
-        warm = np.array([255.0, 175.0, 95.0])
+        warm = np.array([255.0, 125.0, 30.0])                  # Kerzenlicht: auf LEDs wirkt erst dieses Orange warmweiß
         blue = np.array([70.0, 120.0, 255.0])
         bk = float(st.get("blue", 0.0)) if st else 0.0
         if self.tint is not None and time.monotonic() < self.tint_until:  # campfire_blue-Profil (Rückfall ohne led_state)

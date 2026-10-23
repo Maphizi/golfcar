@@ -405,7 +405,7 @@ Stroboskop nur als Special: `stars` (navcomputer, planets, timejump, neonrace, s
 hinten, Tempo mit der Energie, Beat hebt sie kurz; alle 25-45 s `planet` (weiche Kugel zieht vorbei und füllt im Vorbeiflug
 kurz alles in ihrer Farbe); `navcomputer.led_state()` liefert `flying` und das laufende Ereignis: KOMETENSCHAUER = `comet`-Läufer,
 ASTEROIDENFELD = graue Brocken schneller, WURMLOCH/SONNE/NEBEL = Tönung. `fire` (campfire, `led_state` level/blue): warmweißes
-Fackellicht (255,175,95), träges Glimmen je LED (`embers`), Wabern `gust`, Helligkeit mit der Feuerstufe, bei `blue` > 0 blau. `vortex` (blackhole, core, flux, pond): Punkte driften von beiden Enden zur Mitte, Mitte glimmt
+Fackellicht (255,125,30; auf LEDs wirkt erst das warmweiß), träges Glimmen je LED (`embers`), Wabern `gust`, Helligkeit mit der Feuerstufe, bei `blue` > 0 blau. `vortex` (blackhole, core, flux, pond): Punkte driften von beiden Enden zur Mitte, Mitte glimmt
 mit dem Bass. `breathe` (taxi, oracle, clocktower, woodeye, trip, hearttree, square): langsames Atmen + zwei wandernde Wolken.
 `rain` (rooftop): Tropfen von hinten nach vorne. `glitch` (blackice, paradox, overdose): das Störprogramm `_error` in den
 Themenfarben (`c_red`/`c_green` aus col/col2) mit eigenem 40-s-Phasenzyklus. `error` = Systemfehler (oben beschrieben). `slots` (`slots.py` `led_state`, alle vier Automaten): Casino-Markise `_slots`:
