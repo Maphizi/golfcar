@@ -72,10 +72,16 @@ def main() -> int:
     except Exception as exc:
         print(f"Senden fehlgeschlagen: {exc}")
         return 1
+    import time
+    time.sleep(2.0)
     try:
         with urllib.request.urlopen(f"http://{host}:{port}/json/info", timeout=5) as r:
             info = json.loads(r.read().decode())
-        print(f"Jetzt: {info.get('leds', {}).get('count')} LEDs")
+        n = int(info.get("leds", {}).get("count", 0))
+        print(f"Jetzt: {n} LEDs")
+        if n > 0:                                                  # Segment 0 sofort über die ganze Kette, sonst endet es beim alten Wert
+            wled.send({"seg": [{"id": 0, "start": 0, "stop": n, "grp": 1, "spc": 0}]}, f"Segment 0 = 0-{n}")
+            print(f"Segment 0 auf 0-{n} gesetzt. Launcher neu starten: systemctl --user restart kitt-launcher.service")
     except Exception as exc:
         print(f"Info nicht lesbar (Controller startet neu?): {exc}")
     return 0

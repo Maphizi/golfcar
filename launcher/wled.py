@@ -72,7 +72,9 @@ def _post(host: str, port: int, timeout: int, payload: dict) -> None:
         resp.read()
 
 
-_info: dict | None = None  # /json/info (LED-Anzahl), einmal je Prozess
+_info: dict | None = None  # /json/info (LED-Anzahl), höchstens alle INFO_TTL s neu
+_info_at = 0.0
+INFO_TTL = 60.0
 _extra_segs: list[int] | None = None   # Segment-IDs > 0 beim ersten Senden (werden gelöscht)
 
 
@@ -90,12 +92,15 @@ def led_count() -> int:
     n = int(_load_cfg().get("controller", {}).get("leds", 0) or 0)
     if n > 0:
         return n
-    if _info is None:
+    global _info_at
+    import time
+    if _info is None or time.monotonic() - _info_at > INFO_TTL:   # LED-Anzahl kann sich ändern (wled_setup.py)
         try:
             _info = _get(ctrl[0], ctrl[1], ctrl[2], "/json/info")
         except Exception as exc:
             log.debug("WLED /json/info: %s", exc)
-            _info = {}
+            _info = _info or {}
+        _info_at = time.monotonic()
     try:
         return int(_info.get("leds", {}).get("count", 0))
     except (TypeError, ValueError, AttributeError):
