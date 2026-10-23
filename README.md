@@ -1248,8 +1248,8 @@ verschluckt, die Umkehrung ist eine Druckwelle nach außen. Taxistand, Orakel, U
 und Marktplatz atmen langsam mit zwei wandernden Wolken, Jahreszeit und Epoche färben die Kette, Ereignisse laufen als Welle
 durch. Auf der Dachterrasse regnet es von hinten nach vorne, das Wetter färbt, Blitze schlagen zweimal ein und grollen nach,
 Feuerwerk geht in Blüten auf, der Stromausfall macht alles aus und lässt es zögernd zurückkommen. Black Ice, Paradoxon und
-Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. HAL 3000 atmet tief und ein Viertel dunkler als
-der Rest, und ab und zu kommt von einem Ende ein einzelnes helles Feld, das im Takt Schritt für Schritt rund eine Minute
+Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. Bei HAL 3000 ziehen dunkel- und hellrote Felder wie die
+Zellen des Korridors langsam und immer in dieselbe Richtung vorbei, ein Viertel dunkler als der Rest, und ab und zu kommt von einem Ende ein einzelnes helles Feld, das im Takt Schritt für Schritt rund eine Minute
 über die ganze Kette wandert, mal von vorne, mal von hinten, mit gelegentlichem Schritt zurück. Die Slotmaschinen leuchten wie ein Casino-Eingang in den Lichtfarben des
 gewählten Automaten: Blöcke in Farbe A, Warmweiß und Farbe B, alle an, das Muster rückt auf jedem Beat genau einen Block
 weiter, 1, 2, 3, 4, weich eingerastet, mal vor, mal zurück, beim Drehen läuft es schnell, alle paar Beats rücken die Farben

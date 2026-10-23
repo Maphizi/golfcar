@@ -154,6 +154,7 @@ class LedStream:
         self.field = None                                         # HAL: ein einzelnes Feld wandert im Beat-Schritt durch
         self.field_next = time.monotonic() + self.rng.uniform(20.0, 50.0)
         self.field_pos_s = 0.0
+        self.hal_phase = 0.0                                      # Lauf der Korridorfelder
         if self.base == "hal":
             self.bri *= 0.75                                      # HAL 3000: 25 % dunkler
         self.scr_acc = None
@@ -584,14 +585,23 @@ class LedStream:
         return frame
 
     def _hal(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
-        """HAL 3000: tiefes, langsames Atmen in der Bildschirmfarbe (25 % dunkler als die anderen). Ab und zu kommt von einem
-        Ende ein einzelnes Feld (etwa 14 LEDs, heller) und wandert im Beat-Schritt durch die ganze Kette, rund eine Minute
-        lang; mal von vorne, mal von hinten, und ab und zu macht es einen Schritt zurück."""
+        """HAL 3000: dunkel- und hellrote Felder wie die Korridorzellen ziehen langsam und immer in eine Richtung vorbei
+        (Bildschirmfarbe, 25 % dunkler als die anderen). Special: ab und zu kommt von einem Ende ein einzelnes helles Feld
+        und wandert im Beat-Schritt durch die ganze Kette, rund eine Minute lang; mal von vorne, mal von hinten, ab und zu
+        ein Schritt zurück."""
         n = self.n
         x = self._idx()
         col, col2 = self._base_col()
-        breath = 0.14 + 0.08 * math.sin(now * 0.35) + 0.3 * self.bass_s * live + 0.05 * self.bar_lift
-        frame = np.outer(np.full(n, breath), col)
+        # Grund: dunkel- und hellrote Felder wie die Zellen des Korridors ziehen immer in eine Richtung vorbei
+        # (von vorne nach hinten), langsam, etwas schneller mit der Energie; der Bass hebt die hellen Felder leicht
+        self.hal_phase += dt * (0.035 + 0.05 * self.e_fast) * live + dt * 0.03 * (1.0 - live)
+        cells = 8.0                                               # Paare hell/dunkel über die Kette
+        wave = np.sin((x - self.hal_phase) * 2.0 * math.pi * cells)
+        bright = np.clip(wave * 2.5, -1.0, 1.0) * 0.5 + 0.5       # blockig statt sinusförmig
+        edge = np.clip((np.abs(wave) * 2.5), 0.0, 1.0)            # weiche Kanten zwischen den Feldern
+        lvl_dark, lvl_bright = 0.12, 0.42 + 0.25 * self.bass_s * live + 0.08 * self.bar_lift
+        level = (lvl_dark + (lvl_bright - lvl_dark) * bright) * (0.85 + 0.15 * edge)
+        frame = np.outer(level, col)
         if self.field is None and now >= self.field_next:
             d = self.rng.choice((1.0, -1.0))
             self.field = {"pos": 0.0 if d > 0 else 1.0, "dir": d, "last": now, "steps": 0}

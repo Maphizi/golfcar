@@ -423,7 +423,8 @@ col3, sonst `wave` in der Profilfarbe; Zustandsprofile `STATE_PROFILE` (rooftop_
 square_<Jahr>, campfire_big) setzen die Grundfarbe (`tint`), das Modusprofil selbst setzt sie zurück. Drop = weicher Aufheller
 (0.55, höchstens alle 12 s).
 Gesamtdämpfung `[controller] dim` 0.7 für HTTP-Profile (`payload_for`) und Stream. HAL 3000 streamt über `kitt/ui/persona.py`
-(gleiche Schleife wie die Engine, `kitt/hal/app.py` `led_state` -> Programm `hal`): Atmen in der Bildschirmfarbe, 25 % dunkler
+(gleiche Schleife wie die Engine, `kitt/hal/app.py` `led_state` -> Programm `hal`): 8 Paare dunkel-/hellroter Felder
+(`hal_phase`, blockig) ziehen immer von vorne nach hinten (0,035-0,085 Kette/s), Bass hebt die hellen; 25 % dunkler
 (`bri *= 0.75`, Profil bri 142), alle 40-90 s ein einzelnes Feld (`field`, ~14 LEDs, heller), das im Beat-Schritt (1/95 je Beat,
 12 % Rückschritte, ohne Beats alle 0,55 s) in rund einer Minute von einem Ende zum anderen wandert.
 `payload_for` setzt immer `pal` (Profil, sonst 3 mit col2 / 2 ohne: sonst bleibt die letzte Palette, z. B. Regenbogen, und viele
