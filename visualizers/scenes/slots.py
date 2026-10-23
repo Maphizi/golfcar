@@ -717,8 +717,10 @@ class Controller:
         """Für launcher/ledstream.py: Casino-Markise; Gewinnstufe nur in der Ergebnisphase."""
         now = time.monotonic()
         res = self.state == ST_RESULT
+        th = self.themes[self.theme]
+        cols = [tuple(int(max(0.0, min(1.0, c)) * 255) for c in col) for col in th.get("colors", ())[:2]]
         return {"program": "slots", "spinning": self.state == ST_SPIN, "win": int(self.win) if res else 0,
-                "win_age": (now - self.state_t0) if res else 0.0}
+                "win_age": (now - self.state_t0) if res else 0.0, "colors": cols}     # Lichtfarben des Automaten
 
     def uniform_names(self):
         return self.UNIFORMS

@@ -244,6 +244,13 @@ class LedStream:
         idx = np.arange(n)
         spinning = bool(st.get("spinning", False))
         win = int(st.get("win", 0))
+        cols = st.get("colors") or []
+        if len(cols) >= 2:                                        # Lichtfarben des Automaten auf dem Schirm: A, Warmweiß, B
+            a, b = np.array(cols[0], dtype=float), np.array(cols[1], dtype=float)
+            for c in (a, b):
+                if c.max() > 0:
+                    c *= 255.0 / c.max()                          # volle Leuchtkraft je Farbe
+            self.marquee = [a, np.array([255.0, 225.0, 170.0]), b]
         age = float(st.get("win_age", 0.0))
         if is_beat:
             self.mq_beats += 1
