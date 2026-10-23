@@ -66,6 +66,15 @@ ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-S
 
 Nicht auf dem Board, über `scripts/kittctl <modus>`: droid (BIBO), news, viz_crt, viz_eye, planeten, menu, status.
 
+## Hupe, Effekte und Vorführmodus (`launcher/sfx.py`, `scripts/sfx_build.py`, `launcher/core.py`)
+Aktionen `horn` und `fx` (`config/keymap.toml`, Beispiele am Ende der Datei; Taste frei wählbar) spielen die Hupe bzw. einen
+zufälligen Effekt des aktuellen Themas aus `assets/sfx/<thema>_horn.wav` / `<thema>_fx1..3.wav` (synthetisch erzeugt von
+`scripts/sfx_build.py`, 22 kHz mono; pw-play/aplay nicht-blockierend, `settings.toml` `[sfx] enabled/volume`) und blitzen die
+LEDs (WLED-Profile `horn`/`fx`, PXN weiß; `led_back_at` setzt danach das Modusprofil zurück). Vorführmodus `[attract]`:
+nach `idle_minutes` 5 ohne Eingabe (Launcher-Actions und Board-Events via `DPadRemap.last_event`) wechselt `_attract_tick()`
+alle `every_seconds` 180 zufällig durch `ATTRACT_BASE` (Tasten 2-7 im aktuellen Thema, nie dieselbe zweimal, mit Ansage);
+jede Eingabe beendet ihn; nicht bei `boot`/`gaming`.
+
 ## Startbildschirm (`visualizers/scenes/splash.py`, Modus `boot`)
 `config/modes.toml` `[modes.boot]` startet `visualizers.engine splash` statt `launcher.boot_screen`: Titelbild
 `assets/splash/scene.png` (3:2, `[scenes.splash] crop` beschneidet auf 16:9) bildfüllend, Sonne (`sun`) glüht mit dem Bass

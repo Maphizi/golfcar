@@ -43,6 +43,7 @@ class DPadRemap(threading.Thread):
         c = {**DEFAULTS, **(cfg or {})}
         self._stop = threading.Event()
         self._kipp_state = False  # False = AUS, True = AN
+        self.last_event = time.monotonic()        # letzte Eingabe am Board (Vorführmodus des Launchers)
         self._ui = None
         self.start_code = int(c["start_code"])
         self.kipp_code = int(c["kipp_code"])
@@ -122,6 +123,8 @@ class DPadRemap(threading.Thread):
                 if not r:
                     continue
                 for ev in dev.read():
+                    if ev.type in (ecodes.EV_ABS, ecodes.EV_KEY) and ev.value != 0:
+                        self.last_event = time.monotonic()
                     # D-Pad Achsen -> Pfeiltasten
                     if ev.type == ecodes.EV_ABS and ev.value != 0:
                         key = HAT_TO_KEY.get((ev.code, ev.value))

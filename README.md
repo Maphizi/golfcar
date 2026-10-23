@@ -78,7 +78,7 @@ Board sie über sein Tastatur-Interface ungewollt mitsendet.
 | 3 FLASH | `BTN_2` | `blackhole` | Schwarzes Loch (Strahlverfolgung mit Lichtkrümmung, reagiert auf Musik) |
 | 4 AUDIO | `BTN_3` | `hal` | HAL 3000: ruhiger Bordrechner mit rotem Auge, spricht mit dem Sprachmodell |
 | 5 WIPERS | `BTN_4` | `slots` | Space-Slotmaschine (siehe Space-Thema) |
-| 6 MAP | `BTN_5` | `campfire` | Lagerfeuer: Foto-Szene mit echten Flammen |
+| 6 MAP | `BTN_5` | `campfire` | Lagerfeuer: Rast am Rand der Galaxis |
 | 7 LIGHT | `BTN_6` | `error` | Systemfehler-Visualizer (grüner Code, der zusammenbricht) |
 | 8 E-TALK | `BTN_7` | `gaming` | Retro-Gaming (EmulationStation, RetroPie) |
 | 9 | `BTN_8` | `quit` | Launcher beenden (nur wenn `dev_emergency_exit = true`) |
@@ -1255,3 +1255,12 @@ Ausprobieren ohne Eintrag: `scripts/wledctl.py set --col 0,255,0 --fx 2 --bri 20
 - **USB-HID-Buttonbox** statt F1–F7: siehe Abschnitt oben, meist nur `config/keymap.toml`.
 - **Bluetooth** nur, wenn gewünscht: `scripts/setup_bluetooth.sh`, dann Handy koppeln.
 - Für den Alltag `dev_emergency_exit = false` in `config/settings.toml`.
+
+
+**Hupe und Effekte:** Die Aktionen `horn` und `fx` lassen sich in `config/keymap.toml` auf freie Tasten legen. `horn` spielt die
+Hupe des Themas (Raumschiff-Klaxon, Cyber-Sirene, 80er-Autohupe mit Flux-Brummen, Alphorn), `fx` einen zufälligen Effekt
+(Laser, Warp, Roboter-Piepsen; Glitch, Alarm, Synth; Zeitkreis-Piepser, Donner, Knistern; Eule, Frosch, Windspiel), beide mit
+LED-Blitz. Klänge: `assets/sfx/`, erzeugt von `scripts/sfx_build.py`. Lautstärke `settings.toml` `[sfx]`.
+
+**Vorführmodus:** Kommt fünf Minuten keine Eingabe, wechselt das System alle drei Minuten von selbst durch die Modi des
+Themas (Tasten 2 bis 7, mit Ansage). Jede Taste beendet ihn. Einstellungen `settings.toml` `[attract]`.

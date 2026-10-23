@@ -18,6 +18,18 @@ pilot_name = "MARC"
 # braucht aber auf dem Pi etwa doppelt so lange (ca. 2,5 statt 5 Wörter pro Sekunde).
 smart_model = ""
 
+[sfx]
+# Hupe und Effekte je Thema (Aktionen "horn" und "fx" in config/keymap.toml), Klänge aus scripts/sfx_build.py
+enabled = true
+volume = 1.0
+
+[attract]
+# Vorführmodus: nach idle_minutes ohne Eingabe wechselt der Launcher alle every_seconds durch die Modi des Themas
+# (Tasten 2-7); jede Eingabe beendet ihn. Nicht im Spielmodus (gaming) und nicht auf dem Startbildschirm.
+enabled = true
+idle_minutes = 5
+every_seconds = 180
+
 [volume]
 # Drehknopf (ABS-Achse) regelt die Lautstärke der STIMME (KITT, HAL, BIBO, Ansagen), nicht die Musik.
 # axis leer = nur beobachten: der Launcher meldet im Log, welche Achsen sich bewegen ("Achse ABS_Z = 128 ...");

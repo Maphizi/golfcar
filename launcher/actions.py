@@ -43,6 +43,8 @@ class Action(str, Enum):
     SQUARE = "square"          # Zukunft: Marktplatz
     PARADOX = "paradox"        # Zukunft: Paradoxon
     TALK = "talk"              # Sprechtaste: bei HAL Musik leise + Mikrofon an/aus (Taste F15 an den Modus)
+    HORN = "horn"              # Hupe des Themas (assets/sfx/<thema>_horn.wav) + LED-Blitz
+    FX = "fx"                  # zufälliger Effekt des Themas (assets/sfx/<thema>_fx1..3.wav) + LED-Blitz
 
 
 # Welche Action startet welchen Modus (Modus-Namen siehe config/modes.toml)

@@ -44,6 +44,16 @@ class Launcher:
         self._home_fail_times: list[float] = []
         self.announce_enabled = bool(self.settings.get("launcher", {}).get("announce", True))
         self.boot_seconds = float(self.settings.get("launcher", {}).get("boot_seconds", 0))
+        att = self.settings.get("attract", {})
+        self.attract_enabled = bool(att.get("enabled", True))
+        self.attract_idle = float(att.get("idle_minutes", 5.0)) * 60.0
+        self.attract_every = float(att.get("every_seconds", 180.0))
+        self.attract_on = False
+        self.attract_next = 0.0
+        self.attract_recent: list[str] = []
+        self.last_input = time.monotonic()
+        self.led_back_at: float | None = None
+        self.led_back_mode = HOME
 
     def announce(self, group: str) -> None:
         """Vorgerenderte Ansage abspielen (nicht-blockierend, scheitert leise)."""
@@ -209,6 +219,18 @@ class Launcher:
         if action == Action.STATUS:
             log.info("Status: mode=%s %s", self.pm.current.name if self.pm.current else None, sysmon.format_line())
             return
+        if action in (Action.HORN, Action.FX):
+            from launcher import sfx
+            sfx.play("horn" if action == Action.HORN else "fx")
+            cur = self.pm.current.name if self.pm.current else HOME
+            try:
+                wled.apply_mode_async(action.value)                       # kurzer LED-Blitz, danach zurück zum Modusprofil
+                pxn_led.set_color_async(255, 255, 255)
+            except Exception as exc:
+                log.debug("LED-Fehler: %s", exc)
+            self.led_back_at = time.monotonic() + (1.5 if action == Action.HORN else 1.0)
+            self.led_back_mode = cur
+            return
         if action == Action.TALK:
             cur = self.pm.current.name if self.pm.current and self.pm.is_running() else None
             if cur in TALK_MODES and getattr(self, "dpad", None):
@@ -225,6 +247,49 @@ class Launcher:
             self.switch(mode)
             if not already:
                 self.announce(eff)             # Ansage des tatsächlich gestarteten Modus in der Themenstimme
+
+    # -- Vorführmodus ----------------------------------------------------
+    ATTRACT_BASE = ("viz_psychedelic", "blackhole", "hal", "slots", "campfire", "error")
+
+    def _idle_seconds(self) -> float:
+        last = self.last_input
+        dp = getattr(self, "dpad", None)
+        if dp is not None:
+            last = max(last, getattr(dp, "last_event", 0.0))
+        return time.monotonic() - last
+
+    def _attract_tick(self) -> None:
+        """Nach idle_minutes ohne Eingabe wechselt der Launcher alle every_seconds durch die Modi des Themas
+        (Tasten 2-7, nie derselbe zweimal hintereinander); jede Eingabe beendet den Vorführmodus."""
+        if not self.attract_enabled:
+            return
+        now = time.monotonic()
+        cur = self.pm.current.name if self.pm.current else None
+        if cur in ("boot", "gaming", None):
+            return
+        if not self.attract_on:
+            if self._idle_seconds() < self.attract_idle:
+                return
+            self.attract_on = True
+            self.attract_next = now
+            log.info("Vorführmodus an: %.0f min keine Eingabe", self.attract_idle / 60.0)
+        if now < self.attract_next:
+            return
+        self.attract_next = now + self.attract_every
+        if self.attract_on and self._idle_seconds() < self.attract_idle:   # Eingabe über das Board (Knüppel usw.)
+            self.attract_on = False
+            log.info("Vorführmodus aus (Board)")
+            return
+        pool = [m for m in self.ATTRACT_BASE if self.effective_mode(m) != cur and m not in self.attract_recent[-2:]]
+        if not pool:
+            return
+        import random
+        mode = random.choice(pool)
+        self.attract_recent.append(mode)
+        del self.attract_recent[:-4]
+        log.info("Vorführmodus: -> %s", mode)
+        eff = self.switch(mode)
+        self.announce(eff)
 
     # -- Hauptschleife ---------------------------------------------------
     def run(self) -> None:
@@ -246,10 +311,22 @@ class Launcher:
             except Empty:
                 action = None
             if action is not None:
+                self.last_input = time.monotonic()
+                if self.attract_on:
+                    self.attract_on = False
+                    log.info("Vorführmodus aus (Eingabe)")
                 try:
                     self.handle(action)
                 except Exception:
                     log.exception("Fehler bei Action %s", action)
+            self._attract_tick()
+            if self.led_back_at is not None and time.monotonic() >= self.led_back_at:
+                self.led_back_at = None
+                try:
+                    wled.apply_mode_async(self.led_back_mode)
+                    pxn_led.apply_mode_async(self.led_back_mode)
+                except Exception as exc:
+                    log.debug("LED-Fehler: %s", exc)
             # Ist der aktuelle Modus von selbst beendet worden?
             code = self.pm.poll()
             if self.pm.current is not None and code is not None:
