@@ -109,7 +109,7 @@ class Controller:
         self.scene_b = self.scene
         self.scene_ver = 1
         self.scene_b_ver = 1
-        self.next_district_at = time.monotonic() + self.rng.uniform(*DISTRICT_EVERY)
+        self.next_district_at = time.monotonic() + self.rng.uniform(40.0, 70.0) * (0.25 if demo else 1.0)   # erster Wechsel früher
         self.holo = _load_rgba(ASSETS / "neonrace_holo.png")
         self.traffic = _load_rgba(ASSETS / "neonrace_traffic.png")
         obs_path = Path(os.environ.get("KITT_NEONRACE_OBSTACLES") or (ASSETS / "neonrace_obstacles.png"))
