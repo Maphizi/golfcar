@@ -88,10 +88,24 @@ Jeder Modus ist ein eigener Prozess; die Zeit bis zum ersten Bild steht im Log `
 Die Engine ruft `pygame.display.init()`/`font.init()` statt `pygame.init()` (kein SDL-Audio/Mixer). Launcher-Log: "Beende
 Modus ... / Modus beendet" zeigt die Stoppzeit (`stop_timeout` in modes.toml).
 
-## Lagerfeuer (`visualizers/scenes/campfire.py`)
-Cinemagraph: Foto `assets/campfire/scene.png` + Flammen-Spritesheet `assets/campfire/flames.png` (8x5). Feuerstelle
-`[scenes.campfire] fire = [x, y, w, h]`; uDay Farbstimmung über `cycle_minutes`, uWind, uSpark, uBassS. Neue Bilder:
-`scripts/campfire_assets.py`. Test: `python -m visualizers.engine campfire --test-signal --demo`.
+## Lagerfeuer "Rast am Rand der Galaxis" (`visualizers/scenes/campfire.py`, Space-Taxi Taste 6)
+Foto `assets/campfire/scene.png` (Glut OHNE Flammen; Bot-Bilder `assets/campfire/raw/`, Prompts `docs/campfire_plan.md`,
+Schnitt `scripts/campfire_assets.sh`: plate, `cut 8 4 128 256 0 glow` für die vier Flammenbögen `flames_small|mid|big|blue.png`
+(8x4 à 128x256, Schleife, Fußpunkt unten), `sparks.png` 8x2 à 128 (`cut ... 1 glow`), `items.png` 8x2 à 192 (`cut ... 1 fill`:
+0 Scheit, 1 Ast, 2 Zapfen, 3 Kristall, 4-6 Marshmallow roh/golden/verkohlt, 7 Kessel, 8 Tasse, 9-11 Motte, 12/13 Alien Augen/Kopf,
+14 Sternschnuppe, 15 Glut). Feuerstufe `level` 0..3 folgt der Energie mit `LEVEL_TAU` 4 s (`_flame_mix`: 0-1 kleine Flammen
+klein und blass = Glut, 1-2 klein->mittel, 2-3 mittel->groß) -> `uFlame` (Bogen A, B, Mischung, Größe), `uFlameK` (Deckkraft,
+Blauanteil, Bild A, Bild B), `uFrameMix`; Holz `throw()` (OBEN, von selbst `LOG_EVERY` 2-4 min): Flug `flights` -> `_land`:
+`boost` (klingt über `BOOST_DECAY` 90 s ab) + Funken; Kristall (`CRYSTAL_EVERY` 5-8 min oder Drop bei Energie > 0.5) =
+`blue_until` 30-60 s blaue Flammen. Funken `Spark` (bis `N_SPARKS` 24, `uSp0..23` = x, y, Zelle, Größe; `star` = am Ende
+Sternfunke), UNTEN `poke()` Funkenwolke + `ember`, LINKS/RECHTS `gust()` Wind `uWind` (Böen von selbst `GUST_EVERY`), ENTER
+`marshmallow()` (`uMallow`, Röstgrad aus Feuerstufe, `mallow_result`), Motten `uMoth0..2` (Anzahl mit den Höhen), Alien
+`ALIEN_EVERY` 90-200 s, Taxi-Lichter `uTaxiT` alle `TAXI_EVERY`, Sternschnuppen `uShoot` alle `SHOOT_EVERY`, Himmel steigt
+`uSkyRise` über `cycle_minutes`, SPACE/BACKSPACE `uZoom`. Shader: Feuerlicht `near`/`lightK` auf Steinen (Glut = dunkler als
+das Foto), Hitzeflimmern, Rauch im Wind, Kesseldampf `uKettle`, Sterne funkeln mit Höhen, Polarlicht mit Bass. Demo = 8x
+schneller. `[scenes.campfire] fire = [x, y, Zellbreite]`, `kettle`, `taxi`, `horizon`, `alien`, `mallow`, `cycle_minutes`.
+WLED `campfire`, `campfire_big` (Stufe > 2.4), `campfire_blue`, `campfire_log`. Test: `python -m visualizers.engine campfire
+--test-signal --demo`.
 
 ## Taxistand (`visualizers/scenes/taxi.py`)
 Zwei Elemente: links Missionslogo (`mission.png`) mit schwebenden Figuren (`sprites.png` 8x3 à 96 px,

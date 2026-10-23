@@ -486,21 +486,21 @@ der Mitte. Zeiten in `config/visualizer.toml` unter `[scenes.psychedelic]`. Die 
 `visualizers/scenes/navcomputer.py` (Szenen-Controller der Engine: Eingabe, Phasen, Text-Overlays),
 weitere Welten einfach an die TOML anhängen.
 
-**Lagerfeuer (Taste 6, `campfire`):** Cinemagraph aus echtem Bildmaterial statt gezeichneter Szene.
-Grundlage ist ein Foto der Lagerstelle (`assets/campfire/scene.png`, vom Piloten erzeugt: Feuer
-vor Felsen, Ringplanet, Milchstraße), das der Shader lebendig macht: An der Feuerstelle brennen
-echte Flammen aus einem Spritesheet (`assets/campfire/flames.png`, 8×5 Einzelbilder, Schleife mit
-Überblendung zwischen den Bildern, nur die Feuerfarben werden übernommen), die Flammen des Fotos
-werden darunter zur Glut abgedunkelt. Dazu Funken, die aus der Glut steigen, Rauch, Hitzeflimmern
-über dem Feuer, flackerndes Feuerlicht auf dem ganzen Bild, ein ganz langsamer Kameraschwenk,
-Sternschnuppen alle ein bis zwei Minuten und der Lauf des Abends als Farbstimmung
-(`cycle_minutes`, `start_phase`: Abendrot, Nacht, Morgengrauen). Musik: Bass macht das Feuer größer
-und heller, Anschläge schicken Funken hoch, leise Stellen lassen es ruhig brennen; Windböen legen
-Flammen und Rauch zur Seite. Lage und Größe der Feuerstelle im Bild stehen in
-`config/visualizer.toml` `[scenes.campfire] fire = [x, y, Breite, Höhe]`. Neues Bildmaterial:
-`scripts/campfire_assets.py SZENE.png COLLAGE.png` (schneidet das Flammen-Sheet aus einer Collage,
-entfernt Gitterlinien). Controller `visualizers/scenes/campfire.py`, Shader
-`visualizers/shaders/campfire/frag.glsl`.
+**Lagerfeuer (Taste 6, `campfire`): Rast am Rand der Galaxis.** Ein Lagerfeuer auf einem fremden Hochplateau unter der
+Milchstraße, ein Ringplanet geht über eine Stunde auf, zwei Monde, das Space-Taxi parkt im Hintergrund
+(`assets/campfire/scene.png`, Glut ohne Flammen). Das Feuer ist der ruhige Herzschlag und atmet mit der Musik, nie mit
+Sprüngen: bei leiser Musik Glut mit kleinen Flämmchen, bei mittlerer ein normales Lagerfeuer, bei lauter ein großes Feuer über
+die Steine (drei Flammenbögen `flames_small|mid|big.png`, weich gemischt), Stille lässt es zur Glut herunterbrennen. Alle zwei bis
+vier Minuten fliegt von selbst ein Scheit ins Feuer (Funkenwolke, das Feuer wird eine Weile größer), selten ein glühender
+Kristall: dann brennt es 30 bis 60 Sekunden blau-violett (`flames_blue.png`). Funken steigen auf, driften im Wind und werden am
+Himmel kurz zu Sternen. Der Kessel dampft, Raummotten kreisen (mehr mit den Höhen), ein kleines Alien lugt ab und zu hinter dem
+Stein hervor, das Taxi blinkt alle paar Minuten mit den Positionslichtern, Sternschnuppen, das Polarlicht pulst mit dem Bass, die
+Sterne funkeln mit den Höhen. Knüppel links/rechts = Windstoß (Flammen und Rauch legen sich), oben = Holz nachlegen, unten = im
+Feuer stochern, Startknopf = Marshmallow am Stock (röstet je nach Feuer: roh, golden oder verkohlt), Kippschalter AN =
+Nahaufnahme, AUS = zurück. Board `campfire`, `campfire_big`, `campfire_blue`, `campfire_log`. Bilder vom Bot nach
+`assets/campfire/raw/` (Prompts `docs/campfire_plan.md`), Schnitt `scripts/campfire_assets.sh`. Controller
+`visualizers/scenes/campfire.py`, Shader `visualizers/shaders/campfire/frag.glsl`.
+Test: `python -m visualizers.engine campfire --test-signal --demo`.
 
 **Katalog des Navigationscomputers:** `config/planets.toml` enthält jetzt 56 Objekte in drei
 Gruppen, die als Beschriftung erscheinen: ECHTER HIMMEL (Sonne, Erde, Mond, Mars, Venus, Jupiter,

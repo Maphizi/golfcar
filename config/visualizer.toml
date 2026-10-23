@@ -33,15 +33,15 @@ render_scale = 1.0
 
 [scenes.campfire]
 shader = "campfire"
-controller = "campfire"   # Cinemagraph: Foto der Szene + echte Flammen aus dem Spritesheet
+controller = "campfire"   # Rast am Rand der Galaxis: Foto ohne Flammen + Flammenbögen (klein/mittel/groß/blau)
 render_scale = 0.85       # Foto soll scharf bleiben; bei unter 45 fps auf dem Pi 0.7
-plate = "scene.png"       # assets/campfire/: Szene (vom Piloten erzeugt)
-flames = "flames.png"     # assets/campfire/: Flammen-Spritesheet, Zellen Spalten x Zeilen
-flame_frames = [8, 5]
-flame_fps = 12
-fire = [0.44, 0.23, 0.30, 0.36]   # Feuerstelle im Bild: x, y des Flammenfußes (von unten), Breite, Höhe (Anteile)
-cycle_minutes = 22        # Lauf des Abends als Farbstimmung in Minuten
-start_phase = 0.3         # 0 = Abendrot, 0.3 = Nacht (das Foto ist eine Nachtszene), 0.9 = Morgengrauen
+fire = [0.47, 0.27, 0.16] # Flammenfuß x, y (von unten), Zellbreite (Anteil der Bildbreite; Zelle ist 1:2 hoch)
+kettle = [0.44, 0.44]     # Tülle des Kessels (Dampf)
+taxi = [0.02, 0.50, 0.30, 0.62]   # Rechteck der Taxi-Lichter (x0, y0, x1, y1, y von unten)
+horizon = 0.57            # ab hier Himmel (Sterne, Polarlicht, Aufgang)
+alien = [0.72, 0.21, 0.09]        # Alien: x, Fußlinie, Größe
+mallow = [0.56, 0.46]     # Spitze des Marshmallow-Stocks über dem Feuer
+cycle_minutes = 60        # Aufgang des Planeten (Himmel steigt) in Minuten
 
 [scenes.error]
 shader = "error"
