@@ -60,13 +60,7 @@ action = "kitt"       # Taste 10: Bordcomputer (Sprachassistent)
 key    = "KEY_ESC"
 action = "quit"
 
-# ── Hupe und Effekte des Themas (Klänge: scripts/sfx_build.py -> assets/sfx/) ────────────────────
-# Den Code einer freien Taste eintragen (steht im Launcher-Log als "Taste ohne Belegung" oder in
-# scripts/input_monitor.py), z. B. mit key = "BTN_8" oder code = 296. Beide Zeilen sind Beispiele.
-# [[bindings]]
-# key    = "BTN_8"
-# action = "horn"       # Hupe des Themas + LED-Blitz
-#
-# [[bindings]]
-# key    = "BTN_9"
-# action = "fx"         # zufälliger Effekt des Themas + LED-Blitz
+# ── Hupe des Themas (Kippschalter unten, Code 269) ────────────────────────────────────────────────
+[[bindings]]
+code   = 269
+action = "horn"         # Hupe des Themas + LED-Blitz
