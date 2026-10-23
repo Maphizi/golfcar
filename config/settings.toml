@@ -50,7 +50,7 @@ duck_percent = 25
 # Unbenannte HID-Codes des PXN-CB1 (Gamepad-Interface). Welche Taste welchen Code sendet und ob eine
 # Taste von selbst dauernd sendet, zeigt:  scripts/input_monitor.py 10
 start_code = 266         # dicker Startknopf -> ENTER (Auswahl, Losfliegen)
-kipp_code = 269          # Kippschalter -> SPACE (AN) / BACKSPACE (AUS); Navigationscomputer scharf/stoppen
+kipp_code = 267          # Kippschalter -> SPACE (AN) / BACKSPACE (AUS); Navigationscomputer scharf/stoppen
 kipp_mode = "toggle"     # "toggle": jeder Druck wechselt AN/AUS. "state": value 1 = AN, 0 = AUS (echter Schalter)
 talk_code = 0            # Sprechtaste -> F15 (HAL: Musik leise, Mikrofon an); 0 = keine. Alternativ keymap.toml action = "talk"
 debounce_ms = 300        # gleiche Taste innerhalb dieser Zeit nochmal = ignorieren (Prellen, Dauerfeuer)
