@@ -416,7 +416,10 @@ Themenfarben (`c_red`/`c_green` aus col/col2) mit eigenem 40-s-Phasenzyklus. `er
 col3, sonst `wave` in der Profilfarbe; Zustandsprofile `STATE_PROFILE` (rooftop_rain|fog|acid|ash, hearttree_<Jahreszeit>,
 square_<Jahr>, campfire_big) setzen die Grundfarbe (`tint`), das Modusprofil selbst setzt sie zurück. Drop = weicher Aufheller
 (0.55, höchstens alle 12 s).
-Gesamtdämpfung `[controller] dim` 0.7 für HTTP-Profile (`payload_for`) und Stream. HAL 3000 (kein Engine-Prozess) behält das Profil.
+Gesamtdämpfung `[controller] dim` 0.7 für HTTP-Profile (`payload_for`) und Stream. HAL 3000 streamt über `kitt/ui/persona.py`
+(gleiche Schleife wie die Engine, `kitt/hal/app.py` `led_state` -> Programm `hal`): Atmen in der Bildschirmfarbe, 25 % dunkler
+(`bri *= 0.75`, Profil bri 142), alle 40-90 s ein einzelnes Feld (`field`, ~14 LEDs, heller), das im Beat-Schritt (1/95 je Beat,
+12 % Rückschritte, ohne Beats alle 0,55 s) in rund einer Minute von einem Ende zum anderen wandert.
 `payload_for` setzt immer `pal` (Profil, sonst 3 mit col2 / 2 ohne: sonst bleibt die letzte Palette, z. B. Regenbogen, und viele
 Effekte malen damit), Segment 0 über die ganze Kette (`led_count()` aus `/json/info` oder `[controller].leds`), `pl = -1`
 (Playlist aus), `lor = 0` (Live-Override aus), Nachtlicht aus; beim ersten Senden je Prozess löscht `_cleanup_segments()`

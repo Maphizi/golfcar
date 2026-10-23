@@ -39,6 +39,7 @@ SCENE_BASE = {
     "taxi": "breathe", "oracle": "breathe", "clocktower": "breathe", "woodeye": "breathe", "trip": "breathe",
     "hearttree": "breathe", "square": "breathe",
     "blackice": "glitch", "paradox": "glitch", "overdose": "glitch",
+    "hal": "hal",
 }
 PLANET_COLORS = ([235.0, 160.0, 60.0], [70.0, 120.0, 255.0], [220.0, 60.0, 40.0], [90.0, 200.0, 110.0],
                  [170.0, 90.0, 255.0], [180.0, 230.0, 255.0], [255.0, 200.0, 120.0])
@@ -147,6 +148,11 @@ class LedStream:
         self.vdots = None
         self.c_red, self.c_green = RED.copy(), GREEN.copy()       # Farben des Störprogramms (Systemfehler rot/grün, sonst Thema)
         self.scr_col = None                                       # Bildschirmfarbe (Hauptfarbe, Akzent), weich nachgeführt
+        self.field = None                                         # HAL: ein einzelnes Feld wandert im Beat-Schritt durch
+        self.field_next = time.monotonic() + self.rng.uniform(20.0, 50.0)
+        self.field_pos_s = 0.0
+        if self.base == "hal":
+            self.bri *= 0.75                                      # HAL 3000: 25 % dunkler
         self.scr_acc = None
         self.scr_target = None
         self.step_s = 0.0                                         # Beat-Schritt: 1 2 3 4, weich eingerastet (Muster rückt nach hinten)
@@ -363,6 +369,8 @@ class LedStream:
             frame = self._slots(now, dt, st, bass, high, is_beat, live)
         elif program == "stars":
             frame = self._stars(now, dt, st, bass, high, is_beat, live)
+        elif program == "hal":
+            frame = self._hal(now, dt, st, bass, high, is_beat, live)
         elif program == "vortex":
             frame = self._vortex(now, dt, st, bass, high, is_beat, live)
         elif program == "breathe":
@@ -559,6 +567,35 @@ class LedStream:
         if now >= self.planet_next and not ev:                    # Planet zieht vorbei
             self.planet_next = now + self.rng.uniform(25.0, 45.0)
             self._add(now, "planet", 4.5, np.array(self.rng.choice(PLANET_COLORS)), d=1.0)
+        return frame
+
+    def _hal(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """HAL 3000: tiefes, langsames Atmen in der Bildschirmfarbe (25 % dunkler als die anderen). Ab und zu kommt von einem
+        Ende ein einzelnes Feld (etwa 14 LEDs, heller) und wandert im Beat-Schritt durch die ganze Kette, rund eine Minute
+        lang; mal von vorne, mal von hinten, und ab und zu macht es einen Schritt zurück."""
+        n = self.n
+        x = self._idx()
+        col, col2 = self._base_col()
+        breath = 0.14 + 0.08 * math.sin(now * 0.35) + 0.3 * self.bass_s * live + 0.05 * self.bar_lift
+        frame = np.outer(np.full(n, breath), col)
+        if self.field is None and now >= self.field_next:
+            d = self.rng.choice((1.0, -1.0))
+            self.field = {"pos": 0.0 if d > 0 else 1.0, "dir": d, "last": now, "steps": 0}
+            self.field_pos_s = self.field["pos"]
+        fd = self.field
+        if fd is not None:
+            step_due = is_beat or (now - self.last_beat > 2.0 and now - fd["last"] > 0.55)   # ohne Beats im eigenen Takt
+            if step_due and now - fd["last"] > 0.2:
+                fd["last"] = now
+                fd["steps"] += 1
+                back = self.rng.random() < 0.12 and fd["steps"] > 3                        # ab und zu ein Schritt zurück
+                fd["pos"] += fd["dir"] * (1.0 / 95.0) * (-1.0 if back else 1.0)          # mit Rückschritten ~110 Beats = eine Minute
+            self.field_pos_s += (fd["pos"] - self.field_pos_s) * min(1.0, dt * 6.0)
+            w = np.exp(-((x - self.field_pos_s) / 0.009) ** 2)                            # weiches Feld, ~14 LEDs
+            frame += np.outer(w * (0.55 + 0.25 * self.bass_s), col * 0.55 + WHITE * 0.45)
+            if (fd["dir"] > 0 and fd["pos"] > 1.04) or (fd["dir"] < 0 and fd["pos"] < -0.04):
+                self.field = None
+                self.field_next = now + self.rng.uniform(40.0, 90.0)
         return frame
 
     def _vortex(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:

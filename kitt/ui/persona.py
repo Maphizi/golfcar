@@ -245,6 +245,14 @@ class PersonaUI:
         frames = 0
         shot_done = False
         under_launcher = bool(os.environ.get("KITT_MODE"))
+        leds = None                                   # LED-Board live (launcher/ledstream.py), wie in der Engine
+        if under_launcher or os.environ.get("KITT_LEDS"):
+            try:
+                from launcher.ledstream import LedStream
+                leds = LedStream(os.environ.get("KITT_MODE", "hal"), "hal")
+            except Exception:
+                log.exception("LED-Stream nicht gestartet")
+        led_state_fn = getattr(self, "led_state", None)
         rc = 0
         try:
             while self.running:
@@ -282,6 +290,16 @@ class PersonaUI:
                 uniforms = {"uState": STATES.get(state, 0), "uStateT": now - since, "uLevel": self.level}
                 uniforms.update(self.extra_uniforms(now, state, since))
                 renderer.draw(t, f, uniforms)
+                if leds is not None:
+                    try:
+                        if frames % 4 == 0 and leds.wants_screen() and hasattr(renderer, "screen_pixels"):
+                            px = renderer.screen_pixels()
+                            if px is not None:
+                                leds.set_screen(px)
+                        leds.update(now, f, led_state_fn() if callable(led_state_fn) else None)
+                    except Exception:
+                        log.exception("LED-Stream")
+                        leds = None
                 self.draw_overlays(now, state, lu, lk)
                 if screenshot and not shot_done and t >= (seconds - 0.5 if seconds else 3.0):
                     renderer.screenshot(screenshot)
@@ -298,6 +316,8 @@ class PersonaUI:
             log.exception("UI abgestürzt")
             rc = 1
         finally:
+            if leds is not None:
+                leds.stop()
             self.running = False
             try:
                 self.shutdown()

@@ -226,8 +226,8 @@ col2 = [20, 5, 0]
 sx  = 45
 ix  = 190
 
-[modes.hal]                 # HAL 3000: tiefes rotes Atmen wie das Auge
-bri = 190
+[modes.hal]                 # HAL 3000: tiefes rotes Atmen wie das Auge (live: launcher/ledstream.py `_hal`)
+bri = 142                   # 25 % dunkler als die anderen Modi
 fx  = 2
 col = [255, 15, 5]
 col2 = [25, 0, 0]

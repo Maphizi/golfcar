@@ -1247,7 +1247,9 @@ verschluckt, die Umkehrung ist eine Druckwelle nach außen. Taxistand, Orakel, U
 und Marktplatz atmen langsam mit zwei wandernden Wolken, Jahreszeit und Epoche färben die Kette, Ereignisse laufen als Welle
 durch. Auf der Dachterrasse regnet es von hinten nach vorne, das Wetter färbt, Blitze schlagen zweimal ein und grollen nach,
 Feuerwerk geht in Blüten auf, der Stromausfall macht alles aus und lässt es zögernd zurückkommen. Black Ice, Paradoxon und
-Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. Im Systemfehler
+Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. HAL 3000 atmet tief und ein Viertel dunkler als
+der Rest, und ab und zu kommt von einem Ende ein einzelnes helles Feld, das im Takt Schritt für Schritt rund eine Minute
+über die ganze Kette wandert, mal von vorne, mal von hinten, mit gelegentlichem Schritt zurück. Im Systemfehler
 ist das Board ein Kampf zwischen Grün (das System) und Rot (der Fehler), sonst nichts: Die Front wandert in Blasen über die
 Kette, je nach Phase gewinnt Rot (Zusammenbruch, Alarm) oder Grün (Erholung), jeder Beat ist ein Vorstoß der stärkeren Seite,
 der Bass heizt den Kampf an, umkämpfte Stellen sirren rot-grün. Und es sieht kaputt aus, aber träge statt hektisch: Abschnitte von ein paar LEDs

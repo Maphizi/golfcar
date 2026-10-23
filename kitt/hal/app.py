@@ -229,6 +229,10 @@ class HalUI(PersonaUI):
     def images(self) -> dict:
         return self.figures.images()
 
+    def led_state(self) -> dict:
+        """Für launcher/ledstream.py: ruhiges HAL-Programm (Atmen, wanderndes Feld)."""
+        return {"program": "hal", "talk": self.talk_mode}
+
     def extra_uniforms(self, now: float, state: str, since: float) -> dict:
         out = self.motion.update(now, self.last_f)
         out.update(self.figures.update(now, self.last_f))
