@@ -121,6 +121,12 @@ def main() -> int:
     shot_done = False
     first_logged = False
     under_launcher = bool(os.environ.get("KITT_MODE"))
+    banner = ""                                # Autopilot-Schalter (F16 AN / F17 AUS vom Launcher): kurze Anzeige
+    banner_t0 = -1e9
+    try:
+        key_on, key_off = pygame.key.key_code("F16"), pygame.key.key_code("F17")
+    except Exception:
+        key_on, key_off = -1, -1
     rc = 0
     try:
         while True:
@@ -129,6 +135,9 @@ def main() -> int:
                     raise KeyboardInterrupt
                 if ev.type == pygame.KEYDOWN and ev.key == pygame.K_ESCAPE and not under_launcher:
                     raise KeyboardInterrupt
+                if ev.type == pygame.KEYDOWN and ev.key in (key_on, key_off):
+                    banner, banner_t0 = ("AUTOPILOT AN" if ev.key == key_on else "AUTOPILOT AUS"), time.monotonic()
+                    continue
                 if ctrl:
                     ctrl.handle_event(ev)
             now = time.monotonic()
@@ -143,6 +152,11 @@ def main() -> int:
                     ov = overlay(size_frac)
                     ov.set_text(text, color)
                     ov.draw(w, h, w * x_frac, h * y_frac, alpha, center=True)
+            if now - banner_t0 < 2.5:
+                a = min(1.0, (2.5 - (now - banner_t0)) / 0.6)
+                ov = overlay(0.06)
+                ov.set_text(banner, (120, 255, 200) if banner.endswith("AN") else (255, 120, 90))
+                ov.draw(w, h, w * 0.5, h * 0.5, a, center=True)
             if args.screenshot and not shot_done and (t >= (args.seconds - 0.5 if args.seconds else 3.0)):
                 renderer.screenshot(args.screenshot)   # vor dem Flip aus dem Back-Buffer
                 shot_done = True

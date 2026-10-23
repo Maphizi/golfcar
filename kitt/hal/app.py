@@ -38,6 +38,14 @@ PROMPTS = [
 ]
 
 
+
+def _key_code(name: str) -> int:
+    """SDL-Keycode für F16/F17 (pygame hat dafür keine Konstante)."""
+    try:
+        return pygame.key.key_code(name)
+    except Exception:
+        return -1
+
 class HalUI(PersonaUI):
     scene_name = "hal"
     uniform_names = ("uState", "uStateT", "uLevel", "uTalk", "uBright", "uVoice", "uTalkMode") + CorridorMotion.uniform_names + Figures.uniform_names
@@ -55,6 +63,8 @@ class HalUI(PersonaUI):
         self.next_prompt_at = time.monotonic() + 40.0
         self._turns_seen = 0
         self.talk_mode = False          # Sprechmodus: Musik leise, Mikrofon an
+        self.banner = ""                # Autopilot-Schalter (F16/F17): kurze Anzeige
+        self.banner_t0 = -1e9
         # vor super().__init__ (prepare_cfg läuft dort): ohne Mikrofon keine Spracherkennung laden
         self.mic = bool(lcfg.load_settings().get("hal", {}).get("mic", False))
         self.base_volume: float | None = None
@@ -173,6 +183,9 @@ class HalUI(PersonaUI):
             self.next_prompt_at = 0.0
         elif key == pygame.K_F15:                       # Sprechtaste (Launcher-Action "talk"): umschalten
             self.set_talk_mode(not self.talk_mode)
+        elif key in (_key_code("F16"), _key_code("F17")):      # Autopilot-Schalter: nur anzeigen
+            self.banner = "AUTOPILOT AN" if key == _key_code("F16") else "AUTOPILOT AUS"
+            self.banner_t0 = time.monotonic()
         elif key == pygame.K_SPACE and self.kipp_talk:
             self.set_talk_mode(True)
         elif key == pygame.K_BACKSPACE and self.kipp_talk:
@@ -224,6 +237,9 @@ class HalUI(PersonaUI):
         return out
 
     def draw_overlays(self, now: float, state: str, lu: str, lk: str) -> None:
+        if now - self.banner_t0 < 2.5:
+            a = min(1.0, (2.5 - (now - self.banner_t0)) / 0.6)
+            self.text(self.banner, 0.06, 0.5, 0.5, (120, 255, 200) if self.banner.endswith("AN") else (255, 120, 90), a)
         if self.figures.mix < 0.5:
             self.text("HAL", 0.032, 0.479, 0.713, (40, 160, 255), 1.0 - 2.0 * self.figures.mix)
             self.text("3000", 0.032, 0.526, 0.713, (240, 240, 245), 1.0 - 2.0 * self.figures.mix)

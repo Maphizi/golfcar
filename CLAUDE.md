@@ -74,6 +74,11 @@ LEDs (WLED-Profile `horn`/`fx`, PXN weiß; `led_back_at` setzt danach das Modusp
 nach `idle_minutes` 5 ohne Eingabe (Launcher-Actions und Board-Events via `DPadRemap.last_event`) wechselt `_attract_tick()`
 alle `every_seconds` 180 zufällig durch `ATTRACT_BASE` (Tasten 2-7 im aktuellen Thema, nie dieselbe zweimal, mit Ansage);
 jede Eingabe beendet ihn; nicht bei `boot`/`gaming`.
+Autopilot-Schalter (echter Kippschalter, `[buttons].attract_code` 275, `dpad_remap.py`): Zustand 1/0 -> `on_attract`-Callback
+(Queue `Action.ATTRACT_ON/OFF`, der Launcher liest das uinput-Gerät nicht) + Taste F16/F17 an den laufenden Modus. AN =
+`attract_forced`: Vorführmodus sofort (erster Wechsel nach 2 s) und dauerhaft, Eingaben beenden ihn nicht; AUS = Vorführmodus
+und Leerlauf-Automatik aus. Anzeige "AUTOPILOT AN/AUS" 2,5 s in der Bildmitte: Engine (`__main__.py`, alle Szenen; Splash
+endet dabei nicht) und HAL (`kitt/hal/app.py`); `pygame.key.key_code("F16")`, da pygame keine Konstante hat.
 
 ## Startbildschirm (`visualizers/scenes/splash.py`, Modus `boot`)
 `config/modes.toml` `[modes.boot]` startet `visualizers.engine splash` statt `launcher.boot_screen`: Titelbild

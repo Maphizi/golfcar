@@ -1264,4 +1264,6 @@ Hupe des Themas (Raumschiff-Klaxon, Cyber-Sirene, 80er-Autohupe mit Flux-Brummen
 LED-Blitz. Klänge: `assets/sfx/`, erzeugt von `scripts/sfx_build.py`. Lautstärke `settings.toml` `[sfx]`.
 
 **Vorführmodus:** Kommt fünf Minuten keine Eingabe, wechselt das System alle drei Minuten von selbst durch die Modi des
-Themas (Tasten 2 bis 7, mit Ansage). Jede Taste beendet ihn. Einstellungen `settings.toml` `[attract]`.
+Themas (Tasten 2 bis 7, mit Ansage). Jede Taste beendet ihn. Einstellungen `settings.toml` `[attract]`. Mit dem
+Autopilot-Kippschalter (`[buttons].attract_code`) läuft er sofort und dauerhaft (AN) oder ist ganz aus (AUS); beim Umschalten
+zeigt der Bildschirm kurz "AUTOPILOT AN" bzw. "AUTOPILOT AUS".

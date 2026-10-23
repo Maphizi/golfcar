@@ -46,6 +46,7 @@ class DPadRemap(threading.Thread):
         self._stop = threading.Event()
         self._kipp_state = False  # False = AUS, True = AN
         self.last_event = time.monotonic()        # letzte Eingabe am Board (Vorführmodus des Launchers)
+        self.on_attract = None                    # Launcher-Callback für den Autopilot-Schalter (das uinput-Gerät liest der Launcher nicht)
         self._ui = None
         self.start_code = int(c["start_code"])
         self.kipp_code = int(c["kipp_code"])
@@ -144,7 +145,12 @@ class DPadRemap(threading.Thread):
                     # Autopilot-Schalter (echter Kippschalter, state): 1 = unten/AN, 0 = oben/AUS
                     if self.attract_code and ev.code == self.attract_code and ev.value in (0, 1):
                         key = ATTRACT_KEY_ON if ev.value == 1 else ATTRACT_KEY_OFF
-                        self._inject(ui, key)
+                        self._inject(ui, key)                 # an den laufenden Modus: kurze Anzeige AUTOPILOT AN/AUS
+                        if self.on_attract:
+                            try:
+                                self.on_attract(ev.value == 1)
+                            except Exception:
+                                log.exception("Autopilot-Schalter")
                         log.info("Autopilot-Schalter %s -> %s", "AN" if ev.value == 1 else "AUS", ecodes.KEY.get(key))
                         continue
                     if ev.value != 1:                # nur Tastendruck, keine Repeats (2) oder Loslassen (0)

@@ -55,8 +55,8 @@ class Controller:
     def handle_event(self, ev) -> None:
         if ev.type != pygame.KEYDOWN or self.done:
             return
-        if ev.key == pygame.K_ESCAPE:
-            return                                            # ESC behandelt der Engine-Loop selbst
+        if ev.key == pygame.K_ESCAPE or ev.key in (0x4000006B, 0x4000006C):
+            return                                            # ESC behandelt der Engine-Loop selbst; F16/F17 = Autopilot-Schalter
         self.done = True
         log.info("Erster Tastendruck: Startbildschirm endet")
         pygame.event.post(pygame.event.Event(pygame.QUIT))

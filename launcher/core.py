@@ -49,6 +49,7 @@ class Launcher:
         self.attract_idle = float(att.get("idle_minutes", 5.0)) * 60.0
         self.attract_every = float(att.get("every_seconds", 180.0))
         self.attract_on = False
+        self.attract_forced = False       # Autopilot-Schalter AN: läuft, bis der Schalter wieder AUS ist
         self.attract_next = 0.0
         self.attract_recent: list[str] = []
         self.last_input = time.monotonic()
@@ -108,6 +109,7 @@ class Launcher:
     def start_inputs(self) -> None:
         try:
             dp = DPadRemap(self.settings.get("buttons", {}))
+            dp.on_attract = lambda on: self.queue.put(Action.ATTRACT_ON if on else Action.ATTRACT_OFF)   # Schalter direkt an den Launcher
             dp.start()
             self.inputs.append(dp)
             self.dpad = dp
@@ -239,18 +241,18 @@ class Launcher:
             else:
                 log.info("Sprechtaste ignoriert: läuft %s, Sprechmodus nur bei %s", cur, ", ".join(TALK_MODES))
             return
-        if action == Action.ATTRACT_ON:
+        if action == Action.ATTRACT_ON:                   # Autopilot-Schalter: Vorführmodus sofort und dauerhaft
             self.attract_enabled = True
-            if not self.attract_on:
-                self.attract_on = True
-                self.attract_next = time.monotonic()
-                log.info("Autopilot-Schalter AN: Vorfuehrmodus sofort aktiv")
+            self.attract_forced = True
+            self.attract_on = True
+            self.attract_next = time.monotonic() + 2.0    # erst die Anzeige "AUTOPILOT AN", dann der erste Wechsel
+            log.info("Autopilot-Schalter AN: Vorführmodus läuft")
             return
         if action == Action.ATTRACT_OFF:
             self.attract_enabled = False
-            if self.attract_on:
-                self.attract_on = False
-                log.info("Autopilot-Schalter AUS: Vorfuehrmodus beendet")
+            self.attract_forced = False
+            self.attract_on = False
+            log.info("Autopilot-Schalter AUS: Vorführmodus beendet")
             return
         mode = ACTION_TO_MODE.get(action)
         if mode:
@@ -289,7 +291,7 @@ class Launcher:
         if now < self.attract_next:
             return
         self.attract_next = now + self.attract_every
-        if self.attract_on and self._idle_seconds() < self.attract_idle:   # Eingabe über das Board (Knüppel usw.)
+        if self.attract_on and not self.attract_forced and self._idle_seconds() < self.attract_idle:   # Eingabe über das Board (Knüppel usw.)
             self.attract_on = False
             log.info("Vorführmodus aus (Board)")
             return
@@ -325,7 +327,7 @@ class Launcher:
                 action = None
             if action is not None:
                 self.last_input = time.monotonic()
-                if self.attract_on:
+                if self.attract_on and not self.attract_forced:
                     self.attract_on = False
                     log.info("Vorführmodus aus (Eingabe)")
                 try:
