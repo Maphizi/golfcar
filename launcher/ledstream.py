@@ -32,7 +32,7 @@ log = logging.getLogger("leds")
 
 # Grundprogramm je Szene (ruhig; Specials kommen aus den Ereignissen der Szene über wled.apply_mode_async / led_state)
 SCENE_BASE = {
-    "navcomputer": "stars", "planets": "stars", "timejump": "stars", "neonrace": "stars", "splash": "stars",
+    "navcomputer": "stars", "planets": "stars", "timejump": "timejump", "neonrace": "stars", "splash": "stars",
     "campfire": "fire",
     "blackhole": "vortex", "core": "vortex", "flux": "vortex", "pond": "vortex",
     "rooftop": "rain",
@@ -155,6 +155,9 @@ class LedStream:
         self.field_next = time.monotonic() + self.rng.uniform(20.0, 50.0)
         self.field_pos_s = 0.0
         self.hal_phase = 0.0                                      # Lauf der Korridorfelder
+        self.fronts: list[dict] = []                              # Zeitsprung: Farbfronten (col, pos)
+        self.front_next = 0.0
+        self.front_col_i = 0
         if self.base == "hal":
             self.bri *= 0.75                                      # HAL 3000: 25 % dunkler
         elif scene in ("slots", "forestslots", "cyberslots", "almanacslots"):
@@ -379,6 +382,8 @@ class LedStream:
             frame = self._stars(now, dt, st, bass, high, is_beat, live)
         elif program == "hal":
             frame = self._hal(now, dt, st, bass, high, is_beat, live)
+        elif program == "timejump":
+            frame = self._timejump(now, dt, st, bass, high, is_beat, live)
         elif program == "vortex":
             frame = self._vortex(now, dt, st, bass, high, is_beat, live)
         elif program == "breathe":
@@ -623,6 +628,48 @@ class LedStream:
                 self.field = None
                 self.field_next = now + self.rng.uniform(40.0, 90.0)
         return frame
+
+    def _timejump(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Zeitsprung: Farbfronten kommen langsam von vorne herein und füllen die Kette, jede schiebt die vorige nach hinten
+        (Farben aus der Bildschirmfarbe, im Farbton gedreht); auf jedem Beat ein kleiner Schub nach hinten. Zeitsprung
+        (`timejump_jump` -> `boost_until`) = Volldampf: Fronten rasen, elektrische Farben, Kometen; danach wieder mellow."""
+        n = self.n
+        x = self._idx()
+        col, col2 = self._base_col()
+        boost = now < self.boost_until
+        if not self.fronts:
+            self.fronts.append({"col": _saturate(col, 1.3), "pos": 1.2})
+        if now >= self.front_next:                                # neue Front von vorne
+            self.front_next = now + (self.rng.uniform(0.25, 0.5) if boost else self.rng.uniform(8.0, 15.0))
+            self.front_col_i += 1
+            if boost:
+                c = np.array(self.rng.choice(([180.0, 220.0, 255.0], [80.0, 160.0, 255.0], [255.0, 255.0, 255.0], [255.0, 170.0, 60.0])))
+            else:
+                base = col if self.front_col_i % 2 == 0 else col2
+                h = (_hue(base[None, :])[0] + self.rng.uniform(-60.0, 60.0)) / 360.0
+                c = _hsv(h % 1.0, 0.9, 1.0)
+            self.fronts.append({"col": c, "pos": -0.05})
+        speed = ((0.03 + 0.03 * self.e_fast) * live + (1.0 - live) * 0.02) * (14.0 if boost else 1.0)
+        frame = np.zeros((n, 3))
+        keep = []
+        for i, fr in enumerate(self.fronts):
+            fr["pos"] += speed * dt
+            if is_beat and not boost:
+                fr["pos"] += 0.012                                # Beat: kleiner Schub nach hinten
+            keep.append(fr)
+        # jede Front überdeckt die vorigen bis zu ihrer Position (weiche Kante); Fronten jenseits der Kette bleiben als Grund
+        while len(keep) > 1 and keep[1]["pos"] > 1.15:
+            keep.pop(0)
+        self.fronts = keep
+        for fr in self.fronts:
+            cover = np.clip((fr["pos"] - x) / 0.04 + 0.5, 0.0, 1.0)
+            frame = frame * (1.0 - cover)[:, None] + np.outer(cover, fr["col"])
+        lvl = (0.25 + 0.3 * self.bass_s + 0.08 * self.bar_lift) * live + (1.0 - live) * 0.2
+        if boost:
+            lvl = 0.6 + 0.3 * math.sin(now * 25.0)
+            if self.nrng.random() < 2.5 * dt:
+                self._add(now, "comet", 0.8, np.array([200.0, 230.0, 255.0]), d=1.0)
+        return frame * lvl
 
     def _vortex(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
         """Strudel: schwache Punkte driften von beiden Enden zur Mitte, die Mitte glimmt mit dem Bass in der Akzentfarbe.

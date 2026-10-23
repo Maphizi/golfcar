@@ -1238,7 +1238,8 @@ Modus läuft, streamt er 25 Bilder pro Sekunde eigene LED-Bilder per UDP an den 
 Akzentfarbe, die LEDs folgen in etwa einer Sekunde. Alles ist mellow: Muster rücken auf jedem Beat (1, 2, 3, 4) einen Schritt
 nach hinten, weich eingerastet, die Eins hebt kurz an, dazwischen treibt alles nur langsam. Jeder Modus hat ein ruhiges
 Grundprogramm, und die Specials kommen aus dem, was auf dem Schirm passiert:
-Beim Flug (Navigationscomputer, Planeten, Zeitsprung, Neonfahrt) ziehen Sterne von vorne nach hinten über den Cart, schneller
+Beim Zeitsprung kommen langsam Farbfronten von vorne herein und füllen die Kette, eine nach der anderen; beim Sprung selbst
+geht alles auf Volldampf, danach wieder ganz mellow. Beim Flug (Navigationscomputer, Planeten, Neonfahrt) ziehen Sterne von vorne nach hinten über den Cart, schneller
 mit der Musik, und alle halbe Minute zieht ein Planet vorbei, der im Vorbeiflug kurz die ganze Kette in seiner Farbe füllt;
 Kometenschauer schickt Kometen, das Asteroidenfeld graue Brocken, Wurmloch, Sonne und Nebel färben alles. Am Lagerfeuer ist die
 Kette warmweißes Fackellicht, das träge glimmt und mit dem Feuer heller wird; brennt das Feuer blau, wird auch das Licht blau,

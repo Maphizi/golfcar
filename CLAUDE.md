@@ -401,7 +401,10 @@ und `bar_lift` (die 1 im Takt): Sternenflug = Farbfeld (zwei lange Wellen in Hau
 langsame Sterne, alles rückt je Beat ein Sechzehntel nach hinten; Strudel-Punkte rucken je Beat zur Mitte; Atem-Wolken rücken
 je Beat; Wellen 2,2-2,8 s, Kometen selten (0,35/s). Grundprogramm je
 Szene `SCENE_BASE` (sonst nach fx des Profils: Feuer 45/66/42, Scanner 40, Rainbow 9/94, sonst `_music` Pegelmesser), alle ruhig,
-Stroboskop nur als Special: `stars` (navcomputer, planets, timejump, neonrace, splash): wenige Sterne ziehen von vorne nach
+Stroboskop nur als Special: `timejump`: Farbfronten
+(`fronts`, alle 8-15 s eine neue aus Bildschirmfarbe/Akzent mit gedrehtem Farbton) kommen mit 0,03-0,06 Kette/s von vorne herein,
+jede überdeckt die vorige (weiche Kante), Beat = kleiner Schub; `timejump_jump` -> `boost_until` 3 s Volldampf (14x, Fronten alle
+0,25-0,5 s in Elektroblau/Weiß, Kometen, Flackern), danach wieder mellow. `stars` (navcomputer, planets, neonrace, splash): wenige Sterne ziehen von vorne nach
 hinten, Tempo mit der Energie, Beat hebt sie kurz; alle 25-45 s `planet` (weiche Kugel zieht vorbei und füllt im Vorbeiflug
 kurz alles in ihrer Farbe); `navcomputer.led_state()` liefert `flying` und das laufende Ereignis: KOMETENSCHAUER = `comet`-Läufer,
 ASTEROIDENFELD = graue Brocken schneller, WURMLOCH/SONNE/NEBEL = Tönung. `fire` (campfire, `led_state` level/blue): warmweißes
