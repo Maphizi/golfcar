@@ -146,6 +146,11 @@ class LedStream:
         self.drip_next = 0.0
         self.vdots = None
         self.c_red, self.c_green = RED.copy(), GREEN.copy()       # Farben des Störprogramms (Systemfehler rot/grün, sonst Thema)
+        self.scr_col = None                                       # Bildschirmfarbe (Hauptfarbe, Akzent), weich nachgeführt
+        self.scr_acc = None
+        self.scr_target = None
+        self.step_s = 0.0                                         # Beat-Schritt: 1 2 3 4, weich eingerastet (Muster rückt nach hinten)
+        self.bar_lift = 0.0                                       # die "1" eines Takts hebt kurz an
         if self.base == "glitch":
             a, b = self.col.copy(), self.col2.copy()
             for c in (a, b):
@@ -255,13 +260,41 @@ class LedStream:
             self._add(now, "lightning", 1.2, col)
         elif "start" in n or "nitro" in n:
             self.boost_until = now + 3.0
-            self._add(now, "wave", 1.4, col, d=1.0)
+            self._add(now, "wave", 2.2, col, d=1.0)
         elif n == "horn":
             self._add(now, "blink2", 0.7, col)
         elif n == "fx":
-            self._add(now, "wave", 1.5, self.col3, d=self.rng.choice((1.0, -1.0)))
+            self._add(now, "wave", 2.5, self.col3, d=self.rng.choice((1.0, -1.0)))
         else:
-            self._add(now, "wave", 1.8, col, d=self.rng.choice((1.0, -1.0)))
+            self._add(now, "wave", 2.8, col, d=self.rng.choice((1.0, -1.0)))
+
+    def wants_screen(self) -> bool:
+        """Grundprogramme folgen der Bildschirmfarbe; Systemfehler und Markise haben feste Farben."""
+        return self.base not in ("", "error") and self.sock is not None
+
+    def set_screen(self, px) -> None:
+        """Winziges Abbild des Schirms (h, w, 3) -> Hauptfarbe (satt gewichteter Mittelwert) und Akzent (andere Farbe
+        im Bild, sonst Farbton um 50 Grad gedreht). Wird im update() langsam nachgeführt."""
+        try:
+            p = np.asarray(px, dtype=float).reshape(-1, 3)
+        except Exception:
+            return
+        mx = p.max(axis=1)
+        mn = p.min(axis=1)
+        sat = np.where(mx > 1.0, (mx - mn) / np.maximum(mx, 1.0), 0.0)
+        w = sat * (mx / 255.0) + 0.02
+        main = (p * w[:, None]).sum(axis=0) / w.sum()
+        main = _saturate(main, 1.4)
+        hue = _hue(p)
+        h0 = _hue(main[None, :])[0]
+        dh = np.abs(((hue - h0 + 180.0) % 360.0) - 180.0)
+        other = (dh > 50.0) & (sat > 0.3) & (mx > 60.0)
+        if other.sum() >= max(3, len(p) // 40):
+            w2 = (sat * mx / 255.0)[other]
+            acc = _saturate((p[other] * w2[:, None]).sum(axis=0) / w2.sum(), 1.4)
+        else:
+            acc = _hsv(((h0 + 50.0) / 360.0) % 1.0, 0.9, 1.0)
+        self.scr_target = (main, acc)
 
     def _add(self, now: float, kind: str, length: float, col, **p) -> None:
         if len(self.specials) >= 4:
@@ -296,6 +329,19 @@ class LedStream:
         if is_beat:
             self.last_beat = now
             self.beats += 1
+            if self.beats % 4 == 1:
+                self.bar_lift = 1.0                               # die "1"
+        self.step_s += (float(self.beats) - self.step_s) * min(1.0, dt * 5.0)   # Schritt rastet weich ein (~0,3 s)
+        self.bar_lift *= 0.9
+        if self.scr_target is not None:                           # Bildschirmfarbe langsam übernehmen (~1 s)
+            tm, ta = self.scr_target
+            if self.scr_col is None:
+                self.scr_col, self.scr_acc = tm.copy(), ta.copy()
+            else:
+                self.scr_col += (tm - self.scr_col) * min(1.0, dt * 1.5)
+                self.scr_acc += (ta - self.scr_acc) * min(1.0, dt * 1.5)
+            if self.base == "glitch":
+                self.c_red, self.c_green = self.scr_col, self.scr_acc
         if live and self.e_fast > 1.5 * self.energy + 0.15 and self.energy > 0.1 and now - self.last_drop > 12.0:
             self.last_drop = now
             self.flash = 0.55                                     # Drop: ein weicher Aufheller, kein Stroboskop
@@ -439,10 +485,12 @@ class LedStream:
         return 1.0 - x if self.reverse else x
 
     def _base_col(self) -> tuple:
-        """Grund- und Akzentfarbe (Tönung durch Wetter/Jahreszeit/blaues Feuer berücksichtigt)."""
+        """Grund- und Akzentfarbe: Tönung (Wetter, Jahreszeit, blaues Feuer) vor Bildschirmfarbe vor Modusprofil."""
         if self.tint is not None and time.monotonic() < self.tint_until:
             a, b = self.tint
             return a, (b if b.max() > 8 else self.col2)
+        if self.scr_col is not None:
+            return self.scr_col, self.scr_acc
         return self.col, self.col2
 
     def _music(self, now, dt, bass, high, is_beat, live) -> np.ndarray:
@@ -452,7 +500,7 @@ class LedStream:
         col, col2 = self._base_col()
         if is_beat:
             self.pulses.append((now, 1))
-        travel = 1.2 - 0.4 * self.e_fast
+        travel = 2.0 - 0.5 * self.e_fast
         self.pulses = [(t0, d) for t0, d in self.pulses if now - t0 < travel + 0.2]
         vu = min(1.0, self.bass_s * 1.15) * live
         dist = np.abs(x - 0.5) * 2.0
@@ -468,46 +516,49 @@ class LedStream:
         return frame
 
     def _stars(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
-        """Sternenflug: wenige Sterne ziehen von vorne nach hinten (Tempo mit der Energie), Beat hebt sie kurz an, dazu
-        ein Hauch Grundfarbe. Specials: alle 25-45 s zieht ein Planet vorbei (weiche Kugel, füllt im Vorbeiflug kurz die
-        ganze Kette in seiner Farbe); Szenen-Ereignisse (Navigationscomputer): Kometenschauer = schnelle Kometen,
-        Asteroidenfeld = graue Brocken, Wurmloch/Sonne/Nebel = Tönung; Start/Nitro/Zeitsprung = Schub."""
+        """Sternenflug, mellow: ein langsames Farbfeld in Bildschirmfarbe und Akzent (zwei lange Wellen, treiben kaum),
+        darüber wenige Sterne, die langsam nach hinten ziehen; auf jedem Beat (1 2 3 4) rückt alles einen Schritt nach
+        hinten, weich eingerastet, die 1 hebt kurz an. Specials: alle 25-45 s ein Planet (weiche Kugel, füllt im Vorbeiflug
+        kurz alles in seiner Farbe); Navigationscomputer: Kometenschauer = einzelne Kometen, Asteroidenfeld = graue Brocken,
+        Wurmloch/Sonne/Nebel = Tönung; Start/Nitro/Zeitsprung = Schub."""
         n = self.n
         x = self._idx()
         col, col2 = self._base_col()
         r = self.nrng
         if self.stars is None:
-            k = max(6, n // 40)
-            self.stars = np.stack([r.uniform(0.0, 1.0, k), r.uniform(0.05, 0.12, k), r.uniform(0.35, 1.0, k)], axis=1)
+            k = max(4, n // 70)
+            self.stars = np.stack([r.uniform(0.0, 1.0, k), r.uniform(0.02, 0.05, k), r.uniform(0.3, 0.8, k)], axis=1)
         ev = str(st.get("event", "")).upper()
         flying = bool(st.get("flying", True))
-        boost = 1.0 if now >= self.boost_until else 3.0
-        speed = ((0.25 + 0.9 * self.e_fast) * live + (1.0 - live) * 0.3) * boost * (1.0 if flying else 0.3)
-        if "ASTEROID" in ev:
-            speed *= 1.8
-        self.stars[:, 0] += self.stars[:, 1] * speed * dt
+        boost = 1.0 if now >= self.boost_until else 2.2
+        drift = ((0.4 + 0.6 * self.e_fast) * live + (1.0 - live) * 0.4) * boost * (1.0 if flying else 0.4)
+        self.stars[:, 0] += self.stars[:, 1] * drift * dt
         wrap = self.stars[:, 0] > 1.05
         self.stars[wrap, 0] = -0.05
-        self.stars[wrap, 2] = r.uniform(0.35, 1.0, int(wrap.sum()))
-        lift = 1.0 + 0.35 * max(0.0, 1.0 - (now - self.last_beat) * 3.0)
-        star_col = col * 0.45 + WHITE * 0.55
+        self.stars[wrap, 2] = r.uniform(0.3, 0.8, int(wrap.sum()))
+        step = self.step_s * 0.06                                 # je Beat ein Sechzehntel der Kette nach hinten
+        xs = (x - step) % 1.0
+        f1 = 0.5 + 0.5 * np.sin(xs * 2.0 * math.pi * 1.3 - now * 0.08)
+        f2 = 0.5 + 0.5 * np.sin(xs * 2.0 * math.pi * 0.7 + now * 0.05 + 1.7)
+        level = (0.08 + 0.18 * self.bass_s + 0.08 * self.bar_lift) * live + (1.0 - live) * 0.06
+        frame = np.outer(f1 * level, col) + np.outer(f2 * f2 * level * 0.8, col2)
+        star_col = col * 0.3 + WHITE * 0.7
         if "ASTEROID" in ev:
             star_col = np.array([150.0, 150.0, 140.0])
-        frame = np.outer(np.full(n, 0.03 + 0.05 * self.bass_s), col)
-        pos = self.stars[:, 0][:, None]
+        pos = ((self.stars[:, 0] + step) % 1.1 - 0.05)[:, None]
         g = np.exp(-((x[None, :] - pos) / 0.004) ** 2) * self.stars[:, 2][:, None]
-        frame += np.outer(g.sum(axis=0) * lift * (0.9 if boost < 2 else 1.3), star_col)
-        if "KOMET" in ev and r.random() < 1.6 * dt:               # Kometenschauer: schnelle Kometen mit Schweif
-            self._add(now, "comet", 1.2, np.array([200.0, 230.0, 255.0]), d=1.0)
+        frame += np.outer(g.sum(axis=0) * (0.5 + 0.3 * self.bar_lift) * (1.0 if boost < 2 else 1.4), star_col)
+        if "KOMET" in ev and r.random() < 0.35 * dt:              # Kometenschauer: ab und zu ein Komet mit Schweif
+            self._add(now, "comet", 2.0, np.array([200.0, 230.0, 255.0]), d=1.0)
         if "WURMLOCH" in ev:
-            frame = frame * 0.6 + np.outer(np.full(n, 0.12 + 0.1 * math.sin(now * 2.0)), np.array([170.0, 80.0, 255.0]))
+            frame = frame * 0.6 + np.outer(np.full(n, 0.12 + 0.08 * math.sin(now * 1.2)), np.array([170.0, 80.0, 255.0]))
         elif "SONNE" in ev:
             frame += np.outer(np.full(n, 0.12 + 0.08 * math.sin(now * 0.7)), np.array([255.0, 140.0, 30.0]))
         elif "NEBEL" in ev:
-            frame += np.outer(0.5 + 0.5 * np.sin(x * 6.0 + now * 0.4), _hsv((now * 0.05) % 1.0, 0.8, 0.25))
+            frame += np.outer(0.5 + 0.5 * np.sin(x * 6.0 + now * 0.3), _hsv((now * 0.03) % 1.0, 0.8, 0.25))
         if now >= self.planet_next and not ev:                    # Planet zieht vorbei
             self.planet_next = now + self.rng.uniform(25.0, 45.0)
-            self._add(now, "planet", 3.6, np.array(self.rng.choice(PLANET_COLORS)), d=1.0)
+            self._add(now, "planet", 4.5, np.array(self.rng.choice(PLANET_COLORS)), d=1.0)
         return frame
 
     def _vortex(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
@@ -521,9 +572,11 @@ class LedStream:
         if self.vdots is None:
             k = max(6, n // 50)
             self.vdots = np.stack([r.uniform(0.0, 1.0, k), r.uniform(0.03, 0.07, k)], axis=1)
-        speed = (0.6 + 1.2 * self.e_fast) * live + (1.0 - live) * 0.4
+        speed = (0.3 + 0.5 * self.e_fast) * live + (1.0 - live) * 0.3
         d = self.vdots[:, 0]
         d += np.where(d < 0.5, 1.0, -1.0) * self.vdots[:, 1] * speed * dt
+        if is_beat:
+            d += np.where(d < 0.5, 1.0, -1.0) * 0.03                 # Beat: ein Ruck zur Mitte
         gone = np.abs(d - 0.5) < 0.02
         self.vdots[gone, 0] = np.where(r.random(int(gone.sum())) < 0.5, 0.0, 1.0)
         g = np.exp(-((x[None, :] - d[:, None]) / 0.005) ** 2)
@@ -531,8 +584,7 @@ class LedStream:
         centre = np.exp(-((x - 0.5) / (0.05 + 0.1 * self.bass_s)) ** 2) * (0.2 + 0.6 * self.bass_s) * live
         frame += np.outer(centre, col2 if col2.max() > 60 else col * 0.6 + WHITE * 0.4)
         frame += np.outer(np.full(n, 0.02), col)
-        if is_beat and bass > 0.6:                                # kräftiger Beat: die Mitte zieht einmal an
-            frame += np.outer(np.exp(-((x - 0.5) / 0.15) ** 2) * 0.25, col)
+        frame += np.outer(np.exp(-((x - 0.5) / 0.15) ** 2) * 0.2 * self.bar_lift, col)   # die 1 des Takts zieht an
         return frame
 
     def _breathe(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
@@ -541,10 +593,10 @@ class LedStream:
         n = self.n
         x = self._idx()
         col, col2 = self._base_col()
-        breath = 0.08 + 0.07 * math.sin(now * 0.5) + 0.25 * self.bass_s * live
+        breath = 0.08 + 0.07 * math.sin(now * 0.5) + 0.2 * self.bass_s * live + 0.06 * self.bar_lift
         frame = np.outer(np.full(n, breath), col)
-        for i, (f, ph) in enumerate(((0.07, 0.0), (0.05, 2.1))):
-            c = 0.5 + 0.45 * math.sin(now * f + ph)
+        for i, (f, ph) in enumerate(((0.05, 0.0), (0.035, 2.1))):
+            c = (0.5 + 0.45 * math.sin(now * f + ph) + self.step_s * 0.04) % 1.0   # Wolken rücken je Beat nach hinten
             w = np.exp(-((x - c) / 0.12) ** 2) * (0.12 + 0.2 * self.bass_s)
             frame += np.outer(w, col2 if col2.max() > 60 else col)
         if high > 0.4 and self.rng.random() < high * 0.15:
@@ -559,8 +611,8 @@ class LedStream:
         x = self._idx()
         col, col2 = self._base_col()
         if now >= self.drip_next:
-            self.drip_next = now + self.rng.uniform(0.25, 0.9) / (0.4 + 1.2 * self.e_fast + 0.2)
-            self.drips.append([now, self.rng.uniform(0.3, 0.5), self.rng.uniform(0.5, 1.0)])
+            self.drip_next = now + self.rng.uniform(0.5, 1.5) / (0.5 + 0.8 * self.e_fast)
+            self.drips.append([now, self.rng.uniform(0.15, 0.3), self.rng.uniform(0.5, 1.0)])
         frame = np.outer(np.full(n, 0.04 + 0.1 * self.bass_s), col2 if col2.max() > 40 else col * 0.4)
         keep = []
         for dr in self.drips:
@@ -631,8 +683,8 @@ class LedStream:
                 frame += np.outer(np.exp(-((x - pos) / 0.07) ** 2) * (1.0 - 0.5 * u), col)
             elif kind == "comet":
                 pos = u * 1.1 if d > 0 else 1.0 - u * 1.1
-                head = np.exp(-((x - pos) / 0.006) ** 2)
-                tail = np.exp(-((x - (pos - d * 0.04)) / 0.035) ** 2) * 0.4
+                head = np.exp(-((x - pos) / 0.008) ** 2) * 0.8
+                tail = np.exp(-((x - (pos - d * 0.05)) / 0.04) ** 2) * 0.35
                 frame += np.outer(head + tail, col)
             elif kind == "swallow":                               # Punkt zur Mitte, dann Aufleuchten in der Mitte
                 if u < 0.6:
@@ -884,6 +936,26 @@ class LedStream:
             except OSError:
                 pass
             self.sock = None
+
+
+def _saturate(c: np.ndarray, k: float) -> np.ndarray:
+    """Farbe auf volle Leuchtkraft bringen und die Sättigung anheben (für LEDs: satt statt pastellig)."""
+    c = np.asarray(c, dtype=float)
+    if c.max() <= 1.0:
+        return np.array([120.0, 120.0, 120.0])
+    c = c * (255.0 / c.max())
+    m = c.mean()
+    return np.clip(m + (c - m) * k, 0.0, 255.0)
+
+
+def _hue(p: np.ndarray) -> np.ndarray:
+    """Farbton in Grad je Zeile (r, g, b)."""
+    r, g, b = p[:, 0], p[:, 1], p[:, 2]
+    mx = p.max(axis=1)
+    mn = p.min(axis=1)
+    d = np.maximum(mx - mn, 1e-6)
+    h = np.where(mx == r, (g - b) / d % 6.0, np.where(mx == g, (b - r) / d + 2.0, (r - g) / d + 4.0))
+    return (h * 60.0) % 360.0
 
 
 def _hsv(h: float, s: float, v: float) -> np.ndarray:

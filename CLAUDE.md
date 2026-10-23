@@ -392,7 +392,14 @@ Profil je Modus `[modes.<modus>]` (bri, fx, col, col2, col3, sx, ix, pal); Ereig
 über `wled.apply_mode_async()`. Home nimmt die Themenfarbe (WLED und PXN-Tasten, schon beim Blättern am Taxistand). Test: `scripts/wledctl.py set --col R,G,B --fx N`.
 Live zur Musik (`launcher/ledstream.py`, `LedStream`): jede Engine-Szene streamt unter dem Launcher (oder `KITT_LEDS=1`) 25 Bilder/s
 per UDP (WLED-Echtzeit DRGB, `[controller] udp_port` 21324, `realtime_timeout` 2 s, LED-Anzahl aus `/json/info` oder `leds`);
-`__main__.py` ruft je Bild `leds.update(now, f, ctrl.led_state())` (nur wenn `led_state` aufrufbar ist). Grundprogramm je
+`__main__.py` ruft je Bild `leds.update(now, f, ctrl.led_state())` (nur wenn `led_state` aufrufbar ist). Bildschirmfarbe: alle 4 Bilder
+`renderer.screen_pixels()` (Blit des fertigen Bilds in einen 32x18-FBO, `glReadPixels` nur davon) -> `leds.set_screen(px)`:
+Hauptfarbe = satt gewichteter Mittelwert (`_saturate` 1.4), Akzent = zweite Farbe im Bild (Farbton > 50 Grad entfernt) oder Farbton
++50 Grad; `update()` führt `scr_col`/`scr_acc` mit ~1 s nach, `_base_col()` nimmt sie vor dem Profil (Tönung geht vor; `error` und
+`slots` behalten feste Farben, `glitch` nimmt sie als `c_red`/`c_green`). Beat-Schritt `step_s` (Beats weich eingerastet, ~0,3 s)
+und `bar_lift` (die 1 im Takt): Sternenflug = Farbfeld (zwei lange Wellen in Haupt- und Akzentfarbe, treiben kaum) + wenige
+langsame Sterne, alles rückt je Beat ein Sechzehntel nach hinten; Strudel-Punkte rucken je Beat zur Mitte; Atem-Wolken rücken
+je Beat; Wellen 2,2-2,8 s, Kometen selten (0,35/s). Grundprogramm je
 Szene `SCENE_BASE` (sonst nach fx des Profils: Feuer 45/66/42, Scanner 40, Rainbow 9/94, sonst `_music` Pegelmesser), alle ruhig,
 Stroboskop nur als Special: `stars` (navcomputer, planets, timejump, neonrace, splash): wenige Sterne ziehen von vorne nach
 hinten, Tempo mit der Energie, Beat hebt sie kurz; alle 25-45 s `planet` (weiche Kugel zieht vorbei und füllt im Vorbeiflug

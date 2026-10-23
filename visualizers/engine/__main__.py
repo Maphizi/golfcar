@@ -156,6 +156,10 @@ def main() -> int:
             sync_images()
             renderer.draw(t, f, {**(ctrl.uniforms(t, f) if ctrl else {}), **fixed})   # --uniform überstimmt den Controller
             if leds is not None:
+                if frames % 4 == 0 and leds.wants_screen():
+                    px = renderer.screen_pixels()
+                    if px is not None:
+                        leds.set_screen(px)
                 led_state = None
                 if ctrl and callable(getattr(ctrl, "led_state", None)):
                     try:

@@ -248,6 +248,48 @@ class Renderer:
             GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
             GL.glViewport(0, 0, self.w, self.h)       # Overlays danach in voller Auflösung
 
+    def screen_pixels(self, sw: int = 32, sh: int = 18):
+        """Das fertige Bild winzig (sw x sh) als uint8 (sh, sw, 3) für die LED-Farben: Blit in einen kleinen FBO, dann
+        glReadPixels nur dieser Pixel (billig, auch auf dem Pi). None, wenn der kleine FBO nicht geht."""
+        if getattr(self, "_small_fbo", None) is None:
+            try:
+                self._small_fbo = GL.glGenFramebuffers(1)
+                stex = GL.glGenTextures(1)
+                GL.glBindTexture(GL.GL_TEXTURE_2D, stex)
+                GL.glTexImage2D(GL.GL_TEXTURE_2D, 0, GL.GL_RGBA8, sw, sh, 0, GL.GL_RGBA, GL.GL_UNSIGNED_BYTE, None)
+                GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR)
+                GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR)
+                GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self._small_fbo)
+                GL.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, stex, 0)
+                ok = GL.glCheckFramebufferStatus(GL.GL_FRAMEBUFFER) == GL.GL_FRAMEBUFFER_COMPLETE
+                GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
+                if not ok:
+                    self._small_fbo = 0
+            except Exception as exc:
+                log.warning("Kleiner FBO für die Bildschirmfarbe: %s", exc)
+                self._small_fbo = 0
+        if not self._small_fbo:
+            return None
+        try:
+            if self.fbo:
+                GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, self.fbo)
+                src_w, src_h = self.rw, self.rh
+            else:
+                GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, 0)
+                GL.glReadBuffer(GL.GL_BACK)
+                src_w, src_h = self.w, self.h
+            GL.glBindFramebuffer(GL.GL_DRAW_FRAMEBUFFER, self._small_fbo)
+            GL.glBlitFramebuffer(0, 0, src_w, src_h, 0, 0, sw, sh, GL.GL_COLOR_BUFFER_BIT, GL.GL_LINEAR)
+            GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, self._small_fbo)
+            data = GL.glReadPixels(0, 0, sw, sh, GL.GL_RGB, GL.GL_UNSIGNED_BYTE)
+            GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
+            return np.frombuffer(data, dtype=np.uint8).reshape(sh, sw, 3)
+        except Exception as exc:
+            log.warning("Bildschirmfarbe nicht lesbar: %s", exc)
+            self._small_fbo = 0
+            GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
+            return None
+
     def screenshot(self, path: str) -> None:
         GL.glBindFramebuffer(GL.GL_READ_FRAMEBUFFER, 0)
         GL.glReadBuffer(GL.GL_BACK)

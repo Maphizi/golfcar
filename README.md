@@ -1234,7 +1234,10 @@ Das beleuchtete Buttonboard hängt an einem WLED-Controller (`config/wled.toml` 
 (`launcher/wled.py`): Helligkeit, Effekt, Haupt-, Zweit- und Drittfarbe, Geschwindigkeit, Intensität,
 optional Palette; alle Profile sind über `[controller] dim` (0.7 = 30 %) gedämpft. **Live zur Musik:** Sobald ein
 Modus läuft, streamt er 25 Bilder pro Sekunde eigene LED-Bilder per UDP an den Controller (WLED-Echtzeit, dafür muss in WLED
-"UDP-Echtzeit empfangen" an sein, Standard). Jeder Modus hat ein ruhiges Grundprogramm, und die Specials kommen aus dem, was auf dem Schirm passiert:
+"UDP-Echtzeit empfangen" an sein, Standard). Die Kette nimmt dabei immer die Farbe des Bildschirms: Der Modus liest sein eigenes Bild winzig aus und macht daraus Haupt- und
+Akzentfarbe, die LEDs folgen in etwa einer Sekunde. Alles ist mellow: Muster rücken auf jedem Beat (1, 2, 3, 4) einen Schritt
+nach hinten, weich eingerastet, die Eins hebt kurz an, dazwischen treibt alles nur langsam. Jeder Modus hat ein ruhiges
+Grundprogramm, und die Specials kommen aus dem, was auf dem Schirm passiert:
 Beim Flug (Navigationscomputer, Planeten, Zeitsprung, Neonfahrt) ziehen Sterne von vorne nach hinten über den Cart, schneller
 mit der Musik, und alle halbe Minute zieht ein Planet vorbei, der im Vorbeiflug kurz die ganze Kette in seiner Farbe füllt;
 Kometenschauer schickt Kometen, das Asteroidenfeld graue Brocken, Wurmloch, Sonne und Nebel färben alles. Das Lagerfeuer glüht
