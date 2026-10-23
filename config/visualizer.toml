@@ -44,6 +44,9 @@ horizon = 0.57            # ab hier Himmel (Sterne, Polarlicht, Aufgang)
 alien = [0.72, 0.21, 0.09]        # Alien: x, Fußlinie, Größe
 mallow = [0.56, 0.46]     # Spitze des Marshmallow-Stocks über dem Feuer
 cycle_minutes = 60        # Aufgang des Planeten (Himmel steigt) in Minuten
+planet = [0.779, 0.755, 0.094]              # Saturn im Foto: Mitte x, y (von unten), Radius (Anteil der Breite)
+ring = [0.196, 0.034, 21.4, 0.71, -0.016, 0.0]   # Ring: Halbachsen a, b (Breite), Neigung Grad (positiv = rechts tiefer), innen/a, Versatz x, y
+# KITT_CAMPFIRE_CAL=1 zeichnet auch Planet und Ring (grün); der Ring dreht sich (Klumpen und Glitzern laufen um, innen schneller)
 
 [scenes.error]
 shader = "error"

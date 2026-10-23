@@ -114,8 +114,11 @@ Sternfunke), UNTEN `poke()` Funkenwolke + `ember`, LINKS/RECHTS `gust()` Wind `u
 das Foto), Hitzeflimmern, Rauch im Wind, Kesseldampf `uKettle`, Sterne funkeln mit Höhen, Polarlicht mit Bass. Demo = 8x
 schneller. Der Bogen bringt unten eigene Scheite mit: dunkle Pixel im unteren Zellenteil werden ausgeblendet (`lumF`), die
 Scheite kommen aus dem Foto; der Kessel liegt vor den Flammen (`kettleMask`: Ellipse `kettle_box` = Mitte x, y, Radius x, y,
-plus Henkelbogen und Tülle). `KITT_CAMPFIRE_CAL=1` zeichnet Flammenzelle (rot) und Kesselform (blau) zum Einmessen auf dem
-Gerät. `[scenes.campfire] fire = [x, y, Zellbreite]`, `kettle`, `kettle_box`, `taxi`, `horizon`, `alien`, `mallow`, `cycle_minutes`.
+plus Henkelbogen und Tülle). `KITT_CAMPFIRE_CAL=1` zeichnet Flammenzelle (rot), Kesselform (blau) sowie Planet und Ring (grün) zum Einmessen auf dem
+Gerät. Saturnring dreht sich: `[scenes.campfire] planet = [x, y, r]`, `ring = [a, b, Neigung, innen/a, dx, dy]` -> `uPlanet`, `uRing`,
+`uRingOff`; im Ring-Anulus (Ellipsenraum, hinten vom Planeten verdeckt, vorne davor) laufen Klumpen (Sinus-Harmonische in
+Winkel und Radius, innen schneller als außen wie bei Kepler, außen ~1 Umdrehung in 4 min) und Glitzer (mit den Höhen) um;
+`uRingT` läuft mit der Energie bis 1,5x schneller. `[scenes.campfire] fire = [x, y, Zellbreite]`, `kettle`, `kettle_box`, `taxi`, `horizon`, `alien`, `mallow`, `cycle_minutes`.
 WLED `campfire`, `campfire_big` (Stufe > 2.4), `campfire_blue`, `campfire_log`. Test: `python -m visualizers.engine campfire
 --test-signal --demo`.
 

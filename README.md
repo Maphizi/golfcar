@@ -487,7 +487,8 @@ der Mitte. Zeiten in `config/visualizer.toml` unter `[scenes.psychedelic]`. Die 
 weitere Welten einfach an die TOML anhängen.
 
 **Lagerfeuer (Taste 6, `campfire`): Rast am Rand der Galaxis.** Ein Lagerfeuer auf einem fremden Hochplateau unter der
-Milchstraße, ein Ringplanet geht über eine Stunde auf, zwei Monde, das Space-Taxi parkt im Hintergrund
+Milchstraße, ein Ringplanet geht über eine Stunde auf (sein Ring dreht sich langsam, innen schneller als außen, und glitzert
+mit den Höhen), zwei Monde, das Space-Taxi parkt im Hintergrund
 (`assets/campfire/scene.png`, Glut ohne Flammen). Das Feuer ist der ruhige Herzschlag und atmet mit der Musik, nie mit
 Sprüngen: bei leiser Musik Glut mit kleinen Flämmchen, bei mittlerer ein normales Lagerfeuer, bei lauter ein großes Feuer über
 die Steine (drei Flammenbögen `flames_small|mid|big.png`, weich gemischt), Stille lässt es zur Glut herunterbrennen. Alle zwei bis
