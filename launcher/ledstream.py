@@ -6,7 +6,7 @@ zeigt WLED die Bilder von hier, und `timeout` Sekunden nach dem letzten Paket (S
 das Profil zurück. Farben kommen aus dem Modusprofil (col = Hauptfarbe, col2 = Akzent, col3 = Funkeln), Programm aus
 dem fx des Profils (Feuer-Effekte -> Feuer, Scanner -> KITT-Scanner, Rainbow -> Regenbogen, sonst VU-Meter in der
 Modusfarbe: Grund dunkel, Bass von der Mitte nach außen, Beat = Blitz einer LED-Gruppe, Höhen = einzelne Funken) oder aus
-`Controller.led_state()` der Szene (z. B. "error": Ausfälle, Flackern, wachsendes Rot). Ereignis-Profile, die Szenen
+`Controller.led_state()` der Szene (z. B. "error": nur Rot, Ausfälle, Flackern, wachsendes Hellrot). Ereignis-Profile, die Szenen
 über wled.apply_mode_async() schicken (slots_jackpot, campfire_log ...), spielt der Stream als kurzen Blitz in der
 Profilfarbe. Gesamthelligkeit: Profil-bri x [controller].dim. In WLED muss "UDP-Echtzeit empfangen" an sein (Standard).
 Test ohne Board: `KITT_LEDS=1 python -m visualizers.engine error --test-signal` loggt die Paketrate."""
@@ -186,7 +186,8 @@ class LedStream:
         else:
             frame = self._music(now, dt, bass, high, is_beat, live)
         if self.flash > 0.02:
-            frame = frame + (self.flash_col - frame) * self.flash
+            fc = RED if program == "error" else self.flash_col
+            frame = frame + (fc - frame) * self.flash
         frame = np.clip(frame * self.bri, 0, 255).astype(np.uint8)
         self._send(frame, now)
 
@@ -265,9 +266,10 @@ class LedStream:
         return frame
 
     def _error(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
-        """Systemfehler: Grün als Grundzustand, LEDs fallen aus und flackern, bei roten Fehlern werden es immer
-        mehr rote; Eingabe-Aufforderung gelb mit Restzeit, Virus rot von einem Ende, Schilde blau, Eindringling
-        orange auf der Jagd, Neustart als Scanner."""
+        """Systemfehler, nur Rot: dunkelrot als Grundzustand (Code), LEDs fallen aus und flackern, bei Fehlern und Alarm
+        werden es immer mehr hellrote; Eingabe-Aufforderung blinkt mit Restzeitbalken, Virus frisst sich von einem Ende
+        durch, Schilde als Balken, Eindringling als heller Punkt auf der Jagd, Neustart als Scanner."""
+        LO, HI, ACC = RED * 0.28, RED, np.array([255.0, 70.0, 40.0])
         n = self.n
         phase = st.get("phase", "code")
         k = float(st.get("k", 0.0))                               # Fortschritt der Phase 0..1
@@ -310,36 +312,36 @@ class LedStream:
         amp = {"code": 0.15, "break": 0.5, "error": 0.45, "alarm": 0.7, "recovery": 0.3, "stable": 0.05}.get(phase, 0.3)
         self.flick = 1.0 - amp * jitter * (0.5 + 0.5 * bass)
         base_level = (0.05 + 0.45 * self.bass_s) * live + (1.0 - live) * 0.1
-        green = np.outer(np.full(n, base_level), GREEN)
+        green = np.outer(np.full(n, base_level), LO)
         if phase == "code":                                       # Code läuft: einzelne LEDs blitzen wie Daten
             if self.rng.random() < (2.0 + 10.0 * high) * dt:
                 self.glow[self.rng.randrange(n)] = 1.0
-        frame = green * (1.0 - self.red[:, None]) + np.outer(self.red, RED) * (0.6 + 0.4 * self.bass_s)
+        frame = green * (1.0 - self.red[:, None]) + np.outer(self.red, HI) * (0.6 + 0.4 * self.bass_s)
         if phase in ("error", "alarm") and is_beat:               # Alarm: alle roten blitzen auf den Beat
-            frame += np.outer(self.red, RED) * 0.6
+            frame += np.outer(self.red, ACC) * 0.6
         if phase == "alarm":
             frame *= 0.6 + 0.4 * (1.0 if int(now * 6.0) % 2 == 0 else 0.3)
         x = self._idx()
         if phase == "prompt":                                     # gelb, blinkt schneller, Balken = Restzeit
             blink = 1.0 if math.sin(now * (4.0 + 20.0 * k)) > 0.0 else 0.35
             bar = (x <= 1.0 - k).astype(float)
-            frame = np.outer(bar * blink * 0.9 + 0.08, YELLOW)
+            frame = np.outer(bar * blink * 0.9 + 0.08, HI)
         elif phase == "shields":                                  # blauer Balken = Schilde in Prozent
             bar = (x <= pct).astype(float)
-            frame = np.outer(bar, BLUE) * (0.6 + 0.4 * self.bass_s) + np.outer((1.0 - bar) * self.flick, RED) * 0.25
+            frame = np.outer(bar, HI) * (0.6 + 0.4 * self.bass_s) + np.outer((1.0 - bar) * self.flick, LO) * 0.5
         elif phase == "intruder":                                 # ein orangener Punkt jagt durch das Board
             self.hunt = (self.hunt + dt * (0.8 + 2.0 * pct) * (1.0 if int(now) % 2 == 0 else -1.0)) % 1.0
             w = np.exp(-((x - self.hunt) / 0.05) ** 2)
-            frame = frame * 0.5 + np.outer(w, ORANGE)
+            frame = frame * 0.4 + np.outer(w, ACC)
             if good and k >= 0.99:
-                frame = np.outer(np.full(n, 0.8), BLUE)
+                frame = np.outer(np.full(n, 0.8), HI)
         elif phase == "reboot":                                   # Scanner von rot nach grün, am Ende alles grün
             w = np.exp(-((x - k) / 0.08) ** 2)
-            frame = np.outer((x < k).astype(float) * 0.7, GREEN) + np.outer(w, WHITE)
+            frame = np.outer((x < k).astype(float) * 0.5, LO) + np.outer(w, HI)
             alive[:] = 1.0
         elif phase == "stable":
-            frame = np.outer(np.full(n, 0.5 + 0.3 * math.sin(now * 2.0) + 0.2 * self.bass_s), GREEN)
-        frame = frame * (alive * self.flick)[:, None] + np.outer(self.glow, WHITE) * 0.8
+            frame = np.outer(np.full(n, 0.5 + 0.3 * math.sin(now * 2.0) + 0.2 * self.bass_s), LO)
+        frame = frame * (alive * self.flick)[:, None] + np.outer(self.glow, ACC) * 0.8
         return frame
 
     # -- Senden --------------------------------------------------------------------------------------------------

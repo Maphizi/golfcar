@@ -1242,10 +1242,13 @@ ist das Board grün wie der Code: einzelne LEDs fallen aus und flackern, beim Zu
 Alarm werden es Schritt für Schritt mehr rote LEDs, die auf den Beat aufblitzen, bei der Erholung kommen sie zurück und der
 Neustart läuft als Scanner; die Eingabe-Aufforderung blinkt gelb mit einem Balken für die Restzeit, der Virus frisst sich rot
 von einem Ende her durch, die Schilde sind ein blauer Balken in Prozent, der Eindringling ein orangener Punkt auf der Jagd.
-Endet der Modus, fällt WLED nach zwei Sekunden von selbst auf das Profil zurück. Jeder Modus hat sein eigenes Licht: Taxistand gelb atmend (und in der Farbe des
+Endet der Modus, fällt WLED nach zwei Sekunden von selbst auf das Profil zurück. Beim Senden setzt der Launcher immer
+auch die Palette (sonst bliebe die letzte, etwa der Regenbogen, in jedem Effekt hängen), stoppt Playlists, schaltet den
+Live-Override aus und löscht zusätzliche Segmente. Tut das Board nicht, was es soll: `scripts/wled_check.py` auf dem Pi zeigt
+Version, LED-Anzahl, Segmente und Live-Status und fährt drei rote Tests (HTTP gedimmt, HTTP voll, UDP-Stream). Jeder Modus hat sein eigenes Licht: Taxistand gelb atmend (und in der Farbe des
 gewählten Themas, sobald eines bestätigt ist), Navigationscomputer blau-cyane Kometen, Schwarzes
 Loch oranger Meteor, HAL tiefrotes Atmen, Slotmaschine goldenes Pulsieren, Lagerfeuer Feuer,
-Systemfehler rot blinkend, Arcade Regenbogen, Bordcomputer KITT-Scanner, Planeten weißblaues
+Systemfehler nur Rot (auch live: Ausfälle, Flackern, wachsendes Hellrot), Arcade Regenbogen, Bordcomputer KITT-Scanner, Planeten weißblaues
 Funkeln, Nachrichten Studioblau, BIBO orange, CRT grün, Auge violett.
 Ereignisse innerhalb eines Modus schicken eigene Profile und fallen danach zurück: bei HAL
 Astronaut (weiß), Alien (grün), beide (weiß und grün als Kometen); Slotmaschine großer Gewinn (Gold

@@ -72,6 +72,56 @@ def _post(host: str, port: int, timeout: int, payload: dict) -> None:
         resp.read()
 
 
+_info: dict | None = None  # /json/info (LED-Anzahl), einmal je Prozess
+_extra_segs: list[int] | None = None   # Segment-IDs > 0 beim ersten Senden (werden gelöscht)
+
+
+def _get(host: str, port: int, timeout: int, path: str) -> dict:
+    with urllib.request.urlopen(f"http://{host}:{port}{path}", timeout=timeout) as resp:
+        return json.loads(resp.read().decode())
+
+
+def led_count() -> int:
+    """LED-Anzahl des Controllers (0 = unbekannt); [controller].leds überstimmt die Abfrage."""
+    global _info
+    ctrl = _controller()
+    if ctrl is None:
+        return 0
+    n = int(_load_cfg().get("controller", {}).get("leds", 0) or 0)
+    if n > 0:
+        return n
+    if _info is None:
+        try:
+            _info = _get(ctrl[0], ctrl[1], ctrl[2], "/json/info")
+        except Exception as exc:
+            log.debug("WLED /json/info: %s", exc)
+            _info = {}
+    try:
+        return int(_info.get("leds", {}).get("count", 0))
+    except (TypeError, ValueError, AttributeError):
+        return 0
+
+
+def _cleanup_segments() -> list[dict]:
+    """Zusätzliche Segmente (id > 0) löschen: sie liefen sonst mit eigenem Effekt und eigener Farbe weiter."""
+    global _extra_segs
+    ctrl = _controller()
+    if ctrl is None:
+        return []
+    if _extra_segs is None:
+        try:
+            st = _get(ctrl[0], ctrl[1], ctrl[2], "/json/state")
+            _extra_segs = [int(sg.get("id", i)) for i, sg in enumerate(st.get("seg", [])) if int(sg.get("id", i)) > 0]
+            if _extra_segs:
+                log.info("WLED: lösche Segmente %s (nur Segment 0 wird gesteuert)", _extra_segs)
+        except Exception as exc:
+            log.debug("WLED /json/state: %s", exc)
+            _extra_segs = []
+    segs = [{"id": i, "stop": 0} for i in _extra_segs]
+    _extra_segs = []
+    return segs
+
+
 def _rgb(v: Any, default: list[int]) -> list[int]:
     try:
         return [max(0, min(255, int(c))) for c in list(v)[:3]] if v is not None else default
@@ -85,15 +135,20 @@ def payload_for(profile: dict[str, Any], col: list[int] | None = None) -> dict:
     c2 = _rgb(profile.get("col2"), [0, 0, 0])
     c3 = _rgb(profile.get("col3"), [0, 0, 0])
     seg: dict[str, Any] = {
-        "id":  0,
+        "id":  0, "start": 0, "grp": 1, "spc": 0, "of": 0, "on": True, "bri": 255, "frz": False, "sel": True,
+        "rev": False, "mi": False,
         "fx":  int(profile.get("fx", 0)),
         "sx":  int(profile.get("sx", 128)),
         "ix":  int(profile.get("ix", 128)),
         "col": [c1, c2, c3],
+        # Palette immer setzen: sonst bleibt die letzte (z. B. Regenbogen) und viele Effekte malen damit statt mit col
+        "pal": int(profile.get("pal", 3 if "col2" in profile else 2)),
     }
-    if "pal" in profile:
-        seg["pal"] = int(profile["pal"])
-    return {"on": True, "bri": max(1, int(int(profile.get("bri", 128)) * dim())), "seg": [seg]}
+    n = led_count()
+    if n > 0:
+        seg["stop"] = n
+    return {"on": True, "bri": max(1, int(int(profile.get("bri", 128)) * dim())), "transition": 2,
+            "pl": -1, "lor": 0, "nl": {"on": False}, "seg": [seg] + _cleanup_segments()}
 
 
 def profiles() -> dict[str, dict]:

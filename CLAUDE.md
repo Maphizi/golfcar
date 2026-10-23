@@ -400,6 +400,11 @@ Weißblitz höchstens alle 8 s, Stille = eine wandernde LED atmet); `Controller.
 (Fehler/Alarm, Erholung zurück), Virus von einem Ende, Prompt gelb + Restzeitbalken, Schilde blauer Balken, Eindringling orange,
 Neustart Scanner. Ereignis-Profile (`wled.apply_mode_async`) laufen über `wled.set_stream_hook` als Blitz in der Profilfarbe.
 Gesamtdämpfung `[controller] dim` 0.7 für HTTP-Profile (`payload_for`) und Stream. HAL 3000 (kein Engine-Prozess) behält das Profil.
+`payload_for` setzt immer `pal` (Profil, sonst 3 mit col2 / 2 ohne: sonst bleibt die letzte Palette, z. B. Regenbogen, und viele
+Effekte malen damit), Segment 0 über die ganze Kette (`led_count()` aus `/json/info` oder `[controller].leds`), `pl = -1`
+(Playlist aus), `lor = 0` (Live-Override aus), Nachtlicht aus; beim ersten Senden je Prozess löscht `_cleanup_segments()`
+Segmente mit id > 0. Systemfehler-Profil und LED-Programm sind rein rot. Diagnose auf dem Pi: `scripts/wled_check.py`
+(Info, Segmente, Playlist, lor, drei Tests: rot gedimmt/voll per HTTP, rot per UDP, danach `live`-Status).
 
 ## Schwarzes Loch (`visualizers/scenes/blackhole.py`)
 D-Pad LINKS/RECHTS = Planet aus `config/planets.toml` von dieser Seite ins Loch werfen (wird über ~1 Minute zum

@@ -17,6 +17,8 @@ fps      = 25
 realtime_timeout = 2  # s nach dem letzten Paket fällt WLED auf das Profil zurück (Moduswechsel)
 leds     = 0         # LED-Anzahl; 0 = beim Controller nachfragen (/json/info)
 
+# Ohne pal nimmt der Launcher 2 (nur Hauptfarbe) bzw. 3 (Haupt- und Zweitfarbe), damit nie eine alte Palette
+# (Regenbogen) hängen bleibt; beim ersten Senden werden zusätzliche Segmente gelöscht und Playlists gestoppt.
 # Pro Profil: bri Helligkeit 0-255, fx Effekt-ID, col Hauptfarbe [R,G,B], col2/col3 Zweit-/Drittfarbe
 # (bei vielen Effekten Hintergrund bzw. Akzent), sx Geschwindigkeit, ix Intensität, pal Palette (optional).
 # fx-IDs (WLED-Standard): 0 Solid, 1 Blink, 2 Breathe, 9 Rainbow, 12 Fade, 20 Sparkle, 23 Strobe,
@@ -287,11 +289,11 @@ col2 = [40, 220, 255]
 sx  = 255
 ix  = 255
 
-[modes.error]               # Systemfehler: Alarm, rot blinkend, Code-Grün als Gegenfarbe
+[modes.error]               # Systemfehler: Alarm, nur Rot (dunkelrot als Gegenfarbe); live: launcher/ledstream.py
 bri = 220
 fx  = 1           # Blink
 col = [255, 0, 0]
-col2 = [0, 60, 10]
+col2 = [40, 0, 0]
 sx  = 170
 ix  = 128
 
