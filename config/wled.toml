@@ -97,7 +97,7 @@ sx  = 40
 ix  = 150
 
 [modes.forestslots]         # Pilzautomat: Pilzgold auf Moosgrün, pulsierend
-bri = 136
+bri = 85
 fx  = 162
 col = [255, 190, 60]
 col2 = [10, 50, 20]
@@ -147,7 +147,7 @@ sx  = 40
 ix  = 150
 
 [modes.cyberslots]          # Pachinko: Magenta-Pulser
-bri = 152
+bri = 95
 fx  = 162
 col = [255, 60, 220]
 col2 = [0, 40, 80]
@@ -195,7 +195,7 @@ sx  = 40
 ix  = 150
 
 [modes.almanacslots]        # Almanach: Casino-Gold mit Rot
-bri = 160
+bri = 100
 fx  = 162
 col = [255, 200, 40]
 col2 = [120, 0, 20]
@@ -235,7 +235,7 @@ sx  = 35
 ix  = 150
 
 [modes.slots]               # Slotmaschine: Gold, pulsierend wie Casinolicht
-bri = 136
+bri = 85
 fx  = 162         # Pulser
 col = [255, 200, 70]
 col2 = [60, 30, 0]

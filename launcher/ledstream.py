@@ -158,7 +158,7 @@ class LedStream:
         if self.base == "hal":
             self.bri *= 0.75                                      # HAL 3000: 25 % dunkler
         if scene in ("slots", "forestslots", "cyberslots", "almanacslots"):
-            self.bri *= 0.8                                       # Casino: 20 % dunkler
+            self.bri *= 0.5                                       # Casino: halbe Helligkeit
         self.scr_acc = None
         self.scr_target = None
         self.step_s = 0.0                                         # Beat-Schritt: 1 2 3 4, weich eingerastet (Muster rückt nach hinten)
