@@ -110,6 +110,7 @@ class Launcher:
         try:
             dp = DPadRemap(self.settings.get("buttons", {}))
             dp.on_attract = lambda on: self.queue.put(Action.ATTRACT_ON if on else Action.ATTRACT_OFF)   # Schalter direkt an den Launcher
+            dp.on_horn    = lambda on: self.queue.put(Action.HORN if on else Action.HORN_OFF)              # Hupe: runter = horn, hoch = horn_off
             dp.start()
             self.inputs.append(dp)
             self.dpad = dp

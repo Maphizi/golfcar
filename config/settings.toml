@@ -54,6 +54,7 @@ kipp_code = 267          # Kippschalter -> SPACE (AN) / BACKSPACE (AUS); Navigat
 kipp_mode = "toggle"     # "toggle": jeder Druck wechselt AN/AUS. "state": value 1 = AN, 0 = AUS (echter Schalter)
 talk_code = 0            # Sprechtaste -> F15 (HAL: Musik leise, Mikrofon an); 0 = keine. Alternativ keymap.toml action = "talk"
 attract_code = 275       # Autopilot-Kippschalter (echter Schalter, state): 1 = unten/AN, 0 = oben/AUS
+horn_code    = 269       # Hupe-Kippschalter (echter Schalter, state): 1 = unten/Ton-an, 0 = oben/Ton-aus
 debounce_ms = 300        # gleiche Taste innerhalb dieser Zeit nochmal = ignorieren (Prellen, Dauerfeuer)
 
 [hal]
