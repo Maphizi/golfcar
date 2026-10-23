@@ -10,6 +10,10 @@ der eingestellten Anzahl bekommen nie Daten und bleiben mit Zufallsfarben an.
                                                                 (4 Kanäle, "5PIN"-Streifen), 24 WS2811 400 kHz, 31 TM1814.
                                                                 Zeigt die Kette bei reinem Rot ein Muster Rot/Weiß/Blau/Grün,
                                                                 hat sie 4 Kanäle und WLED steht auf 3: --type 30.
+    .venv/bin/python scripts/wled_setup.py --white 0 --apply    Auto-Weiß des RGBW-Ausgangs: 0 aus (Weiß nur, wenn wir es
+                                                                schicken; Pflicht für die Farben der Programme), 1 heller,
+                                                                2 genau, 3 beides, 4 alt. Steht es nicht auf 0, wird aus
+                                                                Gold oder Warmweiß ein weißes Leuchten.
     .venv/bin/python scripts/wled_setup.py --order 1 --apply    Farbreihenfolge: 0 GRB (WS2812), 1 RGB (viele 24-V-Ketten),
                                                                 2 BRG, 3 RBG, 4 BGR, 5 GBR. Zeigt der Test statt ROT ein GRÜN,
                                                                 ist die Reihenfolge falsch (GRB <-> RGB).
@@ -35,6 +39,7 @@ def main() -> int:
     ap.add_argument("--maxpwr", type=int, default=-1, help="Strombegrenzung in mA (0 = aus)")
     ap.add_argument("--order", type=int, default=-1, help="Farbreihenfolge 0 GRB, 1 RGB, 2 BRG, 3 RBG, 4 BGR, 5 GBR")
     ap.add_argument("--type", type=int, default=-1, help="LED-Typ: 22 WS2812 RGB, 30 SK6812 RGBW, 24 WS2811 400k, 31 TM1814")
+    ap.add_argument("--white", type=int, default=-1, help="Auto-Weiß je Ausgang: 0 aus, 1 heller, 2 genau, 3 beides, 4 alt")
     ap.add_argument("--test", action="store_true", help="Farbtest rot/grün/blau je 4 s")
     ap.add_argument("--apply", action="store_true", help="wirklich senden (sonst nur anzeigen)")
     args = ap.parse_args()
@@ -65,8 +70,11 @@ def main() -> int:
     for i, out in enumerate(ins):
         names = {0: "GRB", 1: "RGB", 2: "BRG", 3: "RBG", 4: "BGR", 5: "GBR"}
         types = {22: "WS2812 RGB", 30: "SK6812 RGBW", 24: "WS2811 400k", 31: "TM1814", 26: "UCS8903", 29: "UCS8904"}
+        whites = {0: "aus", 1: "heller", 2: "genau", 3: "beides", 4: "alt"}
         print(f"  Ausgang {i}: start={out.get('start')} len={out.get('len')} pin={out.get('pin')} type={out.get('type')} "
-              f"({types.get(out.get('type'), '?')}) order={out.get('order')} ({names.get(out.get('order'), '?')})")
+              f"({types.get(out.get('type'), '?')}) order={out.get('order')} ({names.get(out.get('order'), '?')}) "
+              f"auto-weiß={out.get('rgbwm')} ({whites.get(out.get('rgbwm'), '?')})")
+    print(f"Auto-Weiß global (alte Versionen): {led.get('rgbwm')}")
     if not ins:
         print("Keine LED-Ausgänge in der Konfiguration gefunden")
         return 1
@@ -89,10 +97,16 @@ def main() -> int:
         for o in new_ins:
             o["type"] = args.type
         payload["hw"]["led"]["ins"] = new_ins
-        if args.type == 30:
-            payload["hw"]["led"]["rgbwm"] = 0                      # Weißkanal nicht automatisch aus RGB rechnen
+        if args.type == 30 and args.white < 0:
+            args.white = 0                                         # Weißkanal nicht automatisch aus RGB rechnen
+    if args.white >= 0:
+        new_ins = payload["hw"]["led"].get("ins") or [dict(o) for o in ins]
+        for o in new_ins:
+            o["rgbwm"] = args.white                                # je Ausgang (WLED >= 0.14)
+        payload["hw"]["led"]["ins"] = new_ins
+        payload["hw"]["led"]["rgbwm"] = args.white                 # global (ältere Versionen)
     if not payload["hw"]["led"]:
-        print("Nichts zu ändern (--leds N und/oder --maxpwr mA angeben)")
+        print("Nichts zu ändern (--leds, --maxpwr, --type, --order oder --white angeben)")
         return 0
     print("Senden:", json.dumps(payload))
     if not args.apply:
