@@ -1,11 +1,12 @@
-"""Zweiter Drehknopf -> Musiklautstärke von mpv (nur der Musikstream, Stimme bleibt unberührt).
+"""Zweiter Drehknopf -> Musiklautstärke.
 
-mpv muss mit --input-ipc-server=/tmp/mpv.sock laufen (scripts/music.sh macht das). Der Knopf
-kann drei Dinge liefern, alle werden erkannt:
+Läuft mpv mit --input-ipc-server=/tmp/mpv.sock (scripts/music.sh), regelt der Knopf nur den mpv-Stream. Ohne mpv
+(Musik vom Handy: Spotify Connect, AirPlay, Bluetooth) regelt er den ganzen Ausgang über wpctl (Standard-Sink); die
+Stimme folgt dann mit, der Stimmenknopf regelt sie relativ dazu. Der Knopf kann drei Dinge liefern, alle werden erkannt:
   - Consumer-Tasten KEY_VOLUMEUP/KEY_VOLUMEDOWN (Tastatur-Interface des PXN)
-  - REL_MISC-Schritte (relativ), wenn [music].rel = true
+  - Dreh-Schritte REL_MISC/REL_DIAL/REL_WHEEL (relativ), wenn [music].rel = true
   - eine ABS-Achse, wenn [music].axis gesetzt ist (absolut 0..100 %)
-Ohne laufendes mpv werden die Befehle verworfen, der Knopf schadet nicht.
+Erscheint der Knopf als Tasten (zwei BTN-Codes), in config/keymap.toml action = "music_up" / "music_down" belegen.
 """
 from __future__ import annotations
 
@@ -13,6 +14,7 @@ import json
 import logging
 import select
 import socket
+import subprocess
 import threading
 import time
 
@@ -21,6 +23,7 @@ from evdev import ecodes
 
 log = logging.getLogger("music")
 DEVICE_NAME = "PXN"
+REL_CODES = {ecodes.REL_MISC, ecodes.REL_DIAL, ecodes.REL_WHEEL, ecodes.REL_HWHEEL}
 
 
 class MusicKnob(threading.Thread):
@@ -35,6 +38,7 @@ class MusicKnob(threading.Thread):
         self.max_pct = int(cfg.get("max_percent", 100))
         self.last_abs = -1
         self.last_abs_t = 0.0
+        self.sent = 0
 
     def stop(self) -> None:
         self._stop.set()
@@ -61,7 +65,7 @@ class MusicKnob(threading.Thread):
                 caps = d.capabilities()
                 keys = caps.get(ecodes.EV_KEY, [])
                 has_vol = ecodes.KEY_VOLUMEUP in keys or ecodes.KEY_VOLUMEDOWN in keys
-                has_rel = self.use_rel and ecodes.REL_MISC in caps.get(ecodes.EV_REL, [])
+                has_rel = self.use_rel and bool(REL_CODES & set(caps.get(ecodes.EV_REL, [])))
                 has_abs = self.axis is not None and any(c == self.axis for c, _ in caps.get(ecodes.EV_ABS, []))
                 if DEVICE_NAME in d.name and (has_vol or has_rel or has_abs):
                     out.append(d)
@@ -86,11 +90,12 @@ class MusicKnob(threading.Thread):
                     for ev in d.read():
                         if ev.type == ecodes.EV_KEY and ev.value == 1:
                             if ev.code == ecodes.KEY_VOLUMEUP:
-                                self._send(["add", "volume", self.step])
+                                self.nudge(1)
                             elif ev.code == ecodes.KEY_VOLUMEDOWN:
-                                self._send(["add", "volume", -self.step])
-                        elif ev.type == ecodes.EV_REL and ev.code == ecodes.REL_MISC and self.use_rel and ev.value:
-                            self._send(["add", "volume", self.step if ev.value > 0 else -self.step])
+                                self.nudge(-1)
+                        elif ev.type == ecodes.EV_REL and ev.code in REL_CODES and self.use_rel and ev.value:
+                            val = ev.value - 256 if 128 <= ev.value < 256 else ev.value   # 224 = -32 bei 8-Bit-Drehern
+                            self.nudge(1 if val > 0 else -1)
                         elif ev.type == ecodes.EV_ABS and self.axis is not None and ev.code == self.axis:
                             ai = info.get(ev.code)
                             lo, hi = (ai.min, ai.max) if ai and ai.max > ai.min else (0, 255)
@@ -102,12 +107,33 @@ class MusicKnob(threading.Thread):
                 except OSError:
                     return
 
+    def nudge(self, steps: int) -> None:
+        """Musik um steps x step Prozent lauter (>0) oder leiser (<0); auch von Tasten (keymap music_up/music_down)."""
+        self._send(["add", "volume", self.step * steps])
+
     def _send(self, command: list) -> None:
         try:
             with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
                 s.settimeout(0.5)
                 s.connect(self.sock_path)
                 s.sendall((json.dumps({"command": command}) + "\n").encode())
-            log.debug("mpv %s", command)
+            self._log("mpv %s", command)
+            return
         except OSError as exc:
             log.debug("mpv nicht erreichbar (%s): %s", self.sock_path, exc)
+        # kein mpv: Musik kommt vom Handy -> ganzen Ausgang regeln
+        try:
+            if command[:2] == ["add", "volume"]:
+                d = int(command[2])
+                arg = f"{abs(d)}%{'+' if d > 0 else '-'}"
+            else:
+                arg = f"{int(command[2])}%"
+            subprocess.run(["wpctl", "set-volume", "-l", f"{self.max_pct / 100.0:.2f}", "@DEFAULT_AUDIO_SINK@", arg],
+                           check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=2)
+            self._log("Ausgang (wpctl) %s", arg)
+        except (OSError, subprocess.TimeoutExpired, ValueError, IndexError) as exc:
+            log.warning("Musikknopf: weder mpv noch wpctl: %s", exc)
+
+    def _log(self, fmt: str, *args) -> None:
+        self.sent += 1
+        (log.info if self.sent <= 20 or self.sent % 50 == 0 else log.debug)("Musikknopf: " + fmt, *args)

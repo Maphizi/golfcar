@@ -78,6 +78,9 @@ def main() -> int:
                 pass
     if not seen:
         print("  nichts angekommen: Knopf an einem anderen Interface? -> scripts/input_monitor.py 10 --all")
+    if any(t == ecodes.EV_KEY for (_, t, _) in seen):
+        print("  Tastencodes beim Drehen: in config/keymap.toml je Richtung code = N mit action = voice_up / voice_down"
+              " (oder music_up / music_down) eintragen")
     for (path, t, c), (n, vals) in seen.items():
         names = ecodes.bytype.get(t, {}).get(c, c)
         print(f"  {path} {ecodes.EV.get(t, t)} {names}: {n} Ereignisse, Werte {sorted(vals)[:8]}")

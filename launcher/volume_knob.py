@@ -7,7 +7,8 @@ der Knopf stattdessen den ganzen Ausgang über wpctl.
 Zwei Modi:
   ABS-Achse (axis = "ABS_Z" o. ä.): absoluter Wert wird auf min_percent..max_percent abgebildet.
   REL-Modus (rel = true): jedes Dreh-Ereignis (REL_MISC, REL_DIAL, REL_WHEEL, REL_HWHEEL) ändert die Lautstärke um ±step Prozent.
-Prüfen auf dem Pi: scripts/voice_knob_check.py (zeigt Geräte, Ereignisse beim Drehen, den Faktor in logs/voice_volume.txt).
+Erscheint der Knopf als Tasten (zwei BTN-Codes, Launcher-Log "Taste ohne Belegung"), in config/keymap.toml action = "voice_up" /
+"voice_down" belegen. Prüfen auf dem Pi: scripts/voice_knob_check.py (Geräte, Ereignisse beim Drehen, Faktor in logs/voice_volume.txt).
 """
 from __future__ import annotations
 
@@ -156,6 +157,11 @@ class VolumeKnob(threading.Thread):
                 self._apply(self.pending)
                 self.pending = None
                 self.last_set = now
+
+    def nudge(self, steps: int) -> None:
+        """Stimme um steps x step Prozent lauter (>0) oder leiser (<0); von Tasten (keymap voice_up/voice_down)."""
+        self.cur_pct = max(self.min_pct, min(self.max_pct, self.cur_pct + self.step * steps))
+        self._apply(self.cur_pct)
 
     def _apply(self, pct: int) -> None:
         if pct == self.last_pct:

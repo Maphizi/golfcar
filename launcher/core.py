@@ -128,6 +128,7 @@ class Launcher:
                 vk = VolumeKnob(vol_cfg)
                 vk.start()
                 self.inputs.append(vk)
+                self.vknob = vk
         except Exception as exc:
             log.warning("Lautstärkeknopf nicht gestartet: %s", exc)
         try:
@@ -136,6 +137,7 @@ class Launcher:
                 mk = MusicKnob(mus_cfg)
                 mk.start()
                 self.inputs.append(mk)
+                self.mknob = mk
         except Exception as exc:
             log.warning("Musikknopf nicht gestartet: %s", exc)
         try:
@@ -221,6 +223,13 @@ class Launcher:
             return
         if action == Action.STATUS:
             log.info("Status: mode=%s %s", self.pm.current.name if self.pm.current else None, sysmon.format_line())
+            return
+        if action in (Action.VOICE_UP, Action.VOICE_DOWN, Action.MUSIC_UP, Action.MUSIC_DOWN):   # Drehknopf als Tasten
+            knob = getattr(self, "vknob" if action in (Action.VOICE_UP, Action.VOICE_DOWN) else "mknob", None)
+            if knob is None:
+                log.info("%s: Knopf nicht gestartet ([volume]/[music] in settings.toml)", action.value)
+            else:
+                knob.nudge(1 if action in (Action.VOICE_UP, Action.MUSIC_UP) else -1)
             return
         if action in (Action.HORN, Action.FX):
             from launcher import sfx

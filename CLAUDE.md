@@ -50,8 +50,12 @@ ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-S
   Knopf x Gain, gilt für KITT, HAL, BIBO und die Ansagen in `kitt/announce.py` zusätzlich zu `announce.toml` `volume`).
   REL-Modus nimmt REL_MISC/DIAL/WHEEL/HWHEEL (`REL_CODES`), Log "Stimme NN% -> voice_volume.txt"; Prüfung auf dem Pi:
   `scripts/voice_knob_check.py [faktor]` (Geräte, 10 s Ereignisse, Datei, Ansage).
-- Musik: `launcher/music_knob.py`, KEY_VOLUMEUP/DOWN (immer), REL_MISC (`[music].rel`) oder ABS-Achse
-  (`[music].axis`) -> mpv-Socket `/tmp/mpv.sock` (`scripts/music.sh` startet mpv mit Socket).
+- Musik: `launcher/music_knob.py`, KEY_VOLUMEUP/DOWN (immer), REL_MISC/DIAL/WHEEL (`[music].rel`) oder ABS-Achse
+  (`[music].axis`) -> mpv-Socket `/tmp/mpv.sock` (`scripts/music.sh` startet mpv mit Socket); ohne mpv (Musik vom Handy)
+  stattdessen der ganze Ausgang per `wpctl set-volume -l max_percent @DEFAULT_AUDIO_SINK@ N%+/-` (Stimme folgt mit,
+  Stimmenknopf regelt relativ dazu), Log "Musikknopf: ...".
+- Knöpfe als Tasten: melden die Dreher BTN-Codes, `config/keymap.toml` `action = "voice_up"/"voice_down"/"music_up"/
+  "music_down"` (`Action.VOICE_UP` ..., `core.py` -> `vknob.nudge()`/`mknob.nudge()`).
 
 ### Launcher-Tasten (BTN-Codes von event7)
 

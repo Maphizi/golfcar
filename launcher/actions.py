@@ -48,6 +48,10 @@ class Action(str, Enum):
     FX = "fx"                  # zufälliger Effekt des Themas (assets/sfx/<thema>_fx1..3.wav) + LED-Blitz
     ATTRACT_ON  = "attract_on"  # Autopilot-Schalter unten (an)
     ATTRACT_OFF = "attract_off" # Autopilot-Schalter oben (aus)
+    VOICE_UP   = "voice_up"     # Drehknopf als Tasten: Stimme lauter/leiser (launcher/volume_knob.py)
+    VOICE_DOWN = "voice_down"
+    MUSIC_UP   = "music_up"     # Drehknopf als Tasten: Musik lauter/leiser (launcher/music_knob.py)
+    MUSIC_DOWN = "music_down"
 
 
 # Welche Action startet welchen Modus (Modus-Namen siehe config/modes.toml)

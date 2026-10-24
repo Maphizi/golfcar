@@ -71,3 +71,19 @@ action = "attract_on"  # Autopilot an (Schalter unten)
 [[bindings]]
 key    = "KEY_F17"
 action = "attract_off" # Autopilot aus (Schalter oben)
+
+# ── Drehknöpfe als Tasten ─────────────────────────────────────────────────────────────────────────
+# Meldet ein Drehknopf beim Drehen zwei Tastencodes (Launcher-Log "Taste ohne Belegung: code = N" je Richtung,
+# oder scripts/voice_knob_check.py), hier eintragen; die Aktionen gehen an launcher/volume_knob.py bzw. music_knob.py.
+# [[bindings]]
+# code   = 300
+# action = "voice_up"
+# [[bindings]]
+# code   = 301
+# action = "voice_down"
+# [[bindings]]
+# code   = 302
+# action = "music_up"
+# [[bindings]]
+# code   = 303
+# action = "music_down"
