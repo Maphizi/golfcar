@@ -83,11 +83,29 @@ class DPadRemap(threading.Thread):
                     time.sleep(2)
                     continue
                 log.info("D-Pad Gerät gefunden: %s (%s)", dev.name, dev.path)
+                self._initial_switches(dev)
                 self._loop(dev, ui)
                 dev.close()
         finally:
             self._ui = None
             ui.close()
+
+    def _initial_switches(self, dev) -> None:
+        """Schalterstellung beim Start lesen: steht der Autopilot-Schalter schon auf AN, sofort melden (sonst wüsste der
+        Launcher es erst beim nächsten Umlegen). AUS braucht keine Meldung, der Vorführmodus ist ohne Schalter aus."""
+        if not self.attract_code:
+            return
+        try:
+            on = self.attract_code in dev.active_keys()
+        except OSError as exc:
+            log.debug("Schalterstellung nicht lesbar: %s", exc)
+            return
+        log.info("Autopilot-Schalter beim Start: %s", "AN" if on else "AUS")
+        if on and self.on_attract:
+            try:
+                self.on_attract(True)
+            except Exception:
+                log.exception("Autopilot-Schalter")
 
     def _find_device(self):
         for path in evdev.list_devices():

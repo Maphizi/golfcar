@@ -46,7 +46,7 @@ class Launcher:
         self.announce_enabled = bool(self.settings.get("launcher", {}).get("announce", True))
         self.boot_seconds = float(self.settings.get("launcher", {}).get("boot_seconds", 0))
         att = self.settings.get("attract", {})
-        self.attract_enabled = bool(att.get("enabled", True))
+        self.attract_enabled = bool(att.get("enabled", False))   # Leerlauf-Automatik; der Schalter schaltet unabhängig davon
         self.attract_idle = float(att.get("idle_minutes", 5.0)) * 60.0
         self.attract_every = float(att.get("every_seconds", 180.0))
         self.attract_on = False

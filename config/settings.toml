@@ -24,9 +24,10 @@ enabled = true
 volume = 1.0
 
 [attract]
-# Vorführmodus: nach idle_minutes ohne Eingabe wechselt der Launcher alle every_seconds durch die Modi des Themas
-# (Tasten 2-7); jede Eingabe beendet ihn. Nicht im Spielmodus (gaming) und nicht auf dem Startbildschirm.
-enabled = true
+# Vorführmodus (Autopilot): läuft NUR mit dem Autopilot-Schalter ([buttons].attract_code, Stellung beim Start wird gelesen)
+# und wechselt dann alle every_seconds durch die Modi des Themas (Tasten 2-7). enabled = true schaltet zusätzlich die
+# Leerlauf-Automatik ein: nach idle_minutes ohne Eingabe startet er von selbst (jede Eingabe beendet ihn wieder).
+enabled = false
 idle_minutes = 5
 every_seconds = 180
 

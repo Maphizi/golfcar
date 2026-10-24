@@ -96,6 +96,8 @@ LEDs (WLED-Profile `horn`/`fx`, PXN weiß; `led_back_at` setzt danach das Modusp
 zurück): Seite 1 `[buttons].horn_code` 269 (`dpad_remap.on_horn`, zurück = `HORN_OFF` tut nichts), Seite 2 `[buttons].horn2_code`
 (`on_horn2` -> `HORN2` = `horn2`; Code aus dem Launcher-Log "Taste ohne Belegung"). Weitere Kippschalter: `keymap.toml` `code = N`,
 je Stellung eine Aktion (`on = "down"` Standard, `on = "up"` beim Zurücklegen -> `EvdevInput.release_bindings`). Vorführmodus `[attract]`:
+läuft standardmäßig NUR über den Autopilot-Schalter (`enabled = false`; `DPadRemap._initial_switches()` liest beim Start per
+`active_keys()`, ob der Schalter schon AN steht, und meldet das). Mit `enabled = true` zusätzlich Leerlauf-Automatik:
 nach `idle_minutes` 5 ohne Eingabe (Launcher-Actions und Board-Events via `DPadRemap.last_event`) wechselt `_attract_tick()`
 alle `every_seconds` 180 zufällig durch `ATTRACT_BASE` (Tasten 2-7 im aktuellen Thema, nie dieselbe zweimal, mit Ansage);
 jede Eingabe beendet ihn; nicht bei `boot`/`gaming`.

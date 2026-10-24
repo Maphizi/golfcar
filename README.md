@@ -1342,7 +1342,8 @@ in beiden Richtungen einen Effekt, Schalter B schaltet den Sprechmodus bei HAL 3
 `on = "up"` für das Zurücklegen; `scripts/board_learn.py` nimmt 60 Sekunden lang alles auf und wertet es aus. Erlaubt sind alle Modi und `fx`, `horn`, `horn2`, `talk`, `attract_on/off`, `voice_up/down`,
 `music_up/down`.
 
-**Vorführmodus:** Kommt fünf Minuten keine Eingabe, wechselt das System alle drei Minuten von selbst durch die Modi des
-Themas (Tasten 2 bis 7, mit Ansage). Jede Taste beendet ihn. Einstellungen `settings.toml` `[attract]`. Mit dem
-Autopilot-Kippschalter (`[buttons].attract_code`) läuft er sofort und dauerhaft (AN) oder ist ganz aus (AUS); beim Umschalten
-zeigt der Bildschirm kurz "AUTOPILOT AN" bzw. "AUTOPILOT AUS".
+**Vorführmodus (Autopilot):** Läuft nur, wenn der Autopilot-Kippschalter (`[buttons].attract_code`) auf AN steht: dann
+wechselt das System alle drei Minuten von selbst durch die Modi des Themas (Tasten 2 bis 7, mit Ansage). Auf AUS wechselt nie
+etwas von selbst. Die Schalterstellung wird schon beim Start gelesen; beim Umschalten zeigt der Bildschirm kurz "AUTOPILOT AN"
+bzw. "AUTOPILOT AUS". Wer zusätzlich die alte Leerlauf-Automatik will (nach fünf Minuten ohne Eingabe von selbst, jede Taste
+beendet sie), setzt in `settings.toml` `[attract]` `enabled = true`.
