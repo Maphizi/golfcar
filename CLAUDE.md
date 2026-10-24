@@ -427,7 +427,11 @@ Szene `SCENE_BASE` (sonst nach fx des Profils: Feuer 45/66/42, Scanner 40, Rainb
 Stroboskop nur als Special: `timejump`: Farbfronten
 (`fronts`, alle 8-15 s eine neue aus Bildschirmfarbe/Akzent mit gedrehtem Farbton) kommen mit 0,03-0,06 Kette/s von vorne herein,
 jede überdeckt die vorige (weiche Kante), Beat = kleiner Schub; `timejump_jump` -> `boost_until` 3 s Volldampf (14x, Fronten alle
-0,25-0,5 s in Elektroblau/Weiß, Kometen, Flackern), danach wieder mellow. `stars` (navcomputer, planets, neonrace, splash): wenige Sterne ziehen von vorne nach
+0,25-0,5 s in Elektroblau/Weiß, Kometen, Flackern), danach wieder mellow. `duel` (neonrace): zwei Felder à `DUEL_W` 10 LEDs in Bildschirm-Haupt- und Akzentfarbe (voll ausgesteuert, Akzent gedreht, wenn zu
+ähnlich), je Beat ein Feld weiter (kurz eingerastet, Schub = 2 Felder), Modi in `duel["mode"]`: `free` (Richtung je Beat zu 28 %
+gewechselt, 12-24 Beats), `lock` Gleichschritt 6-12 Beats, `meet` aufeinander zu -> `merged`: übereinander in dritter Farbe (Farbton
+weit weg von beiden), 2-5 Beats als eines weiter, dann teilen (3 Beats auseinander); Kreuzen = Überlappung dritte Farbe; Rest 3 %
+Glimmen. `stars` (navcomputer, planets, splash): wenige Sterne ziehen von vorne nach
 hinten, Tempo mit der Energie, Beat hebt sie kurz; alle 25-45 s `planet` (weiche Kugel zieht vorbei und füllt im Vorbeiflug
 kurz alles in ihrer Farbe); `navcomputer.led_state()` liefert `flying` und das laufende Ereignis: KOMETENSCHAUER = `comet`-Läufer,
 ASTEROIDENFELD = graue Brocken schneller, WURMLOCH/SONNE/NEBEL = Tönung. `fire` (campfire, `led_state` level/blue): warmweißes

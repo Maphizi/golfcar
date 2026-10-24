@@ -32,7 +32,7 @@ log = logging.getLogger("leds")
 
 # Grundprogramm je Szene (ruhig; Specials kommen aus den Ereignissen der Szene über wled.apply_mode_async / led_state)
 SCENE_BASE = {
-    "navcomputer": "stars", "planets": "stars", "timejump": "timejump", "neonrace": "stars", "splash": "stars",
+    "navcomputer": "stars", "planets": "stars", "timejump": "timejump", "neonrace": "duel", "splash": "stars",
     "campfire": "fire",
     "blackhole": "vortex", "core": "vortex", "flux": "vortex", "pond": "vortex",
     "rooftop": "rain",
@@ -393,6 +393,8 @@ class LedStream:
             frame = self._error(now, dt, {"phase": phase, "k": k, "pct": k, "good": False}, bass, high, is_beat, live)
         elif program == "slots":
             frame = self._slots(now, dt, st, bass, high, is_beat, live)
+        elif program == "duel":                                   # Neonfahrt: zwei Felder im Beat
+            frame = self._duel(now, dt, st, bass, high, is_beat, live)
         elif program == "stars":
             frame = self._stars(now, dt, st, bass, high, is_beat, live)
         elif program == "panels":                                 # Orakel: je LED eine Tafelfarbe
@@ -660,6 +662,103 @@ class LedStream:
         if live < 0.5:
             pos = (math.sin(now * 0.15) * 0.5 + 0.5)
             frame = np.outer(np.exp(-((x - pos) / 0.06) ** 2) * (0.2 + 0.15 * math.sin(now * 1.2)), col)
+        return frame
+
+    DUEL_W = 10                                                   # Neonfahrt: Breite eines Felds in Ansteuerpunkten
+
+    def _duel(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Neonfahrt: zwei Felder aus je DUEL_W LEDs in Haupt- und Akzentfarbe des Bildschirms gehen auf jedem Beat ein Feld
+        nach links oder rechts und wechseln immer wieder die Richtung (frei). Ab und zu laufen sie im Gleichschritt, ab und zu
+        aufeinander zu: dann liegen sie übereinander und leuchten in einer dritten Farbe, gehen kurz als eines weiter und teilen
+        sich wieder (auseinander). Wo sie sich nur kreuzen, wird die Überlappung ebenfalls dritte Farbe. Dazwischen glimmt die
+        Kette ganz leicht in der Bildschirmfarbe."""
+        n = self.n
+        w = self.DUEL_W
+        d = getattr(self, "duel", None)
+        if d is None:
+            p0 = self.rng.uniform(0.2, 0.4) * n
+            p1 = self.rng.uniform(0.6, 0.8) * n
+            d = self.duel = {"pos": [p0, p1], "pos_s": [p0, p1], "dir": [1, -1], "mode": "free",
+                             "mode_beats": self.rng.randint(12, 24), "merge_beats": 0, "tick": 0.0}
+        a, b = self._base_col()
+        a = _saturate(np.asarray(a, dtype=float), 1.5)
+        b = _saturate(np.asarray(b, dtype=float), 1.5)
+        a = a * (255.0 / max(1.0, float(a.max())))                # voll ausgesteuert, die Helligkeit macht das Profil
+        b = b * (255.0 / max(1.0, float(b.max())))
+        ha, hb = float(_hue(a[None, :])[0]) / 360.0, float(_hue(b[None, :])[0]) / 360.0
+        if min(abs(ha - hb), 1 - abs(ha - hb)) < 0.12:            # zu ähnlich: Akzent drehen
+            hb = (ha + 0.45) % 1.0
+            b = _hsv(hb, 1.0, max(0.6, float(b.max()) / 255.0))
+        mid = (ha + hb) / 2.0 if abs(ha - hb) <= 0.5 else ((ha + hb) / 2.0 + 0.5) % 1.0
+        c3 = _hsv((mid + 0.5) % 1.0, 1.0, 1.0)                  # dritte Farbe: weit weg von beiden
+        step = w * (2 if now < self.boost_until else 1)
+        tick = is_beat or (now - self.last_beat > 2.0 and now - d["tick"] > 0.5)
+        if tick:
+            d["tick"] = now
+            pos, dirs = d["pos"], d["dir"]
+            d["mode_beats"] -= 1
+            if d["mode"] == "free":
+                for i in (0, 1):
+                    if self.rng.random() < 0.28:
+                        dirs[i] = -dirs[i]
+                if d["mode_beats"] <= 0:
+                    d["mode"] = self.rng.choice(("lock", "meet", "meet"))
+                    d["mode_beats"] = self.rng.randint(6, 12) if d["mode"] == "lock" else 40
+                    if d["mode"] == "lock":                       # Gleichschritt: beide in dieselbe Richtung, weg vom nahen Ende
+                        centre = (pos[0] + pos[1]) / 2.0
+                        dirs[0] = dirs[1] = 1 if centre < n / 2 else -1
+            elif d["mode"] == "lock":
+                if self.rng.random() < 0.12:
+                    dirs[0] = dirs[1] = -dirs[0]
+                if d["mode_beats"] <= 0:
+                    d["mode"], d["mode_beats"] = "free", self.rng.randint(12, 24)
+            elif d["mode"] == "meet":                             # aufeinander zu
+                lo, hi = (0, 1) if pos[0] <= pos[1] else (1, 0)
+                dirs[lo], dirs[hi] = 1, -1
+                if abs(pos[1] - pos[0]) <= 2 * step:              # treffen: übereinander, dritte Farbe
+                    m = (pos[0] + pos[1]) / 2.0
+                    pos[0] = pos[1] = m
+                    d["mode"] = "merged"
+                    d["merge_beats"] = self.rng.randint(2, 5)
+                    dirs[0] = dirs[1] = self.rng.choice((1, -1))
+                elif d["mode_beats"] <= 0:
+                    d["mode"], d["mode_beats"] = "free", self.rng.randint(12, 24)
+            elif d["mode"] == "merged":                           # kurz als eines weiter, dann teilen
+                d["merge_beats"] -= 1
+                if d["merge_beats"] <= 0:
+                    dirs[0], dirs[1] = -1, 1
+                    d["mode"], d["mode_beats"] = "free", self.rng.randint(14, 26)
+                    d["split_free"] = 3                           # die ersten Beats nach dem Teilen nicht umdrehen
+            if d.get("split_free", 0) > 0:
+                d["split_free"] -= 1
+                if d["mode"] == "free":
+                    dirs[0], dirs[1] = (-1, 1) if pos[0] <= pos[1] else (1, -1)
+            if d["mode"] == "merged":                             # verschmolzen: beide genau gleich
+                dirs[1] = dirs[0]
+            for i in (0, 1):
+                nxt = pos[i] + dirs[i] * step
+                if nxt < 0 or nxt > n - w:                         # an den Enden umkehren
+                    dirs[i] = -dirs[i]
+                    if d["mode"] == "merged":
+                        dirs[1 - i] = dirs[i]
+                    nxt = pos[i] + dirs[i] * step
+                pos[i] = min(max(nxt, 0.0), float(n - w))
+        for i in (0, 1):                                           # kurz eingerastet (~0,1 s)
+            d["pos_s"][i] += (d["pos"][i] - d["pos_s"][i]) * min(1.0, dt * 14.0)
+        base = (a * 0.03 + b * 0.02) * (live * (0.7 + 0.3 * self.bass_s) + (1.0 - live) * 0.6)
+        frame = np.tile(base, (n, 1))
+        lvl = (0.85 + 0.15 * self.bar_lift) * live + (1.0 - live) * 0.45
+        idx = np.arange(n)
+        m0 = (idx >= int(round(d["pos_s"][0]))) & (idx < int(round(d["pos_s"][0])) + w)
+        m1 = (idx >= int(round(d["pos_s"][1]))) & (idx < int(round(d["pos_s"][1])) + w)
+        if self.reverse:
+            m0, m1 = m0[::-1], m1[::-1]
+        if d["mode"] == "merged":
+            frame[m0 | m1] = c3 * lvl
+        else:
+            frame[m0] = a * lvl
+            frame[m1] = b * lvl
+            frame[m0 & m1] = c3 * lvl                              # beim Kreuzen: Überlappung in der dritten Farbe
         return frame
 
     def _stars(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:

@@ -1260,7 +1260,9 @@ verschluckt, die Umkehrung ist eine Druckwelle nach außen. Taxistand, Orakel, U
 und Marktplatz atmen langsam mit zwei wandernden Wolken, Jahreszeit und Epoche färben die Kette, Ereignisse laufen als Welle
 durch. Auf der Dachterrasse regnet es von hinten nach vorne, das Wetter färbt, Blitze schlagen zweimal ein und grollen nach,
 Feuerwerk geht in Blüten auf, der Stromausfall macht alles aus und lässt es zögernd zurückkommen. Black Ice, Paradoxon und
-Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. Beim Orakel stehen die acht Tafeln unter dem Kopf auf der Kette: jede LED bekommt der Reihe nach eine Tafelfarbe (Rot, Orange,
+Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. In der Neonfahrt gehen zwei Felder aus je zehn LEDs in den beiden Hauptfarben des Bildschirms auf jedem Beat ein Feld nach
+links oder rechts und wechseln immer wieder die Richtung; ab und zu laufen sie im Gleichschritt, ab und zu aufeinander zu,
+liegen dann übereinander und leuchten in einer dritten Farbe, gehen kurz als eines weiter und teilen sich wieder. Beim Orakel stehen die acht Tafeln unter dem Kopf auf der Kette: jede LED bekommt der Reihe nach eine Tafelfarbe (Rot, Orange,
 Gelb, Grün, Türkis, Blau, Violett, Magenta, dann von vorne), immer nur ein Punkt je Farbe, und sie leuchtet genau dann, wenn ihre
 Tafel im Beat-Muster an ist. Bei HAL 3000 ziehen dunkel- und hellrote Felder wie die
 Zellen des Korridors langsam und immer in dieselbe Richtung vorbei, ein Viertel dunkler als der Rest, und ab und zu kommt von einem Ende ein einzelnes helles Feld, das im Takt Schritt für Schritt rund eine Minute
