@@ -1251,13 +1251,13 @@ durch. Auf der Dachterrasse regnet es von hinten nach vorne, das Wetter färbt, 
 Feuerwerk geht in Blüten auf, der Stromausfall macht alles aus und lässt es zögernd zurückkommen. Black Ice, Paradoxon und
 Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. Bei HAL 3000 ziehen dunkel- und hellrote Felder wie die
 Zellen des Korridors langsam und immer in dieselbe Richtung vorbei, ein Viertel dunkler als der Rest, und ab und zu kommt von einem Ende ein einzelnes helles Feld, das im Takt Schritt für Schritt rund eine Minute
-über die ganze Kette wandert, mal von vorne, mal von hinten, mit gelegentlichem Schritt zurück. Die Slotmaschinen leuchten wie ein Casino-Eingang in den Lichtfarben des
-gewählten Automaten: kurze Blöcke aus je drei Ansteuerpunkten in Farbe A hell, Farbe A gedimmt und Farbe B hell, kein Weiß, das Muster rückt auf jedem Beat genau einen Block
-weiter, 1, 2, 3, 4, weich eingerastet, mal vor, mal zurück, beim Drehen läuft es schnell, alle paar Beats rücken die Farben
-weiter; los geht es mit dem Lauflicht, und alle ein, zwei Minuten wechseln sich Lauflicht und Markise ab: ein Ansteuerpunkt an, der nächste aus, ganz mechanisch und ohne
-Flimmern, auf jedem Beat springt das Muster hart um einen Punkt weiter (an wird aus, aus wird an), beim Drop kommt eine neue Farbe, dann
-geht es weich zurück zur Markise; kleiner Gewinn blitzt zweimal, großer Gewinn schickt einen weißen Lauf, Jackpot ist Gold-Weiß-Stroboskop mit Funkeln;
-als Specials läuft ab und zu ein einzelner Punkt durch, der bei anziehendem Beat überholt wird, oder zwei Läufer kreuzen sich. Im Systemfehler
+über die ganze Kette wandert, mal von vorne, mal von hinten, mit gelegentlichem Schritt zurück. Die Slotmaschinen haben ein mechanisches Lauflicht in den Lichtfarben des
+gewählten Automaten: ein Ansteuerpunkt an, der nächste aus, auf jedem Beat springt das Muster hart um einen Punkt weiter (an wird aus,
+aus wird an), alle paar Takte kommt auf dem Beat eine andere Farbe. Specials gibt es nur beim Drop und beim Gewinn: für ein paar Takte
+die Casino-Markise (kurze Blöcke aus je drei Punkten in Farbe A hell, Farbe A gedimmt und Farbe B hell, kein Weiß, rückt je Beat einen
+Block weiter, mal vor, mal zurück, beim Drehen schnell), oder ein einzelner Punkt läuft durch und wird bei anziehendem Beat überholt,
+oder zwei Läufer kreuzen sich; kleiner Gewinn blitzt zweimal, großer Gewinn schickt einen weißen Lauf, Jackpot ist Gold-Weiß-Stroboskop
+mit Funkeln. Im Systemfehler
 ist das Board ein Kampf zwischen Grün (das System) und Rot (der Fehler), sonst nichts: Die Front wandert in Blasen über die
 Kette, je nach Phase gewinnt Rot (Zusammenbruch, Alarm) oder Grün (Erholung), jeder Beat ist ein Vorstoß der stärkeren Seite,
 der Bass heizt den Kampf an, umkämpfte Stellen sirren rot-grün. Und es sieht kaputt aus, aber träge statt hektisch: Abschnitte von ein paar LEDs

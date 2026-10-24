@@ -113,6 +113,7 @@ class LedStream:
         self.beat_glow = 0.0
         self.last_beat = 0.0
         self.last_drop = 0.0
+        self.t_first = 0.0                                        # erstes Bild (Drop-Erkennung braucht erst Anlauf)
         self.beats = 0
         self.flash = 0.0                                          # Drop/Ereignis-Blitz 0..1
         self.flash_col = WHITE.copy()
@@ -140,14 +141,14 @@ class LedStream:
         self.mq_flip_at = 0.0
         # zweites Muster "Lauflicht": ein Block an, einer aus, im Wechsel; hüpft je Beat einen Block weiter, Drop = Richtung
         # umkehren und meist neue Farbe; wechselt sich mit der Markise ab (mq_mode 0 Markise, 1 Lauflicht, mq_mix = Überblendung)
-        self.mq_mode = 1                                          # beginnt mit dem Lauflicht
+        self.mq_mode = 1                                          # Basis ist das Lauflicht; Markise nur als Special
         self.mq_mix = 1.0
-        self.mq_mode_at = time.monotonic() + self.rng.uniform(45.0, 90.0)
+        self.mq_marq_until = 0.0                                  # Markise läuft bis dahin (nach Drop oder Gewinn)
+        self.sp_launch = False                                    # Läufer-Special beim nächsten Bild starten (Drop)
         self.chase_ci = 0                                         # Lauflichtfarbe: 0 A, 1 B, 2 A mit gedrehtem Farbton
         self.chase_hue = 0.0
         self.ch_step = 0                                          # Lauflicht: Schritt in Ansteuerpunkten, hart je Beat
         self.ch_tick = 0.0
-        self.sp_next = time.monotonic() + self.rng.uniform(15.0, 30.0)   # Specials: einzelner Läufer, Überholer, Kreuzung
         self.base = SCENE_BASE.get(scene, "")
         self.specials: list[dict] = []                            # aktive Specials (kind, t0, len, col, ...)
         self.tint = None                                          # Grundfarbe überschrieben (Wetter, Jahreszeit, blaues Feuer)
@@ -336,6 +337,8 @@ class LedStream:
         if now < self.next_send:
             return
         self.next_send = now + 1.0 / self.fps
+        if not self.t_first:
+            self.t_first = now
         self._ensure_arrays()
         dt = 1.0 / self.fps
         live = 0.0 if getattr(f, "silent", True) else 1.0
@@ -363,7 +366,7 @@ class LedStream:
                 self.scr_acc += (ta - self.scr_acc) * min(1.0, dt * 1.5)
             if self.base == "glitch":
                 self.c_red, self.c_green = self.scr_col, self.scr_acc
-        if live and self.e_fast > 1.5 * self.energy + 0.15 and self.energy > 0.1 and now - self.last_drop > 12.0:
+        if live and self.e_fast > 1.5 * self.energy + 0.15 and self.energy > 0.1 and now - self.last_drop > 12.0 and now - self.t_first > 5.0:
             self.last_drop = now
             self.flash = 0.55                                     # Drop: ein weicher Aufheller, kein Stroboskop
             self.flash_col = self.col3
@@ -411,11 +414,11 @@ class LedStream:
 
     # -- Programme -----------------------------------------------------------------------------------------------
     def _slots(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
-        """Casino-Markise wie ein Vegas-Eingang: Blöcke aus je drei Ansteuerpunkten in derselben Farbe (Farbe A hell, Farbe A gedimmt, Farbe B hell im Wechsel, kein Weiß), alle an, nur die Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat weiter (1 2 3 4), weich eingerastet, mal vor, mal zurück,
-        beim Drehen läuft es schnell von selbst; alle paar Beats wechseln die Farben durch, ab und zu kehrt die Richtung um. Zweites Muster
-        (Lauflicht, beginnt damit und wechselt sich alle 45-90 s mit der Markise ab, weich überblendet): ein Ansteuerpunkt an, der nächste aus, ganz mechanisch
-        ohne Gleiten und Flimmern; auf jedem Beat springt das Muster hart einen Punkt weiter (an wird aus, aus wird an), beim Drop kommt
-        eine neue Farbe. Gewinn: klein = zweimal
+        """Casino-Lauflicht als Basis: ein Ansteuerpunkt an, der nächste aus, ganz mechanisch ohne Gleiten und Flimmern; auf jedem Beat
+        springt das Muster hart einen Punkt weiter (an wird aus, aus wird an), in den Lichtfarben des Automaten, alle paar Takte auf dem Beat
+        eine andere Farbe. Specials nur beim Drop und beim Gewinn: die Markise (Blöcke aus je drei Ansteuerpunkten: Farbe A hell, Farbe A
+        gedimmt, Farbe B hell, kein Weiß, rückt einen Block je Beat, mal vor, mal zurück, beim Drehen schnell) für ein paar Takte, oder ein
+        einzelner Läufer, der bei anziehendem Beat überholt wird, oder zwei Läufer, die sich kreuzen. Gewinn: klein = zweimal
         Blitzen, groß = heller Lauf von vorne, Jackpot = Gold/Weiß-Stroboskop und Funkeln."""
         n = self.n
         x = self._idx()
@@ -430,17 +433,24 @@ class LedStream:
             self.marquee = [a, mid, b]
         age = float(st.get("win_age", 0.0))
         is_drop = 0.0 < now - self.last_drop <= dt * 1.5         # update() hat gerade einen Drop erkannt
-        if now >= self.mq_mode_at and win == 0 and not spinning:  # Muster wechseln: Markise <-> Lauflicht
-            self.mq_mode = 1 - self.mq_mode
-            self.mq_mode_at = now + self.rng.uniform(45.0, 90.0)
-        self.mq_mix += (float(self.mq_mode) - self.mq_mix) * min(1.0, dt / 1.5)
-        if is_drop:                                               # Drop: Richtung umkehren, meist neue Lauflichtfarbe
+        if win >= 2 and age < 0.1:                                # großer Gewinn/Jackpot: Markise als Special dazu
+            self.mq_marq_until = max(self.mq_marq_until, now + (7.0 if win >= 3 else 4.0))
+        if is_drop:                                               # Drop: neue Farbe, dazu ein Special (Markise oder Läufer)
             self.mq_dir *= -1.0
             self.mq_flip_at = now + self.rng.uniform(6.0, 14.0)
             self.chase_ci = (self.chase_ci + self.rng.choice((1, 2))) % 3
             self.chase_hue = self.rng.uniform(0.12, 0.5)
+            if self.rng.random() < 0.5 or self.runners:
+                self.mq_marq_until = now + self.rng.uniform(6.0, 12.0)   # Markise für ein paar Takte
+            else:
+                self.sp_launch = True
+        self.mq_mode = 0 if now < self.mq_marq_until else 1
+        self.mq_mix += (float(self.mq_mode) - self.mq_mix) * min(1.0, dt / 0.8)
         if is_beat:
             self.mq_beats += 1
+            if self.mq_beats % 8 == 0 and self.rng.random() < 0.5:   # ab und zu auf dem Beat eine andere Lauflichtfarbe
+                self.chase_ci = (self.chase_ci + self.rng.choice((1, 2))) % 3
+                self.chase_hue = self.rng.uniform(0.12, 0.5)
             if self.mq_beats % 4 == 0:                            # alle vier Beats die Farben weiterrücken
                 self.mq_rot += 1
             if self.mq_beats % 16 == 0 or (bass > 0.8 and self.rng.random() < 0.15):
@@ -490,10 +500,10 @@ class LedStream:
         gold = self.marquee[0]
         white = _saturate(self.marquee[0] * 0.7 + WHITE * 0.3, 1.2)   # Glanzlicht: aufgehellte Hauptfarbe statt Weiß
         acc = self.marquee[2]
-        # Specials: ab und zu läuft ein einzelner heller Punkt durch; wird der Beat dabei kräftiger, überholt ihn ein
+        # Specials (nur beim Drop): ein einzelner heller Punkt läuft durch; wird der Beat dabei kräftiger, überholt ihn ein
         # zweiter in der Akzentfarbe; oder zwei Läufer von beiden Enden kreuzen sich in der Mitte
-        if now >= self.sp_next and win == 0 and not spinning:
-            self.sp_next = now + self.rng.uniform(20.0, 45.0)
+        if self.sp_launch and win == 0 and not spinning and not self.runners:
+            self.sp_launch = False
             d = self.rng.choice((1.0, -1.0))
             spd = self.rng.uniform(0.2, 0.35)                     # Anteil der Kette je Sekunde
             if self.rng.random() < 0.7:

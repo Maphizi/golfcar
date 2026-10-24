@@ -411,16 +411,16 @@ ASTEROIDENFELD = graue Brocken schneller, WURMLOCH/SONNE/NEBEL = Tönung. `fire`
 Fackellicht (255,125,30; auf LEDs wirkt erst das warmweiß), träges Glimmen je LED (`embers`), Wabern `gust`, Helligkeit mit der Feuerstufe, bei `blue` > 0 blau. `vortex` (blackhole, core, flux, pond): Punkte driften von beiden Enden zur Mitte, Mitte glimmt
 mit dem Bass. `breathe` (taxi, oracle, clocktower, woodeye, trip, hearttree, square): langsames Atmen + zwei wandernde Wolken.
 `rain` (rooftop): Tropfen von hinten nach vorne. `glitch` (blackice, paradox, overdose): das Störprogramm `_error` in den
-Themenfarben (`c_red`/`c_green` aus col/col2) mit eigenem 40-s-Phasenzyklus. `error` = Systemfehler (oben beschrieben). `slots` (`slots.py` `led_state`, alle vier Automaten): Casino-Markise `_slots`:
-Blöcke (`block` 3 Ansteuerpunkte) in Farbe A hell / Farbe A gedimmt (0,35) / Farbe B hell des gewählten Automaten (`colors` aus
-`slots_themes.py`, `_saturate` 1.5, kein Weiß; Glanzlichter = aufgehellte Farbe A), alle an, halbe Helligkeit (`bri *= 0.5`, Profile bri x0,5), Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat (`mq_target`/`mq_pos_s`, weich
-eingerastet; ohne Beats alle 0,6 s; Drehen = 4 Blöcke/s von selbst), Richtung `mq_dir` kehrt alle 16 Beats, bei kräftigem Bass
-oder alle 6-14 s um, Farben rücken alle 4 Beats (`mq_rot`); zweites Muster Lauflicht (`mq_mode` 1, Start damit, Wechsel alle `mq_mode_at` 45-90 s,
-Überblendung `mq_mix` 1,5 s): ein Ansteuerpunkt an, der nächste aus, konstant hell, `ch_step` springt hart je Beat (ohne Beats alle
-0,6 s) um einen Punkt (an <-> aus), Drop (`is_drop` aus `last_drop`) = `mq_dir` umkehren und neue Farbe `chase_ci` (0 Farbe A, 1 Farbe B,
-2 Farbe A mit Farbton + `chase_hue`); `mq_pos` läuft modulo 6 Blöcke; Gewinn 1 = zweimal Gold, 2 = weißer Lauf von vorne + schnell, >= 3 =
-Gold/Weiß-Strobo 3 s + Funkeln; Specials `sp_next` 20-45 s: `runner` (ein Punkt läuft durch, zieht der Beat an, überholt ein
-zweiter in der Akzentfarbe mit 1,9x), `cross` (zwei Läufer kreuzen sich), Markise derweil 60 %. Specials
+Themenfarben (`c_red`/`c_green` aus col/col2) mit eigenem 40-s-Phasenzyklus. `error` = Systemfehler (oben beschrieben). `slots` (`slots.py` `led_state`, alle vier Automaten): Casino-Lauflicht `_slots` als Basis:
+ein Ansteuerpunkt an, der nächste aus, konstant hell, `ch_step` springt hart je Beat (ohne Beats alle 0,6 s) um einen Punkt (an <-> aus),
+Farbe `chase_ci` (0 Farbe A, 1 Farbe B, 2 Farbe A mit Farbton + `chase_hue`; `colors` aus `slots_themes.py`, `_saturate` 1.5, kein Weiß)
+wechselt alle 8 Beats zu 50 % auf dem Beat und bei jedem Drop (`is_drop` aus `last_drop`). Specials nur beim Drop (je 50 %) und Gewinn:
+Markise (`mq_mode` 0 bis `mq_marq_until`, Drop 6-12 s, Gewinn 2 = 4 s, >= 3 = 7 s, Überblendung `mq_mix` 0,8 s): Blöcke (`block` 3
+Ansteuerpunkte) Farbe A hell / Farbe A gedimmt (0,35) / Farbe B hell, rückt einen Block je Beat (`mq_target`/`mq_pos_s`, weich eingerastet;
+Drehen = 4 Blöcke/s), Richtung `mq_dir` kehrt alle 16 Beats, bei kräftigem Bass, alle 6-14 s und beim Drop um, Farben rücken alle 4
+Beats (`mq_rot`), `mq_pos` modulo 6 Blöcke; oder Läufer (`sp_launch`): `runner` (ein Punkt läuft durch, zieht der Beat an, überholt ein
+zweiter in der Akzentfarbe mit 1,9x), `cross` (zwei Läufer kreuzen sich), Lauflicht derweil 60 %. Gewinn 1 = zweimal Gold, 2 = weißer
+Lauf von vorne + Markise schnell, >= 3 = Gold/Weiß-Strobo 3 s + Funkeln (Glanzlichter = aufgehellte Farbe A). Specials
 (`_add`/`_apply_specials`, max. 4 gleichzeitig) aus den Ereignis-Profilen der Szenen (`wled.apply_mode_async` -> `event()`):
 *throw* = `swallow` (Punkt zur Mitte, Aufleuchten), *eject/emp/overload/discharge* = `burst` (Druckwelle von der Mitte),
 *lightning/strike/storm* = `lightning` (zwei Blitze, Grollen), *fireworks* = Blüten, *blackout* = aus und zögernd zurück,
