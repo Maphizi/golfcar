@@ -435,12 +435,13 @@ Stroboskop nur als Special: `timejump`: Farbfronten
 jede überdeckt die vorige (weiche Kante), Beat = kleiner Schub; `timejump_jump` -> `boost_until` 3 s Volldampf (14x, Fronten alle
 0,25-0,5 s in Elektroblau/Weiß, Kometen, Flackern), danach wieder mellow. `drive` (neonrace, `neonrace.led_state()`: `dist`,
 `speed`, `driving`, `nitro`, `honk_t0`, `near_t0`, `district_t0`/`district_len`, `police_t0`/`police_len`): Straße, Versatz =
-`dist` x `DRIVE_K` 100 LEDs, Laternen alle `LAMP_EVERY` 26 LEDs mit Lichtkegel (bei Nitro Streifen nach vorne), Neonschilder 6-15
-LEDs in einer Straßenkarte (`drv["sign"]`, Länge 2x Kette) in Haupt-/Akzentfarbe/Bernstein, Farbton +0,08 je Beat, Grundglimmen
-7-10 % Bildschirmfarbe; darüber die Felder aus `_duel` (hell); Hupe zweimal Aufblinken, Beinahe-Treffer weißer Streifen 0,4 s,
-Viertelwechsel Lichtwand von vorne nach hinten über `district_len`, Polizeidrohnen rot-blauer Blinker alle 4 s von hinten nach
-vorne; `event()` ignoriert in `drive` alle `neonrace_*`-Profile. `duel`: zwei Felder à `DUEL_W` 10 LEDs in Bildschirm-Haupt- und Akzentfarbe (voll ausgesteuert, Akzent gedreht, wenn zu
-ähnlich), je Beat ein Feld weiter (kurz eingerastet, Schub = 2 Felder), Modi in `duel["mode"]`: `free` (Richtung je Beat zu 28 %
+`dist` x `DRIVE_K` 30 LEDs (ruhig, ~18 LEDs/s bei Reisetempo), Laternen alle `LAMP_EVERY` 34 LEDs mit Lichtkegel (bei Nitro
+Streifen nach vorne), Neonschilder 6-15 LEDs in einer Straßenkarte (`drv["sign"]`, Länge 2x Kette) in Haupt-/Akzentfarbe/Bernstein,
+Farbton +0,06 alle 4 Beats (weich), sanftes Flackern; Grundglimmen 7-10 % Bildschirmfarbe; darüber die Felder aus `_duel` (hell,
+hier nur jeden `DUEL_EVERY` 2. Beat um `DUEL_STEP` 5 LEDs, gleitend ~0,4 s); Hupe zwei sanfte Aufheller, Beinahe-Treffer weißer
+Streifen 1,2 s, Viertelwechsel Lichtwand von vorne nach hinten über `district_len`, Polizeidrohnen rot-blauer Blinker (1,6 Hz) alle
+7 s in 5 s von hinten nach vorne; `event()` ignoriert in `drive` alle `neonrace_*`-Profile. `duel`: zwei Felder à `DUEL_W` 10 LEDs in Bildschirm-Haupt- und Akzentfarbe (voll ausgesteuert, Akzent gedreht, wenn zu
+ähnlich), je `DUEL_EVERY` Beats `DUEL_STEP` LEDs weiter (gleitend, Schub = doppelt), Modi in `duel["mode"]`: `free` (Richtung je Beat zu 28 %
 gewechselt, 12-24 Beats), `lock` Gleichschritt 6-12 Beats, `meet` aufeinander zu -> `merged`: übereinander in dritter Farbe (Farbton
 weit weg von beiden), 2-5 Beats als eines weiter, dann teilen (3 Beats auseinander); Kreuzen = Überlappung dritte Farbe; Rest 3 %
 Glimmen. `stars` (navcomputer, planets, splash): wenige Sterne ziehen von vorne nach

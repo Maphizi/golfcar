@@ -1267,10 +1267,10 @@ Drehlicht, Säure mit flackernden Röhren, Überlast mit durchbrennenden Häuser
 Notstrom und Flugwarnlichtern. Das Wetter färbt (Regenschimmer, Nebel, Säure, glühende Asche), der Stromausfall geht blockweise,
 der EMP als Welle; ab und zu fliegt ein Auto oder eine Polizeidrohne vorbei. Geblitzt wird nur beim Blitzschlag und höchstens
 alle 30 Sekunden bei einem Drop. Black Ice, Paradoxon und
-Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. In der Neonfahrt ist die Kette die Straße: Laternen und Neonschilder ziehen genau so schnell von vorne nach hinten vorbei, wie
-der Wagen fährt, und stehen still, wenn er hält; die Schilder wechseln im Beat die Farbe, bei Nitro werden die Laternen zu
+Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. In der Neonfahrt ist die Kette die Straße: Laternen und Neonschilder ziehen ruhig von vorne nach hinten vorbei, im Tempo des
+Wagens, aber deutlich gemächlicher, und stehen still, wenn er hält; die Schilder wechseln im Beat die Farbe, bei Nitro werden die Laternen zu
 Lichtstreifen, die Hupe blinkt zweimal, ein Beinahe-Treffer huscht als weißer Streifen vorbei, beim Viertelwechsel läuft eine
-Lichtwand durch, und Polizeidrohnen überholen rot-blau von hinten. Darüber gehen zwei helle Felder aus je zehn LEDs in den beiden Hauptfarben des Bildschirms auf jedem Beat ein Feld nach
+Lichtwand durch, und Polizeidrohnen überholen rot-blau von hinten. Darüber gleiten zwei helle Felder aus je zehn LEDs in den beiden Hauptfarben des Bildschirms jeden zweiten Beat ein halbes Feld nach
 links oder rechts und wechseln immer wieder die Richtung; ab und zu laufen sie im Gleichschritt, ab und zu aufeinander zu,
 liegen dann übereinander und leuchten in einer dritten Farbe, gehen kurz als eines weiter und teilen sich wieder. Der Herzbaum schlägt auf der Kette: vorne hell, nach hinten dunkler, in den Farben der Jahreszeit ohne Weißstich, ein ruhiger
 Doppelschlag etwa sechzigmal pro Minute läuft von vorne nach hinten und klingt aus; ab und zu und wenn die Wurzeln leuchten

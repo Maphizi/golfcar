@@ -724,8 +724,10 @@ class LedStream:
             frame = np.outer(np.exp(-((x - pos) / 0.06) ** 2) * (0.2 + 0.15 * math.sin(now * 1.2)), col)
         return frame
 
-    LAMP_EVERY = 26                                               # Neonfahrt: Abstand der Straßenlaternen in LEDs
-    DRIVE_K = 100.0                                               # LEDs je Streckeneinheit der Szene (uDist)
+    LAMP_EVERY = 34                                               # Neonfahrt: Abstand der Straßenlaternen in LEDs
+    DRIVE_K = 30.0                                                # LEDs je Streckeneinheit der Szene (uDist): ruhig, ~18 LEDs/s bei Reisetempo
+    DUEL_EVERY = 2                                                # Felder gehen nur jeden 2. Beat
+    DUEL_STEP = 5                                                 # ... und dann nur ein halbes Feld weit
 
     def _drive(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
         """Neonfahrt: die Kette ist die Straße, an der man vorbeifährt. Straßenlaternen (alle LAMP_EVERY LEDs, Lichtkegel) und
@@ -759,8 +761,10 @@ class LedStream:
         nitro = float(st.get("nitro", 0.0)) if st else 0.0
         off = dist * self.DRIVE_K
         if is_beat:
-            dv["hue_step"] += 0.08
-        dv["hue_s"] += (dv["hue_step"] - dv["hue_s"]) * min(1.0, dt * 8.0)
+            dv["beats"] = dv.get("beats", 0) + 1
+            if dv["beats"] % 4 == 0:
+                dv["hue_step"] += 0.06                            # Schilder wechseln die Farbe nur alle 4 Beats, weich
+        dv["hue_s"] += (dv["hue_step"] - dv["hue_s"]) * min(1.0, dt * 1.2)
         # Straße: Grundglimmen in der Bildschirmfarbe
         frame = np.tile(main * (0.07 + 0.03 * self.bass_s), (n, 1))
         # Neonschilder (Straßenkoordinate u = Position - Versatz)
@@ -771,12 +775,12 @@ class LedStream:
         pal = np.array([_hsv((hm + dv["hue_s"]) % 1.0, 1.0, 1.0), _hsv((ha + dv["hue_s"]) % 1.0, 1.0, 1.0),
                         _hsv((0.09 + dv["hue_s"] * 0.3) % 1.0, 1.0, 1.0)])
         m = sc >= 0
-        flick = 0.85 + 0.15 * np.sin(now * 9.0 + uu * 0.7)
+        flick = 0.92 + 0.08 * np.sin(now * 2.2 + uu * 0.7)
         frame[m] = pal[sc[m]] * (0.55 + 0.25 * self.bass_s) * flick[m][:, None]
         # Laternen mit Lichtkegel; bei Nitro ziehen sie sich zu Streifen
         ph = (idx - off) % self.LAMP_EVERY
         dd = ph - self.LAMP_EVERY / 2.0
-        trail = 2.0 + 22.0 * nitro + 4.0 * speed
+        trail = 2.0 + 14.0 * nitro + 2.0 * speed
         lamp = np.exp(-(dd / 1.6) ** 2) + 0.25 * np.exp(-(dd / 5.0) ** 2) + np.where(dd < 0, 0.45 * np.exp(dd / trail), 0.0)
         lamp_col = np.clip(acc * 0.5 + np.array([255.0, 200.0, 140.0]) * 0.5, 0, 255)
         frame += np.outer(np.clip(lamp, 0.0, 1.2) * (0.7 if driving else 0.45), lamp_col)
@@ -786,11 +790,12 @@ class LedStream:
         frame[bright] = duel[bright]
         # Specials
         t_h = now - float(st.get("honk_t0", -100.0)) if st else 99.0
-        if 0.0 <= t_h < 0.5 and (t_h < 0.12 or 0.25 < t_h < 0.37):
-            frame = frame * 1.6 + main * 0.25
+        if 0.0 <= t_h < 0.9:
+            k = math.sin(math.pi * min(1.0, t_h / 0.45)) if t_h < 0.45 else math.sin(math.pi * (t_h - 0.45) / 0.45) * 0.7
+            frame = frame * (1.0 + 0.4 * k) + main * 0.12 * k
         t_n = now - float(st.get("near_t0", -100.0)) if st else 99.0
-        if 0.0 <= t_n < 0.4:
-            pos = t_n / 0.4
+        if 0.0 <= t_n < 1.2:
+            pos = t_n / 1.2
             x = idx / max(1, n - 1)
             frame += np.outer(np.exp(-((x - pos) / 0.03) ** 2), np.array([230.0, 235.0, 255.0]))
         t_d = now - float(st.get("district_t0", -100.0)) if st else 99.0
@@ -802,11 +807,11 @@ class LedStream:
             frame = frame * (1.0 - 0.5 * np.exp(-((x - pos) / 0.08) ** 2))[:, None] + np.outer(wall, acc * 0.6 + WHITE * 0.3)
         t_p = now - float(st.get("police_t0", -100.0)) if st else 99.0
         if 0.0 <= t_p < float(st.get("police_len", 14.0) if st else 14.0):
-            u = (t_p % 4.0) / 2.5                                 # alle 4 s überholt einer, 2,5 s von hinten nach vorne
+            u = (t_p % 7.0) / 5.0                                 # alle 7 s überholt einer, 5 s von hinten nach vorne
             if u <= 1.0:
                 pos = 1.0 - u
                 px = int(round(pos * (n - 1)))
-                red = (now * 4.0) % 1.0 < 0.5
+                red = (now * 1.6) % 1.0 < 0.5
                 for o in range(-2, 3):
                     j = px + o
                     if 0 <= j < n:
@@ -842,8 +847,10 @@ class LedStream:
             b = _hsv(hb, 1.0, max(0.6, float(b.max()) / 255.0))
         mid = (ha + hb) / 2.0 if abs(ha - hb) <= 0.5 else ((ha + hb) / 2.0 + 0.5) % 1.0
         c3 = _hsv((mid + 0.5) % 1.0, 1.0, 1.0)                  # dritte Farbe: weit weg von beiden
-        step = w * (2 if now < self.boost_until else 1)
-        tick = is_beat or (now - self.last_beat > 2.0 and now - d["tick"] > 0.5)
+        step = self.DUEL_STEP * (2 if now < self.boost_until else 1)
+        if is_beat:
+            d["beat_n"] = d.get("beat_n", 0) + 1
+        tick = (is_beat and d["beat_n"] % self.DUEL_EVERY == 0) or (now - self.last_beat > 2.0 and now - d["tick"] > 1.0)
         if tick:
             d["tick"] = now
             pos, dirs = d["pos"], d["dir"]
@@ -895,7 +902,7 @@ class LedStream:
                     nxt = pos[i] + dirs[i] * step
                 pos[i] = min(max(nxt, 0.0), float(n - w))
         for i in (0, 1):                                           # kurz eingerastet (~0,1 s)
-            d["pos_s"][i] += (d["pos"][i] - d["pos_s"][i]) * min(1.0, dt * 14.0)
+            d["pos_s"][i] += (d["pos"][i] - d["pos_s"][i]) * min(1.0, dt * 4.0)   # weich gleiten (~0,4 s)
         base = (a * 0.03 + b * 0.02) * (live * (0.7 + 0.3 * self.bass_s) + (1.0 - live) * 0.6)
         frame = np.tile(base, (n, 1))
         lvl = (0.85 + 0.15 * self.bar_lift) * live + (1.0 - live) * 0.45
