@@ -58,6 +58,30 @@ CHORUS_SECONDS = 4.0
 SPORE_SECONDS = 4.0
 
 
+def _iris_colors(eyes) -> list:
+    """Leuchtfarbe der acht Irisbilder (Atlas-Reihe 1, Zellen 8-15): Mittel der hellsten, satten Pixel, Grauanteil raus."""
+    fallback = [[40, 220, 120], [255, 170, 30], [80, 160, 255], [200, 60, 255], [255, 60, 60], [40, 255, 200], [255, 220, 60], [255, 90, 180]]
+    if eyes is None:
+        return fallback
+    try:
+        h, w = eyes.shape[:2]
+        cw, ch = w // 8, h // 3
+        out = []
+        for i in range(8):
+            cell = eyes[ch:2 * ch, i * cw:(i + 1) * cw].astype(float)
+            al = cell[..., 3] / 255.0
+            rgb = cell[..., :3]
+            sat = rgb.max(axis=2) - rgb.min(axis=2)
+            score = sat * al
+            sel = score >= np.quantile(score[al > 0.3], 0.85) if (al > 0.3).any() else al > 0
+            c = rgb[sel].mean(axis=0)
+            c = np.clip((c - c.min()) / max(1.0, c.max() - c.min()), 0, 1) * 255.0
+            out.append([int(v) for v in c])
+        return out
+    except Exception:
+        return fallback
+
+
 def _load_rgba(path) -> np.ndarray | None:
     """Bild als RGBA (Zeile 0 unten, für GL) aus dem npy-Cache (visualizers.engine.images)."""
     return images.load_rgba(path)
@@ -70,6 +94,9 @@ class Controller:
         self.blank = np.zeros((4, 4, 4), dtype=np.uint8)
         self.scene = _load_rgba(ASSETS / "scene.png")
         self.eyes = _load_rgba(ASSETS / "eyes.png")
+        self.iris_cols = _iris_colors(self.eyes)                # Farbe je Irisbild (Zellen 8-15) für das LED-Board
+        self.blink_k = 1.0
+        self.wave_t0 = -100.0
         self.figs = _load_rgba(ASSETS / "figures.png")
         self.frogs_tex = _load_rgba(ASSETS / "frogs.png")
         self.dive_tex = _load_rgba(ASSETS / "dive.png")
@@ -293,6 +320,7 @@ class Controller:
             i = self.rng.randrange(N_GNOMES)
             if self.gnome_pose[i] == G_PEEK:
                 self._gnome_set(i, G_WAVE, now)
+                self.wave_t0 = now
 
     def _gnome_pick(self) -> None:
         """Fünf zufällige Zwerge sichtbar, die anderen bleiben unten."""
@@ -332,8 +360,17 @@ class Controller:
                 "uGnomeTex": (self.gnomes_tex if self.gnomes_tex is not None else self.blank, 1)}
 
     def led_state(self) -> dict:
-        """LED-Board: Programm "forest" (Grün mit türkisem Nebel), im Kaleidoskop (Knüppel unten) bunte Farbfolge."""
-        return {"program": "forest", "kaleido": float(self.kaleido)}
+        """LED-Board: Programm "forest" (Grün mit türkisem Nebel als Myzel-Lauflicht, Seerosen mit Fröschen = Bänder, Lidschlag,
+        Irisfarbe, Sporen, Eule, Zwerge, Froschchor), im Kaleidoskop (Knüppel unten) bunte Farbfolge."""
+        now = time.monotonic()
+        iris = None
+        if now < self.color_until and self.color_cell in EYE_COLORS:
+            iris = self.iris_cols[EYE_COLORS.index(self.color_cell)]
+        return {"program": "forest", "kaleido": float(self.kaleido), "step": int(self.step), "step_age": now - self.step_t0,
+                "pattern": int(self.pattern), "bands": [float(b) for b in self.bands], "phase": list(self.phase),
+                "phase_age": [now - t for t in self.phase_t0], "blink": float(self.blink_k), "iris": iris,
+                "spore_t0": self.spore_t0, "owl": self.fig in (FIG_OWL, FIG_BOTH), "owl_t": float(self.owl_t),
+                "wave_t0": self.wave_t0, "chorus_t0": self.chorus_t0, "awake": float(self.open)}
 
     def uniform_names(self):
         names = ["uSceneTex", "uEyeTex", "uFigTex", "uSceneSize", "uEyeSize", "uFigSize", "uSeed", "uEyePos",
@@ -422,6 +459,7 @@ class Controller:
             self.blink_next = now + self.rng.uniform(5.0, 12.0)
         bl = (now - self.blink_t0) / 0.32
         blink = 1.0 - math.sin(min(1.0, bl) * math.pi) if 0.0 <= bl < 1.0 else 1.0
+        self.blink_k = blink
         openness = max(0.0, min(1.0, self.open * blink))
         if self.kaleido_on:
             self._set_look(EYE_SPIRAL)

@@ -982,31 +982,145 @@ class LedStream:
     FOREST_GREEN = np.array([30.0, 170.0, 40.0])
     FOREST_TURQ = np.array([0.0, 215.0, 175.0])
 
+    FOREST_PAD = np.array([170.0, 255.0, 40.0])                   # Seerose mit Frosch: gelbgrün
+    FOREST_LILY = np.array([0.0, 120.0, 45.0])                    # leere Seerose
+    FOREST_FLY = np.array([255.0, 190.0, 50.0])                   # Glühwürmchen, Sporen
+    FOREST_OWL = np.array([200.0, 180.0, 150.0])
+
+    @staticmethod
+    def _blob(acc: np.ndarray, c: float, sigma: float, amp: float) -> None:
+        """Gauß-Fleck um LED-Position c (in LEDs) in acc (n) addieren, nur im Umkreis von 3 sigma."""
+        n = len(acc)
+        lo, hi = max(0, int(c - 3 * sigma)), min(n, int(c + 3 * sigma) + 2)
+        if lo >= hi or amp == 0.0:
+            return
+        d = np.arange(lo, hi) - c
+        acc[lo:hi] += np.exp(-(d / sigma) ** 2) * amp
+
+    def _myc_active(self, zone: np.ndarray, step: int, pattern: int) -> np.ndarray:
+        """Myzel-Lauflicht wie in der Szene: Zone 0-3 an/aus je Schritt und Muster (0 läuft, 1 Wechsel, 2 Spiegel, 3 alle außer)."""
+        if pattern == 0:
+            return (zone == step).astype(float)
+        if pattern == 1:
+            return ((zone + step) % 2 == 0).astype(float)
+        if pattern == 2:
+            return ((zone == step) | (zone == 3 - step)).astype(float)
+        return (zone != step).astype(float)
+
     def _forest(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
-        """Auge des Waldes: viel Grün (tiefes Grün mit helleren Moosflecken), darüber türkiser Nebel in langsam treibenden
-        Schwaden, der mit dem Bass leuchtet und auf jedem Beat sanft aufglüht; nie aus. Kaleidoskop (Knüppel unten, `kaleido`
-        0..1 aus der Szene): alles wird bunt, eine feste Farbfolge (Regenbogen, sechsmal über die Kette), die Reihenfolge bleibt
-        und läuft nur vor und zurück, mit ständig wechselndem Tempo."""
+        """Auge des Waldes: viel Grün (tiefes Grün mit Moosflecken), türkiser Nebel in Schwaden, der als Myzel-Lauflicht 1-2-3-4
+        im Beat und im Muster der Szene aufleuchtet (Kette in Zonen à ~48 LEDs, Zone 0-3 im Wechsel). Seerosen: acht Blätter =
+        acht Bänder, viermal über die Kette; sitzt ein Frosch, glüht das Blatt gelbgrün mit seinem Band, Hüpfer = Punkt springt
+        kurz hoch, Auftauchen/Abtauchen = Wellenring. Lidschlag = Kette dunkelt von beiden Enden zur Mitte. Nach dem Drop
+        färbt die neue Irisfarbe den Nebel (7 s) und eine goldene Sporenwolke breitet sich von der Mitte aus. Glühwürmchen mit
+        den Höhen, die Eule gleitet als heller Schatten, ein winkender Zwerg zwinkert warm, Froschchor = Welle über alle
+        Blätter. Nie aus. Kaleidoskop (Knüppel unten, `kaleido`): feste Regenbogenfolge, nur vor und zurück, Tempo wechselt."""
         n = self.n
         x = self._idx()
+        idx = np.arange(n)
         fo = getattr(self, "forestled", None)
         if fo is None:
-            fo = self.forestled = {"T": self.rng.uniform(0.0, 300.0), "glow": 0.0, "off": 0.0, "vt": self.rng.uniform(0.0, 50.0)}
-        k = float(st.get("kaleido", 0.0)) if st else 0.0
+            fo = self.forestled = {"T": self.rng.uniform(0.0, 300.0), "glow": 0.0, "off": 0.0, "vt": self.rng.uniform(0.0, 50.0),
+                                   "flies": [], "act": None, "spores": None}
+        st = st or {}
+        k = float(st.get("kaleido", 0.0))
         fo["T"] += dt * (0.7 + 0.3 * self.energy)
         T = fo["T"]
         tau = 2.0 * math.pi
         if is_beat:
             fo["glow"] = 1.0
         fo["glow"] *= math.exp(-dt / 0.45)
+        awake = float(st.get("awake", 1.0))
         # Grün: Moosflecken treiben ganz langsam
         moss = 0.5 + 0.5 * np.sin(tau * (x * 3.1 + T * 0.004)) * np.sin(tau * (x * 1.3 - T * 0.003) + 1.7)
-        green = self.FOREST_DEEP[None, :] * (0.75 + 0.25 * moss[:, None]) + self.FOREST_GREEN[None, :] * (0.35 * moss[:, None])
-        # türkiser Nebel: Schwaden, leuchten mit dem Bass und glühen auf dem Beat
+        frame = self.FOREST_DEEP[None, :] * (0.75 + 0.25 * moss[:, None]) + self.FOREST_GREEN[None, :] * (0.35 * moss[:, None])
+        # Nebel als Myzel: Zonen leuchten im Lauflicht der Szene, weich überblendet
         mist = (0.5 + 0.5 * np.sin(tau * (x * 2.2 + T * 0.011))) * (0.5 + 0.5 * np.sin(tau * (x * 0.8 - T * 0.007) + 2.0))
-        mist = np.clip((mist - 0.12) / 0.5, 0.0, 1.0) ** 1.2         # breite Schwaden, weiche Ränder
-        lum = (0.45 + 0.35 * self.bass_s + 0.35 * fo["glow"]) * (1.0 if live else 0.6)
-        frame = green + self.FOREST_TURQ[None, :] * (mist * lum)[:, None]
+        mist = np.clip((mist - 0.12) / 0.5, 0.0, 1.0) ** 1.2
+        zone = (idx // 48) % 4
+        target = self._myc_active(zone, int(st.get("step", 0)) % 4, int(st.get("pattern", 0)) % 4) if "step" in st else np.ones(n)
+        if fo["act"] is None or len(fo["act"]) != n:
+            fo["act"] = target.copy()
+        fo["act"] += (target - fo["act"]) * min(1.0, dt / 0.18)
+        iris = st.get("iris")
+        mist_col = np.asarray(iris, dtype=float) if iris is not None else self.FOREST_TURQ
+        lum = (0.25 + 0.75 * fo["act"]) * (0.45 + 0.3 * self.bass_s + 0.25 * fo["glow"]) * (1.0 if live else 0.6) * (0.4 + 0.6 * awake)
+        frame += mist_col[None, :] * (mist * lum)[:, None]
+        # Seerosen: acht Blätter je Gruppe, viermal über die Kette
+        bands = list(st.get("bands") or [0.0] * 8)[:8] + [0.0] * 8
+        phase = list(st.get("phase") or [0] * 8)[:8] + [0] * 8
+        page = list(st.get("phase_age") or [9.0] * 8)[:8] + [9.0] * 8
+        spacing = n / 32.0
+        chorus = now - float(st.get("chorus_t0", -100.0))
+        pad, lily, ring = np.zeros(n), np.zeros(n), np.zeros(n)
+        for g in range(4):
+            for i in range(8):
+                c = (g * 8 + i + 0.5) * spacing
+                ph, age, bnd = phase[i], page[i], bands[i]
+                if ph in (2, 3, 1):                                   # sitzt, hüpft, taucht auf
+                    lv = 0.3 + 0.7 * bnd
+                    shift = 0.0
+                    if ph == 3:                                       # Hüpfer: Punkt springt kurz zur Seite und zurück
+                        u = min(1.0, age / 0.6)
+                        shift = 3.0 * math.sin(math.pi * u) * (1 if (g + i) % 2 else -1)
+                        lv += 0.4 * math.sin(math.pi * u)
+                    if ph == 1:
+                        lv *= min(1.0, age / 0.8)
+                    self._blob(pad, c + shift, 1.4, lv)
+                else:
+                    self._blob(lily, c, 1.4, 0.25)
+                if ph in (1, 4) and age < 0.9:                        # Auf- oder Abtauchen: Wellenring
+                    r = 1.5 + age * 9.0
+                    amp = (1.0 - age / 0.9) * 0.6
+                    self._blob(ring, c - r, 1.0, amp)
+                    self._blob(ring, c + r, 1.0, amp)
+                if 0.0 <= chorus < 4.0:                               # Froschchor: Welle über alle Blätter
+                    tt = chorus - (0.3 + i * 0.14 + g * 0.05)
+                    if 0.0 <= tt < 0.35:
+                        self._blob(pad, c, 2.0, math.sin(math.pi * tt / 0.35))
+        frame += np.outer(pad, self.FOREST_PAD) + np.outer(lily, self.FOREST_LILY) + np.outer(ring, self.FOREST_TURQ)
+        # Glühwürmchen mit den Höhen
+        if live and self.rng.random() < dt * (0.5 + 6.0 * high):
+            fo["flies"].append([now, self.rng.uniform(0.0, 1.0), self.rng.uniform(-0.004, 0.004), self.rng.uniform(1.5, 3.0)])
+        gold = np.zeros(n)
+        keep = []
+        for fl in fo["flies"]:
+            age = now - fl[0]
+            if age < fl[3]:
+                keep.append(fl)
+                pos = (fl[1] + fl[2] * age) * (n - 1)
+                self._blob(gold, pos if not self.reverse else n - 1 - pos, 1.2, math.sin(math.pi * age / fl[3]) * 0.9)
+        fo["flies"] = keep[-40:]
+        # Sporenwolke nach dem Drop: goldene Punkte von der Mitte nach außen
+        sa = now - float(st.get("spore_t0", -100.0))
+        if 0.0 <= sa < 4.0:
+            if fo["spores"] is None or fo["spores"][0] != st.get("spore_t0"):
+                fo["spores"] = (st.get("spore_t0"), self.nrng.uniform(-0.5, 0.5, 40), self.nrng.uniform(0.6, 1.0, 40))
+            _, dirs, br = fo["spores"]
+            pos = 0.5 + dirs * min(1.0, 0.15 + sa / 2.5)            # starten schon etwas verteilt
+            fade = (1.0 - sa / 4.0)
+            for p_, b_ in zip(pos, br):
+                self._blob(gold, p_ * (n - 1), 1.5, b_ * fade)
+        frame += np.outer(np.minimum(gold, 1.0), self.FOREST_FLY)   # gedeckelt: kein weißer Fleck
+        # Eule gleitet als heller Schatten
+        if st.get("owl"):
+            ot = float(st.get("owl_t", 0.0))
+            pos = (ot * 0.35) % 1.3 - 0.15
+            wing = 0.7 + 0.3 * math.sin(ot * 40.0)
+            frame += np.outer(np.exp(-((x - pos) / 0.008) ** 2) * wing * 0.8, self.FOREST_OWL)
+        # Zwerg winkt: warmes Zwinkern an einer Stelle
+        wa = now - float(st.get("wave_t0", -100.0))
+        if 0.0 <= wa < 1.3:
+            spot = (float(st.get("wave_t0", 0.0)) * 7.31) % 1.0
+            blink2 = 1.0 if (wa % 0.5) < 0.22 else 0.15
+            frame += np.outer(np.exp(-((x - spot) * n / 2.0) ** 2) * blink2, np.array([255.0, 140.0, 40.0]))
+        # Lidschlag: von beiden Enden zur Mitte dunkler
+        bl = float(st.get("blink", 1.0))
+        if bl < 0.98:
+            closed = 1.0 - bl
+            edge = np.minimum(x, 1.0 - x)                           # 0 an den Enden, 0.5 in der Mitte
+            lid = np.clip((closed * 0.55 - edge) / 0.04, 0.0, 1.0)
+            frame = frame * (1.0 - 0.8 * lid)[:, None]
         frame = np.maximum(frame, self.FOREST_DEEP * 0.4)          # nie aus
         if k > 0.01:                                               # Kaleidoskop: feste Farbfolge, vor und zurück
             fo["vt"] += dt

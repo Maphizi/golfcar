@@ -454,9 +454,15 @@ mit dem Bass. `breathe` (taxi, clocktower, square): langsames Atmen + zwei wande
 Herzschlag auf jedem zweiten Beat (ohne Musik 64/min) als Doppelschlag (Stärke 1 und 0,55 nach 0,28 s): Welle läuft mit
 0,55 Kette/s nach hinten und klingt ab, vorne zieht sich das Herz zusammen; `hearttree_beat` (ENTER) = großer Schlag. Aderfluss
 alle 30-60 s und bei `hearttree_roots`: Strom mit Teilchen läuft in ~10 s von vorne nach hinten. Ruhige Programme (heart, trip,
-forest) bekommen beim Drop keinen Aufheller. `forest` (woodeye, `led_state`
-`kaleido` 0..1): tiefes Grün `FOREST_DEEP` mit treibenden Moosflecken, türkiser Nebel `FOREST_TURQ` in breiten Schwaden (~1/4 der
-Kette), leuchtet mit dem Bass, glüht je Beat auf (0,45 s), nie aus; Kaleidoskop (Knüppel unten): feste Regenbogenfolge sechsmal
+forest) bekommen beim Drop keinen Aufheller. `forest` (woodeye, `woodeye.led_state()`: `kaleido`, `step`/`pattern` des
+Myzel-Lauflichts, `bands`, `phase`/`phase_age` der 8 Frösche, `blink` (Lid), `iris` (Farbe aus `_iris_colors()`, 7 s nach dem
+Drop), `spore_t0`, `owl`/`owl_t`, `wave_t0` (Zwerg winkt), `chorus_t0`, `awake`): tiefes Grün `FOREST_DEEP` mit treibenden
+Moosflecken, türkiser Nebel `FOREST_TURQ` in breiten Schwaden als Myzel: Zonen à 48 LEDs (`zone` 0-3) leuchten nach
+`_myc_active(step, pattern)` (0 läuft, 1 Wechsel, 2 Spiegel, 3 alle außer), weich 0,18 s, Nebel nach dem Drop in der Irisfarbe;
+Seerosen 8 x 4 über die Kette (gelbgrün `FOREST_PAD` mit Band, leer `FOREST_LILY`), Hüpfer = Punkt springt 3 LEDs zur Seite,
+Auf-/Abtauchen = Wellenring, Froschchor = Welle; Glühwürmchen (`FOREST_FLY`, Rate mit den Höhen), Sporenwolke von der Mitte
+(gedeckelt), Eule als heller Schatten, winkender Zwerg = warmes Zwinkern, Lid = Kette dunkelt von beiden Enden; Punkte über
+`_blob()` nur im Umkreis (~0,5 ms/Bild); nie aus; Kaleidoskop (Knüppel unten): feste Regenbogenfolge sechsmal
 über die Kette, läuft nur vor/zurück mit wechselndem Tempo (Summe dreier Sinus, ±0,11 Kette/s, mit Bass schneller). `trip` (Waldtresen,
 `led_state` intensity): Farbfeld aus zwei Sinuswellen mit langsam wandernden Wellenlängen (`k1` 1,4-3,8, `k2` 2,8-6,8 je Kette,
 Blasen teilen/vereinen sich), verbogen von `warp`; Grundton = Bildschirmfarbe (`_base_col`), gefächert um ±0,24 Farbkreis;

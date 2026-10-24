@@ -1274,8 +1274,12 @@ Lichtwand durch, und Polizeidrohnen überholen rot-blau von hinten. Darüber gle
 links oder rechts und wechseln immer wieder die Richtung; ab und zu laufen sie im Gleichschritt, ab und zu aufeinander zu,
 liegen dann übereinander und leuchten in einer dritten Farbe, gehen kurz als eines weiter und teilen sich wieder. Der Herzbaum schlägt auf der Kette: vorne hell, nach hinten dunkler, in den Farben der Jahreszeit ohne Weißstich, ein ruhiger
 Doppelschlag etwa sechzigmal pro Minute läuft von vorne nach hinten und klingt aus; ab und zu und wenn die Wurzeln leuchten
-fließt Energie wie durch eine Ader in etwa zehn Sekunden von vorne nach hinten. Beim Auge des Waldes ist die Kette tiefgrün mit treibenden Moosflecken, darüber zieht türkiser Nebel in Schwaden, der mit
-dem Bass leuchtet und auf jedem Beat sanft aufglüht; schaltet der Knüppel nach unten das Kaleidoskop ein, wird alles bunt:
+fließt Energie wie durch eine Ader in etwa zehn Sekunden von vorne nach hinten. Beim Auge des Waldes ist die Kette tiefgrün mit treibenden Moosflecken, darüber zieht türkiser Nebel in Schwaden, der wie das
+Myzel auf dem Bildschirm als Lauflicht 1-2-3-4 im Beat aufleuchtet; acht Seerosen stehen viermal auf der Kette, und wo ein Frosch
+sitzt, glüht sie gelbgrün mit seinem Frequenzband, hüpft er, springt der Punkt, taucht er auf oder ab, läuft ein Wellenring;
+blinzelt das Auge, dunkelt die Kette von beiden Enden her, nach dem Drop färbt die neue Irisfarbe den Nebel und eine goldene
+Sporenwolke breitet sich aus; Glühwürmchen funkeln mit den Höhen, die Eule gleitet vorbei, ein winkender Zwerg zwinkert, und
+der Froschchor läuft als Welle über alle Seerosen; schaltet der Knüppel nach unten das Kaleidoskop ein, wird alles bunt:
 eine feste Farbfolge, die nur vor und zurück läuft, mal langsam, mal schneller. Am Waldtresen fließt auf der Kette ein ganz langsames, morphendes Farbfeld in den Farben des Bildschirms, Blasen teilen und
 vereinen sich, dazwischen ziehen schmale Akzentbänder in der Akzent- und der Gegenfarbe mit, und immer wieder liegen
 dunkelgrüne Täler dazwischen, aus geht sie nie; am Tresen ist es ruhiger und grüner, auf der Reise voll bunt. Beim Orakel stehen die acht Tafeln unter dem Kopf auf der Kette: jede LED bekommt der Reihe nach eine Tafelfarbe (Rot, Orange,
