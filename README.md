@@ -1314,7 +1314,7 @@ Lautstärke `settings.toml` `[sfx]`.
 
 **Weitere Kippschalter:** Die zwei Schalter unten neben dem Autopilot bekommen in `config/keymap.toml` je Stellung eine
 Aktion: `code = N` mit `on = "down"` (Standard) beim Umlegen und `on = "up"` beim Zurücklegen; den Code N zeigt das Launcher-Log beim
-ersten Umlegen als "Taste ohne Belegung", bequemer fragt `scripts/board_learn.py` alles mit Piepton der Reihe nach ab. Erlaubt sind alle Modi und `fx`, `horn`, `horn2`, `talk`, `attract_on/off`, `voice_up/down`,
+ersten Umlegen als "Taste ohne Belegung", bequemer nimmt `scripts/board_learn.py` 60 Sekunden lang alles auf und wertet es aus. Erlaubt sind alle Modi und `fx`, `horn`, `horn2`, `talk`, `attract_on/off`, `voice_up/down`,
 `music_up/down`.
 
 **Vorführmodus:** Kommt fünf Minuten keine Eingabe, wechselt das System alle drei Minuten von selbst durch die Modi des

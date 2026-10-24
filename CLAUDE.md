@@ -21,9 +21,9 @@ Funktionieren systemweit in EmulationStation, KITT und allen anderen Apps.
 
 Die HID-Codes von Startknopf, Kippschalter und Sprechtaste stehen in `config/settings.toml` `[buttons]`
 (`start_code`, `kipp_code`, `kipp_mode`, `talk_code`, `debounce_ms`), nicht mehr im Python-Code.
-`scripts/input_monitor.py 10` zeigt je Taste Code, Werte, Rate und ob sie von selbst periodisch sendet. `scripts/board_learn.py`
-fragt mit Piepton Schritt für Schritt Hupe Seite 2, Kippschalter A/B (unten/oben) und beide Drehknöpfe ab und gibt die
-Einträge für `[buttons]`/`keymap.toml` aus (Codes 268/270-274 sind die noch unbelegten Schalter).
+`scripts/input_monitor.py 10` zeigt je Taste Code, Werte, Rate und ob sie von selbst periodisch sendet. `scripts/board_learn.py [sek]`:
+5 s Ruhephase (was das Board von selbst schickt), dann 60 s freie Zeit für Hupe Seite 2, Kippschalter A/B (unten/oben) und beide
+Drehknöpfe; gibt den Zeitverlauf und die Einträge für `[buttons]`/`keymap.toml` aus (Codes 268/270-274 sind die noch unbelegten Schalter).
 
 ### Startknopf (HID-Code 266, `[buttons].start_code`)
 → Injiziert `KEY_ENTER` – universelle Bestätigung / Losfliegen im Planeten-Modus
