@@ -1276,9 +1276,9 @@ liegen dann übereinander und leuchten in einer dritten Farbe, gehen kurz als ei
 Doppelschlag etwa sechzigmal pro Minute läuft von vorne nach hinten und klingt aus; ab und zu und wenn die Wurzeln leuchten
 fließt Energie wie durch eine Ader in etwa zehn Sekunden von vorne nach hinten. Beim Auge des Waldes ist die Kette tiefgrün mit treibenden Moosflecken, darüber zieht türkiser Nebel in Schwaden, der mit
 dem Bass leuchtet und auf jedem Beat sanft aufglüht; schaltet der Knüppel nach unten das Kaleidoskop ein, wird alles bunt:
-eine feste Farbfolge, die nur vor und zurück läuft, mal langsam, mal schneller. Am Waldtresen fließt auf der Kette ein ganz langsames, morphendes Farbfeld durch den ganzen Farbkreis, Blasen teilen und
-vereinen sich, dazwischen liegen immer wieder dunkelgrüne Täler, aus geht sie nie; am Tresen selbst überwiegt das Dunkelgrün,
-auf der Reise wird es voll bunt, ein Drop dreht die ganze Palette langsam weiter. Beim Orakel stehen die acht Tafeln unter dem Kopf auf der Kette: jede LED bekommt der Reihe nach eine Tafelfarbe (Rot, Orange,
+eine feste Farbfolge, die nur vor und zurück läuft, mal langsam, mal schneller. Am Waldtresen fließt auf der Kette ein ganz langsames, morphendes Farbfeld in den Farben des Bildschirms, Blasen teilen und
+vereinen sich, dazwischen ziehen schmale Akzentbänder in der Akzent- und der Gegenfarbe mit, und immer wieder liegen
+dunkelgrüne Täler dazwischen, aus geht sie nie; am Tresen ist es ruhiger und grüner, auf der Reise voll bunt. Beim Orakel stehen die acht Tafeln unter dem Kopf auf der Kette: jede LED bekommt der Reihe nach eine Tafelfarbe (Rot, Orange,
 Gelb, Grün, Türkis, Blau, Violett, Magenta, dann von vorne), immer nur ein Punkt je Farbe, und sie leuchtet genau dann, wenn ihre
 Tafel im Beat-Muster an ist. Bei HAL 3000 ziehen dunkel- und hellrote Felder wie die
 Zellen des Korridors langsam und immer in dieselbe Richtung vorbei, ein Viertel dunkler als der Rest, und ab und zu kommt von einem Ende ein einzelnes helles Feld, das im Takt Schritt für Schritt rund eine Minute

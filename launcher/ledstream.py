@@ -1015,11 +1015,11 @@ class LedStream:
     TRIP_DG = np.array([0.0, 95.0, 18.0])                         # Dunkelgrün des Waldes (häufig, nie ganz aus)
 
     def _trip(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
-        """Waldtresen (Thema green, Taste 2): ein ganz langsam fließendes, morphendes Farbfeld in allen Farben, dazwischen
-        immer wieder dunkelgrüne Täler, nie ganz aus. Zwei Wellen mit langsam wandernden Wellenlängen (Blasen teilen und
-        vereinen sich), verbogen von einer dritten; der Farbton dreht sich über Minuten. Beat = winziger, weich eingerasteter
-        Phasenschritt, Drop = die ganze Palette dreht über einige Sekunden weiter. Am Tresen (vor der Reise) überwiegt das
-        Dunkelgrün mit wenigen Farbinseln, während der Reise wird es voll bunt."""
+        """Waldtresen (Thema green, Taste 2): ein ganz langsam fließendes, morphendes Farbfeld in den Farben des Bildschirms
+        (Grundton = Bildschirmfarbe, die Wellen fächern ihn auf), dazu schmale Akzentbänder (~7 LEDs, etwa alle 30-45 LEDs)
+        abwechselnd in der Akzentfarbe des Bildschirms und der Gegenfarbe, die langsam mitwandern und in der Breite atmen;
+        dazwischen dunkelgrüne Täler, nie ganz aus. Beat = winziger, weich eingerasteter Phasenschritt, Drop = Farbton gleitet
+        ein Stück weiter. Am Tresen (vor der Reise) mehr Dunkelgrün, während der Reise voll bunt."""
         n = self.n
         x = self._idx()
         tp = getattr(self, "tripled", None)
@@ -1031,21 +1031,36 @@ class LedStream:
         if is_beat:
             tp["ph"] += 0.012
         if 0.0 < now - self.last_drop <= dt * 1.5:
-            tp["hue"] += self.rng.uniform(0.2, 0.45)
+            tp["hue"] += self.rng.uniform(0.06, 0.14)
         tp["ph_s"] += (tp["ph"] - tp["ph_s"]) * min(1.0, dt * 1.2)
         tp["hue_s"] += (tp["hue"] - tp["hue_s"]) * min(1.0, dt / 4.0)
         T = tp["T"]
         tau = 2.0 * math.pi
-        k1 = 1.2 + 0.8 * math.sin(T * 0.011)                       # Wellenlängen wandern: Blasen teilen und vereinen sich
-        k2 = 2.6 + 1.2 * math.sin(T * 0.007 + 1.0)
+        main, acc = self._base_col()
+        hm = float(_hue(np.asarray(main, dtype=float)[None, :] + 1e-3)[0]) / 360.0      # Grundton vom Bildschirm
+        ha = float(_hue(np.asarray(acc, dtype=float)[None, :] + 1e-3)[0]) / 360.0
+        if min(abs(ha - hm), 1.0 - abs(ha - hm)) < 0.1:
+            ha = (hm + 0.33) % 1.0
+        k1 = 2.6 + 1.2 * math.sin(T * 0.011)                       # kürzere Farbflächen, Blasen teilen und vereinen sich
+        k2 = 4.8 + 2.0 * math.sin(T * 0.007 + 1.0)
         warp = 0.12 * np.sin(tau * (x * 0.7 + T * 0.006))
         field = 0.6 * np.sin(tau * (x * k1 + T * 0.012 + warp)) + 0.4 * np.sin(tau * (x * k2 - T * 0.009 + tp["ph_s"]))
-        hue = 0.33 + T * 0.004 + tp["hue_s"] + (0.62 * field + 0.32 * np.sin(tau * (x * 0.5 - T * 0.003))) * inten   # ganzer Farbkreis
+        hue = hm + tp["hue_s"] + (0.17 * field + 0.07 * np.sin(tau * (x * 0.8 - T * 0.003))) * inten   # um die Bildschirmfarbe gefächert
         val = 0.55 + 0.3 * (0.5 + 0.5 * np.sin(tau * (x * 1.3 - T * 0.01) + field)) + 0.12 * self.bass_s
         col = _hsv_arr(hue % 1.0, 1.0, np.clip(val, 0.0, 1.0))
+        # Akzente: schmale Bänder, abwechselnd Akzentfarbe und Gegenfarbe, wandern langsam, Breite atmet
+        k_acc = 21.0 + 5.0 * math.sin(T * 0.009)
+        ua = x * k_acc + T * 0.01 + 0.15 * field + tp["ph_s"] * 2.0
+        width = 0.5 + 0.12 * math.sin(T * 0.017)
+        am = np.clip((np.sin(tau * ua) - width) / 0.25, 0.0, 1.0)
+        band = np.floor(ua).astype(int) % 2
+        acc_hue = np.where(band == 0, ha, (hm + 0.5) % 1.0) + tp["hue_s"]
+        acc_col = _hsv_arr(acc_hue % 1.0, 1.0, 0.95)
+        am = am * (0.6 + 0.4 * inten)
+        col = col * (1.0 - am[:, None]) + acc_col * am[:, None]
         m = 0.5 + 0.5 * np.sin(tau * (x * (0.9 + 0.4 * math.sin(T * 0.005)) + T * 0.008 + 0.3 * field))
-        dg = np.clip((m - 0.55) / 0.3, 0.0, 1.0)                  # dunkelgrüne Täler, wandern mit
-        dg = np.maximum(dg, (1.0 - inten) * 0.75)                 # am Tresen überwiegt das Dunkelgrün
+        dg = np.clip((m - 0.6) / 0.3, 0.0, 1.0)                   # dunkelgrüne Täler, wandern mit
+        dg = np.maximum(dg, (1.0 - inten) * 0.55) * (1.0 - am)    # am Tresen mehr Dunkelgrün, Akzente bleiben
         frame = col * (1.0 - dg[:, None]) + self.TRIP_DG * (0.8 + 0.2 * self.bass_s) * dg[:, None]
         frame = np.maximum(frame, self.TRIP_DG * 0.35)            # nie ganz aus
         return frame

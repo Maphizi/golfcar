@@ -457,10 +457,11 @@ forest) bekommen beim Drop keinen Aufheller. `forest` (woodeye, `led_state`
 `kaleido` 0..1): tiefes Grün `FOREST_DEEP` mit treibenden Moosflecken, türkiser Nebel `FOREST_TURQ` in breiten Schwaden (~1/4 der
 Kette), leuchtet mit dem Bass, glüht je Beat auf (0,45 s), nie aus; Kaleidoskop (Knüppel unten): feste Regenbogenfolge sechsmal
 über die Kette, läuft nur vor/zurück mit wechselndem Tempo (Summe dreier Sinus, ±0,11 Kette/s, mit Bass schneller). `trip` (Waldtresen,
-`led_state` intensity): Farbfeld aus zwei Sinuswellen mit langsam wandernden Wellenlängen (`k1`, `k2`, Blasen teilen/vereinen
-sich), verbogen von `warp`, Farbton über den ganzen Farbkreis (`_hsv_arr`), dreht über Minuten; dunkelgrüne Täler `TRIP_DG` (~30 %),
-nie aus (Boden 35 % Dunkelgrün); Beat = Phasenschritt 0.012 weich (~1 s), Drop = Palette dreht 0.2-0.45 über ~4 s; am Tresen
-(intensity 0) überwiegt Dunkelgrün. `panels` (oracle,
+`led_state` intensity): Farbfeld aus zwei Sinuswellen mit langsam wandernden Wellenlängen (`k1` 1,4-3,8, `k2` 2,8-6,8 je Kette,
+Blasen teilen/vereinen sich), verbogen von `warp`; Grundton = Bildschirmfarbe (`_base_col`), gefächert um ±0,24 Farbkreis;
+Akzentbänder (`k_acc` 16-26 je Kette, ~7 LEDs, Breite atmet) abwechselnd Bildschirm-Akzent und Gegenfarbe der Hauptfarbe;
+dunkelgrüne Täler `TRIP_DG` (~30 %), nie aus (Boden 35 % Dunkelgrün); Beat = Phasenschritt 0.012 weich (~1 s), Drop = Farbton
++0,06-0,14 über ~4 s; am Tresen (intensity 0) mehr Dunkelgrün (55 %), Akzente bleiben. `panels` (oracle,
 `oracle.led_state()`: `cols` = Farben der acht Tafel-Glyphen aus `_panel_colors()` (Atlaszellen 16-23, hellste 20 %, Grauanteil
 raus), `lvl` = `panel_lvl` mit Nachglühen): LED i zeigt Tafel i % 8, also Rot, Orange, Gelb, Grün, Türkis, Blau, Violett, Magenta
 je ein Ansteuerpunkt, an solange die Tafel an ist (Beat-Muster der Szene), aus 4 %; Stille = alle leise atmend.
