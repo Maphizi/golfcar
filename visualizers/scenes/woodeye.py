@@ -331,6 +331,10 @@ class Controller:
                 "uDiveTex": (self.dive_tex if self.dive_tex is not None else self.blank, 1),
                 "uGnomeTex": (self.gnomes_tex if self.gnomes_tex is not None else self.blank, 1)}
 
+    def led_state(self) -> dict:
+        """LED-Board: Programm "forest" (Grün mit türkisem Nebel), im Kaleidoskop (Knüppel unten) bunte Farbfolge."""
+        return {"program": "forest", "kaleido": float(self.kaleido)}
+
     def uniform_names(self):
         names = ["uSceneTex", "uEyeTex", "uFigTex", "uSceneSize", "uEyeSize", "uFigSize", "uSeed", "uEyePos",
                  "uBassS", "uMidS", "uHighS", "uEnergy", "uLive", "uBeatPulse", "uStep", "uStepPhase", "uPattern",

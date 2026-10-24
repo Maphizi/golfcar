@@ -36,7 +36,7 @@ SCENE_BASE = {
     "campfire": "fire",
     "blackhole": "vortex", "core": "vortex", "flux": "vortex", "pond": "vortex",
     "rooftop": "city",
-    "taxi": "breathe", "oracle": "breathe", "clocktower": "breathe", "woodeye": "breathe", "trip": "trip",
+    "taxi": "breathe", "oracle": "breathe", "clocktower": "breathe", "woodeye": "forest", "trip": "trip",
     "hearttree": "breathe", "square": "breathe",
     "blackice": "glitch", "paradox": "glitch", "overdose": "glitch",
     "hal": "hal",
@@ -397,6 +397,8 @@ class LedStream:
             frame = self._slots(now, dt, st, bass, high, is_beat, live)
         elif program == "duel":                                   # Neonfahrt: zwei Felder im Beat
             frame = self._duel(now, dt, st, bass, high, is_beat, live)
+        elif program == "forest":                                 # Auge des Waldes: Grün, türkiser Nebel; Kaleidoskop bunt
+            frame = self._forest(now, dt, st, bass, high, is_beat, live)
         elif program == "trip":                                   # Waldtresen: bunt, ganz langsam, morphend
             frame = self._trip(now, dt, st, bass, high, is_beat, live)
         elif program == "city":                                   # Dachterrasse: Fensterfront der Stadt
@@ -765,6 +767,47 @@ class LedStream:
             frame[m0] = a * lvl
             frame[m1] = b * lvl
             frame[m0 & m1] = c3 * lvl                              # beim Kreuzen: Überlappung in der dritten Farbe
+        return frame
+
+    FOREST_DEEP = np.array([0.0, 90.0, 22.0])
+    FOREST_GREEN = np.array([30.0, 170.0, 40.0])
+    FOREST_TURQ = np.array([0.0, 215.0, 175.0])
+
+    def _forest(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Auge des Waldes: viel Grün (tiefes Grün mit helleren Moosflecken), darüber türkiser Nebel in langsam treibenden
+        Schwaden, der mit dem Bass leuchtet und auf jedem Beat sanft aufglüht; nie aus. Kaleidoskop (Knüppel unten, `kaleido`
+        0..1 aus der Szene): alles wird bunt, eine feste Farbfolge (Regenbogen, sechsmal über die Kette), die Reihenfolge bleibt
+        und läuft nur vor und zurück, mit ständig wechselndem Tempo."""
+        n = self.n
+        x = self._idx()
+        fo = getattr(self, "forestled", None)
+        if fo is None:
+            fo = self.forestled = {"T": self.rng.uniform(0.0, 300.0), "glow": 0.0, "off": 0.0, "vt": self.rng.uniform(0.0, 50.0)}
+        k = float(st.get("kaleido", 0.0)) if st else 0.0
+        fo["T"] += dt * (0.7 + 0.3 * self.energy)
+        T = fo["T"]
+        tau = 2.0 * math.pi
+        if is_beat:
+            fo["glow"] = 1.0
+        fo["glow"] *= math.exp(-dt / 0.45)
+        # Grün: Moosflecken treiben ganz langsam
+        moss = 0.5 + 0.5 * np.sin(tau * (x * 3.1 + T * 0.004)) * np.sin(tau * (x * 1.3 - T * 0.003) + 1.7)
+        green = self.FOREST_DEEP[None, :] * (0.75 + 0.25 * moss[:, None]) + self.FOREST_GREEN[None, :] * (0.35 * moss[:, None])
+        # türkiser Nebel: Schwaden, leuchten mit dem Bass und glühen auf dem Beat
+        mist = (0.5 + 0.5 * np.sin(tau * (x * 2.2 + T * 0.011))) * (0.5 + 0.5 * np.sin(tau * (x * 0.8 - T * 0.007) + 2.0))
+        mist = np.clip((mist - 0.12) / 0.5, 0.0, 1.0) ** 1.2         # breite Schwaden, weiche Ränder
+        lum = (0.45 + 0.35 * self.bass_s + 0.35 * fo["glow"]) * (1.0 if live else 0.6)
+        frame = green + self.FOREST_TURQ[None, :] * (mist * lum)[:, None]
+        frame = np.maximum(frame, self.FOREST_DEEP * 0.4)          # nie aus
+        if k > 0.01:                                               # Kaleidoskop: feste Farbfolge, vor und zurück
+            fo["vt"] += dt
+            vt = fo["vt"]
+            v = 0.045 * math.sin(tau * vt / 23.0) + 0.025 * math.sin(tau * vt / 9.7 + 1.0) + 0.012 * math.sin(tau * vt / 4.1)
+            v *= 1.0 + 0.8 * self.bass_s
+            fo["off"] = (fo["off"] + v * dt) % 1.0
+            hue = (x * 6.0 + fo["off"] * 6.0) % 1.0
+            rainbow = _hsv_arr(hue, 1.0, 0.85 + 0.15 * self.bass_s)
+            frame = frame * (1.0 - k) + rainbow * k
         return frame
 
     TRIP_DG = np.array([0.0, 95.0, 18.0])                         # Dunkelgrün des Waldes (häufig, nie ganz aus)
