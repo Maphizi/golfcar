@@ -161,7 +161,7 @@ class LedStream:
         self.tint = None                                          # Grundfarbe überschrieben (Wetter, Jahreszeit, blaues Feuer)
         self.tint_until = 0.0
         self.boost_until = 0.0                                    # Sterne schneller/heller (Start, Nitro, Zeitsprung)
-        self.planet_next = time.monotonic() + self.rng.uniform(25.0, 45.0)
+        self.planet_next = time.monotonic() + self.rng.uniform(6.0, 12.0)   # der erste Planet kommt bald
         self.stars = None
         self.drips: list[list] = []
         self.drip_next = 0.0
@@ -304,7 +304,8 @@ class LedStream:
         elif "log" in n:
             self._add(now, "sparks", 2.5, col)
         elif "blue" in n:
-            self.tint, self.tint_until = (col, col2), now + 30.0
+            if self.base != "fire":                               # Lagerfeuer: blau nur, solange die Szene blaues Feuer meldet
+                self.tint, self.tint_until = (col, col2), now + 30.0
         elif "jump" in n:
             self.boost_until = now + 3.0
             if self.base != "timejump":
@@ -1601,7 +1602,7 @@ class LedStream:
     def _stars(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
         """Sternenflug, mellow: ein langsames Farbfeld in Bildschirmfarbe und Akzent (zwei lange Wellen, treiben kaum),
         darüber wenige Sterne, die langsam nach hinten ziehen; auf jedem Beat (1 2 3 4) rückt alles einen Schritt nach
-        hinten, weich eingerastet, die 1 hebt kurz an. Specials: alle 25-45 s ein Planet (weiche Kugel, füllt im Vorbeiflug
+        hinten, weich eingerastet, die 1 hebt kurz an. Specials: alle 12-22 s ein Planet (weiche Kugel, füllt im Vorbeiflug
         kurz alles in seiner Farbe); Navigationscomputer: Kometenschauer = einzelne Kometen, Asteroidenfeld = graue Brocken,
         Wurmloch/Sonne/Nebel = Tönung; Start/Nitro/Zeitsprung = Schub."""
         n = self.n
@@ -1639,8 +1640,8 @@ class LedStream:
             frame += np.outer(np.full(n, 0.12 + 0.08 * math.sin(now * 0.7)), np.array([255.0, 140.0, 30.0]))
         elif "NEBEL" in ev:
             frame += np.outer(0.5 + 0.5 * np.sin(x * 6.0 + now * 0.3), _hsv((now * 0.03) % 1.0, 0.8, 0.25))
-        if now >= self.planet_next and not ev:                    # Planet zieht vorbei
-            self.planet_next = now + self.rng.uniform(25.0, 45.0)
+        if now >= self.planet_next and "WURMLOCH" not in ev:      # Planet zieht vorbei (auch während der Ereignisse)
+            self.planet_next = now + self.rng.uniform(12.0, 22.0)
             self._add(now, "planet", 4.5, np.array(self.rng.choice(PLANET_COLORS)), d=1.0)
         return frame
 
@@ -1806,8 +1807,9 @@ class LedStream:
         warm = np.array([255.0, 125.0, 30.0])                  # Kerzenlicht: auf LEDs wirkt erst dieses Orange warmweiß
         blue = np.array([70.0, 120.0, 255.0])
         bk = float(st.get("blue", 0.0)) if st else 0.0
-        if self.tint is not None and time.monotonic() < self.tint_until:  # campfire_blue-Profil (Rückfall ohne led_state)
-            bk = max(bk, 0.8)
+        if (not st or "blue" not in st) and self.tint is not None and time.monotonic() < self.tint_until \
+                and self.tint[0][2] > self.tint[0][0]:                # nur ohne led_state: blaue Tönung (campfire_blue)
+            bk = max(bk, 0.8)                                          # campfire_big ist auch eine Tönung, aber orange
         col = warm * (1.0 - bk) + blue * bk
         lvl = float(st.get("level", 1.5)) / 3.0 if st else 0.5
         self.fire += (self.nrng.random(n) - self.fire) * (0.05 + 0.1 * self.e_fast)

@@ -19,6 +19,7 @@ uniform float uSeed, uHorizon, uBassS, uMidS, uHighS, uEnergy, uLive, uBeatPulse
 uniform float uSkyRise, uTaxiT, uZoom, uCal, uRingT;
 uniform vec4 uPlanet, uRing;                                              // Planet (Mitte x, y, Radius) und Ring (a, b, Neigung, innen/a)
 uniform vec2 uRingOff;                                                    // Ringmitte gegenüber dem Planeten (gemalt leicht versetzt)
+uniform vec4 uSpBox;                                                      // Hüllrechteck aller Funken (x0, y0, x1, y1)
 uniform vec4 uKettleBox;                                                  // Kesselbauch im Foto (Mitte x, y, Radius x, y): liegt vor den Flammen
 // Kesselform: Bauch als Ellipse, Henkel als Bogen darüber, Tülle rechts
 float kettleMask(vec2 uv) {
@@ -105,7 +106,7 @@ void main() {
     // Hitzeflimmern über dem Feuer
     vec2 hq = (uv - fire) * vec2(aspect, 1.0);
     float heat = smoothstep(0.35, 0.0, abs(hq.x)) * smoothstep(-0.05, 0.1, hq.y) * smoothstep(0.9, 0.2, hq.y) * (0.2 + 0.8 * lv);
-    uv.x += 0.003 * heat * sin(uv.y * 90.0 - t * 9.0 + noise(uv * 20.0 + t) * 6.0);
+    if (heat > 0.001) uv.x += 0.003 * heat * sin(uv.y * 90.0 - t * 9.0 + noise(uv * 20.0 + t) * 6.0);
     // Himmel steigt unmerklich (Planet geht auf): oberhalb des Horizonts wandert das Bild nach unten
     float skyM = smoothstep(uHorizon, uHorizon + 0.08, uv.y);
     vec2 suv = uv - vec2(0.0, 0.03 * uSkyRise * skyM);
@@ -135,6 +136,7 @@ void main() {
     float band = smoothstep(uHorizon - 0.02, uHorizon + 0.05, uv.y) * (1.0 - smoothstep(uHorizon + 0.16, uHorizon + 0.32, uv.y));
     if (band > 0.001) {
         float gm = smoothstep(0.02, 0.1, col.g - max(col.r, col.b));                      // nur das grüne Licht, keine Sterne
+        if (gm > 0.001) {
         float drift = t * (0.22 + 0.25 * uEnergy);
         float wave = sin(suv.x * 13.0 + drift * 1.5 + 2.5 * fbm(vec2(suv.x * 2.5 - drift * 0.2, drift * 0.25)));
         vec2 off = vec2(0.011 * wave + 0.005 * sin(suv.y * 45.0 + drift * 2.0),
@@ -142,6 +144,7 @@ void main() {
         col = mix(col, scene(suv + off), band * gm);
         float rays = fbm(vec2(suv.x * 28.0 - drift * 0.5 + 6.0 * fbm(vec2(suv.x * 2.0, drift * 0.15)), suv.y * 2.0));
         col += col * gm * band * (rays - 0.42) * (0.9 + 0.5 * uBassS * live);
+        }
     }
     vec3 plate = col;
     float lum = max(col.r, max(col.g, col.b));
@@ -183,7 +186,7 @@ void main() {
     // ---- Rauch: Fahne über dem Feuer, legt sich im Wind, mehr nach Stochern
     {
         float rise = (uv.y - fire.y - 0.08) / 0.7;
-        if (rise > 0.0 && rise < 1.3) {
+        if (rise > 0.0 && rise < 1.3 && abs(uv.x - fire.x - 0.12 * uWind * rise * rise) < 2.6 * (0.03 + 0.12 * rise) / aspect + 0.04 + 0.02 * rise) {
             float cx = fire.x + 0.12 * uWind * rise * rise + 0.02 * sin(rise * 5.0 + t * 0.5) + 0.03 * (fbm(vec2(rise * 3.0, t * 0.3 + uSeed)) - 0.5) * rise;
             float wdt = 0.03 + 0.12 * rise;
             float dx = (uv.x - cx) * aspect / wdt;
@@ -228,7 +231,7 @@ void main() {
     {
         vec2 kq = (uv - uKettle) * vec2(aspect, 1.0);
         float up = kq.y / 0.18;
-        if (up > 0.0 && up < 1.2) {
+        if (up > 0.0 && up < 1.2 && abs(kq.x) < 0.25) {
             float cx = 0.02 * sin(up * 6.0 + t * 1.2) + 0.03 * uWind * up;
             float body = exp(-pow((kq.x - cx) / (0.012 + 0.04 * up), 2.0)) * (1.0 - smoothstep(0.6, 1.2, up));
             float dens = noise(vec2(kq.x * 40.0, up * 6.0 - t * 1.5)) * 0.7 + 0.3;
@@ -236,6 +239,7 @@ void main() {
         }
     }
     // ---- Funken (Sprites), Sternfunken leuchten
+    if (uv.x > uSpBox.x - 0.01 && uv.x < uSpBox.z + 0.01 && uv.y > uSpBox.y - 0.01 && uv.y < uSpBox.w + 0.01)
     for (int i = 0; i < 24; i++) {
         vec4 s = spAt(i);
         if (s.y < -5.0 || s.w <= 0.0) continue;

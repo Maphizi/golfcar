@@ -34,7 +34,7 @@ render_scale = 1.0
 [scenes.campfire]
 shader = "campfire"
 controller = "campfire"   # Rast am Rand der Galaxis: Foto ohne Flammen + Flammenbögen (klein/mittel/groß/blau)
-render_scale = 0.85       # Foto soll scharf bleiben; bei unter 45 fps auf dem Pi 0.7
+render_scale = 0.75       # Foto soll scharf bleiben; 0.85 war am Pi zu viel (bei unter 45 fps 0.7)
 fire = [0.415, 0.15, 0.265] # Flammenfuß x, y (von unten), Zellbreite (Anteil der Bildbreite; Zelle ist 1:2 hoch)
 kettle = [0.44, 0.44]     # Tülle des Kessels (Dampf)
 kettle_box = [0.44, 0.419, 0.034, 0.051]   # Kesselbauch im Foto (Mitte x, y von unten, Radius x, y): bleibt vor den Flammen

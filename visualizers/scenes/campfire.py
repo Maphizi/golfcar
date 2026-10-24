@@ -260,7 +260,7 @@ class Controller:
                  "uSceneSize", "uFlameSize", "uSparkSize", "uItemSize", "uSeed", "uFire", "uKettle", "uTaxi", "uHorizon",
                  "uBassS", "uMidS", "uHighS", "uEnergy", "uLive", "uBeatPulse", "uLevel", "uFlame", "uFlameK", "uFrameMix",
                  "uWind", "uEmber", "uPokeT", "uSkyRise", "uShoot", "uTaxiT", "uZoom", "uMallow", "uCal", "uKettleBox",
-                 "uPlanet", "uRing", "uRingT", "uRingOff"]
+                 "uPlanet", "uRing", "uRingT", "uRingOff", "uSpBox"]
         names += [f"uSp{i}" for i in range(N_SPARKS)]
         names += [f"uItem{i}" for i in range(N_ITEMS)] + [f"uItemP{i}" for i in range(N_ITEMS)]
         names += [f"uMoth{i}" for i in range(N_MOTHS)]
@@ -408,6 +408,7 @@ class Controller:
             "uCal": 1.0 if self.cal else 0.0, "uKettleBox": self.kettle_box,
             "uPlanet": (self.planet[0], self.planet[1], self.planet[2], 0.0), "uRing": self.ring, "uRingT": self.ring_t, "uRingOff": self.ring_off,
         }
+        box = [2.0, 2.0, -2.0, -2.0]                                    # Hüllrechteck aller Funken: der Shader prüft nur darin
         for i in range(N_SPARKS):
             if i < len(self.sparks):
                 sp = self.sparks[i]
@@ -415,9 +416,12 @@ class Controller:
                 star = sp.star and k > 0.75
                 cell = self.rng.choice(STAR_CELLS) if (star and int(sp.age * 10) % 2 == 0) else sp.cell
                 fade = min(1.0, (1.0 - k) * 4.0) * min(1.0, sp.age * 6.0)
-                out[f"uSp{i}"] = (sp.x, sp.y, float(STAR_CELLS[0] if star else sp.cell), sp.size * (1.8 if star else 1.0) * (0.5 + 0.5 * fade))
+                w = sp.size * (1.8 if star else 1.0) * (0.5 + 0.5 * fade)
+                out[f"uSp{i}"] = (sp.x, sp.y, float(STAR_CELLS[0] if star else sp.cell), w)
+                box = [min(box[0], sp.x - w), min(box[1], sp.y - w), max(box[2], sp.x + w), max(box[3], sp.y + w)]
             else:
                 out[f"uSp{i}"] = (0.0, -9.0, 0.0, 0.0)
+        out["uSpBox"] = tuple(box)
         # Gegenstände: 0/1 Flug, 2 Marshmallow, 3 Alien
         items = [(0.0, -9.0, 0.0, 0.0, 0.0, 0.0)] * N_ITEMS
         for j, fl in enumerate(self.flights[:2]):

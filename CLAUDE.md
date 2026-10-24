@@ -142,7 +142,7 @@ Blauanteil, Bild A, Bild B), `uFrameMix`; Holz `throw()` (OBEN, von selbst `LOG_
 Sternfunke), UNTEN `poke()` Funkenwolke + `ember`, LINKS/RECHTS `gust()` Wind `uWind` (Böen von selbst `GUST_EVERY`), ENTER
 `marshmallow()` (`uMallow`, Röstgrad aus Feuerstufe, `mallow_result`), Motten `uMoth0..2` (Anzahl mit den Höhen), Alien
 `ALIEN_EVERY` 90-200 s, Taxi-Lichter `uTaxiT` alle `TAXI_EVERY`, Sternschnuppen `uShoot` alle `SHOOT_EVERY`, Himmel steigt
-`uSkyRise` über `cycle_minutes`, SPACE/BACKSPACE `uZoom`. Shader: Feuerlicht `near`/`lightK` auf Steinen (Glut = dunkler als
+`uSkyRise` über `cycle_minutes`, SPACE/BACKSPACE `uZoom`. Leistung (Pi): `render_scale` 0.75, Funkenschleife nur im Hüllrechteck `uSpBox`, Hitzeflimmern/Polarlicht/Rauch/Dampf nur wo sie wirken. Shader: Feuerlicht `near`/`lightK` auf Steinen (Glut = dunkler als
 das Foto), Hitzeflimmern, Rauch im Wind, Kesseldampf `uKettle`, Sterne funkeln mit Höhen, Polarlicht bewegt sich (Band über dem
 Horizont, nur grüne Pixel `gm`: Foto verschoben abgetastet = wogende Vorhänge, `rays` ziehen durch, Tempo mit der Energie, Bass). Demo = 8x
 schneller. Der Bogen bringt unten eigene Scheite mit (bei großem Feuer hell angestrahlt): im unteren Zellenteil bleibt nur, was
@@ -456,10 +456,10 @@ Streifen 1,2 s, Viertelwechsel Lichtwand von vorne nach hinten über `district_l
 gewechselt, 12-24 Beats), `lock` Gleichschritt 6-12 Beats, `meet` aufeinander zu -> `merged`: übereinander in dritter Farbe (Farbton
 weit weg von beiden), 2-5 Beats als eines weiter, dann teilen (3 Beats auseinander); Kreuzen = Überlappung dritte Farbe; Rest 3 %
 Glimmen. `stars` (navcomputer, planets, splash): wenige Sterne ziehen von vorne nach
-hinten, Tempo mit der Energie, Beat hebt sie kurz; alle 25-45 s `planet` (weiche Kugel zieht vorbei und füllt im Vorbeiflug
+hinten, Tempo mit der Energie, Beat hebt sie kurz; alle 12-22 s (erster nach 6-12 s, nicht im Wurmloch) `planet` (weiche Kugel zieht vorbei und füllt im Vorbeiflug
 kurz alles in ihrer Farbe); `navcomputer.led_state()` liefert `flying` und das laufende Ereignis: KOMETENSCHAUER = `comet`-Läufer,
 ASTEROIDENFELD = graue Brocken schneller, WURMLOCH/SONNE/NEBEL = Tönung. `fire` (campfire, `led_state` level/blue): warmweißes
-Fackellicht (255,125,30; auf LEDs wirkt erst das warmweiß), träges Glimmen je LED (`embers`), Wabern `gust`, Helligkeit mit der Feuerstufe, bei `blue` > 0 blau. `vortex` (blackhole, core, flux, pond): Punkte driften von beiden Enden zur Mitte, Mitte glimmt
+Fackellicht (255,125,30; auf LEDs wirkt erst das warmweiß), träges Glimmen je LED (`embers`), Wabern `gust`, Helligkeit mit der Feuerstufe, blau nur bei `blue` > 0 aus `led_state` (Kristall; `campfire_big`/`campfire_blue` setzen in `fire` keine blaue Tönung). `vortex` (blackhole, core, flux, pond): Punkte driften von beiden Enden zur Mitte, Mitte glimmt
 mit dem Bass. `breathe` (taxi): langsames Atmen + zwei wandernde Wolken. `clockwork` (clocktower,
 `clocktower.led_state()`: `clock_k` 0 = 21:00 .. 1 = 22:04, läuft nach dem Blitz zurück, `act`, `storm`, `final`, `strike_age`,
 `sec`, `sheet`, `far`, `spark_age`, `car`/`car_wait`, `doc`, `dance`, `couple`): Gewitterblau mit Regenschimmer (im Gewitter mehr),
