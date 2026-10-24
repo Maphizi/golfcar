@@ -416,8 +416,9 @@ Blöcke (Blockgröße `n // 60`, 784 LEDs -> 13) in Farbe A hell / Farbe A gedim
 `slots_themes.py`, `_saturate` 1.5, kein Weiß; Glanzlichter = aufgehellte Farbe A), alle an, halbe Helligkeit (`bri *= 0.5`, Profile bri x0,5), Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat (`mq_target`/`mq_pos_s`, weich
 eingerastet; ohne Beats alle 0,6 s; Drehen = 4 Blöcke/s von selbst), Richtung `mq_dir` kehrt alle 16 Beats, bei kräftigem Bass
 oder alle 6-14 s um, Farben rücken alle 4 Beats (`mq_rot`); zweites Muster Lauflicht (`mq_mode` 1, Wechsel alle `mq_mode_at` 45-90 s,
-Überblendung `mq_mix` 1,5 s): ein Block an, einer aus (aus = 4 %), gleiche Blockschritte je Beat, Drop (`is_drop` aus `last_drop`) = `mq_dir`
-umkehren und zu 70 % neue Farbe `chase_ci` (0 Farbe A, 1 Farbe B, 2 Farbe A mit Farbton + `chase_hue`); `mq_pos` läuft modulo 6 Blöcke; Gewinn 1 = zweimal Gold, 2 = weißer Lauf von vorne + schnell, >= 3 =
+Überblendung `mq_mix` 1,5 s): ein Ansteuerpunkt an, der nächste aus, konstant hell, `ch_step` springt hart je Beat (ohne Beats alle
+0,6 s) um einen Punkt (an <-> aus), Drop (`is_drop` aus `last_drop`) = `mq_dir` umkehren und neue Farbe `chase_ci` (0 Farbe A, 1 Farbe B,
+2 Farbe A mit Farbton + `chase_hue`); `mq_pos` läuft modulo 6 Blöcke; Gewinn 1 = zweimal Gold, 2 = weißer Lauf von vorne + schnell, >= 3 =
 Gold/Weiß-Strobo 3 s + Funkeln; Specials `sp_next` 20-45 s: `runner` (ein Punkt läuft durch, zieht der Beat an, überholt ein
 zweiter in der Akzentfarbe mit 1,9x), `cross` (zwei Läufer kreuzen sich), Markise derweil 60 %. Specials
 (`_add`/`_apply_specials`, max. 4 gleichzeitig) aus den Ereignis-Profilen der Szenen (`wled.apply_mode_async` -> `event()`):

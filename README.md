@@ -1254,8 +1254,9 @@ Zellen des Korridors langsam und immer in dieselbe Richtung vorbei, ein Viertel 
 über die ganze Kette wandert, mal von vorne, mal von hinten, mit gelegentlichem Schritt zurück. Die Slotmaschinen leuchten wie ein Casino-Eingang in den Lichtfarben des
 gewählten Automaten: Blöcke in Farbe A hell, Farbe A gedimmt und Farbe B hell, kein Weiß, das Muster rückt auf jedem Beat genau einen Block
 weiter, 1, 2, 3, 4, weich eingerastet, mal vor, mal zurück, beim Drehen läuft es schnell, alle paar Beats rücken die Farben
-weiter; alle ein, zwei Minuten wechselt die Markise in ein Lauflicht: ein Block an, einer aus, einer an, die Blöcke hüpfen auf jedem Beat
-einen Block weiter, beim Drop kehrt die Richtung um und meist kommt eine neue Farbe, dann geht es weich zurück zur Markise; kleiner Gewinn blitzt zweimal, großer Gewinn schickt einen weißen Lauf, Jackpot ist Gold-Weiß-Stroboskop mit Funkeln;
+weiter; alle ein, zwei Minuten wechselt die Markise in ein Lauflicht: ein Ansteuerpunkt an, der nächste aus, ganz mechanisch und ohne
+Flimmern, auf jedem Beat springt das Muster hart um einen Punkt weiter (an wird aus, aus wird an), beim Drop kommt eine neue Farbe, dann
+geht es weich zurück zur Markise; kleiner Gewinn blitzt zweimal, großer Gewinn schickt einen weißen Lauf, Jackpot ist Gold-Weiß-Stroboskop mit Funkeln;
 als Specials läuft ab und zu ein einzelner Punkt durch, der bei anziehendem Beat überholt wird, oder zwei Läufer kreuzen sich. Im Systemfehler
 ist das Board ein Kampf zwischen Grün (das System) und Rot (der Fehler), sonst nichts: Die Front wandert in Blasen über die
 Kette, je nach Phase gewinnt Rot (Zusammenbruch, Alarm) oder Grün (Erholung), jeder Beat ist ein Vorstoß der stärkeren Seite,

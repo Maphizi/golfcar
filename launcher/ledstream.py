@@ -145,6 +145,8 @@ class LedStream:
         self.mq_mode_at = time.monotonic() + self.rng.uniform(45.0, 90.0)
         self.chase_ci = 0                                         # Lauflichtfarbe: 0 A, 1 B, 2 A mit gedrehtem Farbton
         self.chase_hue = 0.0
+        self.ch_step = 0                                          # Lauflicht: Schritt in Ansteuerpunkten, hart je Beat
+        self.ch_tick = 0.0
         self.sp_next = time.monotonic() + self.rng.uniform(15.0, 30.0)   # Specials: einzelner Läufer, Überholer, Kreuzung
         self.base = SCENE_BASE.get(scene, "")
         self.specials: list[dict] = []                            # aktive Specials (kind, t0, len, col, ...)
@@ -411,8 +413,9 @@ class LedStream:
     def _slots(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
         """Casino-Markise wie ein Vegas-Eingang: Blöcke in derselben Farbe (Farbe A hell, Farbe A gedimmt, Farbe B hell im Wechsel, kein Weiß), alle an, nur die Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat weiter (1 2 3 4), weich eingerastet, mal vor, mal zurück,
         beim Drehen läuft es schnell von selbst; alle paar Beats wechseln die Farben durch, ab und zu kehrt die Richtung um. Zweites Muster
-        (Lauflicht, wechselt sich alle 45-90 s mit der Markise ab, weich überblendet): ein Block an, einer aus, einer an; die Blöcke hüpfen auf
-        jedem Beat einen Block weiter, beim Drop kehrt die Richtung um und meist kommt eine neue Farbe. Gewinn: klein = zweimal
+        (Lauflicht, wechselt sich alle 45-90 s mit der Markise ab, weich überblendet): ein Ansteuerpunkt an, der nächste aus, ganz mechanisch
+        ohne Gleiten und Flimmern; auf jedem Beat springt das Muster hart einen Punkt weiter (an wird aus, aus wird an), beim Drop kommt
+        eine neue Farbe. Gewinn: klein = zweimal
         Blitzen, groß = heller Lauf von vorne, Jackpot = Gold/Weiß-Stroboskop und Funkeln."""
         n = self.n
         x = self._idx()
@@ -434,9 +437,8 @@ class LedStream:
         if is_drop:                                               # Drop: Richtung umkehren, meist neue Lauflichtfarbe
             self.mq_dir *= -1.0
             self.mq_flip_at = now + self.rng.uniform(6.0, 14.0)
-            if self.rng.random() < 0.7:
-                self.chase_ci = (self.chase_ci + self.rng.choice((1, 2))) % 3
-                self.chase_hue = self.rng.uniform(0.12, 0.5)
+            self.chase_ci = (self.chase_ci + self.rng.choice((1, 2))) % 3
+            self.chase_hue = self.rng.uniform(0.12, 0.5)
         if is_beat:
             self.mq_beats += 1
             if self.mq_beats % 4 == 0:                            # alle vier Beats die Farben weiterrücken
@@ -470,7 +472,10 @@ class LedStream:
         if spinning:
             level = twinkle * 1.0
         frame = colors * level[:, None]
-        if self.mq_mix > 0.01:                                    # Lauflicht: Block an, Block aus, hüpft je Beat einen Block
+        if is_beat or (now - self.last_beat > 2.0 and now - self.ch_tick > 0.6):   # Lauflicht-Schritt: hart, je Beat ein Punkt
+            self.ch_tick = now
+            self.ch_step += 1
+        if self.mq_mix > 0.01:                                    # Lauflicht: Ansteuerpunkt an, nächster aus, mechanisch
             if self.chase_ci == 0:
                 ccol = self.marquee[0]
             elif self.chase_ci == 1:
@@ -478,9 +483,9 @@ class LedStream:
             else:
                 h0 = float(_hue(self.marquee[0][None, :])[0]) / 360.0
                 ccol = _hsv((h0 + self.chase_hue) % 1.0, 1.0, min(1.0, float(self.marquee[0].max()) / 255.0))
-            on = ((shift // block) % 2 == 0).astype(float)
-            on = 0.04 + 0.96 * on                                 # "aus" glimmt kaum, damit die Kette nicht tot wirkt
-            chase = np.outer(on * level * 1.1, ccol)
+            on = ((idx + self.ch_step) % 2 == 0).astype(float)    # Punkt für Punkt im Wechsel, springt je Beat um einen Punkt
+            lvl = 1.0 * live + (1.0 - live) * 0.5                 # konstant hell, kein Flimmern
+            chase = np.outer(on * lvl, ccol)
             frame = frame * (1.0 - self.mq_mix) + chase * self.mq_mix
         gold = self.marquee[0]
         white = _saturate(self.marquee[0] * 0.7 + WHITE * 0.3, 1.2)   # Glanzlicht: aufgehellte Hauptfarbe statt Weiß
