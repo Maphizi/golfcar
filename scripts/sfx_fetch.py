@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Echte Hupen und Effekte aus der Scratch-Soundbibliothek (CC BY-SA 2.0, scratch.mit.edu) holen und je Thema aufbereiten.
 
-Lädt die Originale nach assets/sfx/raw/ (nur fehlende) und baut daraus assets/sfx/real/<thema>_horn.wav und
+Lädt die Originale nach assets/sfx/raw/ (nur fehlende) und baut daraus assets/sfx/real/<thema>_horn.wav, <thema>_horn2.wav und
 <thema>_fx1..3.wav (22050 Hz, mono, 16 Bit). launcher/sfx.py nimmt die Dateien aus real/ vor den synthetischen aus
 assets/sfx/ (scripts/sfx_build.py). Beide Ordner liegen nicht im Repo; update.sh ruft das Skript auf dem Pi auf.
 Aufruf: .venv/bin/python scripts/sfx_fetch.py [--rebuild]"""
@@ -226,6 +226,22 @@ def recipes() -> dict:
         g = load("goose")
         return None if g is None else repeat(g, 2, 0.12)
 
+    def horn2_space():                                               # Zugpfeife tief mit Hall = Schiffshorn
+        w = load("train_whistle")
+        return None if w is None else echo(lowpass(pitch(w, -5), 2500), 0.18, 0.35, 2)
+
+    def horn2_cyber():
+        s = load("police_siren")
+        return None if s is None else clip(repeat(s, 2, 0.0), 2.0)
+
+    def horn2_future():                                              # kurzes Doppelhupen
+        h = load("car_horn")
+        return None if h is None else repeat(cut(h, 0.3, 0.08), 2, 0.12)
+
+    def horn2_green():                                               # Wolfsgeheul
+        w = load("wolf_howl")
+        return None if w is None else cut(w, 3.0, 0.6)
+
     def simple(src, seconds=None, fade=0.3, semis=0.0):
         def f():
             x = load(src)
@@ -245,7 +261,8 @@ def recipes() -> dict:
         return None if x is None else cut(fade_in(x, 0.05), 3.5, 0.8)
 
     return {
-        "spacetaxi_horn": horn_space, "spacetaxi_fx1": simple("space_flyby"), "spacetaxi_fx2": simple("teleport2"),
+        "spacetaxi_horn": horn_space, "spacetaxi_horn2": horn2_space, "cyber_horn2": horn2_cyber, "future_horn2": horn2_future,
+        "green_horn2": horn2_green, "spacetaxi_fx1": simple("space_flyby"), "spacetaxi_fx2": simple("teleport2"),
         "spacetaxi_fx3": simple("alien_creak2"),
         "cyber_horn": horn_cyber, "cyber_fx1": simple("alert"), "cyber_fx2": siren, "cyber_fx3": simple("buzz_whir"),
         "future_horn": horn_future, "future_fx1": simple("clock_ticking", 2.5, 0.4), "future_fx2": thunder,

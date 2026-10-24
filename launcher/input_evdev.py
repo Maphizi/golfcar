@@ -40,8 +40,10 @@ class EvdevInput(threading.Thread):
         self.device_patterns: list[str] = keymap_cfg.get("devices", {}).get("include", ["*"])
         self.device_excludes: list[str] = keymap_cfg.get("devices", {}).get("exclude", [])
 
-        # EV_KEY-Bindings (name oder numerischer code)
+        # EV_KEY-Bindings (name oder numerischer code); on = "down" (Standard, Drücken/Schalter umlegen) oder "up"
+        # (Loslassen/Schalter zurück) -> Kippschalter bekommen je Stellung eine Aktion
         self.bindings: dict[int, Action] = {}
+        self.release_bindings: dict[int, Action] = {}
         self._unbound_seen: set[int] = set()
         for b in keymap_cfg.get("bindings", []):
             action = parse_action(b.get("action", ""))
@@ -56,7 +58,10 @@ class EvdevInput(threading.Thread):
             if code is None:
                 log.warning("Ungültiger Key ignoriert: %s", b)
                 continue
-            self.bindings[code] = action
+            if str(b.get("on", "down")).lower() in ("up", "release", "0"):
+                self.release_bindings[code] = action
+            else:
+                self.bindings[code] = action
 
         # Hat-Switch-Bindings (D-Pad Achsen)
         self.hat_bindings: dict[HatKey, Action] = {}
@@ -160,6 +165,12 @@ class EvdevInput(threading.Thread):
                 self._unbound_seen.add(ev.code)
                 log.info("Taste ohne Belegung: code = %d (%s) auf %s", ev.code,
                          ecodes.KEY.get(ev.code) or ecodes.BTN.get(ev.code) or "unbenannt", dev.name)
+
+        elif ev.type == ecodes.EV_KEY and ev.value == 0:
+            action = self.release_bindings.get(ev.code)
+            if action is not None:
+                log.debug("KEY %s hoch -> %s (%s)", ev.code, action.value, dev.name)
+                self.queue.put(action)
 
         # EV_ABS: Hat-Switch D-Pad (ignoriere value=0 = losgelassen)
         elif ev.type == ecodes.EV_ABS and ev.value != 0:

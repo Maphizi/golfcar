@@ -36,7 +36,8 @@ ATTRACT_KEY_ON  = ecodes.KEY_F16  # Autopilot-Schalter AN
 ATTRACT_KEY_OFF = ecodes.KEY_F17  # Autopilot-Schalter AUS
 
 ALL_KEYS = list(HAT_TO_KEY.values()) + [START_KEY, KIPP_KEY_AN, KIPP_KEY_AUS, TALK_KEY, ATTRACT_KEY_ON, ATTRACT_KEY_OFF]
-DEFAULTS = {"start_code": 266, "kipp_code": 267, "kipp_mode": "toggle", "talk_code": 0, "attract_code": 0, "horn_code": 0, "debounce_ms": 300}
+DEFAULTS = {"start_code": 266, "kipp_code": 267, "kipp_mode": "toggle", "talk_code": 0, "attract_code": 0, "horn_code": 0,
+            "horn2_code": 0, "debounce_ms": 300}
 
 
 class DPadRemap(threading.Thread):
@@ -48,6 +49,7 @@ class DPadRemap(threading.Thread):
         self.last_event = time.monotonic()        # letzte Eingabe am Board (Vorführmodus des Launchers)
         self.on_attract = None                    # Launcher-Callback für den Autopilot-Schalter (das uinput-Gerät liest der Launcher nicht)
         self.on_horn    = None                    # Launcher-Callback für den Hupe-Schalter (Code 269): True = runter, False = hoch
+        self.on_horn2   = None                    # zweite Seite des Hupen-Schalters ([buttons].horn2_code): True = gedrückt
         self._ui = None
         self.start_code = int(c["start_code"])
         self.kipp_code = int(c["kipp_code"])
@@ -55,6 +57,7 @@ class DPadRemap(threading.Thread):
         self.talk_code    = int(c["talk_code"])
         self.attract_code = int(c["attract_code"])
         self.horn_code    = int(c["horn_code"])
+        self.horn2_code   = int(c["horn2_code"])
         self.debounce = max(0.0, float(c["debounce_ms"]) / 1000.0)
         self._last_press: dict[int, float] = {}
         log.info("Tasten: Start=%d, Kippschalter=%d (%s), Sprechtaste=%s, Autopilot=%s, Hupe=%s, Entprellung %.0f ms",
@@ -163,6 +166,15 @@ class DPadRemap(threading.Thread):
                             except Exception:
                                 log.exception("Hupe-Schalter")
                         log.info("Hupe-Schalter %s", "AN" if ev.value == 1 else "AUS")
+                        continue
+                    # Hupe, zweite Seite (Schalter in die andere Richtung): 1 = gedrückt -> zweiter Ton
+                    if self.horn2_code and ev.code == self.horn2_code and ev.value in (0, 1):
+                        if self.on_horn2 and ev.value == 1:
+                            try:
+                                self.on_horn2(True)
+                            except Exception:
+                                log.exception("Hupe-Schalter 2")
+                        log.info("Hupe-Schalter Seite 2 %s", "AN" if ev.value == 1 else "AUS")
                         continue
                     if ev.value != 1:                # nur Tastendruck, keine Repeats (2) oder Loslassen (0)
                         continue

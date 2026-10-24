@@ -75,13 +75,16 @@ ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-S
 Nicht auf dem Board, über `scripts/kittctl <modus>`: droid (BIBO), news, viz_crt, viz_eye, planeten, menu, status.
 
 ## Hupe, Effekte und Vorführmodus (`launcher/sfx.py`, `scripts/sfx_build.py`, `launcher/core.py`)
-Aktionen `horn` und `fx` (`config/keymap.toml`, Beispiele am Ende der Datei; Taste frei wählbar) spielen die Hupe bzw. einen
-zufälligen Effekt des aktuellen Themas aus `assets/sfx/<thema>_horn.wav` / `<thema>_fx1..3.wav` (synthetisch erzeugt von
+Aktionen `horn`, `horn2` und `fx` (`config/keymap.toml`, Beispiele am Ende der Datei; Taste frei wählbar) spielen die Hupe, den
+zweiten Ton bzw. einen zufälligen Effekt des aktuellen Themas aus `assets/sfx/<thema>_horn.wav` / `<thema>_horn2.wav` / `<thema>_fx1..3.wav` (synthetisch erzeugt von
 `scripts/sfx_build.py`, 22 kHz mono; davor `assets/sfx/real/` aus `scripts/sfx_fetch.py`: echte Aufnahmen der Scratch-Soundbibliothek
 (CC BY-SA 2.0, `SOUNDS` Name -> md5, URL `assets.scratch.mit.edu/internalapi/asset/<md5>.wav/get/`, Rohdateien `assets/sfx/raw/`,
 Rezepte `recipes()`; beides gitignored, `update.sh` ruft es auf, `--rebuild` baut neu; fehlt eine Quelle, bleibt die synthetische
 Datei); pw-play/aplay nicht-blockierend, `settings.toml` `[sfx] enabled/volume`) und blitzen die
-LEDs (WLED-Profile `horn`/`fx`, PXN weiß; `led_back_at` setzt danach das Modusprofil zurück). Vorführmodus `[attract]`:
+LEDs (WLED-Profile `horn`/`fx`, PXN weiß; `led_back_at` setzt danach das Modusprofil zurück). Hupen-Schalter (fällt in die Mitte
+zurück): Seite 1 `[buttons].horn_code` 269 (`dpad_remap.on_horn`, zurück = `HORN_OFF` tut nichts), Seite 2 `[buttons].horn2_code`
+(`on_horn2` -> `HORN2` = `horn2`; Code aus dem Launcher-Log "Taste ohne Belegung"). Weitere Kippschalter: `keymap.toml` `code = N`,
+je Stellung eine Aktion (`on = "down"` Standard, `on = "up"` beim Zurücklegen -> `EvdevInput.release_bindings`). Vorführmodus `[attract]`:
 nach `idle_minutes` 5 ohne Eingabe (Launcher-Actions und Board-Events via `DPadRemap.last_event`) wechselt `_attract_tick()`
 alle `every_seconds` 180 zufällig durch `ATTRACT_BASE` (Tasten 2-7 im aktuellen Thema, nie dieselbe zweimal, mit Ansage);
 jede Eingabe beendet ihn; nicht bei `boot`/`gaming`.

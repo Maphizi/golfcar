@@ -112,6 +112,10 @@ def spacetaxi() -> None:
     a += 0.5 * sine(110, tt)
     a = lowpass(clip(a, 2.0), 2500) * env(len(tt), 0.02, 0.05, 0.9, 0.25)
     write("spacetaxi_horn", echo(a, 0.12, 0.35, 2))
+    tt2 = t(1.2)                                                           # zweiter Ton: tiefes Schiffshorn mit Aufwärtsglissando
+    f2 = 165 * (1.0 + 0.08 * np.clip(tt2 * 4, 0, 1)) * vib(tt2, 5, 0.01)
+    b = saw(f2, tt2) + 0.6 * saw(f2 * 1.01, tt2) + 0.7 * sine(f2 * 0.5, tt2)
+    write("spacetaxi_horn2", echo(lowpass(clip(b, 2.5), 1800) * env(len(tt2), 0.05, 0.1, 0.9, 0.3), 0.15, 0.35, 2))
     write("spacetaxi_fx1", sweep(2200, 180, 0.35, square, 0.6) * env(int(SR * 0.35), 0.005, 0.05, 0.6, 0.1))
     w = lowpass(noise(1.6), 900) * np.linspace(0.2, 1.0, int(SR * 1.6)) ** 2 + 0.5 * sweep(90, 1400, 1.6, sine, 2.0)
     write("spacetaxi_fx2", w * env(int(SR * 1.6), 0.1, 0.1, 1.0, 0.3))
@@ -131,6 +135,8 @@ def cyber() -> None:
     a = saw(f, tt) + saw(f * 1.5, tt) * 0.8 + saw(f * 0.5, tt) * 0.5
     a = clip(a, 6.0) * env(len(tt), 0.01, 0.1, 0.9, 0.2)
     write("cyber_horn", echo(lowpass(a, 3000), 0.09, 0.3, 2))
+    s2 = np.concatenate([sweep(500, 1100, 0.35, saw, 1.0), sweep(1100, 500, 0.35, saw, 1.0)] * 2)   # zweiter Ton: Sirene auf/ab
+    write("cyber_horn2", echo(lowpass(clip(s2, 3.0), 2800) * env(len(s2), 0.01, 0.05, 0.95, 0.15), 0.08, 0.3, 2))
     g = np.zeros(int(SR * 0.7))
     for k in range(10):
         dur = rng.uniform(0.02, 0.07)
@@ -152,6 +158,9 @@ def future() -> None:
     a = sum(w * (saw(f0 * h, tt) if h == 1 else sine(f0 * h, tt)) for f0 in (370, 466) for h, w in ((1, 1.0), (2, 0.5), (3, 0.25)))
     a = lowpass(clip(a, 1.8), 2200) + 0.35 * sine(60, tt) * (1 + 0.5 * np.sin(2 * np.pi * 7 * tt))
     write("future_horn", a * env(len(tt), 0.03, 0.05, 0.95, 0.2))
+    honk = a[: int(0.28 * SR)] * env(int(0.28 * SR), 0.01, 0.03, 0.9, 0.08)   # zweiter Ton: kurzes Doppelhupen
+    gap = np.zeros(int(0.12 * SR))
+    write("future_horn2", np.concatenate([honk, gap, honk]))
     b = np.zeros(int(SR * 1.3))
     for k, f0 in enumerate((880, 1100, 1320)):
         seg = sine(f0, t(0.12)) * env(int(SR * 0.12), 0.005, 0.03, 0.7, 0.05)
@@ -173,6 +182,13 @@ def green() -> None:
     f = 130.8 * vib(tt, 4.5, 0.006)
     a = sum(sine(f * h, tt) / h for h in range(1, 7))
     write("green_horn", lowpass(a, 1500) * env(len(tt), 0.12, 0.2, 0.85, 0.35))
+    ku = np.zeros(int(SR * 1.3))                                            # zweiter Ton: Kuckuck (zwei Terzen)
+    for i0, f0 in ((0.0, 740.0), (0.35, 587.0), (0.6, 740.0), (0.95, 587.0)):
+        seg = sine(f0, t(0.18))
+        seg = seg * env(len(seg), 0.02, 0.05, 0.7, 0.08)
+        i = int(i0 * SR)
+        ku[i:i + len(seg)] += seg
+    write("green_horn2", echo(lowpass(ku, 2500), 0.25, 0.3, 2))
     hoot = np.zeros(int(SR * 1.0))
     for i0, dur in ((0.0, 0.3), (0.45, 0.45)):
         seg = sweep(400, 340, dur, sine, 0.5) * env(int(SR * dur), 0.04, 0.05, 0.8, 0.12)

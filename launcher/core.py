@@ -110,7 +110,8 @@ class Launcher:
         try:
             dp = DPadRemap(self.settings.get("buttons", {}))
             dp.on_attract = lambda on: self.queue.put(Action.ATTRACT_ON if on else Action.ATTRACT_OFF)   # Schalter direkt an den Launcher
-            dp.on_horn    = lambda on: self.queue.put(Action.HORN if on else Action.HORN_OFF)              # Hupe: runter = horn, hoch = horn_off
+            dp.on_horn    = lambda on: self.queue.put(Action.HORN if on else Action.HORN_OFF)              # Hupe: Seite 1 = horn, zurück = horn_off (nichts)
+            dp.on_horn2   = lambda on: self.queue.put(Action.HORN2) if on else None                       # Hupe: Seite 2 = horn2
             dp.start()
             self.inputs.append(dp)
             self.dpad = dp
@@ -231,12 +232,12 @@ class Launcher:
             else:
                 knob.nudge(1 if action in (Action.VOICE_UP, Action.MUSIC_UP) else -1)
             return
-        if action in (Action.HORN, Action.FX):
+        if action in (Action.HORN, Action.HORN2, Action.FX):
             from launcher import sfx
-            sfx.play("horn" if action == Action.HORN else "fx")
+            sfx.play(action.value)
             cur = self.pm.current.name if self.pm.current else HOME
             try:
-                wled.apply_mode_async(action.value)                       # kurzer LED-Blitz, danach zurück zum Modusprofil
+                wled.apply_mode_async("fx" if action == Action.FX else "horn")   # kurzer LED-Blitz, danach zurück zum Modusprofil
                 pxn_led.set_color_async(255, 255, 255)
             except Exception as exc:
                 log.debug("LED-Fehler: %s", exc)

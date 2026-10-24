@@ -1,7 +1,8 @@
 """Hupe und Effekte je Thema: assets/sfx/real/<thema>_horn.wav, <thema>_fx1..3.wav (echte Klänge, scripts/sfx_fetch.py),
 sonst die synthetischen aus assets/sfx/ (scripts/sfx_build.py).
 
-`play("horn")` spielt die Hupe des aktuellen Themas, `play("fx")` einen zufälligen Effekt (nie zweimal derselbe
+`play("horn")` spielt die Hupe des aktuellen Themas, `play("horn2")` den zweiten Ton (andere Seite des Hupen-Schalters,
+<thema>_horn2.wav), `play("fx")` einen zufälligen Effekt (nie zweimal derselbe
 hintereinander), nicht-blockierend über pw-play (PipeWire) oder aplay. Lautstärke: settings.toml [sfx] volume.
 Fehlt das Thema, fällt es auf spacetaxi zurück."""
 from __future__ import annotations
@@ -29,7 +30,7 @@ def _theme_name() -> str:
 
 
 def path_for(kind: str) -> tuple[str, "lcfg.Path | None"]:
-    """(Beschreibung, Pfad) für "horn", "fx", "attract_on", "attract_off" im aktuellen Thema."""
+    """(Beschreibung, Pfad) für "horn", "horn2", "fx", "attract_on", "attract_off" im aktuellen Thema."""
     global _last_fx
     th = _theme_name()
     if kind == "fx":
@@ -66,7 +67,7 @@ def play(kind: str) -> bool:
     else:
         log.warning("Kein Abspielprogramm (pw-play/aplay)")
         return False
-    if _current and _current.poll() is None and kind == "horn":
+    if _current and _current.poll() is None and kind in ("horn", "horn2"):
         _current.kill()                                   # Hupe unterbricht eine laufende Hupe
     try:
         _current = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

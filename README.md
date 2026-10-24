@@ -1301,14 +1301,20 @@ Ausprobieren ohne Eintrag: `scripts/wledctl.py set --col 0,255,0 --fx 2 --bri 20
 - Für den Alltag `dev_emergency_exit = false` in `config/settings.toml`.
 
 
-**Hupe und Effekte:** Die Aktionen `horn` und `fx` lassen sich in `config/keymap.toml` auf freie Tasten legen. `horn` spielt die
-Hupe des Themas (Raumschiff-Klaxon, Cyber-Sirene, 80er-Autohupe mit Flux-Brummen, Alphorn), `fx` einen zufälligen Effekt
+**Hupe und Effekte:** Die Aktionen `horn`, `horn2` und `fx` lassen sich in `config/keymap.toml` auf freie Tasten legen. `horn` spielt die
+Hupe des Themas (Raumschiff-Klaxon, Cyber-Sirene, 80er-Autohupe mit Flux-Brummen, Alphorn), `horn2` den zweiten Ton für die andere
+Seite des Hupen-Schalters (Schiffshorn, Sirene auf und ab, Doppelhupen, Kuckuck; `settings.toml` `[buttons] horn2_code`), `fx` einen zufälligen Effekt
 (Laser, Warp, Roboter-Piepsen; Glitch, Alarm, Synth; Zeitkreis-Piepser, Donner, Knistern; Eule, Frosch, Windspiel), beide mit
 LED-Blitz. Klänge: echte Aufnahmen aus der Scratch-Soundbibliothek (scratch.mit.edu, CC BY-SA 2.0; Autohupe, Polizeisirene,
 Gans, Raumschiff, Teleport, Alarm, Uhr, Gewitter, Eule, Wolf, Grillen), `scripts/sfx_fetch.py` lädt sie beim `update.sh` auf dem Pi
 nach `assets/sfx/raw/` und baut je Thema `assets/sfx/real/` (Space: Hupe tiefer mit Hall; Cyberpunk: verzerrte Tiefhupe mit
 Sirene; Zukunft: Autohupe pur; Natur: Gans). Fehlen sie, laufen die synthetischen aus `assets/sfx/` (`scripts/sfx_build.py`).
 Lautstärke `settings.toml` `[sfx]`.
+
+**Weitere Kippschalter:** Die zwei Schalter unten neben dem Autopilot bekommen in `config/keymap.toml` je Stellung eine
+Aktion: `code = N` mit `on = "down"` (Standard) beim Umlegen und `on = "up"` beim Zurücklegen; den Code N zeigt das Launcher-Log beim
+ersten Umlegen als "Taste ohne Belegung". Erlaubt sind alle Modi und `fx`, `horn`, `horn2`, `talk`, `attract_on/off`, `voice_up/down`,
+`music_up/down`.
 
 **Vorführmodus:** Kommt fünf Minuten keine Eingabe, wechselt das System alle drei Minuten von selbst durch die Modi des
 Themas (Tasten 2 bis 7, mit Ansage). Jede Taste beendet ihn. Einstellungen `settings.toml` `[attract]`. Mit dem

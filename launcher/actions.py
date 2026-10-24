@@ -44,7 +44,8 @@ class Action(str, Enum):
     PARADOX = "paradox"        # Zukunft: Paradoxon
     TALK = "talk"              # Sprechtaste: bei HAL Musik leise + Mikrofon an/aus (Taste F15 an den Modus)
     HORN     = "horn"          # Hupe des Themas (assets/sfx/<thema>_horn.wav) + LED-Blitz
-    HORN_OFF = "horn_off"      # Hupe-Schalter hoch: attract_off-Sound spielen
+    HORN_OFF = "horn_off"      # Hupe-Schalter zurück in die Mitte: nichts (Ton läuft aus)
+    HORN2    = "horn2"         # zweite Seite des Hupen-Schalters: zweiter Ton (assets/sfx/<thema>_horn2.wav)
     FX = "fx"                  # zufälliger Effekt des Themas (assets/sfx/<thema>_fx1..3.wav) + LED-Blitz
     ATTRACT_ON  = "attract_on"  # Autopilot-Schalter unten (an)
     ATTRACT_OFF = "attract_off" # Autopilot-Schalter oben (aus)
