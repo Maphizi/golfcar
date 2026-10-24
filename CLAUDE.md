@@ -325,6 +325,7 @@ dem Drop. ÜBERLAST im Shader auf 0.72 gedämpft, Lichter werden weich begrenzt 
 `uEmpT/uEmpBeats/uEmpSeed` (Ring, Basis 1, Blöcke 12x7, auch von selbst `emp_auto` 90-180 s bei `emp_min_energy`), Drop = Blitz
 `uLightT/uLightX` + Feuerwerk `uFireT` + 2 Beats Zustand 6, OBEN Feuerwerk, SPACE/BACKSPACE `uLook`. Partikel
 `rooftop_particles.png` 8x3 à 160. WLED `rooftop`, je Wetter `rooftop_rain|fog|acid|ash`, `rooftop_fireworks|blackout|lightning`.
+LED-Board: Programm `city` (Fensterfront, spiegelt die Lichtzustände, siehe LED-Buttonboard).
 `[scenes.rooftop] skyline`, `cycle_minutes`, `base_fit`, `home_mix`, `emp_auto`, `emp_min_energy`.
 Test: `python -m visualizers.engine rooftop --test-signal --demo`.
 
@@ -440,7 +441,15 @@ mit dem Bass. `breathe` (taxi, clocktower, woodeye, trip, hearttree, square): la
 `oracle.led_state()`: `cols` = Farben der acht Tafel-Glyphen aus `_panel_colors()` (Atlaszellen 16-23, hellste 20 %, Grauanteil
 raus), `lvl` = `panel_lvl` mit Nachglühen): LED i zeigt Tafel i % 8, also Rot, Orange, Gelb, Grün, Türkis, Blau, Violett, Magenta
 je ein Ansteuerpunkt, an solange die Tafel an ist (Beat-Muster der Szene), aus 4 %; Stille = alle leise atmend.
-`rain` (rooftop): Tropfen von hinten nach vorne. `glitch` (blackice, paradox, overdose): das Störprogramm `_error` in den
+`city` (rooftop, `rooftop.led_state()`: `state` = laufender Lichtzustand 0-6 + `mix`, `weather`, Zeitpunkte `blackout_t0`,
+`emp_t0`/`emp_seed`, `lightning_t0`, `fire_t0`): Fensterfront `_city_setup()` (Fenster 2-4 LEDs, Lücke 1-2, Häuser alle 4-9 Fenster
+mit 3-6 Lücke; `CITY_PAL` Magenta/Cyan/Bernstein/Violett), ~40 % an, je Beat kippen 1,5-4,5 % der Fenster. Zustände: 1 Notstrom
+(5 % Fenster warm flackernd, rote Flugwarnlichter), 2 rot + Drehlicht hin und her, 3 giftgrün mit Röhrenflackern, 4 Gold, 85 % an,
+alle 4 Beats brennt ein Haus durch, 5 Fenster aus + 4 Reklamen à 15-20 LEDs mit Lauflicht (Muster je Beat), 6 blau-weiß; Wetter:
+Regen-Schimmer, Nebel weich/blass, Säure grüner Stich, Asche glühende Punkte. Stromausfall blockweise aus, Notstrom, Rückkehr, am
+Ende Gold; EMP als Welle vom Punkt aus, Fenster kommen einzeln zurück; Blitz nur beim Zustand 6 (höchstens alle 8 s) oder beim
+Drop (höchstens alle 30 s); `event()` ignoriert in `city` lightning/blackout/fireworks-Profile (Feuerwerk kommt aus `fire_t0`).
+Specials: fliegendes Auto alle 25-50 s (Scheinwerfer + Rücklichter), Polizeidrohne alle 60-120 s (rot/blau). `glitch` (blackice, paradox, overdose): das Störprogramm `_error` in den
 Themenfarben (`c_red`/`c_green` aus col/col2) mit eigenem 40-s-Phasenzyklus. `error` = Systemfehler (oben beschrieben). `slots` (`slots.py` `led_state`, alle vier Automaten): Casino-Lauflicht `_slots` als Basis:
 ein Ansteuerpunkt an, der nächste aus, konstant hell, `ch_step` springt hart je Beat (ohne Beats alle 0,6 s) um einen Punkt (an <-> aus),
 Farbe `chase_ci` (0 Farbe A, 1 Farbe B, 2 Farbe A mit Farbton + `chase_hue`; `colors` aus `slots_themes.py`, `_saturate` 1.5, kein Weiß)

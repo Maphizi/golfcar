@@ -35,7 +35,7 @@ SCENE_BASE = {
     "navcomputer": "stars", "planets": "stars", "timejump": "timejump", "neonrace": "duel", "splash": "stars",
     "campfire": "fire",
     "blackhole": "vortex", "core": "vortex", "flux": "vortex", "pond": "vortex",
-    "rooftop": "rain",
+    "rooftop": "city",
     "taxi": "breathe", "oracle": "breathe", "clocktower": "breathe", "woodeye": "breathe", "trip": "breathe",
     "hearttree": "breathe", "square": "breathe",
     "blackice": "glitch", "paradox": "glitch", "overdose": "glitch",
@@ -261,6 +261,8 @@ class LedStream:
         col = _rgb(profile.get("col"), [255, 255, 255])
         col2 = _rgb(profile.get("col2"), [0, 0, 0])
         n = name.lower()
+        if self.base == "city" and ("lightning" in n or "blackout" in n or "fireworks" in n):
+            return                                                # Dachterrasse: Blitz, Stromausfall, Feuerwerk kommen aus led_state
         if STATE_PROFILE.match(n):
             self.tint, self.tint_until = (col, col2), now + 1e9
             return
@@ -395,6 +397,8 @@ class LedStream:
             frame = self._slots(now, dt, st, bass, high, is_beat, live)
         elif program == "duel":                                   # Neonfahrt: zwei Felder im Beat
             frame = self._duel(now, dt, st, bass, high, is_beat, live)
+        elif program == "city":                                   # Dachterrasse: Fensterfront der Stadt
+            frame = self._city(now, dt, st, bass, high, is_beat, live)
         elif program == "stars":
             frame = self._stars(now, dt, st, bass, high, is_beat, live)
         elif program == "panels":                                 # Orakel: je LED eine Tafelfarbe
@@ -759,6 +763,233 @@ class LedStream:
             frame[m0] = a * lvl
             frame[m1] = b * lvl
             frame[m0 & m1] = c3 * lvl                              # beim Kreuzen: Überlappung in der dritten Farbe
+        return frame
+
+    CITY_PAL = np.array([[255, 0, 170], [0, 220, 255], [255, 140, 10], [140, 40, 255]], dtype=float)   # Magenta, Cyan, Bernstein, Violett
+    CITY_W = np.array([0.34, 0.32, 0.24, 0.10])
+
+    def _city_setup(self) -> dict:
+        """Häuserzeile: Fenster aus 2-4 LEDs mit 1-2 LED Lücke, zwischen Häusern 3-6 LEDs Lücke; je Fenster eine Neonfarbe."""
+        n = self.n
+        starts, lens, house = [], [], []
+        pos, h = 0, 0
+        left = self.rng.randint(4, 9)                             # Fenster bis zum nächsten Haus
+        while pos < n:
+            w = self.rng.choice((2, 3, 3, 4))
+            if pos + w > n:
+                break
+            starts.append(pos)
+            lens.append(w)
+            house.append(h)
+            pos += w + self.rng.choice((1, 1, 2))
+            left -= 1
+            if left <= 0:
+                pos += self.rng.randint(3, 6)
+                h += 1
+                left = self.rng.randint(4, 9)
+        nw = len(starts)
+        win_of = np.full(n, -1)
+        for i, (a, w) in enumerate(zip(starts, lens)):
+            win_of[a:a + w] = i
+        cols = self.CITY_PAL[self.nrng.choice(len(self.CITY_PAL), size=nw, p=self.CITY_W)]
+        on = (self.nrng.random(nw) < 0.4).astype(float)
+        return {"win_of": win_of, "starts": np.array(starts), "house": np.array(house), "nw": nw, "cols": cols,
+                "on": on, "lvl": on.copy(), "rank": self.nrng.random(nw), "burnt": np.zeros(nw, dtype=bool),
+                "emerg": self.nrng.random(nw) < 0.05, "last_state": 0, "state_t0": 0.0, "flash_t": -100.0,
+                "lt_seen": -100.0, "fire_seen": -100.0, "car_next": time.monotonic() + self.rng.uniform(15.0, 30.0),
+                "drone_next": time.monotonic() + self.rng.uniform(50.0, 90.0), "cars": [], "beats": 0,
+                "boards": None, "board_pat": 0}
+
+    def _city(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Dachterrasse: die Kette ist eine Fensterfront der Stadt. Fenster aus 2-4 LEDs in Magenta, Cyan, Bernstein, Violett,
+        etwa 40 % an; auf jedem Beat gehen ein paar an oder aus. Darüber der Lichtzustand der Szene (ROTER ALARM rot mit
+        wanderndem Drehlicht, SÄURE giftgrün mit flackernden Röhren, ÜBERLAST fast alles hell, Blöcke brennen durch, NUR WERBUNG
+        lange Reklamen mit Lauflicht, BLACKOUT Notstrom und rote Flugwarnlichter, BLITZSCHLAG der einzige echte Blitz), das
+        Wetter (Regenschimmer, Nebel, Säure, Asche) und Ereignisse ohne Blitz (Stromausfall blockweise, EMP als Welle).
+        Specials: fliegendes Auto, Polizeidrohne, Feuerwerk."""
+        n = self.n
+        c = getattr(self, "city", None)
+        if c is None or len(c["win_of"]) != n:
+            c = self.city = self._city_setup()
+        nw, win_of = c["nw"], c["win_of"]
+        state = int(st.get("state", 0))
+        mix = float(st.get("mix", 1.0 if state else 0.0))
+        weather = int(st.get("weather", 0))
+        x = self._idx()
+        if state != c["last_state"]:
+            c["last_state"], c["state_t0"] = state, now
+            c["burnt"][:] = False
+            if state == 6 and now - c["flash_t"] > 8.0:          # Blitzschlag: der einzige echte Blitz
+                c["flash_t"] = now
+        lt = float(st.get("lightning_t0", -100.0))
+        if lt > c["lt_seen"] + 0.5:                               # Drop-Blitz der Szene: höchstens alle 30 s
+            c["lt_seen"] = lt
+            if now - lt < 1.0 and now - c["flash_t"] > 30.0:
+                c["flash_t"] = now
+        ft = float(st.get("fire_t0", -100.0))
+        if ft > c["fire_seen"] + 0.5:
+            c["fire_seen"] = ft
+            if now - ft < 1.0:
+                self._add(now, "fireworks", 3.5, self.CITY_PAL[self.rng.randrange(4)])
+        # Fenster gehen im Takt an und aus (Ziel ~40 %, mit Energie etwas mehr)
+        if is_beat or (now - self.last_beat > 2.0 and now - c.get("tick", 0.0) > 0.7):
+            c["tick"] = now
+            c["beats"] += 1
+            target = 0.36 + 0.14 * self.energy
+            k = max(2, int(nw * (0.015 + 0.03 * self.e_fast)))
+            idx = self.nrng.choice(nw, size=k, replace=False)
+            for i in idx:
+                ratio = c["on"].mean()
+                c["on"][i] = 1.0 if (self.rng.random() < (0.5 + (target - ratio) * 3.0)) else 0.0
+            if state == 4 and c["beats"] % 4 == 0:                # Überlast: ein Block brennt durch
+                h = self.rng.choice(c["house"])
+                c["burnt"] |= c["house"] == h
+            if state == 5:
+                c["board_pat"] = (c["board_pat"] + 1) % 3
+        c["lvl"] += (c["on"] - c["lvl"]) * min(1.0, dt * 10.0)
+        wl = c["lvl"].copy()
+        wcol = c["cols"].copy()
+        # Ereignisse der Szene (ohne Blitz): Stromausfall blockweise, EMP als Welle
+        bo = now - float(st.get("blackout_t0", -100.0))
+        emp = now - float(st.get("emp_t0", -100.0))
+        dark = np.zeros(nw)
+        if 0.0 <= bo < 14.0:
+            off = min(1.0, bo / 2.5) if bo < 8.0 else max(0.0, 1.0 - (bo - 8.0) / 5.0)
+            dark = (c["rank"] < off).astype(float)
+            if 13.2 <= bo < 14.0:                                 # am Ende knallt alles auf Überlast
+                wl[:] = 1.0
+                wcol[:] = np.array([255, 190, 80])
+                dark[:] = 0.0
+        elif 0.0 <= emp < 10.0:
+            seed = float(st.get("emp_seed", 50.0))
+            centre = (seed * 0.6180339) % 1.0
+            xs = (c["starts"] / max(1, n - 1))
+            radius = min(1.2, emp * 0.25)
+            inside = np.abs(xs - centre) < radius
+            back = (emp - 3.5) / 6.5 if emp > 3.5 else 0.0     # ab 3,5 s kommen Fenster einzeln zurück
+            dark = (inside & (c["rank"] >= back)).astype(float)
+            edge = np.abs(np.abs(xs - centre) - radius) < 0.015
+            wl = np.where(edge & (self.nrng.random(nw) < 0.5), 1.0, wl)
+        wl = wl * (1.0 - dark)
+        emerg_only = (0.0 <= bo < 13.2 and bo > 1.0) or state == 1
+        # Lichtzustand
+        sc = None
+        if state == 1 or emerg_only:                              # Blackout: Notstrom
+            k1 = 1.0 if emerg_only and state != 1 else mix
+            flick = 0.55 + 0.45 * np.sin(now * 3.1 + c["rank"] * 40.0) ** 2
+            el = np.where(c["emerg"], flick, 0.0)
+            wl = wl * (1.0 - k1) + el * k1
+            wcol = wcol * (1.0 - k1) + np.array([255, 90, 20]) * k1
+        elif state == 2:                                          # roter Alarm
+            wcol = wcol * (1.0 - mix) + np.array([255, 0, 0]) * mix
+            wl = wl * (1.0 - 0.4 * mix)
+        elif state == 3:                                          # Säure: giftgrün, Röhren flackern
+            wcol = wcol * (1.0 - mix) + np.array([60, 255, 20]) * mix
+            drop = self.nrng.random(nw) < 0.06 * mix
+            wl = np.where(drop, wl * 0.15, wl)
+        elif state == 4:                                          # Überlast: fast alles hell, Blöcke brennen durch
+            wl = wl * (1.0 - mix) + mix * np.where(c["burnt"], 0.0, np.where(c["rank"] < 0.85, 1.0, 0.0))
+            wcol = wcol * (1.0 - mix) + np.array([255, 190, 80]) * mix
+        elif state == 5:                                          # nur Werbung: Fenster aus
+            wl = wl * (1.0 - mix)
+        elif state == 6:                                          # nach dem Blitz: Stadt blau-weiß
+            wcol = wcol * (1.0 - mix) + np.array([90, 140, 255]) * mix
+        frame = np.zeros((n, 3))
+        m = win_of >= 0
+        frame[m] = wcol[win_of[m]] * wl[win_of[m]][:, None] * 0.9
+        if state == 2:                                            # Drehlicht wandert hin und her
+            pos = abs(((now - c["state_t0"]) * 0.35) % 2.0 - 1.0)
+            frame += np.outer(np.exp(-((x - pos) / 0.035) ** 2) * mix, np.array([255.0, 0.0, 0.0]))
+        if state == 5:                                            # Leuchtreklamen mit Lauflicht
+            if c["boards"] is None:
+                c["boards"] = [(int(self.rng.uniform(0.05, 0.9) * n), self.rng.randint(15, 20), self.rng.randrange(2)) for _ in range(4)]
+            for (a, w, ci) in c["boards"]:
+                seg = np.arange(a, min(n, a + w))
+                rel = seg - a
+                if c["board_pat"] == 0:
+                    lit = ((rel + int(now * 8)) // 3) % 2 == 0
+                elif c["board_pat"] == 1:
+                    lit = ((rel - int(now * 8)) // 2) % 2 == 0
+                else:
+                    lit = np.ones(len(seg), dtype=bool)
+                colb = self.CITY_PAL[ci]
+                frame[seg] = np.outer(lit * (0.6 + 0.4 * self.bass_s) * mix, colb) + frame[seg] * (1.0 - mix)
+        else:
+            c["boards"] = None
+        if emerg_only or state == 1:                              # rote Flugwarnlichter auf den Dächern
+            blink = (now % 1.6) < 0.25
+            for h in range(0, int(c["house"].max()) + 1, 3):
+                ws = np.where(c["house"] == h)[0]
+                if len(ws) and blink:
+                    frame[int(c["starts"][ws[0]])] = np.array([255.0, 0.0, 0.0])
+        # Wetter
+        if weather == 0:                                          # Regen: Schimmer läuft über die Fenster
+            if now >= self.drip_next:
+                self.drip_next = now + self.rng.uniform(0.4, 1.0)
+                self.drips.append([now, self.rng.uniform(0.18, 0.3), 1.0])
+            shim = np.zeros(n)
+            keep = []
+            for dr in self.drips:
+                pos = 1.0 - (now - dr[0]) * dr[1]
+                if pos > -0.05:
+                    keep.append(dr)
+                    shim += np.exp(-((x - pos) / 0.02) ** 2)
+            self.drips = keep[-20:]
+            frame *= (1.0 + 0.6 * np.minimum(shim, 1.0))[:, None]
+        elif weather == 1:                                        # Nebel: weich und blass
+            mean = frame.mean(axis=0)
+            frame = (frame * 0.45 + mean * 0.55) * 0.75
+        elif weather == 2:                                        # Säureregen: grüner Stich
+            frame = frame * 0.7 + frame.max(axis=1, keepdims=True) * np.array([0.12, 0.35, 0.05])
+        elif weather == 3:                                        # Asche: glühende Punkte fallen
+            if now >= self.drip_next:
+                self.drip_next = now + self.rng.uniform(0.25, 0.7)
+                self.drips.append([now, self.rng.uniform(0.03, 0.07), self.rng.random()])
+            keep = []
+            for dr in self.drips:
+                pos = (dr[2] + (now - dr[0]) * dr[1] * (1 if dr[2] < 0.5 else -1))
+                if 0.0 <= pos <= 1.0 and now - dr[0] < 6.0:
+                    keep.append(dr)
+                    glow = 0.6 + 0.4 * math.sin((now - dr[0]) * 7.0 + dr[2] * 20.0)
+                    frame += np.outer(np.exp(-((x - pos) / 0.004) ** 2) * glow, np.array([255.0, 90.0, 10.0]))
+            self.drips = keep[-24:]
+        # Specials: fliegendes Auto, Polizeidrohne
+        if now >= c["car_next"]:
+            c["car_next"] = now + self.rng.uniform(25.0, 50.0)
+            c["cars"].append({"t0": now, "d": self.rng.choice((1, -1)), "v": self.rng.uniform(0.12, 0.2), "kind": "car"})
+        if now >= c["drone_next"]:
+            c["drone_next"] = now + self.rng.uniform(60.0, 120.0)
+            c["cars"].append({"t0": now, "d": self.rng.choice((1, -1)), "v": self.rng.uniform(0.06, 0.1), "kind": "drone",
+                              "end": self.rng.uniform(0.35, 0.7)})
+        keepc = []
+        for car in c["cars"]:
+            u = (now - car["t0"]) * car["v"]
+            limit = car.get("end", 1.05)
+            if u > limit + 0.05:
+                continue
+            keepc.append(car)
+            pos = u if car["d"] > 0 else 1.0 - u
+            px = int(round(pos * (n - 1)))
+            dlt = car["d"] if not self.reverse else -car["d"]
+            if car["kind"] == "car":                              # zwei Scheinwerfer vorne, zwei Rücklichter hinten
+                for o, colc in ((0, (255, 235, 190)), (dlt, (255, 235, 190)), (-6 * dlt, (255, 0, 0)), (-7 * dlt, (255, 0, 0))):
+                    j = px + o
+                    if 0 <= j < n:
+                        frame[j] = np.array(colc, dtype=float)
+            else:                                                 # Drohne: rot/blau im Wechsel
+                red = (now * 3.0) % 1.0 < 0.5
+                for o in (-1, 0, 1):
+                    j = px + o
+                    if 0 <= j < n:
+                        frame[j] = np.array([255.0, 0.0, 0.0]) if (red ^ (o == 1)) else np.array([0.0, 40.0, 255.0])
+        c["cars"] = keepc
+        # Blitz (nur Blitzschlag oder kräftiger Drop): zweimal kurz bläulich-weiß, dann Nachglühen
+        fa = now - c["flash_t"]
+        if 0.0 <= fa < 0.7:
+            k = 1.0 if fa < 0.08 or 0.18 < fa < 0.24 else max(0.0, 0.5 - fa) * 0.6
+            frame = frame * (1.0 - k) + np.array([170.0, 200.0, 255.0]) * k
+        if not live:
+            frame *= 0.6
         return frame
 
     def _stars(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:

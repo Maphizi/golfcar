@@ -1259,8 +1259,12 @@ Holz nachlegen wirft Funken. Schwarzes Loch, Kern, Fluxkompensator und Moorsee s
 Strudel: Punkte driften von beiden Enden zur Mitte, die Mitte glimmt mit dem Bass, ein geworfenes Objekt läuft zur Mitte und wird
 verschluckt, die Umkehrung ist eine Druckwelle nach außen. Taxistand, Orakel, Uhrturm, Auge des Waldes, Waldtresen, Herzbaum
 und Marktplatz atmen langsam mit zwei wandernden Wolken, Jahreszeit und Epoche färben die Kette, Ereignisse laufen als Welle
-durch. Auf der Dachterrasse regnet es von hinten nach vorne, das Wetter färbt, Blitze schlagen zweimal ein und grollen nach,
-Feuerwerk geht in Blüten auf, der Stromausfall macht alles aus und lässt es zögernd zurückkommen. Black Ice, Paradoxon und
+durch. Auf der Dachterrasse ist die Kette eine Fensterfront der Stadt: kleine Fenster in Magenta, Cyan, Bernstein und Violett, etwa
+40 % an, auf jedem Beat gehen ein paar an oder aus. Sie spiegelt die Lichtzustände der Szene: Roter Alarm mit wanderndem
+Drehlicht, Säure mit flackernden Röhren, Überlast mit durchbrennenden Häusern, Nur Werbung mit Leuchtreklamen, Blackout mit
+Notstrom und Flugwarnlichtern. Das Wetter färbt (Regenschimmer, Nebel, Säure, glühende Asche), der Stromausfall geht blockweise,
+der EMP als Welle; ab und zu fliegt ein Auto oder eine Polizeidrohne vorbei. Geblitzt wird nur beim Blitzschlag und höchstens
+alle 30 Sekunden bei einem Drop. Black Ice, Paradoxon und
 Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. In der Neonfahrt gehen zwei Felder aus je zehn LEDs in den beiden Hauptfarben des Bildschirms auf jedem Beat ein Feld nach
 links oder rechts und wechseln immer wieder die Richtung; ab und zu laufen sie im Gleichschritt, ab und zu aufeinander zu,
 liegen dann übereinander und leuchten in einer dritten Farbe, gehen kurz als eines weiter und teilen sich wieder. Beim Orakel stehen die acht Tafeln unter dem Kopf auf der Kette: jede LED bekommt der Reihe nach eine Tafelfarbe (Rot, Orange,

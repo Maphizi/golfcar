@@ -276,6 +276,14 @@ class Controller:
             self.next_change_beat = self.beat_count + 4
 
     # -- Engine ------------------------------------------------------------
+    def led_state(self) -> dict:
+        """LED-Board: Programm "city" (Fensterfront) mit dem Lichtzustand, der gerade im Takt läuft (0 = Grundbild), dem Wetter
+        und den Zeitpunkten der Ereignisse (time.monotonic, -100 = noch nie)."""
+        state = int(self.cut_state or self.cut_last_state) if self.cut_mix > 0.02 else 0
+        return {"program": "city", "state": state, "mix": float(self.cut_mix), "weather": int(self.weather_shown),
+                "blackout_t0": self.blackout_t0, "emp_t0": self.emp_t0, "emp_seed": self.emp_seed,
+                "lightning_t0": self.lightning_t0, "fire_t0": self.firework_t0}
+
     def images(self) -> dict:
         out = {"uSceneTex": (self.scene if self.scene is not None else self.blank, 1)}
         for i, img in enumerate(self.lights):
