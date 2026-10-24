@@ -138,6 +138,13 @@ class LedStream:
         self.mq_rot = 0
         self.mq_beats = 0
         self.mq_flip_at = 0.0
+        # zweites Muster "Lauflicht": ein Block an, einer aus, im Wechsel; hüpft je Beat einen Block weiter, Drop = Richtung
+        # umkehren und meist neue Farbe; wechselt sich mit der Markise ab (mq_mode 0 Markise, 1 Lauflicht, mq_mix = Überblendung)
+        self.mq_mode = 0
+        self.mq_mix = 0.0
+        self.mq_mode_at = time.monotonic() + self.rng.uniform(45.0, 90.0)
+        self.chase_ci = 0                                         # Lauflichtfarbe: 0 A, 1 B, 2 A mit gedrehtem Farbton
+        self.chase_hue = 0.0
         self.sp_next = time.monotonic() + self.rng.uniform(15.0, 30.0)   # Specials: einzelner Läufer, Überholer, Kreuzung
         self.base = SCENE_BASE.get(scene, "")
         self.specials: list[dict] = []                            # aktive Specials (kind, t0, len, col, ...)
@@ -403,7 +410,9 @@ class LedStream:
     # -- Programme -----------------------------------------------------------------------------------------------
     def _slots(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
         """Casino-Markise wie ein Vegas-Eingang: Blöcke in derselben Farbe (Farbe A hell, Farbe A gedimmt, Farbe B hell im Wechsel, kein Weiß), alle an, nur die Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat weiter (1 2 3 4), weich eingerastet, mal vor, mal zurück,
-        beim Drehen läuft es schnell von selbst; alle paar Beats wechseln die Farben durch, ab und zu kehrt die Richtung um. Gewinn: klein = zweimal
+        beim Drehen läuft es schnell von selbst; alle paar Beats wechseln die Farben durch, ab und zu kehrt die Richtung um. Zweites Muster
+        (Lauflicht, wechselt sich alle 45-90 s mit der Markise ab, weich überblendet): ein Block an, einer aus, einer an; die Blöcke hüpfen auf
+        jedem Beat einen Block weiter, beim Drop kehrt die Richtung um und meist kommt eine neue Farbe. Gewinn: klein = zweimal
         Blitzen, groß = heller Lauf von vorne, Jackpot = Gold/Weiß-Stroboskop und Funkeln."""
         n = self.n
         x = self._idx()
@@ -417,6 +426,17 @@ class LedStream:
             mid = a * 0.35                                        # dritter Block: Farbe A gedimmt (Mischung von Gegenfarben wäre weiß)
             self.marquee = [a, mid, b]
         age = float(st.get("win_age", 0.0))
+        is_drop = 0.0 < now - self.last_drop <= dt * 1.5         # update() hat gerade einen Drop erkannt
+        if now >= self.mq_mode_at and win == 0 and not spinning:  # Muster wechseln: Markise <-> Lauflicht
+            self.mq_mode = 1 - self.mq_mode
+            self.mq_mode_at = now + self.rng.uniform(45.0, 90.0)
+        self.mq_mix += (float(self.mq_mode) - self.mq_mix) * min(1.0, dt / 1.5)
+        if is_drop:                                               # Drop: Richtung umkehren, meist neue Lauflichtfarbe
+            self.mq_dir *= -1.0
+            self.mq_flip_at = now + self.rng.uniform(6.0, 14.0)
+            if self.rng.random() < 0.7:
+                self.chase_ci = (self.chase_ci + self.rng.choice((1, 2))) % 3
+                self.chase_hue = self.rng.uniform(0.12, 0.5)
         if is_beat:
             self.mq_beats += 1
             if self.mq_beats % 4 == 0:                            # alle vier Beats die Farben weiterrücken
@@ -439,7 +459,7 @@ class LedStream:
                 self.mq_target += 1.0
             self.mq_pos_s += (self.mq_target - self.mq_pos_s) * min(1.0, dt * 5.0)
             self.mq_pos = self.mq_dir * self.mq_pos_s * block
-        self.mq_pos %= period
+        self.mq_pos %= 2 * period                                # 6 Blöcke: Markise (3) und Lauflicht (2) teilen die Lage
         shift = idx + int(self.mq_pos)
         if self.reverse:
             shift = (n - 1 - idx) + int(self.mq_pos)
@@ -450,6 +470,18 @@ class LedStream:
         if spinning:
             level = twinkle * 1.0
         frame = colors * level[:, None]
+        if self.mq_mix > 0.01:                                    # Lauflicht: Block an, Block aus, hüpft je Beat einen Block
+            if self.chase_ci == 0:
+                ccol = self.marquee[0]
+            elif self.chase_ci == 1:
+                ccol = self.marquee[2]
+            else:
+                h0 = float(_hue(self.marquee[0][None, :])[0]) / 360.0
+                ccol = _hsv((h0 + self.chase_hue) % 1.0, 1.0, min(1.0, float(self.marquee[0].max()) / 255.0))
+            on = ((shift // block) % 2 == 0).astype(float)
+            on = 0.04 + 0.96 * on                                 # "aus" glimmt kaum, damit die Kette nicht tot wirkt
+            chase = np.outer(on * level * 1.1, ccol)
+            frame = frame * (1.0 - self.mq_mix) + chase * self.mq_mix
         gold = self.marquee[0]
         white = _saturate(self.marquee[0] * 0.7 + WHITE * 0.3, 1.2)   # Glanzlicht: aufgehellte Hauptfarbe statt Weiß
         acc = self.marquee[2]
