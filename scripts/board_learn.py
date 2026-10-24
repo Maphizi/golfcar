@@ -89,18 +89,29 @@ def main() -> int:
     if not devs:
         print("Kein PXN-Gerät gefunden")
         return 1
-    # Ruhepegel: welche REL-Werte kommen von selbst (Stellungsgeber)
+    # Ruhephase: 5 s NICHTS anfassen; alles, was trotzdem kommt, schickt das Board von selbst
+    print("\nRuhephase: 5 s nichts anfassen ...", flush=True)
     idle: dict = {}
     t0 = time.monotonic()
-    while time.monotonic() - t0 < 1.5:
+    while time.monotonic() - t0 < 5.0:
         r, _, _ = select.select([d.fd for d in devs], [], [], 0.2)
         for d in devs:
             if d.fd in r:
-                for ev in d.read():
-                    if ev.type == ecodes.EV_REL:
-                        idle[ev.code] = ev.value
-    if idle:
-        print("Ruhe: REL-Werte von selbst:", {ecodes.REL.get(c, c): v for c, v in idle.items()})
+                try:
+                    for ev in d.read():
+                        if ev.type in (ecodes.EV_SYN, ecodes.EV_MSC):
+                            continue
+                        idle.setdefault((d.path, ev.type, ev.code), []).append(ev.value)
+                except OSError:
+                    pass
+    for (path, t, c), vals in sorted(idle.items()):
+        name = ecodes.bytype.get(t, {}).get(c, c)
+        uniq = sorted(set(vals))
+        print(f"  von selbst: {path} {ecodes.EV.get(t, t)} {name}: {len(vals)} Ereignisse, Werte {uniq[:10]}"
+              + ("  <- Stellungsgeber (Knopf), harmlos" if t == ecodes.EV_REL and len(uniq) == 1 else "")
+              + ("  <- TASTE SENDET VON SELBST" if t == ecodes.EV_KEY else ""))
+    if not idle:
+        print("  nichts: das Board ist in Ruhe still")
     results: dict = {}
     for i, (key, text) in enumerate(STEPS, 1):
         print(f"\nSchritt {i}/{len(STEPS)}: {text}  ({STEP_S:.0f} s)", flush=True)
