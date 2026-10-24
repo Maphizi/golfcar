@@ -466,9 +466,6 @@ class LedStream:
             mid = a * 0.35                                        # dritter Block: Farbe A gedimmt (Mischung von Gegenfarben wäre weiß)
             self.marquee = [a, mid, b]
         age = float(st.get("win_age", 0.0))
-        reels = st.get("reels") or []
-        if reels and (spinning or any(r[1] > 0.05 or r[2] < 0.5 for r in reels)):
-            return self._reel_zones(now, reels, live)             # Walzen drehen: jede Walze ihr Abschnitt
         is_drop = 0.0 < now - self.last_drop <= dt * 1.5         # update() hat gerade einen Drop erkannt
         if win >= 2 and age < 0.1:                                # großer Gewinn/Jackpot: Markise als Special dazu
             self.mq_marq_until = max(self.mq_marq_until, now + (7.0 if win >= 3 else 4.0))
@@ -589,41 +586,6 @@ class LedStream:
                 if self.rng.random() < 0.9:
                     self.glow[self.nrng.integers(0, n, size=max(1, n // 60))] = 1.0
                 frame = frame * 0.6 + np.outer(self.glow, white)
-        return frame
-
-    REEL_SYM = 14                                                 # LEDs je Walzensymbol auf der Kette
-
-    def _reel_zones(self, now, reels, live) -> np.ndarray:
-        """Walzen drehen: die Kette ist in so viele Abschnitte geteilt, wie der Automat Walzen hat (vorne = erste Walze). Jeder
-        Abschnitt zeigt ein Band aus Symbolen (je REEL_SYM LEDs: 10 hell in Farbe A, Farbe A gedimmt oder Farbe B, 4 dunkel), das
-        genau mit der Position seiner Walze läuft: gleiche Drehzahl, gleiches Abbremsen und Rückfedern, und es bleibt auf
-        demselben Symbol stehen wie die Walze. Schnelle Walze = verwischt (weniger Kontrast), beim Einrasten blitzt der
-        Abschnitt kurz in der aufgehellten Hauptfarbe auf."""
-        n = self.n
-        nr = max(1, len(reels))
-        zone = (np.arange(n) * nr) // n                           # 0 vorne .. nr-1 hinten
-        if self.reverse:
-            zone = nr - 1 - zone
-        idx = np.arange(n)
-        frame = np.zeros((n, 3))
-        pal = np.array(self.marquee)
-        glint = _saturate(self.marquee[0] * 0.7 + WHITE * 0.3, 1.2)
-        k = 1.0 if live else 0.7
-        for i, (pos, speed, stop_age) in enumerate(reels):
-            m = zone == i
-            local = idx[m] - idx[m].min()
-            off = pos * self.REEL_SYM                             # Walzenposition in LEDs
-            u = (local + off) / self.REEL_SYM
-            sym = np.floor(u).astype(int)
-            within = (u - sym) * self.REEL_SYM
-            lit = (within < self.REEL_SYM - 4).astype(float)
-            blur = min(1.0, speed / 12.0)
-            level = lit * (1.0 - 0.55 * blur) + 0.55 * blur * 0.7  # schnell: verwischt, die Lücken laufen zu
-            col = pal[sym % 3]
-            seg = col * level[:, None] * k
-            if 0.0 <= stop_age < 0.25 and speed < 0.05:           # Einrasten: kurzer Aufleuchter
-                seg = seg * 0.4 + glint * (1.0 - stop_age / 0.25) * 0.8
-            frame[m] = seg
         return frame
 
     CELL_PHASES = (15.0, 15.0, 12.0)                              # Zellteilung: ein Punkt, zwei, vier; dann zurück

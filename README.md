@@ -1296,9 +1296,7 @@ Block weiter, mal vor, mal zurück, beim Drehen schnell), oder ein einzelner Pun
 oder zwei Läufer kreuzen sich. Als Sahnehäubchen erscheint ab und zu in einer leeren LED ein Punkt in einer ganz anderen
 Farbe und geht mit jedem Schritt eine LED weiter, immer in den Lücken; nach etwa 15 Sekunden teilt er sich, einer läuft nach links,
 einer nach rechts, später teilen sich beide nochmal, dann laufen alle ihren Weg rückwärts, finden sich wieder und verschwinden
-am Startpunkt. Drehen die Walzen, teilt sich die Kette in so viele Abschnitte, wie der Automat Walzen hat, und jeder Abschnitt
-läuft genau mit seiner Walze: gleiche Drehzahl, gleiches Abbremsen, bei hohem Tempo verwischt, und wenn die Walze einrastet,
-rastet ihr Abschnitt mit einem kurzen Aufleuchten ein; kleiner Gewinn blitzt zweimal, großer Gewinn schickt einen weißen Lauf, Jackpot ist Gold-Weiß-Stroboskop
+am Startpunkt; kleiner Gewinn blitzt zweimal, großer Gewinn schickt einen weißen Lauf, Jackpot ist Gold-Weiß-Stroboskop
 mit Funkeln. Im Systemfehler
 ist das Board ein Kampf zwischen Grün (das System) und Rot (der Fehler), sonst nichts: Die Front wandert in Blasen über die
 Kette, je nach Phase gewinnt Rot (Zusammenbruch, Alarm) oder Grün (Erholung), jeder Beat ist ein Vorstoß der stärkeren Seite,
