@@ -4,7 +4,8 @@ Schreibt den Faktor 0..max_percent/100 nach logs/voice_volume.txt; die Sprecher 
 Satz. Die Musik bleibt davon unberührt (dafür launcher/music_knob.py). Mit target = "sink" regelt
 der Knopf stattdessen den ganzen Ausgang über wpctl.
 
-Zwei Modi:
+Am PXN-CB1 sendet der zweite Drehknopf die Tasten KEY_NEXTSONG (rechts) / KEY_PREVIOUSSONG (links) über das
+Tastatur-Interface; die nimmt der Knopf immer (keys = true): ein Raster = step Prozent. Dazu zwei weitere Modi:
   ABS-Achse (axis = "ABS_Z" o. ä.): absoluter Wert wird auf min_percent..max_percent abgebildet.
   REL-Modus (rel = true): jedes Dreh-Ereignis (REL_MISC, REL_DIAL, REL_WHEEL, REL_HWHEEL) ändert die Lautstärke um ±step Prozent.
 Erscheint der Knopf als Tasten (zwei BTN-Codes, Launcher-Log "Taste ohne Belegung"), in config/keymap.toml action = "voice_up" /
@@ -83,15 +84,18 @@ class VolumeKnob(threading.Thread):
         self._stop = threading.Event()
         self.axis = ecodes.ecodes.get(str(cfg.get("axis", "")), None)
         self.rel = bool(cfg.get("rel", False))
+        self.keys = bool(cfg.get("keys", True))                   # KEY_NEXTSONG / KEY_PREVIOUSSONG = ein Raster
         self.step = int(cfg.get("step", 5))
         self.min_pct = int(cfg.get("min_percent", 0))
         self.max_pct = int(cfg.get("max_percent", 100))
         self.invert = bool(cfg.get("invert", False))
         self.target = str(cfg.get("target", "voice"))
         self.cur_pct = int(cfg.get("start_percent", 100))
+        if self.keys:
+            log.info("Lautstärkeknopf: Titel-Tasten (KEY_NEXTSONG/PREVIOUSSONG), Schritt %d%%, Start %d%%", self.step, self.cur_pct)
         if self.rel:
             log.info("Lautstärkeknopf: REL_MISC-Modus, Schritt %d%%, Start %d%%", self.step, self.cur_pct)
-        elif self.axis is None:
+        elif self.axis is None and not self.keys:
             log.info("Lautstärkeknopf: keine Achse konfiguriert, nur Beobachtung ([volume].axis in settings.toml)")
         self.last_set = 0.0
         self.last_pct = -1
@@ -107,8 +111,8 @@ class VolumeKnob(threading.Thread):
                 if not devs:
                     if not getattr(self, "_warned", False):
                         self._warned = True
-                        log.warning("Lautstärkeknopf: kein PXN-Gerät mit %s gefunden (scripts/voice_knob_check.py)",
-                                    "Dreh-Ereignissen (REL)" if self.rel else "ABS-Achsen")
+                        log.warning("Lautstärkeknopf: kein PXN-Gerät mit %s gefunden (scripts/board_learn.py)",
+                                    "Titel-Tasten" if self.keys else "Dreh-Ereignissen (REL)" if self.rel else "ABS-Achsen")
                     time.sleep(3)
                     continue
                 names = ", ".join(f"{d.name} ({d.path})" for d in devs)
@@ -126,6 +130,10 @@ class VolumeKnob(threading.Thread):
                 d = evdev.InputDevice(path)
                 if DEVICE_NAME not in d.name:
                     d.close()
+                    continue
+                keys = d.capabilities().get(ecodes.EV_KEY, [])
+                if self.keys and (ecodes.KEY_NEXTSONG in keys or ecodes.KEY_PREVIOUSSONG in keys):
+                    out.append(d)
                     continue
                 if self.rel:
                     # Gerät mit Dreh-Ereignissen suchen (REL_MISC o. ä.)
@@ -160,6 +168,14 @@ class VolumeKnob(threading.Thread):
                     continue
                 try:
                     for ev in d.read():
+                        if ev.type == ecodes.EV_KEY and self.keys and ev.code in (ecodes.KEY_NEXTSONG, ecodes.KEY_PREVIOUSSONG):
+                            if ev.value == 1:                     # ein Raster = ein Schritt
+                                n = 1 if ev.code == ecodes.KEY_NEXTSONG else -1
+                                if self.invert:
+                                    n = -n
+                                self.cur_pct = max(self.min_pct, min(self.max_pct, self.cur_pct + self.step * n))
+                                self.pending = self.cur_pct
+                            continue
                         if self.rel:
                             # Dreh-Ereignis: jedes Ereignis = ein Schritt
                             if ev.type != ecodes.EV_REL or ev.code not in REL_CODES:

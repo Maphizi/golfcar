@@ -88,14 +88,21 @@ action = "attract_off" # Autopilot aus (Schalter oben)
 # code   = 303
 # action = "music_down"
 
-# ── Weitere Kippschalter (unten neben dem Autopilot) ─────────────────────────────────────────────
-# Jede Stellung eine Aktion: on = "down" (Standard) beim Umlegen, on = "up" beim Zurücklegen. Codes stehen beim
-# ersten Umlegen im Launcher-Log als "Taste ohne Belegung: code = N". Aktionen: alle Modi (home, hal, campfire ...),
-# fx, horn, horn2, talk, attract_on/off, voice_up/down, music_up/down.
-# [[bindings]]
-# code   = 271
-# action = "fx"          # Schalter A nach unten: Effekt
-# [[bindings]]
-# code   = 271
-# on     = "up"
-# action = "home"        # Schalter A zurück: Startbildschirm
+# ── Kippschalter A und B (unten neben dem Autopilot, je Stellung ein eigener Code) ───────────────
+# A: 271 = unten, 270 = oben; B: 273 = unten, 272 = oben (angelernt mit scripts/board_learn.py).
+# Aktionen frei wählbar: alle Modi (home, hal, campfire ...), fx, horn, horn2, talk, attract_on/off, voice_up/down, music_up/down.
+[[bindings]]
+code   = 271
+action = "fx"          # Schalter A nach unten: Effekt des Themas
+
+[[bindings]]
+code   = 270
+action = "fx"          # Schalter A nach oben: Effekt des Themas
+
+[[bindings]]
+code   = 273
+action = "talk"        # Schalter B nach unten: Sprechmodus bei HAL 3000 an/aus
+
+[[bindings]]
+code   = 272
+action = "talk"        # Schalter B nach oben: Sprechmodus bei HAL 3000 an/aus

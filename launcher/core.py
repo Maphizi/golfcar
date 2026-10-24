@@ -20,6 +20,7 @@ from .actions import ACTION_TO_MODE, Action
 from .input_evdev import EvdevInput
 from .dpad_remap import DPadRemap
 from .volume_knob import VolumeKnob
+from .led_knob import LedKnob
 from .music_knob import MusicKnob
 from .input_socket import SocketInput
 from .process_manager import ProcessManager
@@ -133,6 +134,15 @@ class Launcher:
         except Exception as exc:
             log.warning("Lautstärkeknopf nicht gestartet: %s", exc)
         try:
+            led_cfg = self.settings.get("led_knob", {})
+            if led_cfg.get("enabled", True):
+                lk = LedKnob(led_cfg)
+                lk.start()
+                self.inputs.append(lk)
+                self.lknob = lk
+        except Exception as exc:
+            log.warning("Helligkeitsknopf nicht gestartet: %s", exc)
+        try:
             mus_cfg = self.settings.get("music", {})
             if mus_cfg.get("knob_enabled", True):
                 mk = MusicKnob(mus_cfg)
@@ -225,12 +235,14 @@ class Launcher:
         if action == Action.STATUS:
             log.info("Status: mode=%s %s", self.pm.current.name if self.pm.current else None, sysmon.format_line())
             return
-        if action in (Action.VOICE_UP, Action.VOICE_DOWN, Action.MUSIC_UP, Action.MUSIC_DOWN):   # Drehknopf als Tasten
-            knob = getattr(self, "vknob" if action in (Action.VOICE_UP, Action.VOICE_DOWN) else "mknob", None)
+        if action in (Action.VOICE_UP, Action.VOICE_DOWN, Action.MUSIC_UP, Action.MUSIC_DOWN, Action.LED_UP, Action.LED_DOWN):
+            attr = {Action.VOICE_UP: "vknob", Action.VOICE_DOWN: "vknob", Action.MUSIC_UP: "mknob", Action.MUSIC_DOWN: "mknob",
+                    Action.LED_UP: "lknob", Action.LED_DOWN: "lknob"}[action]
+            knob = getattr(self, attr, None)
             if knob is None:
-                log.info("%s: Knopf nicht gestartet ([volume]/[music] in settings.toml)", action.value)
+                log.info("%s: Knopf nicht gestartet ([volume]/[music]/[led_knob] in settings.toml)", action.value)
             else:
-                knob.nudge(1 if action in (Action.VOICE_UP, Action.MUSIC_UP) else -1)
+                knob.nudge(1 if action in (Action.VOICE_UP, Action.MUSIC_UP, Action.LED_UP) else -1)
             return
         if action in (Action.HORN, Action.HORN2, Action.FX):
             from launcher import sfx

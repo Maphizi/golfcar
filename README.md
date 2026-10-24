@@ -515,10 +515,13 @@ etwa alle 25 Sekunden eines der anderen Objekte seitlich vorbei (wächst, drifte
 `assets/sponsor.png` auf dem Pi (3:1, weißer Hintergrund wird durchsichtig), zeichnet der Shader es
 daneben. Die Datei ist nicht im Repo (Markenrechte), lege sie selbst ab.
 
-**Zwei Drehknöpfe, Musik und Stimme getrennt:**
-- Stimme: `launcher/volume_knob.py` liest die ABS-Achse des einen Knopfs (`[volume].axis`, ohne
-  Eintrag nur Beobachtung mit Log-Meldung „Achse ABS_… = …“) und schreibt einen Faktor nach
-  `logs/voice_volume.txt`; jeder Sprecher (KITT, HAL, BIBO, Ansagen) liest ihn vor jedem Satz.
+**Zwei Drehknöpfe, Lautstärke und LED-Helligkeit:**
+- LED-Helligkeit: `launcher/led_knob.py` nimmt den Knopf, der am PXN-CB1 die Tasten Titel vor/zurück sendet (rechts =
+  heller, links = dunkler, 5 % je Raster, 0 = LEDs aus, bis 140 %), und schreibt den Faktor nach `logs/led_brightness.txt`;
+  die Profile und der Live-Stream aller Szenen nehmen ihn innerhalb einer halben Sekunde (`[led_knob]` in settings.toml).
+- Stimme: `launcher/volume_knob.py` ist am Cart aus (`[volume].enabled = false`), die Stimme folgt der Musik im Verhältnis
+  `voice_gain`. Eingeschaltet nimmt der Knopf dieselben Titel-Tasten (`keys = true`) oder eine ABS-Achse `axis` und schreibt
+  einen Faktor nach `logs/voice_volume.txt`; jeder Sprecher (KITT, HAL, BIBO, Ansagen) liest ihn vor jedem Satz.
   `max_percent` 130 erlaubt etwas lauter als normal. `target = "sink"` regelt stattdessen alles.
   Die Grundlautstärke aller Sprecher im Verhältnis zur Musik steht in `[volume].voice_gain` (0.5 = halb so laut wie
   gerendert); der Knopf regelt darauf, die Ansagen nehmen dazu noch `announce.toml` `volume`. Das PXN-CB1 meldet die
@@ -1312,9 +1315,10 @@ nach `assets/sfx/raw/` und baut je Thema `assets/sfx/real/` (Space: Hupe tiefer 
 Sirene; Zukunft: Autohupe pur; Natur: Gans). Fehlen sie, laufen die synthetischen aus `assets/sfx/` (`scripts/sfx_build.py`).
 Lautstärke `settings.toml` `[sfx]`.
 
-**Weitere Kippschalter:** Die zwei Schalter unten neben dem Autopilot bekommen in `config/keymap.toml` je Stellung eine
-Aktion: `code = N` mit `on = "down"` (Standard) beim Umlegen und `on = "up"` beim Zurücklegen; den Code N zeigt das Launcher-Log beim
-ersten Umlegen als "Taste ohne Belegung", bequemer nimmt `scripts/board_learn.py` 60 Sekunden lang alles auf und wertet es aus. Erlaubt sind alle Modi und `fx`, `horn`, `horn2`, `talk`, `attract_on/off`, `voice_up/down`,
+**Weitere Kippschalter:** Die zwei Schalter unten neben dem Autopilot senden je Stellung einen eigenen Code (A: 271 unten,
+270 oben; B: 273 unten, 272 oben) und bekommen in `config/keymap.toml` je Stellung eine Aktion, Standard: Schalter A spielt
+in beiden Richtungen einen Effekt, Schalter B schaltet den Sprechmodus bei HAL 3000. Sendet ein Schalter nur einen Code, geht
+`on = "up"` für das Zurücklegen; `scripts/board_learn.py` nimmt 60 Sekunden lang alles auf und wertet es aus. Erlaubt sind alle Modi und `fx`, `horn`, `horn2`, `talk`, `attract_on/off`, `voice_up/down`,
 `music_up/down`.
 
 **Vorführmodus:** Kommt fünf Minuten keine Eingabe, wechselt das System alle drei Minuten von selbst durch die Modi des

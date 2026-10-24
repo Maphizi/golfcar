@@ -53,6 +53,8 @@ class Action(str, Enum):
     VOICE_DOWN = "voice_down"
     MUSIC_UP   = "music_up"     # Drehknopf als Tasten: Musik lauter/leiser (launcher/music_knob.py)
     MUSIC_DOWN = "music_down"
+    LED_UP     = "led_up"       # LED-Helligkeit heller/dunkler (launcher/led_knob.py)
+    LED_DOWN   = "led_down"
 
 
 # Welche Action startet welchen Modus (Modus-Namen siehe config/modes.toml)

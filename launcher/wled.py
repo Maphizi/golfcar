@@ -10,6 +10,8 @@ ix Intensität, pal Palette-ID (optional). col kann beim Aufruf überschrieben w
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import json
 import logging
 import socket
@@ -28,12 +30,33 @@ def set_stream_hook(fn) -> None:
     _stream_hook = fn
 
 
-def dim() -> float:
-    """Gesamtdämpfung aller Profile ([controller].dim, 0.7 = 30 % leiser)."""
+BRIGHT_FILE = Path(__file__).resolve().parents[1] / "logs" / "led_brightness.txt"
+_bright_cache: tuple[float, float] = (-1.0, 1.0)                  # (mtime, Faktor)
+
+
+def knob_factor() -> float:
+    """Faktor des Helligkeitsknopfs (launcher/led_knob.py -> logs/led_brightness.txt), 1.0 ohne Datei; nach mtime gecacht,
+    darf je Bild aufgerufen werden."""
+    global _bright_cache
     try:
-        return max(0.0, min(1.0, float(_load_cfg().get("controller", {}).get("dim", 1.0))))
-    except (TypeError, ValueError):
+        mtime = BRIGHT_FILE.stat().st_mtime
+    except OSError:
         return 1.0
+    if mtime != _bright_cache[0]:
+        try:
+            _bright_cache = (mtime, max(0.0, min(2.0, float(BRIGHT_FILE.read_text().strip()))))
+        except (OSError, ValueError):
+            _bright_cache = (mtime, 1.0)
+    return _bright_cache[1]
+
+
+def dim() -> float:
+    """Gesamtdämpfung aller Profile ([controller].dim, 0.7 = 30 % leiser) mal Helligkeitsknopf, höchstens 1.0."""
+    try:
+        base = max(0.0, min(1.0, float(_load_cfg().get("controller", {}).get("dim", 1.0))))
+    except (TypeError, ValueError):
+        base = 1.0
+    return max(0.0, min(1.0, base * knob_factor()))
 
 
 def _load_cfg() -> dict:

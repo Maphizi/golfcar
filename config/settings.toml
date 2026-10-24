@@ -34,11 +34,13 @@ every_seconds = 180
 # Grundlautstärke ALLER Sprecher (KITT, HAL, BIBO, Ansagen) im Verhältnis zur Musik: 1.0 = wie gerendert, 0.5 = halb
 # so laut (-6 dB). Der Drehknopf (unten) regelt zusätzlich darauf.
 voice_gain = 0.5
-# Drehknopf (ABS-Achse) regelt die Lautstärke der STIMME (KITT, HAL, BIBO, Ansagen), nicht die Musik.
-# axis leer = nur beobachten: der Launcher meldet im Log, welche Achsen sich bewegen ("Achse ABS_Z = 128 ...");
-# die des Drehknopfs hier eintragen (z. B. "ABS_Z"). target = "sink" regelt stattdessen den ganzen Ausgang.
-enabled = true
-rel = true
+# Eigener Drehknopf für die STIMME: am Cart aus (enabled = false), der zweite Knopf regelt die LED-Helligkeit ([led_knob]),
+# der erste die Lautstärke des ganzen Ausgangs ([music]); die Stimme folgt im Verhältnis voice_gain. Bei enabled = true
+# nimmt der Knopf KEY_NEXTSONG/KEY_PREVIOUSSONG (keys = true, ein Raster = step Prozent), REL_MISC (rel) oder eine
+# ABS-Achse (axis); target = "sink" regelt stattdessen den ganzen Ausgang.
+enabled = false
+keys = true
+rel = false
 step = 5
 start_percent = 100
 axis = ""
@@ -58,9 +60,9 @@ kipp_mode = "toggle"     # "toggle": jeder Druck wechselt AN/AUS. "state": value
 talk_code = 0            # Sprechtaste -> F15 (HAL: Musik leise, Mikrofon an); 0 = keine. Alternativ keymap.toml action = "talk"
 attract_code = 275       # Autopilot-Kippschalter (echter Schalter, state): 1 = unten/AN, 0 = oben/AUS
 horn_code    = 269       # Hupe-Kippschalter (fällt in die Mitte zurück), Seite 1: 1 = gedrückt -> Hupe, 0 = zurück
-horn2_code   = 0         # Hupe, Seite 2 -> zweiter Ton (<thema>_horn2.wav); Code aus dem Launcher-Log "Taste ohne Belegung", 0 = keine
-# Weitere Kippschalter (unten neben dem Autopilot): in config/keymap.toml mit code = N belegen, je Stellung eine Aktion
-# (on = "down" beim Umlegen nach unten, on = "up" beim Zurücklegen); Codes aus dem Launcher-Log "Taste ohne Belegung".
+horn2_code   = 268       # Hupe, Seite 2 -> zweiter Ton (<thema>_horn2.wav); 0 = keine
+# Weitere Kippschalter (unten neben dem Autopilot): Schalter A = Code 271 (unten) / 270 (oben), Schalter B = 273 (unten) /
+# 272 (oben); belegt in config/keymap.toml (je Stellung eine Aktion). Anlernen: scripts/board_learn.py
 debounce_ms = 300        # gleiche Taste innerhalb dieser Zeit nochmal = ignorieren (Prellen, Dauerfeuer)
 
 [hal]
@@ -74,10 +76,20 @@ mic = false
 kipp_talk = false        # true = zusätzlich wie früher Kippschalter unten = Sprechmodus an, oben = aus
 talk_timeout = 150       # Sekunden ohne Gespräch, nach denen der Sprechmodus von selbst endet (0 = nie)
 
+[led_knob]
+# Drehknopf (Titel vor/zurück am PXN-CB1: rechts = heller, links = dunkler) -> Helligkeit des LED-Boards, Faktor in
+# logs/led_brightness.txt auf [controller].dim aus wled.toml (Stream und Profile). 0 = LEDs aus, über 100 = heller als
+# die Profile (bis die Dämpfung aufgehoben ist). Auch über keymap.toml: action = "led_up" / "led_down".
+enabled = true
+step = 5
+start_percent = 100
+min_percent = 0
+max_percent = 140
+
 [music]
-# Musik über mpv (scripts/music.sh, Steuer-Socket /tmp/mpv.sock). Der zweite Drehknopf regelt nur mpv:
-# Consumer-Tasten (Lauter/Leiser) werden immer erkannt; rel = true nimmt zusätzlich REL_MISC-Schritte,
-# axis = "ABS_..." eine absolute Achse. step = Prozent je Schritt.
+# Musik über mpv (scripts/music.sh, Steuer-Socket /tmp/mpv.sock), ohne mpv (Musik vom Handy) der ganze Ausgang über
+# wpctl; damit ist der Lauter/Leiser-Knopf DER Lautstärkeknopf des Carts. Consumer-Tasten (Lauter/Leiser) werden immer
+# erkannt; rel = true nimmt zusätzlich REL_MISC-Schritte, axis = "ABS_..." eine absolute Achse. step = Prozent je Schritt.
 knob_enabled = true
 socket = "/tmp/mpv.sock"
 step = 5

@@ -96,7 +96,9 @@ class LedStream:
             self.col2 = np.clip(self.col * 0.5 + WHITE * 0.5, 0, 255)
         if self.col3.max() < 8:
             self.col3 = WHITE.copy()
-        self.bri = float(prof.get("bri", 160)) / 255.0 * self.dim
+        self.bri_prof = float(prof.get("bri", 160)) / 255.0
+        self.bri = self.bri_prof * min(1.0, self.dim * wled.knob_factor())
+        self.bri_check = 0.0
         self.fx = int(prof.get("fx", 0))
         self.sock = None
         self.next_send = 0.0
@@ -339,6 +341,9 @@ class LedStream:
         self.next_send = now + 1.0 / self.fps
         if not self.t_first:
             self.t_first = now
+        if now >= self.bri_check:                                 # Helligkeitsknopf (logs/led_brightness.txt) nachführen
+            self.bri_check = now + 0.5
+            self.bri = self.bri_prof * min(1.0, self.dim * wled.knob_factor())
         self._ensure_arrays()
         dt = 1.0 / self.fps
         live = 0.0 if getattr(f, "silent", True) else 1.0

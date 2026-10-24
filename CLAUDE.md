@@ -20,7 +20,10 @@ Funktionieren systemweit in EmulationStation, KITT und allen anderen Apps.
 | Unten | KEY_DOWN |
 
 Die HID-Codes von Startknopf, Kippschalter und Sprechtaste stehen in `config/settings.toml` `[buttons]`
-(`start_code`, `kipp_code`, `kipp_mode`, `talk_code`, `debounce_ms`), nicht mehr im Python-Code.
+(`start_code`, `kipp_code`, `kipp_mode`, `talk_code`, `attract_code` 275, `horn_code` 269, `horn2_code` 268, `debounce_ms`), nicht mehr
+im Python-Code. Kippschalter A = 271 (unten) / 270 (oben), B = 273 / 272 in `keymap.toml` (Standard: A = `fx`, B = `talk`). Der andere
+Drehknopf sendet KEY_VOLUMEUP/DOWN (Lautstärke), der andere KEY_NEXTSONG/PREVIOUSSONG (LED-Helligkeit). REL_MISC schickt das Board
+dauernd mit fester Stellung, das ist kein Knopf.
 `scripts/input_monitor.py 10` zeigt je Taste Code, Werte, Rate und ob sie von selbst periodisch sendet. `scripts/board_learn.py [sek]`:
 5 s Ruhephase (was das Board von selbst schickt), dann 60 s freie Zeit für Hupe Seite 2, Kippschalter A/B (unten/oben) und beide
 Drehknöpfe; gibt den Zeitverlauf und die Einträge für `[buttons]`/`keymap.toml` aus (Codes 268/270-274 sind die noch unbelegten Schalter).
@@ -46,8 +49,12 @@ sonst zwingt ein Bluetooth-Headset die Musik ins HFP-Profil (leise, mono). `[cap
 ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-Sperre: `scripts/bt_a2dp_lock.sh`.
 
 ### Drehknöpfe
-- Stimme: `launcher/volume_knob.py`, ABS-Achse aus `config/settings.toml` `[volume].axis` (leer = nur
-  Beobachtung, Log meldet bewegte Achsen) -> `logs/voice_volume.txt`, von Piper je Satz gelesen. Grundlautstärke aller
+- Lautstärke (Knopf 1, KEY_VOLUMEUP/DOWN): `launcher/music_knob.py`, mpv-Socket oder ohne mpv der ganze Ausgang (wpctl).
+- LED-Helligkeit (Knopf 2, KEY_NEXTSONG/PREVIOUSSONG): `launcher/led_knob.py` -> `logs/led_brightness.txt` (Faktor 0..1.4,
+  `[led_knob]` step/start/min/max); `wled.knob_factor()` (mtime-Cache) geht in `wled.dim()` ein (HTTP-Profile) und
+  `LedStream` führt `bri` alle 0,5 s nach (`bri_prof` x min(1, dim x Faktor)). keymap `led_up`/`led_down`.
+- Stimme: `launcher/volume_knob.py` (`[volume].enabled = false` am Cart; Stimme folgt der Musik über `voice_gain`): nimmt
+  KEY_NEXTSONG/PREVIOUSSONG (`keys`), REL (`rel`) oder ABS-Achse `axis` -> `logs/voice_volume.txt`, von Piper je Satz gelesen. Grundlautstärke aller
   Sprecher im Verhältnis zur Musik: `[volume].voice_gain` 0.5 (`piper_tts.voice_gain()`, nach mtime gecacht; `voice_volume()` =
   Knopf x Gain, gilt für KITT, HAL, BIBO und die Ansagen in `kitt/announce.py` zusätzlich zu `announce.toml` `volume`).
   REL-Modus nimmt REL_MISC/DIAL/WHEEL/HWHEEL (`REL_CODES`), `RelDecoder` (auch für den Musikknopf): das PXN-CB1 schickt REL_MISC
