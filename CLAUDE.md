@@ -446,7 +446,11 @@ Ansteuerpunkte) Farbe A hell / Farbe A gedimmt (0,35) / Farbe B hell, rückt ein
 Drehen = 4 Blöcke/s), Richtung `mq_dir` kehrt alle 16 Beats, bei kräftigem Bass, alle 6-14 s und beim Drop um, Farben rücken alle 4
 Beats (`mq_rot`), `mq_pos` modulo 6 Blöcke; oder Läufer (`sp_launch`): `runner` (ein Punkt läuft durch, zieht der Beat an, überholt ein
 zweiter in der Akzentfarbe mit 1,9x), `cross` (zwei Läufer kreuzen sich), Lauflicht derweil 60 %. Gewinn 1 = zweimal Gold, 2 = weißer
-Lauf von vorne + Markise schnell, >= 3 = Gold/Weiß-Strobo 3 s + Funkeln (Glanzlichter = aufgehellte Farbe A). Specials
+Lauf von vorne + Markise schnell, >= 3 = Gold/Weiß-Strobo 3 s + Funkeln (Glanzlichter = aufgehellte Farbe A). Special
+Zellteilung `_cell_special` (`cell`, alle 45-90 s, erstes nach 25-45 s, nur im Lauflicht ohne Gewinn/Drehen/Läufer): ein Punkt
+in Gegenfarbe (Farbton + 1/3, 1/2 oder 2/3) in einer leeren LED, je Lauflicht-Schritt eine LED weiter (bleibt so in den leeren),
+`CELL_PHASES` 15/15/12 s: nach der ersten teilt jeder Punkt sich links/rechts, nach der zweiten nochmal, dann `back`: alle laufen
+ihren Weg aus `hist` Schritt für Schritt zurück, treffen sich an den Teilungsstellen und verschwinden am Start (~85 s). Specials
 (`_add`/`_apply_specials`, max. 4 gleichzeitig) aus den Ereignis-Profilen der Szenen (`wled.apply_mode_async` -> `event()`):
 *throw* = `swallow` (Punkt zur Mitte, Aufleuchten), *eject/emp/overload/discharge* = `burst` (Druckwelle von der Mitte),
 *lightning/strike/storm* = `lightning` (zwei Blitze, Grollen), *fireworks* = Blüten, *blackout* = aus und zögernd zurück,

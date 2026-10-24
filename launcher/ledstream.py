@@ -151,6 +151,9 @@ class LedStream:
         self.chase_hue = 0.0
         self.ch_step = 0                                          # Lauflicht: Schritt in Ansteuerpunkten, hart je Beat
         self.ch_tick = 0.0
+        # Special "Zellteilung": ein Punkt in anderer Farbe wandert in den leeren LEDs, teilt sich zweimal, läuft dann zurück
+        self.cell = None
+        self.cell_next = time.monotonic() + self.rng.uniform(25.0, 45.0)
         self.base = SCENE_BASE.get(scene, "")
         self.specials: list[dict] = []                            # aktive Specials (kind, t0, len, col, ...)
         self.tint = None                                          # Grundfarbe überschrieben (Wetter, Jahreszeit, blaues Feuer)
@@ -489,21 +492,24 @@ class LedStream:
         if spinning:
             level = twinkle * 1.0
         frame = colors * level[:, None]
+        stepped = False
         if is_beat or (now - self.last_beat > 2.0 and now - self.ch_tick > 0.6):   # Lauflicht-Schritt: hart, je Beat ein Punkt
             self.ch_tick = now
             self.ch_step += 1
+            stepped = True
+        if self.chase_ci == 0:
+            ccol = self.marquee[0]
+        elif self.chase_ci == 1:
+            ccol = self.marquee[2]
+        else:
+            h0 = float(_hue(self.marquee[0][None, :])[0]) / 360.0
+            ccol = _hsv((h0 + self.chase_hue) % 1.0, 1.0, min(1.0, float(self.marquee[0].max()) / 255.0))
         if self.mq_mix > 0.01:                                    # Lauflicht: Ansteuerpunkt an, nächster aus, mechanisch
-            if self.chase_ci == 0:
-                ccol = self.marquee[0]
-            elif self.chase_ci == 1:
-                ccol = self.marquee[2]
-            else:
-                h0 = float(_hue(self.marquee[0][None, :])[0]) / 360.0
-                ccol = _hsv((h0 + self.chase_hue) % 1.0, 1.0, min(1.0, float(self.marquee[0].max()) / 255.0))
             on = ((idx + self.ch_step) % 2 == 0).astype(float)    # Punkt für Punkt im Wechsel, springt je Beat um einen Punkt
             lvl = 1.0 * live + (1.0 - live) * 0.5                 # konstant hell, kein Flimmern
             chase = np.outer(on * lvl, ccol)
             frame = frame * (1.0 - self.mq_mix) + chase * self.mq_mix
+        frame = self._cell_special(frame, now, stepped, ccol, win, spinning, live)
         gold = self.marquee[0]
         white = _saturate(self.marquee[0] * 0.7 + WHITE * 0.3, 1.2)   # Glanzlicht: aufgehellte Hauptfarbe statt Weiß
         acc = self.marquee[2]
@@ -556,6 +562,52 @@ class LedStream:
                 if self.rng.random() < 0.9:
                     self.glow[self.nrng.integers(0, n, size=max(1, n // 60))] = 1.0
                 frame = frame * 0.6 + np.outer(self.glow, white)
+        return frame
+
+    CELL_PHASES = (15.0, 15.0, 12.0)                              # Zellteilung: ein Punkt, zwei, vier; dann zurück
+
+    def _cell_special(self, frame, now, stepped, ccol, win, spinning, live) -> np.ndarray:
+        """Sahnehäubchen im Casino-Lauflicht: ab und zu erscheint in EINER leeren LED ein Punkt in einer anderen Farbe und geht
+        mit jedem Lauflicht-Schritt eine LED weiter (bleibt so immer in den leeren LEDs). Nach ~15 s teilt er sich: einer geht
+        links, einer rechts; nach weiteren ~15 s teilt sich jeder nochmal. Dann laufen alle ihren Weg Schritt für Schritt
+        rückwärts, treffen sich an den Teilungsstellen wieder und verschwinden am Startpunkt."""
+        n = self.n
+        c = self.cell
+        if c is None:
+            if (now >= self.cell_next and stepped and live and win == 0 and not spinning and self.mq_mix > 0.9
+                    and not self.runners):
+                pos = self.rng.randrange(n)
+                if (pos + self.ch_step) % 2 == 0:                 # muss eine leere LED sein
+                    pos = (pos + 1) % n
+                h0 = float(_hue(np.asarray(ccol, dtype=float)[None, :])[0]) / 360.0
+                col = _hsv((h0 + self.rng.choice((0.33, 0.5, 0.66))) % 1.0, 1.0, 1.0)   # deutlich andere Farbe, satt
+                self.cell = {"dots": [[pos, self.rng.choice((1, -1))]], "hist": [], "phase": 0, "t0": now,
+                             "back": False, "col": col}
+                log.info("Casino-Special Zellteilung ab LED %d", pos)
+            return frame
+        if stepped:
+            if c["back"]:
+                if not c["hist"]:                                 # am Startpunkt angekommen: weg
+                    self.cell = None
+                    self.cell_next = now + self.rng.uniform(45.0, 90.0)
+                    return frame
+                c["dots"] = c["hist"].pop()
+            else:
+                if c["phase"] < len(self.CELL_PHASES) and now - c["t0"] >= self.CELL_PHASES[c["phase"]]:
+                    c["phase"] += 1
+                    c["t0"] = now
+                    if c["phase"] < len(self.CELL_PHASES):         # teilen: einer links, einer rechts
+                        c["dots"] = [[p, d] for p, _ in c["dots"] for d in (-1, 1)]
+                    else:                                         # Ende: rückwärts
+                        c["back"] = True
+                if not c["back"]:
+                    c["hist"].append([list(d) for d in c["dots"]])
+                    c["dots"] = [[(p + d) % n, d] for p, d in c["dots"]]
+                elif c["hist"]:
+                    c["dots"] = c["hist"].pop()
+        k = 1.0 * live + (1.0 - live) * 0.5
+        for p, _ in c["dots"]:
+            frame[int(p) % n] = c["col"] * k
         return frame
 
     def _panels(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:

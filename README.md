@@ -1269,7 +1269,10 @@ gewählten Automaten: ein Ansteuerpunkt an, der nächste aus, auf jedem Beat spr
 aus wird an), alle paar Takte kommt auf dem Beat eine andere Farbe. Specials gibt es nur beim Drop und beim Gewinn: für ein paar Takte
 die Casino-Markise (kurze Blöcke aus je drei Punkten in Farbe A hell, Farbe A gedimmt und Farbe B hell, kein Weiß, rückt je Beat einen
 Block weiter, mal vor, mal zurück, beim Drehen schnell), oder ein einzelner Punkt läuft durch und wird bei anziehendem Beat überholt,
-oder zwei Läufer kreuzen sich; kleiner Gewinn blitzt zweimal, großer Gewinn schickt einen weißen Lauf, Jackpot ist Gold-Weiß-Stroboskop
+oder zwei Läufer kreuzen sich. Als Sahnehäubchen erscheint ab und zu in einer leeren LED ein Punkt in einer ganz anderen
+Farbe und geht mit jedem Schritt eine LED weiter, immer in den Lücken; nach etwa 15 Sekunden teilt er sich, einer läuft nach links,
+einer nach rechts, später teilen sich beide nochmal, dann laufen alle ihren Weg rückwärts, finden sich wieder und verschwinden
+am Startpunkt; kleiner Gewinn blitzt zweimal, großer Gewinn schickt einen weißen Lauf, Jackpot ist Gold-Weiß-Stroboskop
 mit Funkeln. Im Systemfehler
 ist das Board ein Kampf zwischen Grün (das System) und Rot (der Fehler), sonst nichts: Die Front wandert in Blasen über die
 Kette, je nach Phase gewinnt Rot (Zusammenbruch, Alarm) oder Grün (Erholung), jeder Beat ist ein Vorstoß der stärkeren Seite,
