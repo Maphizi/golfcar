@@ -358,8 +358,9 @@ negativem Argument liefern NaN/weiße Blöcke, daher `sq()` statt pow und `exp(m
 
 ### Zeitsprung (`visualizers/scenes/timejump.py`, Taste 2)
 Wie Neonfahrt: Autopilot fährt nach `AUTO_START` 4 s von selbst (ENTER sofort, SPACE/BACKSPACE = anhalten, nach `AUTO_RESTART`
-25 s wieder los). `mph` folgt der Energie (30 + 70·Energie + Schub bis 40), spätestens nach `JUMP_DUE` 35-60 s Fahrt laden die
-Zeitkreise und das Tempo geht auf `MPH_JUMP` 88 -> `jump()` (`uJumpT` 0..3 s, Weißblitz bei 1,5 s, `_swap_era()`), Drop = sofort, LINKS/RECHTS `uLane`, OBEN `uHonkT`, UNTEN `toggle_circuits` (`uCircuitT`). Cockpit
+25 s wieder los). `mph` folgt der Energie (30 + 70·Energie + Schub bis 40, gedeckelt auf 82), erst nach `JUMP_DUE` 100-160 s Fahrt
+laden die Zeitkreise und das Tempo geht auf `MPH_JUMP` 88 -> `jump()` (`uJumpT` 0..3 s, Weißblitz bei 1,5 s, `_swap_era()`), Drop =
+sofort, aber nur wenn der letzte Sprung `DROP_JUMP_GAP` 75 s her ist (sonst Schub); LED `led_state()` -> Programm `timejump`, LINKS/RECHTS `uLane`, OBEN `uHonkT`, UNTEN `toggle_circuits` (`uCircuitT`). Cockpit
 `timejump_cockpit.png` (Alpha aus der schwarzen Scheibe, `_windshield_mask`, `SHIELD_Y0` 0.45; `cockpit_drop` schiebt das Bild
 nach unten, Shader bekommt `uShield` = Scheibenkante auf dem Schirm + Drop in .w), Epochen `uEra0..3Tex` (`uEraA/uEraB/uEraMix`),
 Verkehr `timejump_traffic.png` 8x4 à 192 (Reihe = Epoche) als `uMov0..9`/`uMovP0..9`. `EVENTS` je Epoche + Gewitter (`uEvent/
@@ -430,10 +431,11 @@ und `bar_lift` (die 1 im Takt): Sternenflug = Farbfeld (zwei lange Wellen in Hau
 langsame Sterne, alles rückt je Beat ein Sechzehntel nach hinten; Strudel-Punkte rucken je Beat zur Mitte; Atem-Wolken rücken
 je Beat; Wellen 2,2-2,8 s, Kometen selten (0,35/s). Grundprogramm je
 Szene `SCENE_BASE` (sonst nach fx des Profils: Feuer 45/66/42, Scanner 40, Rainbow 9/94, sonst `_music` Pegelmesser), alle ruhig,
-Stroboskop nur als Special: `timejump`: Farbfronten
-(`fronts`, alle 8-15 s eine neue aus Bildschirmfarbe/Akzent mit gedrehtem Farbton) kommen mit 0,03-0,06 Kette/s von vorne herein,
-jede überdeckt die vorige (weiche Kante), Beat = kleiner Schub; `timejump_jump` -> `boost_until` 3 s Volldampf (14x, Fronten alle
-0,25-0,5 s in Elektroblau/Weiß, Kometen, Flackern), danach wieder mellow. `drive` (neonrace, `neonrace.led_state()`: `dist`,
+Stroboskop nur als Special: `timejump` (`timejump.led_state()`: `dist`, `mph`, `driving`, `jump_t0`): farbreduziert, Grund aus
+Farbfronten nur nahe der Bildschirmfarbe (±20 Grad, alle 12-20 s, 0,02-0,04 Kette/s, gedämpft 16-28 %), darüber Markierungen
+(alle `TJ_DASH` 36 LEDs ein Strich, Versatz = `dist` x `TJ_K` 30) in einer Farbe, die mit der Strecke nach hinten ziehen; ab 60 MPH
+werden sie bis 88 zu Streifen (Zeitkreise laden); `timejump_jump` -> `boost_until` 3 s: weich auslaufender Schub (Fronten bis 5x,
+Striche 3x und länger, Elektroblau, wenige Kometen), kein Blitz, kein Flackern; `timejump_start` beschleunigt nicht. `drive` (neonrace, `neonrace.led_state()`: `dist`,
 `speed`, `driving`, `nitro`, `honk_t0`, `near_t0`, `district_t0`/`district_len`, `police_t0`/`police_len`): Straße, Versatz =
 `dist` x `DRIVE_K` 30 LEDs (ruhig, ~18 LEDs/s bei Reisetempo), Laternen alle `LAMP_EVERY` 34 LEDs mit Lichtkegel (bei Nitro
 Streifen nach vorne), Neonschilder 6-15 LEDs in einer Straßenkarte (`drv["sign"]`, Länge 2x Kette) in Haupt-/Akzentfarbe/Bernstein,

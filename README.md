@@ -808,8 +808,9 @@ Hauch Werkstatt-Hall, Sätze in `config/announce.toml` `[themes.future]`). Roter
 **Zeitsprung (Taste 2 im Thema ZURÜCK IN DIE ZUKUNFT, `timejump`):** Das Gegenstück zum Navigationscomputer. Blick aus
 dem Cockpit der Zeitmaschine (`assets/future/timejump_cockpit.png`, die Scheibe ist im Bild schwarz und zeigt die
 Epochenstraße dahinter; `cockpit_drop` schiebt die Armaturen etwas nach unten). Der Autopilot gibt nach vier Sekunden von selbst Gas
-(Startknopf = sofort), der Tacho folgt der Energie der Musik, laute Musik hält den Schub, Stille lässt ausrollen; spätestens
-nach 35 bis 60 Sekunden Fahrt laden die Zeitkreise und er zieht auf 88, beim Drop sofort. Bei 88 zündet der Zeitsprung: Blaulicht um die
+(Startknopf = sofort), der Tacho folgt der Energie der Musik, laute Musik hält den Schub, Stille lässt ausrollen; erst
+nach 100 bis 160 Sekunden Fahrt laden die Zeitkreise und er zieht auf 88, beim Drop sofort, wenn der letzte
+Sprung mindestens 75 Sekunden her ist (sonst gibt der Drop nur Schub); vorher bleibt er unter 88. Bei 88 zündet der Zeitsprung: Blaulicht um die
 Scheibe, zwei Feuerspuren zum Fluchtpunkt, Weißblitz, und die Straße ist in einer anderen Epoche (`timejump_1885|1955|
 1985|2015.png`, nie zweimal dieselbe). Kippschalter = anhalten (egal welche Richtung), nach 25 Sekunden fährt er wieder an. Knüppel links/rechts = Spur,
 oben = Hupe (Verkehr weicht, in 2015 steigt alles auf), unten = Zeitkreise umschalten (nächste Epoche vorwählen, die
@@ -1252,8 +1253,9 @@ Modus läuft, streamt er 25 Bilder pro Sekunde eigene LED-Bilder per UDP an den 
 Akzentfarbe, die LEDs folgen in etwa einer Sekunde. Alles ist mellow: Muster rücken auf jedem Beat (1, 2, 3, 4) einen Schritt
 nach hinten, weich eingerastet, die Eins hebt kurz an, dazwischen treibt alles nur langsam. Jeder Modus hat ein ruhiges
 Grundprogramm, und die Specials kommen aus dem, was auf dem Schirm passiert:
-Beim Zeitsprung kommen langsam Farbfronten von vorne herein und füllen die Kette, eine nach der anderen; beim Sprung selbst
-geht alles auf Volldampf, danach wieder ganz mellow. Beim Flug (Navigationscomputer, Planeten, Neonfahrt) ziehen Sterne von vorne nach hinten über den Cart, schneller
+Beim Zeitsprung bleibt die Kette farbsparsam: ganz langsame Farbfronten nahe der Bildschirmfarbe, darüber ziehen Markierungen
+im Fahrtempo ruhig von vorne nach hinten, die kurz vor 88 Meilen zu Lichtstreifen werden; beim Sprung selbst beschleunigt alles
+weich in Elektroblau, ohne Blitz und Flackern, danach wieder ganz ruhig. Beim Flug (Navigationscomputer, Planeten, Neonfahrt) ziehen Sterne von vorne nach hinten über den Cart, schneller
 mit der Musik, und alle halbe Minute zieht ein Planet vorbei, der im Vorbeiflug kurz die ganze Kette in seiner Farbe füllt;
 Kometenschauer schickt Kometen, das Asteroidenfeld graue Brocken, Wurmloch, Sonne und Nebel färben alles. Am Lagerfeuer ist die
 Kette warmweißes Fackellicht, das träge glimmt und mit dem Feuer heller wird; brennt das Feuer blau, wird auch das Licht blau,

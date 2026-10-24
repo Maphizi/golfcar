@@ -296,9 +296,11 @@ class LedStream:
             self.tint, self.tint_until = (col, col2), now + 30.0
         elif "jump" in n:
             self.boost_until = now + 3.0
-            self._add(now, "lightning", 1.2, col)
+            if self.base != "timejump":
+                self._add(now, "lightning", 1.2, col)                 # Zeitsprung: kein Blitz, das Programm beschleunigt weich
         elif "start" in n or "nitro" in n:
-            self.boost_until = now + 3.0
+            if self.base != "timejump":                           # Zeitsprung: Losfahren ist kein Sprung
+                self.boost_until = now + 3.0
             self._add(now, "wave", 2.2, col, d=1.0)
         elif n == "horn":
             self._add(now, "blink2", 0.7, col)
@@ -1521,47 +1523,59 @@ class LedStream:
                 self.field_next = now + self.rng.uniform(40.0, 90.0)
         return frame
 
+    TJ_K = 30.0                                                   # Zeitsprung: LEDs je Streckeneinheit (ruhig)
+    TJ_DASH = 36                                                  # Abstand der Markierungen in LEDs
+
     def _timejump(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
-        """Zeitsprung: Farbfronten kommen langsam von vorne herein und füllen die Kette, jede schiebt die vorige nach hinten
-        (Farben aus der Bildschirmfarbe, im Farbton gedreht); auf jedem Beat ein kleiner Schub nach hinten. Zeitsprung
-        (`timejump_jump` -> `boost_until`) = Volldampf: Fronten rasen, elektrische Farben, Kometen; danach wieder mellow."""
+        """Zurück in die Zukunft, Fahrt: farbreduziert, aber immer läuft etwas von vorne nach hinten. Grund: ganz langsame
+        Farbfronten nur in Tönen nahe der Bildschirmfarbe (±20 Grad), gedämpft. Darüber Markierungen (je TJ_DASH LEDs ein
+        Strich aus 4 LEDs) in einer Farbe, die mit der gefahrenen Strecke der Szene ruhig nach hinten ziehen; je näher an
+        88 MPH, desto länger werden sie zu Lichtstreifen (Zeitkreise laden). Zeitsprung (`timejump_jump` -> `boost_until`):
+        Fronten und Streifen beschleunigen weich, Elektroblau, ein paar Kometen, kein Flackern; danach wieder ruhig."""
         n = self.n
         x = self._idx()
+        idx = np.arange(n) if not self.reverse else n - 1 - np.arange(n)
         col, col2 = self._base_col()
+        col = _no_white(np.asarray(col, dtype=float))
         boost = now < self.boost_until
+        bk = max(0.0, min(1.0, (self.boost_until - now) / 3.0)) if boost else 0.0   # 1 am Sprungbeginn, weich auslaufend
+        hm = float(_hue(col[None, :])[0]) / 360.0
         if not self.fronts:
-            self.fronts.append({"col": _saturate(col, 1.3), "pos": 1.2})
-        if now >= self.front_next:                                # neue Front von vorne
-            self.front_next = now + (self.rng.uniform(0.25, 0.5) if boost else self.rng.uniform(8.0, 15.0))
+            self.fronts.append({"col": _hsv(hm, 0.85, 1.0), "pos": 1.2})
+        if now >= self.front_next:                                # neue Front von vorne, nur Töne nahe der Bildschirmfarbe
+            self.front_next = now + (self.rng.uniform(1.0, 2.0) if boost else self.rng.uniform(12.0, 20.0))
             self.front_col_i += 1
             if boost:
-                c = np.array(self.rng.choice(([180.0, 220.0, 255.0], [80.0, 160.0, 255.0], [255.0, 255.0, 255.0], [255.0, 170.0, 60.0])))
+                c = np.array([80.0, 160.0, 255.0]) if self.front_col_i % 2 else np.array([150.0, 200.0, 255.0])
             else:
-                base = col if self.front_col_i % 2 == 0 else col2
-                h = (_hue(base[None, :])[0] + self.rng.uniform(-60.0, 60.0)) / 360.0
-                c = _hsv(h % 1.0, 0.9, 1.0)
+                c = _hsv((hm + self.rng.uniform(-0.055, 0.055)) % 1.0, self.rng.uniform(0.7, 0.95), 1.0)
             self.fronts.append({"col": c, "pos": -0.05})
-        speed = ((0.03 + 0.03 * self.e_fast) * live + (1.0 - live) * 0.02) * (14.0 if boost else 1.0)
-        frame = np.zeros((n, 3))
-        keep = []
-        for i, fr in enumerate(self.fronts):
-            fr["pos"] += speed * dt
-            if is_beat and not boost:
-                fr["pos"] += 0.012                                # Beat: kleiner Schub nach hinten
-            keep.append(fr)
-        # jede Front überdeckt die vorigen bis zu ihrer Position (weiche Kante); Fronten jenseits der Kette bleiben als Grund
-        while len(keep) > 1 and keep[1]["pos"] > 1.15:
-            keep.pop(0)
-        self.fronts = keep
+        fspeed = ((0.02 + 0.02 * self.e_fast) * live + (1.0 - live) * 0.015) * (1.0 + 4.0 * bk)
         for fr in self.fronts:
-            cover = np.clip((fr["pos"] - x) / 0.04 + 0.5, 0.0, 1.0)
+            fr["pos"] += fspeed * dt
+        while len(self.fronts) > 1 and self.fronts[1]["pos"] > 1.15:
+            self.fronts.pop(0)
+        frame = np.zeros((n, 3))
+        for fr in self.fronts:
+            cover = np.clip((fr["pos"] - x) / 0.05 + 0.5, 0.0, 1.0)
             frame = frame * (1.0 - cover)[:, None] + np.outer(cover, fr["col"])
-        lvl = (0.25 + 0.3 * self.bass_s + 0.08 * self.bar_lift) * live + (1.0 - live) * 0.2
-        if boost:
-            lvl = 0.6 + 0.3 * math.sin(now * 25.0)
-            if self.nrng.random() < 2.5 * dt:
-                self._add(now, "comet", 0.8, np.array([200.0, 230.0, 255.0]), d=1.0)
-        return frame * lvl
+        lvl = (0.16 + 0.12 * self.bass_s) * live + (1.0 - live) * 0.14
+        frame = frame * lvl
+        # Markierungen ziehen mit der Strecke nach hinten
+        st = st or {}
+        dist = float(st.get("dist", now * 0.3))
+        mph = float(st.get("mph", 50.0))
+        driving = bool(st.get("driving", True))
+        off = dist * self.TJ_K * (1.0 + 2.0 * bk)
+        load = max(0.0, min(1.0, (mph - 60.0) / 28.0))             # 60..88 MPH: Striche werden zu Streifen
+        dash_len = 4.0 + 14.0 * load + 10.0 * bk
+        ph = (idx - off) % self.TJ_DASH
+        head = np.clip(1.0 - np.abs(ph - self.TJ_DASH / 2.0) / (dash_len / 2.0), 0.0, 1.0)
+        dash_col = _hsv(hm, 0.55, 1.0) * (1.0 - bk) + np.array([120.0, 190.0, 255.0]) * bk
+        frame += np.outer(head * (0.75 if driving else 0.35), dash_col)
+        if bk > 0.3 and self.nrng.random() < 0.8 * dt:
+            self._add(now, "comet", 1.2, np.array([170.0, 210.0, 255.0]), d=1.0)
+        return frame
 
     def _vortex(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
         """Strudel: schwache Punkte driften von beiden Enden zur Mitte, die Mitte glimmt mit dem Bass in der Akzentfarbe.

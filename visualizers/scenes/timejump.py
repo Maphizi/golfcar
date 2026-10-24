@@ -36,7 +36,8 @@ HONK_LEN = 1.5
 MPH_JUMP = 88.0
 AUTO_START = 4.0          # s nach dem Start fährt der Wagen von selbst los (Autopilot)
 AUTO_RESTART = 25.0       # s nach dem Anhalten per Kippschalter fährt er wieder an
-JUMP_DUE = (35.0, 60.0)   # spätestens nach so vielen Sekunden Fahrt laden die Zeitkreise und er springt (bei Musik)
+JUMP_DUE = (100.0, 160.0)  # nach so vielen Sekunden Fahrt laden die Zeitkreise und er springt (bei Musik); sonst nie
+DROP_JUMP_GAP = 75.0       # ein Drop löst nur einen Sprung aus, wenn der letzte so lange her ist
 COCKPIT_DROP = 0.08
 # Zeitkreis-Anzeigen im Cockpitbild: je Zeile (Ziel rot, Jetzt grün, Zuletzt gelb) die fünf Fenster MONTH/DAY/YEAR/HOUR/MIN
 # (x-Mitten) und die Fenstermitte y (von unten); gemessen im Cockpitbild, der Text wird mit der Unterkante gesetzt
@@ -234,6 +235,10 @@ class Controller:
         self.led_back_at = back_at
 
     def _drop(self, now: float) -> None:
+        if now - self.jump_t0 < DROP_JUMP_GAP:
+            self.boost = min(40.0, self.boost + 15.0)             # zu früh für einen Sprung: nur ein Schub
+            log.info("Drop: Schub (letzter Sprung vor %.0f s)", now - self.jump_t0)
+            return
         log.info("Drop: sofortiger Zeitsprung")
         self.mph = max(self.mph, MPH_JUMP)
         self.jump(now)
@@ -322,6 +327,11 @@ class Controller:
         out["uTrafficTex"] = (self.traffic if self.traffic is not None else self.blank, 1)
         return out
 
+    def led_state(self) -> dict:
+        """LED-Board: Programm "timejump" mit gefahrener Strecke (Markierungen ziehen mit), Tempo und Sprungzeitpunkt."""
+        return {"program": "timejump", "dist": float(self.dist), "mph": float(self.mph), "driving": bool(self.driving),
+                "jump_t0": float(self.jump_t0)}
+
     def uniform_names(self):
         names = ["uCockpitTex", "uEra0Tex", "uEra1Tex", "uEra2Tex", "uEra3Tex", "uTrafficTex", "uCockpitSize",
                  "uEraSize", "uTrafficSize", "uSeed", "uVanish", "uShield", "uBassS", "uMidS", "uHighS", "uEnergy",
@@ -380,6 +390,7 @@ class Controller:
             else:
                 self.boost = max(0.0, self.boost - dt * 4.0)
             target = (30.0 + 70.0 * self.energy + self.boost) * live + (1.0 - live) * 8.0
+            target = min(target, MPH_JUMP - 6.0)                  # die 88 erreicht er nur, wenn der Sprung fällig ist
             if live and now >= self.jump_due and not jumping:
                 target = max(target, MPH_JUMP + 8.0)
             if jumping:
