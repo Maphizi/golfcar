@@ -102,12 +102,31 @@ class Player:
 VOICE_VOLUME_FILE = Path(__file__).resolve().parents[2] / "logs" / "voice_volume.txt"
 
 
-def voice_volume() -> float:
-    """Lautstärkefaktor der Stimme (0..1.5) aus logs/voice_volume.txt, gesetzt vom Drehknopf. 1.0 ohne Datei."""
+_gain_cache: tuple[float, float] = (0.0, 1.0)                      # (mtime von settings.toml, voice_gain)
+
+
+def voice_gain() -> float:
+    """Grundlautstärke aller Sprecher aus settings.toml [volume].voice_gain (Verhältnis zur Musik), 1.0 ohne Eintrag."""
+    global _gain_cache
     try:
-        return min(1.5, max(0.0, float(VOICE_VOLUME_FILE.read_text().strip())))
+        from launcher import config as lcfg
+        path = lcfg.CONFIG_DIR / "settings.toml"
+        mtime = path.stat().st_mtime
+        if mtime != _gain_cache[0]:
+            gain = float(lcfg.load_settings().get("volume", {}).get("voice_gain", 1.0))
+            _gain_cache = (mtime, min(2.0, max(0.0, gain)))
+    except Exception:
+        return _gain_cache[1]
+    return _gain_cache[1]
+
+
+def voice_volume() -> float:
+    """Lautstärkefaktor der Stimme: Grundlautstärke voice_gain mal Drehknopf (0..1.5 aus logs/voice_volume.txt, 1.0 ohne Datei)."""
+    try:
+        knob = min(1.5, max(0.0, float(VOICE_VOLUME_FILE.read_text().strip())))
     except (OSError, ValueError):
-        return 1.0
+        knob = 1.0
+    return knob * voice_gain()
 
 
 class PiperTTS:

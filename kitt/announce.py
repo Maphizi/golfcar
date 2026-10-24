@@ -146,6 +146,11 @@ def play(group: str, target: str = "", theme: str | None = None) -> bool:
     if _current and _current.poll() is None:
         _current.kill()                      # laufende Ansage abbrechen
     vol = float(cfg.get("volume", 1.0))
+    try:                                                                    # Grundlautstärke aller Sprecher + Drehknopf
+        from kitt.tts.piper_tts import voice_volume
+        vol *= voice_volume()
+    except Exception:
+        pass
     if shutil.which("pw-play"):
         vol_props = ["-P", f"media.volume={vol}"]
         cmd = ["pw-play"] + vol_props + (["--target", target] if target else []) + [str(path)]

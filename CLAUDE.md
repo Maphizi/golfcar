@@ -45,7 +45,9 @@ ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-S
 
 ### Drehknöpfe
 - Stimme: `launcher/volume_knob.py`, ABS-Achse aus `config/settings.toml` `[volume].axis` (leer = nur
-  Beobachtung, Log meldet bewegte Achsen) -> `logs/voice_volume.txt`, von Piper je Satz gelesen.
+  Beobachtung, Log meldet bewegte Achsen) -> `logs/voice_volume.txt`, von Piper je Satz gelesen. Grundlautstärke aller
+  Sprecher im Verhältnis zur Musik: `[volume].voice_gain` 0.5 (`piper_tts.voice_gain()`, nach mtime gecacht; `voice_volume()` =
+  Knopf x Gain, gilt für KITT, HAL, BIBO und die Ansagen in `kitt/announce.py` zusätzlich zu `announce.toml` `volume`).
 - Musik: `launcher/music_knob.py`, KEY_VOLUMEUP/DOWN (immer), REL_MISC (`[music].rel`) oder ABS-Achse
   (`[music].axis`) -> mpv-Socket `/tmp/mpv.sock` (`scripts/music.sh` startet mpv mit Socket).
 

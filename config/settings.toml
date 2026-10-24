@@ -31,6 +31,9 @@ idle_minutes = 5
 every_seconds = 180
 
 [volume]
+# Grundlautstärke ALLER Sprecher (KITT, HAL, BIBO, Ansagen) im Verhältnis zur Musik: 1.0 = wie gerendert, 0.5 = halb
+# so laut (-6 dB). Der Drehknopf (unten) regelt zusätzlich darauf.
+voice_gain = 0.5
 # Drehknopf (ABS-Achse) regelt die Lautstärke der STIMME (KITT, HAL, BIBO, Ansagen), nicht die Musik.
 # axis leer = nur beobachten: der Launcher meldet im Log, welche Achsen sich bewegen ("Achse ABS_Z = 128 ...");
 # die des Drehknopfs hier eintragen (z. B. "ABS_Z"). target = "sink" regelt stattdessen den ganzen Ausgang.
