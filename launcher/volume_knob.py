@@ -6,7 +6,8 @@ der Knopf stattdessen den ganzen Ausgang über wpctl.
 
 Zwei Modi:
   ABS-Achse (axis = "ABS_Z" o. ä.): absoluter Wert wird auf min_percent..max_percent abgebildet.
-  REL-Modus (rel = true): jedes REL_MISC-Ereignis ändert die Lautstärke um ±step Prozent.
+  REL-Modus (rel = true): jedes Dreh-Ereignis (REL_MISC, REL_DIAL, REL_WHEEL, REL_HWHEEL) ändert die Lautstärke um ±step Prozent.
+Prüfen auf dem Pi: scripts/voice_knob_check.py (zeigt Geräte, Ereignisse beim Drehen, den Faktor in logs/voice_volume.txt).
 """
 from __future__ import annotations
 
@@ -25,6 +26,7 @@ log = logging.getLogger("volume")
 VOICE_FILE = Path(__file__).resolve().parents[1] / "logs" / "voice_volume.txt"
 DEVICE_NAME = "PXN"
 SKIP = {ecodes.ABS_HAT0X, ecodes.ABS_HAT0Y}
+REL_CODES = {ecodes.REL_MISC, ecodes.REL_DIAL, ecodes.REL_WHEEL, ecodes.REL_HWHEEL}   # Dreh-Ereignisse des Knopfs
 
 
 class VolumeKnob(threading.Thread):
@@ -56,6 +58,10 @@ class VolumeKnob(threading.Thread):
             while not self._stop.is_set():
                 devs = self._find()
                 if not devs:
+                    if not getattr(self, "_warned", False):
+                        self._warned = True
+                        log.warning("Lautstärkeknopf: kein PXN-Gerät mit %s gefunden (scripts/voice_knob_check.py)",
+                                    "Dreh-Ereignissen (REL)" if self.rel else "ABS-Achsen")
                     time.sleep(3)
                     continue
                 names = ", ".join(f"{d.name} ({d.path})" for d in devs)
@@ -75,8 +81,8 @@ class VolumeKnob(threading.Thread):
                     d.close()
                     continue
                 if self.rel:
-                    # REL_MISC-Gerät suchen
-                    if ecodes.REL_MISC in d.capabilities().get(ecodes.EV_REL, []):
+                    # Gerät mit Dreh-Ereignissen suchen (REL_MISC o. ä.)
+                    if REL_CODES & set(d.capabilities().get(ecodes.EV_REL, [])):
                         out.append(d)
                         continue
                 else:
@@ -107,15 +113,16 @@ class VolumeKnob(threading.Thread):
                 try:
                     for ev in d.read():
                         if self.rel:
-                            # REL_MISC: jedes Ereignis = ein Schritt
-                            if ev.type != ecodes.EV_REL or ev.code != ecodes.REL_MISC:
+                            # Dreh-Ereignis: jedes Ereignis = ein Schritt
+                            if ev.type != ecodes.EV_REL or ev.code not in REL_CODES:
                                 continue
                             if ev.value == 0:
                                 continue
                             val = ev.value - 256 if 128 <= ev.value < 256 else ev.value   # 224 = -32 bei 8-Bit-Drehern
                             if ev.value not in rel_seen:
                                 rel_seen.add(ev.value)
-                                log.info("REL_MISC Rohwert %d -> %+d (Richtung %s)", ev.value, val, "hoch" if val > 0 else "runter")
+                                log.info("%s Rohwert %d -> %+d (Richtung %s)", ecodes.REL.get(ev.code, ev.code), ev.value, val,
+                                         "hoch" if val > 0 else "runter")
                             delta = self.step if val > 0 else -self.step
                             if self.invert:
                                 delta = -delta
@@ -164,6 +171,6 @@ class VolumeKnob(threading.Thread):
         try:
             VOICE_FILE.parent.mkdir(parents=True, exist_ok=True)
             VOICE_FILE.write_text(f"{pct / 100.0:.2f}")
-            log.debug("Stimme %d%%", pct)
+            log.info("Stimme %d%% -> %s", pct, VOICE_FILE.name)
         except OSError as exc:
             log.warning("voice_volume.txt: %s", exc)

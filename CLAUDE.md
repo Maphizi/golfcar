@@ -48,6 +48,8 @@ ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-S
   Beobachtung, Log meldet bewegte Achsen) -> `logs/voice_volume.txt`, von Piper je Satz gelesen. Grundlautstärke aller
   Sprecher im Verhältnis zur Musik: `[volume].voice_gain` 0.5 (`piper_tts.voice_gain()`, nach mtime gecacht; `voice_volume()` =
   Knopf x Gain, gilt für KITT, HAL, BIBO und die Ansagen in `kitt/announce.py` zusätzlich zu `announce.toml` `volume`).
+  REL-Modus nimmt REL_MISC/DIAL/WHEEL/HWHEEL (`REL_CODES`), Log "Stimme NN% -> voice_volume.txt"; Prüfung auf dem Pi:
+  `scripts/voice_knob_check.py [faktor]` (Geräte, 10 s Ereignisse, Datei, Ansage).
 - Musik: `launcher/music_knob.py`, KEY_VOLUMEUP/DOWN (immer), REL_MISC (`[music].rel`) oder ABS-Achse
   (`[music].axis`) -> mpv-Socket `/tmp/mpv.sock` (`scripts/music.sh` startet mpv mit Socket).
 

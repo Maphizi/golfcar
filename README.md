@@ -521,7 +521,8 @@ daneben. Die Datei ist nicht im Repo (Markenrechte), lege sie selbst ab.
   `logs/voice_volume.txt`; jeder Sprecher (KITT, HAL, BIBO, Ansagen) liest ihn vor jedem Satz.
   `max_percent` 130 erlaubt etwas lauter als normal. `target = "sink"` regelt stattdessen alles.
   Die Grundlautstärke aller Sprecher im Verhältnis zur Musik steht in `[volume].voice_gain` (0.5 = halb so laut wie
-  gerendert); der Knopf regelt darauf, die Ansagen nehmen dazu noch `announce.toml` `volume`.
+  gerendert); der Knopf regelt darauf, die Ansagen nehmen dazu noch `announce.toml` `volume`. Tut der Knopf nichts:
+  `scripts/voice_knob_check.py` zeigt die Geräte, was beim Drehen ankommt und den Faktor in der Datei, und spielt eine Ansage.
 - Musik: `launcher/music_knob.py` steuert nur mpv über dessen Socket `/tmp/mpv.sock`: Consumer-Tasten
   Lauter/Leiser werden immer erkannt, `[music].rel = true` nimmt REL_MISC-Schritte, `axis` eine
   absolute Achse; `step` Prozent je Schritt. mpv startet man mit `scripts/music.sh [Ordner|Datei|URL]`
