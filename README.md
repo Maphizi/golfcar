@@ -1264,8 +1264,8 @@ und Marktplatz atmen langsam mit zwei wandernden Wolken, Jahreszeit und Epoche f
 durch. Auf der Dachterrasse ist die Kette eine Fensterfront der Stadt: kleine Fenster in Magenta, Cyan, Bernstein und Violett, etwa
 40 % an, auf jedem Beat gehen ein paar an oder aus. Sie spiegelt die Lichtzustände der Szene: Roter Alarm mit wanderndem
 Drehlicht, Säure mit flackernden Röhren, Überlast mit durchbrennenden Häusern, Nur Werbung mit Leuchtreklamen, Blackout mit
-Notstrom und Flugwarnlichtern. Das Wetter färbt (Regenschimmer, Nebel, Säure, glühende Asche), der Stromausfall geht blockweise,
-der EMP als Welle; ab und zu fliegt ein Auto oder eine Polizeidrohne vorbei. Geblitzt wird nur beim Blitzschlag und höchstens
+Notstrom und Flugwarnlichtern. Das Wetter färbt (Regenschimmer, Nebel, Säure, glühende Asche), beim Stromausfall wird erst die ganze Kette schwarz, dann kommen die Häuser im Beat knallbunt
+zurück, der EMP läuft als Welle; ab und zu fliegt ein Auto oder eine Polizeidrohne vorbei. Geblitzt wird nur beim Blitzschlag und höchstens
 alle 30 Sekunden bei einem Drop. Black Ice, Paradoxon und
 Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. In der Neonfahrt ist die Kette die Straße: Laternen und Neonschilder ziehen ruhig von vorne nach hinten vorbei, im Tempo des
 Wagens, aber deutlich gemächlicher, und stehen still, wenn er hält; die Schilder wechseln im Beat die Farbe, bei Nitro werden die Laternen zu
