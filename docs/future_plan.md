@@ -266,3 +266,95 @@ switches, cables, vacuum tubes and a time circuit box with three dark empty digi
 the dashboard is one large solid pure black area with nothing visible through it, no black parts anywhere on the dashboard
 itself, gullwing door frames only at the far left and right edges, cinematic, 16:9
 ```
+
+---
+
+## Runde 3: UHRTURM NEU (Taste 4, `clocktower`) – sechs neue Bilder
+
+Der Uhrturm wird neu gebaut, ernster und filmischer statt Comic. Neue Dateinamen, die alten Bilder bleiben liegen, bis
+der neue Code fertig ist.
+
+**Idee.** Nah am Turm: oben füllt das große Zifferblatt das Bild, darunter eine verwinkelte alte Fassade mit gut einem
+Dutzend schief und durcheinander gesetzter Fenster (rund, spitz, schmal, Dachgaube, Erker, verschieden hoch und groß),
+ganz unten ein schmaler Streifen nasser Straße. Jedes Fenster hat sein eigenes Licht, das auf den Beat die Farbe wechselt
+und mit einem Spektrumband atmet; darin wechseln Silhouetten (tanzendes Paar, Gitarrist, Hund, Professor am Fenster …),
+die sich leicht bewegen. Die Messingzeiger kriechen auf 22:04; dort spielt die Uhr verrückt: Zeiger rasen vor und zurück,
+das Zifferblatt wird durchsichtig, dahinter dreht sich das Uhrwerk, Funken, dann schlägt der Blitz ein, alle Fenster
+blitzen gleichzeitig auf und unten rast die Zeitmaschine mit Feuerspuren durch. Der Professor (fotorealistisch, kein
+Comic) klettert immer wieder die Fassade hoch und hängt am Ende am Zeiger.
+
+Die Fensterscheiben müssen im Szenenbild **reines Schwarz** sein: der Code findet sie daran (wie die Monitore bei
+Black Ice) und malt Licht und Silhouetten hinein.
+
+**clocktower_tower** (Szene, 16:9, mindestens 1920 Pixel breit)
+```
+Photorealistic close-up of the upper part of an old town hall clock tower at night during a thunderstorm, cinematic,
+seen slightly from below. The large round clock face fills the upper center of the image (about 40 percent of the image
+height), plain ivory glass lit softly from inside, completely blank with no hands, no numerals, only small bar markers
+at the twelve positions, a narrow stone ledge directly below the clock. Below the clock a crooked, irregular old stone
+and timber facade with about twelve windows placed chaotically at different heights and angles: different shapes and
+sizes (tall gothic arch, small round porthole, narrow slit, tilted square, attic dormer, bay window, double window,
+crooked shutters). Every window pane is completely solid pure black (#000000), no reflections, no curtains, no glass
+glare, no mullions inside the panes. A thick black cable hangs from the clock ledge down to the right edge. At the very
+bottom a narrow strip of wet cobblestone street with one old street lamp. Dark storm clouds in the top corners, rain,
+cold blue moonlight, warm stone. No people, no text, no logos, 16:9
+```
+
+**clocktower_silhouettes** (Bogen 8x3, gleich große quadratische Zellen)
+```
+Sprite sheet, exactly 8 columns and 3 rows, 24 identical square cells in a strict grid, pure white background, each cell
+one solid pure black silhouette as seen from outside through a lit window, figure centered and standing on the bottom
+line of the cell, realistic human proportions, not cartoon, crisp edges. Row 1: couple dancing close, couple kissing,
+man playing electric guitar, woman holding a coffee cup, old man with wild hair pointing upward, big shaggy dog sitting,
+cat sitting on a windowsill, child jumping. Row 2: two people arguing with raised arms, woman on a corded telephone,
+man looking through binoculars, person running, jitterbug couple mid-swing, man with hat and coat, woman brushing her
+long hair, person waving. Row 3: scientist pouring a glowing liquid, man reading a newspaper, slow dancing couple, a trio
+band with saxophone, person pacing with hands behind back, a hand pressed against the glass, a face pressed against the
+glass, a person stretching. No text, no borders, no grid lines
+```
+
+**clocktower_climber** (Bogen 8x2, gleich große Zellen)
+```
+Sprite sheet, exactly 8 columns and 2 rows, 16 identical square cells in a strict grid, pure black background,
+photorealistic cinematic photo of the same elderly scientist in every cell: wild white hair, long light grey coat over a
+white lab coat, dark trousers, realistic, not cartoon, lit by cold blue moonlight with a strong rim light so every edge
+is clearly visible against the black background, same scale in every cell, figure fully inside its cell. Row 1: an
+eight frame climbing cycle seen from behind while climbing up a vertical stone wall, hands reaching up alternately, feet
+searching for hold. Row 2: hanging from a horizontal metal bar with both hands, hanging with one hand, pulling hard on a
+thick cable, looking down frightened, pointing up at something, holding a cable plug in both hands, slipping with legs
+in the air, crouching on a narrow ledge. No text, no borders, no grid lines
+```
+
+**clocktower_hands** (Bogen 3x1, quadratische Zellen)
+```
+Three antique clock hands on a pure black background, exactly 3 columns and 1 row of identical square cells, each hand
+pointing straight up, the pivot hole exactly at the center of its cell, ornate wrought iron with polished brass edges
+that catch the light, photorealistic. Cell 1: short broad hour hand reaching from the center to 55 percent of the way to
+the top edge. Cell 2: long minute hand reaching from the center almost to the top edge. Cell 3: thin red-brass second
+hand with a small round counterweight below the center. No text, no borders
+```
+
+**clocktower_clockwork** (quadratisch, mindestens 1024x1024)
+```
+Photorealistic front view of an intricate antique brass clockwork mechanism as seen behind a removed clock face, many
+interlocking gears of different sizes, springs, a central spindle exactly in the center of the image, warm brass and
+dark steel, lit from the front, circular composition, everything outside the circle pure black. No text, no logos
+```
+
+**clocktower_car** (Bogen 4x1, gleich große Zellen, Breitformat 2:1)
+```
+Sprite sheet, exactly 4 columns and 1 row of identical cells (each cell twice as wide as high), pure black background,
+photorealistic cinematic night photo, the same stainless steel sports car with gullwing doors in exact side view facing
+right, same size and position in every cell, wheels on the bottom line: 1 headlights on, 2 blue electric arcs crawling
+over the body, 3 the car glowing white-blue with motion blur at high speed, 4 no car, only two parallel burning fire
+trails on the ground. No text, no logos, no borders
+```
+
+### Anweisung an den Bot (Runde 3)
+
+Erzeuge die sechs Bilder `clocktower_tower`, `clocktower_silhouettes`, `clocktower_climber`, `clocktower_hands`,
+`clocktower_clockwork` und `clocktower_car` mit den Prompts oben, speichere sie als PNG unter
+`assets/future/raw/<name>.png` (Name exakt wie in Fettschrift) und committe sie auf den Branch `claude/new-session-3cbx1m`.
+Wichtig: im Szenenbild sind alle Fensterscheiben reines Schwarz und das Zifferblatt ist leer (ohne Zeiger, ohne Zahlen);
+alle Bögen haben exakt die genannte Spalten- und Reihenzahl mit gleich großen Zellen, die Silhouetten schwarz auf Weiß,
+alles andere auf reinem Schwarz. Die alten Uhrturm-Bilder nicht löschen.
