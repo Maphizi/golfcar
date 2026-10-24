@@ -37,7 +37,7 @@ SCENE_BASE = {
     "blackhole": "vortex", "core": "vortex", "flux": "vortex", "pond": "vortex",
     "rooftop": "city",
     "taxi": "breathe", "oracle": "breathe", "clocktower": "breathe", "woodeye": "forest", "trip": "trip",
-    "hearttree": "breathe", "square": "breathe",
+    "hearttree": "heart", "square": "breathe",
     "blackice": "glitch", "paradox": "glitch", "overdose": "glitch",
     "hal": "hal",
 }
@@ -261,6 +261,14 @@ class LedStream:
         col = _rgb(profile.get("col"), [255, 255, 255])
         col2 = _rgb(profile.get("col2"), [0, 0, 0])
         n = name.lower()
+        if self.base == "heart" and ("roots" in n or n.endswith("_beat")):
+            hb = self._heart_state()
+            if "roots" in n:
+                hb["flow_t0"] = now                               # Wurzeln/Myzel in der Szene = Aderfluss auf der Kette
+            else:
+                hb["pulses"].append((now, 1.5))                   # großer Herzschlag (Startknopf)
+                hb["pulses"].append((now + 0.3, 0.9))
+            return
         if self.base == "city" and ("lightning" in n or "blackout" in n or "fireworks" in n):
             return                                                # Dachterrasse: Blitz, Stromausfall, Feuerwerk kommen aus led_state
         if STATE_PROFILE.match(n):
@@ -378,7 +386,7 @@ class LedStream:
                 self.c_red, self.c_green = self.scr_col, self.scr_acc
         if live and self.e_fast > 1.5 * self.energy + 0.15 and self.energy > 0.1 and now - self.last_drop > 12.0 and now - self.t_first > 5.0:
             self.last_drop = now
-            self.flash = 0.55                                     # Drop: ein weicher Aufheller, kein Stroboskop
+            self.flash = 0.0 if self.base in ("heart", "trip", "forest") else 0.55   # Drop: weicher Aufheller (ruhige Programme: keiner)
             self.flash_col = self.col3
         self.flash *= 0.86
         self.glow *= 0.80
@@ -397,6 +405,8 @@ class LedStream:
             frame = self._slots(now, dt, st, bass, high, is_beat, live)
         elif program == "duel":                                   # Neonfahrt: zwei Felder im Beat
             frame = self._duel(now, dt, st, bass, high, is_beat, live)
+        elif program == "heart":                                  # Herzbaum: Herzschlag von vorne nach hinten
+            frame = self._heart(now, dt, st, bass, high, is_beat, live)
         elif program == "forest":                                 # Auge des Waldes: Grün, türkiser Nebel; Kaleidoskop bunt
             frame = self._forest(now, dt, st, bass, high, is_beat, live)
         elif program == "trip":                                   # Waldtresen: bunt, ganz langsam, morphend
@@ -767,6 +777,65 @@ class LedStream:
             frame[m0] = a * lvl
             frame[m1] = b * lvl
             frame[m0 & m1] = c3 * lvl                              # beim Kreuzen: Überlappung in der dritten Farbe
+        return frame
+
+    def _heart_state(self) -> dict:
+        hb = getattr(self, "heartled", None)
+        if hb is None:
+            hb = self.heartled = {"pulses": [], "tick": 0.0, "flow_t0": -100.0,
+                                  "flow_next": time.monotonic() + self.rng.uniform(20.0, 40.0)}
+        return hb
+
+    def _heart(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Herzbaum: die Kette ist vorne hell und wird nach hinten dunkler; ein ruhiger Herzschlag (Doppelschlag, kräftig dann
+        schwächer) läuft von vorne nach hinten und klingt dabei aus. Schlag auf jedem zweiten Beat (ruhig, ~60-70/min), ohne
+        Musik 64/min. Farben der Jahreszeit (Tönung aus der Szene) ohne Weißanteil, hinten zur Zweitfarbe hin. Special Aderfluss
+        (alle 30-60 s und wenn in der Szene die Wurzeln laufen): Energie fließt als Strom mit pulsierenden Teilchen von vorne
+        nach hinten durch."""
+        n = self.n
+        x = self._idx()
+        hb = self._heart_state()
+        a, b = self._base_col()
+        a = _no_white(np.asarray(a, dtype=float))
+        b = _no_white(np.asarray(b, dtype=float)) if np.asarray(b).max() > 8 else a * np.array([0.6, 0.6, 0.6])
+        # Herzschlag auslösen
+        beat_now = is_beat and self.beats % 2 == 1
+        idle = now - self.last_beat > 2.5 and now - hb["tick"] > 60.0 / 64.0
+        if beat_now or idle:
+            hb["tick"] = now
+            amp = 0.75 + 0.35 * self.bass_s if live else 0.6
+            hb["pulses"].append((now, amp))
+            hb["pulses"].append((now + 0.28, amp * 0.55))           # "lub-dub"
+        hb["pulses"] = [p for p in hb["pulses"] if now - p[0] < 2.6]
+        # Grund: vorne hell, hinten dunkler, Farbe wandert zur Zweitfarbe
+        grad = 0.16 + 0.34 * (1.0 - x) ** 1.3
+        ha = float(_hue(a[None, :])[0]) / 360.0                  # Farbton wandert auf dem Farbkreis zur Zweitfarbe (kein Grau)
+        hb_ = float(_hue(b[None, :])[0]) / 360.0
+        dh = ((hb_ - ha + 0.5) % 1.0) - 0.5
+        colx = _hsv_arr((ha + dh * 0.55 * x) % 1.0, 0.95, 1.0)
+        level = grad * (1.0 if live else 0.7)
+        for t0, amp in hb["pulses"]:
+            age = now - t0
+            if age < 0.0:
+                continue
+            pos = age * 0.55                                       # läuft ruhig nach hinten
+            wave = np.exp(-((x - pos) / 0.13) ** 2) * (1.0 - 0.65 * x)
+            swell = np.exp(-x / 0.12) * math.exp(-age / 0.3)       # vorne zieht sich das Herz zusammen
+            level = level + amp * math.exp(-age / 1.6) * (0.55 * wave + 0.35 * swell)
+        frame = colx * np.clip(level, 0.0, 1.1)[:, None]
+        # Aderfluss
+        if now >= hb["flow_next"] and now - hb["flow_t0"] > 20.0:
+            hb["flow_t0"] = now
+        if now - hb["flow_t0"] < 0.1:
+            hb["flow_next"] = now + self.rng.uniform(30.0, 60.0)
+        fa = now - hb["flow_t0"]
+        if 0.0 <= fa < 13.0:
+            head = fa * 0.1
+            body = np.clip(1.0 - (head - x) / 0.3, 0.0, 1.0) * (x <= head + 0.01)
+            cells = 0.55 + 0.45 * np.sin(2.0 * math.pi * ((x - fa * 0.16) * 45.0)) ** 2   # Teilchen strömen schneller als der Kopf
+            k = body * cells * (0.75 + 0.25 * self.bass_s) * min(1.0, fa / 0.8) * min(1.0, (13.0 - fa) / 2.0)
+            fcol = _hsv((ha + dh * 0.3) % 1.0, 1.0, 1.0)
+            frame = frame * (1.0 - 0.5 * k[:, None]) + np.outer(k, fcol)
         return frame
 
     FOREST_DEEP = np.array([0.0, 90.0, 22.0])
@@ -1605,6 +1674,13 @@ def _hue(p: np.ndarray) -> np.ndarray:
     d = np.maximum(mx - mn, 1e-6)
     h = np.where(mx == r, (g - b) / d % 6.0, np.where(mx == g, (b - r) / d + 2.0, (r - g) / d + 4.0))
     return (h * 60.0) % 360.0
+
+
+def _no_white(c: np.ndarray) -> np.ndarray:
+    """Weißanteil raus: drei Viertel des kleinsten Kanals abziehen, dann voll aussteuern (Rosa -> Pink, Eisblau -> Blau)."""
+    c = np.asarray(c, dtype=float)
+    c = np.clip(c - 0.75 * c.min(), 0.0, None)
+    return c * (255.0 / max(1.0, float(c.max())))
 
 
 def _hsv_arr(h: np.ndarray, s: float, v) -> np.ndarray:

@@ -440,7 +440,12 @@ hinten, Tempo mit der Energie, Beat hebt sie kurz; alle 25-45 s `planet` (weiche
 kurz alles in ihrer Farbe); `navcomputer.led_state()` liefert `flying` und das laufende Ereignis: KOMETENSCHAUER = `comet`-Läufer,
 ASTEROIDENFELD = graue Brocken schneller, WURMLOCH/SONNE/NEBEL = Tönung. `fire` (campfire, `led_state` level/blue): warmweißes
 Fackellicht (255,125,30; auf LEDs wirkt erst das warmweiß), träges Glimmen je LED (`embers`), Wabern `gust`, Helligkeit mit der Feuerstufe, bei `blue` > 0 blau. `vortex` (blackhole, core, flux, pond): Punkte driften von beiden Enden zur Mitte, Mitte glimmt
-mit dem Bass. `breathe` (taxi, clocktower, hearttree, square): langsames Atmen + zwei wandernde Wolken. `forest` (woodeye, `led_state`
+mit dem Bass. `breathe` (taxi, clocktower, square): langsames Atmen + zwei wandernde Wolken. `heart` (hearttree): vorne hell, hinten dunkler
+(`grad` 0.5 -> 0.16), Farbton der Jahreszeit (Tönung, `_no_white` + Interpolation auf dem Farbkreis zur Zweitfarbe, kein Grau),
+Herzschlag auf jedem zweiten Beat (ohne Musik 64/min) als Doppelschlag (Stärke 1 und 0,55 nach 0,28 s): Welle läuft mit
+0,55 Kette/s nach hinten und klingt ab, vorne zieht sich das Herz zusammen; `hearttree_beat` (ENTER) = großer Schlag. Aderfluss
+alle 30-60 s und bei `hearttree_roots`: Strom mit Teilchen läuft in ~10 s von vorne nach hinten. Ruhige Programme (heart, trip,
+forest) bekommen beim Drop keinen Aufheller. `forest` (woodeye, `led_state`
 `kaleido` 0..1): tiefes Grün `FOREST_DEEP` mit treibenden Moosflecken, türkiser Nebel `FOREST_TURQ` in breiten Schwaden (~1/4 der
 Kette), leuchtet mit dem Bass, glüht je Beat auf (0,45 s), nie aus; Kaleidoskop (Knüppel unten): feste Regenbogenfolge sechsmal
 über die Kette, läuft nur vor/zurück mit wechselndem Tempo (Summe dreier Sinus, ±0,11 Kette/s, mit Bass schneller). `trip` (Waldtresen,

@@ -1269,7 +1269,9 @@ der EMP als Welle; ab und zu fliegt ein Auto oder eine Polizeidrohne vorbei. Geb
 alle 30 Sekunden bei einem Drop. Black Ice, Paradoxon und
 Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. In der Neonfahrt gehen zwei Felder aus je zehn LEDs in den beiden Hauptfarben des Bildschirms auf jedem Beat ein Feld nach
 links oder rechts und wechseln immer wieder die Richtung; ab und zu laufen sie im Gleichschritt, ab und zu aufeinander zu,
-liegen dann übereinander und leuchten in einer dritten Farbe, gehen kurz als eines weiter und teilen sich wieder. Beim Auge des Waldes ist die Kette tiefgrün mit treibenden Moosflecken, darüber zieht türkiser Nebel in Schwaden, der mit
+liegen dann übereinander und leuchten in einer dritten Farbe, gehen kurz als eines weiter und teilen sich wieder. Der Herzbaum schlägt auf der Kette: vorne hell, nach hinten dunkler, in den Farben der Jahreszeit ohne Weißstich, ein ruhiger
+Doppelschlag etwa sechzigmal pro Minute läuft von vorne nach hinten und klingt aus; ab und zu und wenn die Wurzeln leuchten
+fließt Energie wie durch eine Ader in etwa zehn Sekunden von vorne nach hinten. Beim Auge des Waldes ist die Kette tiefgrün mit treibenden Moosflecken, darüber zieht türkiser Nebel in Schwaden, der mit
 dem Bass leuchtet und auf jedem Beat sanft aufglüht; schaltet der Knüppel nach unten das Kaleidoskop ein, wird alles bunt:
 eine feste Farbfolge, die nur vor und zurück läuft, mal langsam, mal schneller. Am Waldtresen fließt auf der Kette ein ganz langsames, morphendes Farbfeld durch den ganzen Farbkreis, Blasen teilen und
 vereinen sich, dazwischen liegen immer wieder dunkelgrüne Täler, aus geht sie nie; am Tresen selbst überwiegt das Dunkelgrün,
