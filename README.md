@@ -1253,7 +1253,8 @@ Modus läuft, streamt er 25 Bilder pro Sekunde eigene LED-Bilder per UDP an den 
 Akzentfarbe, die LEDs folgen in etwa einer Sekunde. Alles ist mellow: Muster rücken auf jedem Beat (1, 2, 3, 4) einen Schritt
 nach hinten, weich eingerastet, die Eins hebt kurz an, dazwischen treibt alles nur langsam. Jeder Modus hat ein ruhiges
 Grundprogramm, und die Specials kommen aus dem, was auf dem Schirm passiert:
-Beim Zeitsprung bleibt die Kette farbsparsam: ganz langsame Farbfronten nahe der Bildschirmfarbe, darüber ziehen Markierungen
+Auf dem Marktplatz leuchtet die ganze Kette ruhig im Laternenlicht der jeweiligen Epoche, die Laternenkegel atmen ganz
+langsam; geblitzt wird nur beim Zeitsprung, der Stromausfall dimmt nur, und die Blitz-Taste schickt eine sanfte Lichtwelle. Beim Zeitsprung bleibt die Kette farbsparsam: ganz langsame Farbfronten nahe der Bildschirmfarbe, darüber ziehen Markierungen
 im Fahrtempo ruhig von vorne nach hinten, die kurz vor 88 Meilen zu Lichtstreifen werden; beim Sprung selbst beschleunigt alles
 weich in Elektroblau, ohne Blitz und Flackern, danach wieder ganz ruhig. Beim Flug (Navigationscomputer, Planeten, Neonfahrt) ziehen Sterne von vorne nach hinten über den Cart, schneller
 mit der Musik, und alle halbe Minute zieht ein Planet vorbei, der im Vorbeiflug kurz die ganze Kette in seiner Farbe füllt;

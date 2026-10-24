@@ -451,7 +451,10 @@ hinten, Tempo mit der Energie, Beat hebt sie kurz; alle 25-45 s `planet` (weiche
 kurz alles in ihrer Farbe); `navcomputer.led_state()` liefert `flying` und das laufende Ereignis: KOMETENSCHAUER = `comet`-Läufer,
 ASTEROIDENFELD = graue Brocken schneller, WURMLOCH/SONNE/NEBEL = Tönung. `fire` (campfire, `led_state` level/blue): warmweißes
 Fackellicht (255,125,30; auf LEDs wirkt erst das warmweiß), träges Glimmen je LED (`embers`), Wabern `gust`, Helligkeit mit der Feuerstufe, bei `blue` > 0 blau. `vortex` (blackhole, core, flux, pond): Punkte driften von beiden Enden zur Mitte, Mitte glimmt
-mit dem Bass. `breathe` (taxi, clocktower, square): langsames Atmen + zwei wandernde Wolken. `heart` (hearttree): vorne hell, hinten dunkler
+mit dem Bass. `breathe` (taxi, clocktower): langsames Atmen + zwei wandernde Wolken. `square` (Marktplatz): viel an und ruhig, ganze Kette im
+Laternenlicht der Epoche (Tönung `square_<Jahr>`, `_no_white`) auf 55-70 %, Laternenkegel ~alle 60 LEDs atmen 8-12 s, zwei fast
+stehende Wolken in der Zweitfarbe; `event()`: `square_lightning` (ENTER) = sanfte Lichtwelle, `square_blackout` = 14 s auf 45 %
+gedämpft (`sq_dim_until`), nur `square_jump` blitzt (Special lightning). `heart` (hearttree): vorne hell, hinten dunkler
 (`grad` 0.5 -> 0.16), Farbton der Jahreszeit (Tönung, `_no_white` + Interpolation auf dem Farbkreis zur Zweitfarbe, kein Grau),
 Herzschlag auf jedem zweiten Beat (ohne Musik 64/min) als Doppelschlag (Stärke 1 und 0,55 nach 0,28 s): Welle läuft mit
 0,55 Kette/s nach hinten und klingt ab, vorne zieht sich das Herz zusammen; `hearttree_beat` (ENTER) = großer Schlag. Aderfluss

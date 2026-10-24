@@ -37,7 +37,7 @@ SCENE_BASE = {
     "blackhole": "vortex", "core": "vortex", "flux": "vortex", "pond": "vortex",
     "rooftop": "city",
     "taxi": "breathe", "oracle": "breathe", "clocktower": "breathe", "woodeye": "forest", "trip": "trip",
-    "hearttree": "heart", "square": "breathe",
+    "hearttree": "heart", "square": "square",
     "blackice": "glitch", "paradox": "glitch", "overdose": "glitch",
     "hal": "hal",
 }
@@ -269,6 +269,13 @@ class LedStream:
                 hb["pulses"].append((now, 1.5))                   # großer Herzschlag (Startknopf)
                 hb["pulses"].append((now + 0.3, 0.9))
             return
+        if self.base == "square":                                 # Marktplatz: nur der Zeitsprung blitzt, sonst alles ruhig
+            if "lightning" in n:
+                self._add(now, "wave", 3.5, np.array([255.0, 230.0, 190.0]) * 0.6, d=self.rng.choice((1.0, -1.0)))
+                return
+            if "blackout" in n:
+                self.sq_dim_until = now + 14.0                    # Stromausfall: nur gedämpft, nie aus
+                return
         if self.base == "drive" and n.startswith("neonrace_"):
             return                                                # Neonfahrt: Start, Nitro, Hupe, Polizei kommen aus led_state
         if self.base == "city" and ("lightning" in n or "blackout" in n or "fireworks" in n):
@@ -407,6 +414,8 @@ class LedStream:
             frame = self._error(now, dt, {"phase": phase, "k": k, "pct": k, "good": False}, bass, high, is_beat, live)
         elif program == "slots":
             frame = self._slots(now, dt, st, bass, high, is_beat, live)
+        elif program == "square":                                 # Marktplatz: ruhiges Laternenlicht in der Epochenfarbe
+            frame = self._square(now, dt, st, bass, high, is_beat, live)
         elif program == "drive":                                  # Neonfahrt: Straße mit Laternen und Schildern + zwei Felder
             frame = self._drive(now, dt, st, bass, high, is_beat, live)
         elif program == "duel":                                   # zwei Felder im Beat (allein)
@@ -726,6 +735,33 @@ class LedStream:
         if live < 0.5:
             pos = (math.sin(now * 0.15) * 0.5 + 0.5)
             frame = np.outer(np.exp(-((x - pos) / 0.06) ** 2) * (0.2 + 0.15 * math.sin(now * 1.2)), col)
+        return frame
+
+    def _square(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Marktplatz (Zurück in die Zukunft, Taste 6): viel an und ganz ruhig. Die ganze Kette leuchtet im Laternenlicht der
+        Epoche (Tönung aus der Szene, ohne Weißstich) auf 55-70 %, Laternenkegel etwa alle 60 LEDs atmen ganz langsam (8-12 s),
+        zwei breite Wolken in der Zweitfarbe ziehen kaum merklich; die 1 im Takt hebt die Kegel einen Hauch. Ereignisse: nur der
+        Zeitsprung blitzt (Special aus `square_jump`), Blitz-Taste = sanfte Lichtwelle, Stromausfall = 14 s gedämpft auf 45 %."""
+        n = self.n
+        x = self._idx()
+        col, col2 = self._base_col()
+        col = _no_white(np.asarray(col, dtype=float))
+        col2 = _no_white(np.asarray(col2, dtype=float)) if np.asarray(col2).max() > 8 else col
+        T = now
+        base = 0.55 + 0.05 * math.sin(T * 0.21) + 0.1 * self.bass_s * live
+        pools = 0.5 + 0.5 * np.sin(2.0 * math.pi * x * 13.0)        # Laternenkegel ~ alle 60 LEDs
+        breathe = 0.5 + 0.5 * np.sin(T * 0.6 + x * 37.0)            # jeder Kegel atmet versetzt, 8-12 s
+        lvl = base + (0.12 + 0.04 * self.bar_lift) * pools ** 3 * (0.6 + 0.4 * breathe)
+        frame = np.outer(lvl, col)
+        for f, ph in ((0.004, 0.0), (0.003, 2.7)):                 # Wolken in der Zweitfarbe, fast stehend
+            c = (0.5 + 0.45 * math.sin(T * f * 6.28 + ph)) % 1.0
+            w = np.exp(-((x - c) / 0.15) ** 2) * 0.3
+            frame = frame * (1.0 - w)[:, None] + np.outer(w * lvl, col2)
+        if now < getattr(self, "sq_dim_until", 0.0):
+            k = min(1.0, (self.sq_dim_until - now) / 1.5, (now - (self.sq_dim_until - 14.0)) / 1.5)
+            frame *= 1.0 - 0.55 * max(0.0, k)
+        if not live:
+            frame *= 0.75
         return frame
 
     LAMP_EVERY = 34                                               # Neonfahrt: Abstand der Straßenlaternen in LEDs
