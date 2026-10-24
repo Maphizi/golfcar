@@ -392,6 +392,8 @@ class LedStream:
             frame = self._slots(now, dt, st, bass, high, is_beat, live)
         elif program == "stars":
             frame = self._stars(now, dt, st, bass, high, is_beat, live)
+        elif program == "panels":                                 # Orakel: je LED eine Tafelfarbe
+            frame = self._panels(now, dt, st, bass, high, is_beat, live)
         elif program == "hal":
             frame = self._hal(now, dt, st, bass, high, is_beat, live)
         elif program == "timejump":
@@ -555,6 +557,22 @@ class LedStream:
                     self.glow[self.nrng.integers(0, n, size=max(1, n // 60))] = 1.0
                 frame = frame * 0.6 + np.outer(self.glow, white)
         return frame
+
+    def _panels(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Orakel: die acht Tafeln unter dem Kopf auf der Kette, je Ansteuerpunkt eine Tafelfarbe (1 2 3 ... 8, 1 2 3 ...).
+        Eine LED leuchtet, solange ihre Tafel an ist (Beat-Muster der Szene: Lauflicht, Spiegel, Paare, Zufall ...), aus = kaum
+        Glimmen; bei Stille atmen alle leise."""
+        n = self.n
+        cols = np.array(st.get("cols") or [[255, 30, 20]] * 8, dtype=float)[:8]
+        lvl = np.array((list(st.get("lvl") or []) + [0.0] * 8)[:8], dtype=float)
+        k = np.arange(n) % len(cols)
+        if self.reverse:
+            k = (n - 1 - np.arange(n)) % len(cols)
+        if live:
+            level = 0.04 + 0.96 * lvl[k] * (0.85 + 0.15 * self.bass_s)
+        else:
+            level = np.full(n, 0.12 + 0.08 * np.sin(now * 0.8))
+        return cols[k] * level[:, None]
 
     def _idx(self) -> np.ndarray:
         """0 = vorne am Cart .. 1 = hinten."""

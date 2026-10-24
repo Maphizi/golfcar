@@ -82,6 +82,30 @@ ORACLE_LINES = [
 ]
 
 
+def _panel_colors(figs) -> list:
+    """Leuchtfarbe der acht Tafel-Glyphen (Atlas-Reihe 2, Zellen 16-23; im geladenen Bild unten wie im Shader): Mittel der
+    hellsten Pixel, satt und voll ausgesteuert. Ohne Bild ein Regenbogen."""
+    fallback = [[255, 30, 20], [255, 120, 0], [255, 220, 0], [40, 255, 30], [0, 230, 255], [20, 60, 255], [150, 30, 255], [255, 20, 160]]
+    if figs is None:
+        return fallback
+    try:
+        h, w = figs.shape[:2]
+        cw = w // 8
+        out = []
+        for i in range(8):
+            cell = figs[0:cw, i * cw:(i + 1) * cw].astype(float)
+            al = cell[..., 3] / 255.0
+            lum = cell[..., :3].max(axis=2) * al
+            sel = lum >= np.quantile(lum[al > 0.3], 0.8) if (al > 0.3).any() else al > 0
+            rgb = cell[..., :3][sel].mean(axis=0)
+            mx, mn = rgb.max(), rgb.min()
+            rgb = np.clip((rgb - mn) / max(1.0, mx - mn), 0, 1) * 255.0       # satt: Grauanteil ganz raus (LEDs mischen sonst Weiß)
+            out.append([int(v) for v in rgb])
+        return out
+    except Exception:
+        return fallback
+
+
 def _load_rgba(path) -> np.ndarray | None:
     """Bild als RGBA (Zeile 0 unten, für GL) aus dem npy-Cache (visualizers.engine.images)."""
     return images.load_rgba(path)
@@ -138,6 +162,7 @@ class Controller:
         self.masks = _load_rgba(ASSETS / "oracle_masks.png")
         self.garb_tex = _load_rgba(ASSETS / "oracle_garbage.png")
         self.figs = _load_rgba(ASSETS / "oracle_figures.png")
+        self.panel_cols = _panel_colors(self.figs)                 # Farbe der acht Tafeln (Glyphen 16-23) für das LED-Board
         self.frame = tuple(float(v) for v in scene_cfg.get("frame", [0.505, 0.73, 0.27]))      # x, y, Breite
         self.panels = tuple(float(v) for v in scene_cfg.get("panels", [0.264, 0.757, 0.385, 0.052]))   # x0, x7, y, Breite
         self.mask_fit = tuple(float(v) for v in scene_cfg.get("mask_fit", [0.0, 0.08, 0.62]))  # dx, dy, Größe (Kopf-Einheiten)
@@ -460,6 +485,10 @@ class Controller:
             self.toggle_glitch()
 
     # -- Engine ------------------------------------------------------------
+    def led_state(self) -> dict:
+        """LED-Board: Programm "panels", je LED eine Tafelfarbe im Wechsel, hell, solange die Tafel an ist."""
+        return {"program": "panels", "cols": self.panel_cols, "lvl": list(self.panel_lvl)}
+
     def images(self) -> dict:
         return {"uSceneTex": (self.scene if self.scene is not None else self.blank, 1),
                 "uHeadTex": (self.heads if self.heads is not None else self.blank, 1),

@@ -305,7 +305,8 @@ ab `uMouth` (`[scenes.oracle] mouth`, Kopf-Einheiten) als Bogen im Shader, Teilc
 ... 128 128 1 glow`). BACKSPACE = Zoom zurück (Maske zoomt leicht). Tafeln `panels`: `_pattern_mask()` mit 8 Mustern
 (`PATTERN_NAMES`), hart an/aus je Beat -> `uPanelOn0/1` (Nachglühen `AFTERGLOW`), Füllhöhe aus `uBands0/1`, Schrankzonen
 `uZoneOn`. Automatik alle `auto_event` 20-40 s: `burst()` (`uBurstT`), Gesten-Salve (`salvo()`), Scanner `uScanT`, Glitch
-4 s (`G`-Taste schaltet den Glitch-Modus), Spruch, Übergeben, Maske. WLED `oracle_mask`, `oracle_vomit`. `oracle_heads.png`
+4 s (`G`-Taste schaltet den Glitch-Modus), Spruch, Übergeben, Maske. WLED `oracle_mask`, `oracle_vomit`. LED-Board: Programm
+`panels` (die acht Tafelfarben je ein Ansteuerpunkt im Wechsel, schalten mit den Tafeln, siehe LED-Buttonboard). `oracle_heads.png`
 (alte 24 Köpfe) und `oracle_mask.png` unbenutzt, `oracle_figures.png` nur Reihe 2 (Glyphen).
 Test: `python -m visualizers.engine oracle --test-signal --demo`.
 
@@ -431,7 +432,10 @@ hinten, Tempo mit der Energie, Beat hebt sie kurz; alle 25-45 s `planet` (weiche
 kurz alles in ihrer Farbe); `navcomputer.led_state()` liefert `flying` und das laufende Ereignis: KOMETENSCHAUER = `comet`-Läufer,
 ASTEROIDENFELD = graue Brocken schneller, WURMLOCH/SONNE/NEBEL = Tönung. `fire` (campfire, `led_state` level/blue): warmweißes
 Fackellicht (255,125,30; auf LEDs wirkt erst das warmweiß), träges Glimmen je LED (`embers`), Wabern `gust`, Helligkeit mit der Feuerstufe, bei `blue` > 0 blau. `vortex` (blackhole, core, flux, pond): Punkte driften von beiden Enden zur Mitte, Mitte glimmt
-mit dem Bass. `breathe` (taxi, oracle, clocktower, woodeye, trip, hearttree, square): langsames Atmen + zwei wandernde Wolken.
+mit dem Bass. `breathe` (taxi, clocktower, woodeye, trip, hearttree, square): langsames Atmen + zwei wandernde Wolken. `panels` (oracle,
+`oracle.led_state()`: `cols` = Farben der acht Tafel-Glyphen aus `_panel_colors()` (Atlaszellen 16-23, hellste 20 %, Grauanteil
+raus), `lvl` = `panel_lvl` mit Nachglühen): LED i zeigt Tafel i % 8, also Rot, Orange, Gelb, Grün, Türkis, Blau, Violett, Magenta
+je ein Ansteuerpunkt, an solange die Tafel an ist (Beat-Muster der Szene), aus 4 %; Stille = alle leise atmend.
 `rain` (rooftop): Tropfen von hinten nach vorne. `glitch` (blackice, paradox, overdose): das Störprogramm `_error` in den
 Themenfarben (`c_red`/`c_green` aus col/col2) mit eigenem 40-s-Phasenzyklus. `error` = Systemfehler (oben beschrieben). `slots` (`slots.py` `led_state`, alle vier Automaten): Casino-Lauflicht `_slots` als Basis:
 ein Ansteuerpunkt an, der nächste aus, konstant hell, `ch_step` springt hart je Beat (ohne Beats alle 0,6 s) um einen Punkt (an <-> aus),
