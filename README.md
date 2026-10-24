@@ -850,8 +850,16 @@ Feuerspuren über den Platz, oben = beide, unten = Tanzball (Girlanden-Lichter �
 aus 1955 tanzt), Kippschalter AN = Nahaufnahme aufs Zifferblatt, AUS = zurück. Figuren aus `clocktower_figures.png`
 (8x3: Professor, Zeitmaschine, Tanzpaar). Board `clocktower`, `clocktower_doc`, `clocktower_car`, `clocktower_both`,
 `clocktower_dance`, `clocktower_strike`. `[scenes.clocktower]` `clock` (x, y, Radius), `windows` (x erste, x letzte,
-y, Breite), `cable` (Turm zu Laterne). Controller `visualizers/scenes/clocktower.py`, Shader
-`visualizers/shaders/clocktower/frag.glsl`. Test: `python -m visualizers.engine clocktower --test-signal --demo`.
+y, Breite), `cable` (Turm zu Laterne), `ground` (Fuß der Häuser für die Pfützen). Controller
+`visualizers/scenes/clocktower.py`, Shader `visualizers/shaders/clocktower/frag.glsl`.
+Die Nacht spielt sich auch ohne Knüppel selbst ab, rund drei Minuten je Runde: in der ruhigen Nacht klettert der Professor
+ab und zu am Turm hoch, ein Paar tanzt in einem der Schaufenster (acht Neonfarben wie beim Tanzabend, die Pfützen spiegeln
+sie) oder ein Funke springt übers Kabel; ab 21:50 zieht das Gewitter auf (dichter Regen, ferne Blitze, die Uhr rückt
+heran, der Professor hängt am Zeiger); ab 22:02 läuft ein Countdown, die Zeitmaschine wartet am Platzrand, das Kabel
+knistert; um 22:04 schlägt der Blitz ein und die Zeitmaschine rast mit Feuerspuren los. Ein Drop vor 21:38 bringt nur
+einen Gewitterstoß und springt zehn Minuten vor. LED-Kette (Programm `clockwork`): goldener Zeitbalken von vorne nach
+hinten bis 22:04, Sekundenzeiger als Punkt, Gewitterblau mit Regen und Laternen, Blitze, Feuerspur, blau-weißes Flackern
+solange die Uhr steht. Test: `python -m visualizers.engine clocktower --test-signal --demo`.
 
 **Almanach (Taste 5 im Thema ZURÜCK IN DIE ZUKUNFT, `almanacslots`):** Das Gegenstück zur Slotmaschine, gleicher
 Aufbau: **drei Walzen** füllen das Bild, darüber der Casino-Rahmen von 1985 (`assets/slots/future_frame.png`: Gold,

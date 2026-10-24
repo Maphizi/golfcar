@@ -36,7 +36,7 @@ SCENE_BASE = {
     "campfire": "fire",
     "blackhole": "vortex", "core": "vortex", "flux": "vortex", "pond": "vortex",
     "rooftop": "city",
-    "taxi": "breathe", "oracle": "breathe", "clocktower": "breathe", "woodeye": "forest", "trip": "trip",
+    "taxi": "breathe", "oracle": "breathe", "clocktower": "clockwork", "woodeye": "forest", "trip": "trip",
     "hearttree": "heart", "square": "square",
     "blackice": "glitch", "paradox": "glitch", "overdose": "glitch",
     "hal": "hal",
@@ -56,6 +56,8 @@ YELLOW = np.array([255.0, 170.0, 0.0])
 BLUE = np.array([40.0, 120.0, 255.0])
 ORANGE = np.array([255.0, 110.0, 0.0])
 WHITE = np.array([255.0, 255.0, 255.0])
+CW_WIN = np.array([[255, 107, 173], [64, 242, 224], [255, 194, 71], [173, 133, 255],          # Uhrturm: die acht Neonfarben
+                   [115, 255, 148], [255, 128, 82], [107, 173, 255], [255, 158, 107]], dtype=float)  # der Schaufenster
 
 
 def _rgb(v, default) -> np.ndarray:
@@ -276,6 +278,8 @@ class LedStream:
             if "blackout" in n:
                 self.sq_dim_until = now + 14.0                    # Stromausfall: nur gedämpft, nie aus
                 return
+        if self.base == "clockwork" and n.startswith("clocktower"):
+            return                                                # Uhrturm: Blitz, Figuren, Tanzball kommen aus led_state
         if self.base == "drive" and n.startswith("neonrace_"):
             return                                                # Neonfahrt: Start, Nitro, Hupe, Polizei kommen aus led_state
         if self.base == "city" and ("lightning" in n or "blackout" in n or "fireworks" in n):
@@ -397,7 +401,7 @@ class LedStream:
                 self.c_red, self.c_green = self.scr_col, self.scr_acc
         if live and self.e_fast > 1.5 * self.energy + 0.15 and self.energy > 0.1 and now - self.last_drop > 12.0 and now - self.t_first > 5.0:
             self.last_drop = now
-            self.flash = 0.0 if self.base in ("heart", "trip", "forest") else 0.55   # Drop: weicher Aufheller (ruhige Programme: keiner)
+            self.flash = 0.0 if self.base in ("heart", "trip", "forest", "clockwork") else 0.55   # Drop: weicher Aufheller (ruhige Programme: keiner)
             self.flash_col = self.col3
         self.flash *= 0.86
         self.glow *= 0.80
@@ -416,6 +420,8 @@ class LedStream:
             frame = self._slots(now, dt, st, bass, high, is_beat, live)
         elif program == "square":                                 # Marktplatz: ruhiges Laternenlicht in der Epochenfarbe
             frame = self._square(now, dt, st, bass, high, is_beat, live)
+        elif program == "clockwork":                              # Uhrturm: Zeitbalken bis 22:04, Sekundenzeiger, Gewitter
+            frame = self._clockwork(now, dt, st, bass, high, is_beat, live)
         elif program == "drive":                                  # Neonfahrt: Straße mit Laternen und Schildern + zwei Felder
             frame = self._drive(now, dt, st, bass, high, is_beat, live)
         elif program == "duel":                                   # zwei Felder im Beat (allein)
@@ -762,6 +768,123 @@ class LedStream:
             frame *= 1.0 - 0.55 * max(0.0, k)
         if not live:
             frame *= 0.75
+        return frame
+
+    CW_LAMP = 48                                                  # Uhrturm: Abstand der Laternen in LEDs
+
+    def _clockwork(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Uhrturm (Zurück in die Zukunft, Taste 4): die Nacht bis 22:04 auf der Kette. Grund Gewitterblau mit Regenschimmer
+        (im Gewitter mehr), warme Laternen alle CW_LAMP LEDs. Zeitbalken in Gold wächst von vorne nach hinten von 21:00 bis
+        22:04 (`clock_k`), heller Kopf; Sekundenzeiger als orangeroter Punkt, tickt mit der Szene. Wetterleuchten = weiche
+        blaue Aufhellung an der Stelle des Schirms, ferne Blitze schmal und hell. Countdown: Funken am Balkenende, vorne
+        flackern die Zeitkreise der wartenden Zeitmaschine blau. 22:04: Blitz über die ganze Kette, die Zeitmaschine rast als
+        Feuerspur von vorne nach hinten (liegt 4 s), 10 s blau-weißes Flackern (Uhr steht), dann läuft der Balken mit grünem
+        Kopf zurück. Figuren: Professor = warmweißes Wischen, Funke = Punkt läuft durch, Paar im Fenster = Fleck in der
+        Fensterfarbe, Tanzball = Girlanden in den acht Fensterfarben, je Beat im Wechsel."""
+        n = self.n
+        x = self._idx()
+        cw = getattr(self, "cw", None)
+        if cw is None or len(cw["rain"]) != n:
+            cw = self.cw = {"rain": np.zeros(n), "spark": np.zeros(n)}
+        st = st or {}
+        T = now
+        storm = float(st.get("storm", 0.0))
+        final = float(st.get("final", 0.0))
+        clock_k = float(st.get("clock_k", (T * 0.004) % 1.0))
+        sa = float(st.get("strike_age", 1e3))
+        act = int(st.get("act", 0))
+        # Grund: Gewitterblau, der Bass hebt ihn, Regen schimmert auf einzelnen LEDs
+        lvl = 0.22 + 0.03 * math.sin(T * 0.37) + 0.08 * storm + 0.1 * self.bass_s * live
+        frame = np.outer(np.full(n, lvl), np.array([30.0, 70.0, 255.0]))
+        rain = cw["rain"]
+        rain *= 0.82
+        hit = self.nrng.random(n) < 0.003 + 0.02 * storm + 0.01 * high
+        rain[hit] = self.nrng.uniform(0.4, 1.0, int(hit.sum()))
+        frame += np.outer(rain, np.array([140.0, 170.0, 255.0])) * 0.5
+        # Laternen
+        lp = (x * (n - 1) / self.CW_LAMP) % 1.0
+        lamp = np.exp(-(((lp - 0.5) * self.CW_LAMP) / 2.2) ** 2) * (0.45 + 0.1 * np.sin(T * 0.5 + x * 23.0))
+        frame += np.outer(lamp, np.array([255.0, 140.0, 45.0]))
+        # Zeitbalken 21:00 -> 22:04
+        rewind = act == 3 and sa >= 10.0
+        bar = np.clip((clock_k - x) * n / 3.0 + 0.5, 0.0, 1.0)
+        bk = 0.4 if (act == 3 and sa < 10.0) else 1.0                     # Uhr steht: Balken gedimmt, Feuerspur und Flackern davor
+        frame = frame * (1.0 - 0.75 * bar * bk)[:, None] + np.outer(bar * (0.42 + 0.08 * self.bar_lift) * bk, np.array([255.0, 165.0, 35.0]))
+        head = np.exp(-((x - clock_k) * n / 2.5) ** 2)
+        frame += np.outer(head, np.array([90.0, 255.0, 140.0]) if rewind else np.array([255.0, 220.0, 140.0])) * 0.9
+        # Countdown: Funken am Balkenende
+        spark = cw["spark"]
+        spark *= 0.7
+        if final > 0.01:
+            near = (np.abs(x - clock_k) * n < 14.0) & (self.nrng.random(n) < 0.25 * final)
+            spark[near] = 1.0
+        frame += np.outer(spark, np.array([255.0, 230.0, 180.0]))
+        # Sekundenzeiger
+        sec = float(st.get("sec", (T / 60.0) % 1.0))
+        d = ((x - sec + 0.5) % 1.0) - 0.5
+        frame += np.outer(np.exp(-(d * n / 1.8) ** 2) * (0.9 + 0.4 * final), np.array([255.0, 90.0, 40.0]))
+        # Wetterleuchten und ferne Blitze
+        sh_age, sh_x, sh_k = st.get("sheet", (9.0, 0.5, 0.0))
+        if sh_age < 1.2 and sh_k > 0.0:
+            amp = sh_k * math.exp(-sh_age * 5.0) * (0.7 + 0.3 * (self.nrng.random() < 0.65))
+            frame += np.outer(np.exp(-((x - sh_x) / 0.14) ** 2) * amp * 0.6, np.array([150.0, 170.0, 255.0]))
+        fa, fx, fk = st.get("far", (9.0, 0.5, 0.0))
+        if fa < 0.6 and fk > 0.0:
+            amp = fk * math.exp(-fa * 7.0) * (0.55 + 0.45 * (self.nrng.random() < 0.6))
+            w = np.exp(-((x - fx) / 0.04) ** 2) + 0.25 * np.exp(-((x - fx) / 0.2) ** 2)
+            frame += np.outer(w * amp, np.array([210.0, 220.0, 255.0]))
+        # Funke übers Kabel: läuft in 1,2 s von vorne nach hinten
+        spa = float(st.get("spark_age", 9.0))
+        if spa < 1.6:
+            pos = spa / 1.2
+            frame += np.outer(np.exp(-((x - pos) * n / 2.0) ** 2), np.array([255.0, 235.0, 190.0]))
+            trail = np.where(x < pos, np.exp(-(pos - x) * n / 25.0), 0.0) * (0.5 + 0.5 * self.nrng.random(n))
+            frame += np.outer(trail * 0.5, np.array([255.0, 140.0, 40.0]))
+        # Professor: warmweißes Wischen
+        doc = float(st.get("doc", 0.0))
+        if doc > 0.01:
+            c = 0.5 + 0.45 * math.sin(T * 2.0 * math.pi / 7.0)
+            frame += np.outer(np.exp(-((x - c) / 0.07) ** 2) * 0.45 * doc, np.array([255.0, 215.0, 165.0]))
+        # Paar im Fenster
+        wi, wvis = st.get("couple", (0, 0.0))
+        if wvis > 0.01:
+            w0, w7 = st.get("windows", (0.186, 0.613))
+            pos = w0 + int(wi) * (w7 - w0) / 7.0
+            amp = wvis * (0.55 + 0.35 * math.exp(-(T - self.last_beat) / 0.3))
+            frame += np.outer(np.exp(-((x - pos) / 0.03) ** 2) * amp, CW_WIN[int(wi) % 8])
+        # Tanzball: Girlanden, Birnen alle 6 LEDs in den Fensterfarben, je Beat im Wechsel
+        dance = float(st.get("dance", 0.0))
+        if dance > 0.01:
+            k = x * (n - 1) / 6.0
+            ki = np.floor(k).astype(int)
+            bulb = np.exp(-(((k % 1.0) - 0.5) * 6.0 / 1.2) ** 2)
+            on = 0.3 + 0.7 * (((ki + int(st.get("beat_step", self.beats))) % 4) == 0)
+            frame = frame * (1.0 - 0.5 * dance) + (bulb * on * dance * 0.8)[:, None] * CW_WIN[ki % 8]
+        # Zeitmaschine: wartet vorne (Zeitkreise flackern blau), rast nach dem Blitz als Feuerspur nach hinten
+        if st.get("car_wait"):
+            fl = 0.5 + 0.5 * math.sin(T * 25.0) * math.sin(T * 7.0)
+            frame += np.outer(np.exp(-((x - 0.03) / 0.02) ** 2) * (0.4 + 0.5 * fl), np.array([80.0, 160.0, 255.0]))
+        car = st.get("car")
+        if car:
+            cx, sp = car
+            ages = (cx - x) / max(sp, 0.05)
+            k = np.where((ages > 0.0) & (ages < 4.0), (1.0 - ages / 4.0) ** 2, 0.0)
+            fl = self.nrng.random(n)
+            fire = np.outer(1.0 - fl, np.array([255.0, 70.0, 5.0])) + np.outer(fl, np.array([255.0, 175.0, 50.0]))
+            frame = frame * (1.0 - 0.6 * k)[:, None] + fire * (k * (0.6 + 0.4 * fl))[:, None]
+            frame += np.outer(np.exp(-((x - cx) * n / 3.0) ** 2), np.array([200.0, 225.0, 255.0]))
+        # 22:04: Blitz über die ganze Kette, dann blau-weißes Flackern solange die Uhr steht
+        if sa < 0.7:
+            k = min(1.0, math.exp(-sa * 6.0) + (0.8 * math.exp(-(sa - 0.28) * 8.0) if sa > 0.28 else 0.0))
+            frame = frame * (1.0 - k) + np.array([225.0, 232.0, 255.0]) * k
+        elif sa < 10.0:
+            blk = np.floor(x * (n - 1) / 8.0)
+            h = (np.sin(blk * 12.9898) * 43758.5453) % 1.0
+            fl = 0.5 + 0.5 * np.sin(T * (3.0 + 5.0 * h) + h * 20.0)
+            amt = 0.35 * (1.0 - 0.5 * (sa - 0.7) / 9.3)
+            frame += np.outer(fl * amt, np.array([150.0, 180.0, 255.0]))
+        if not live:
+            frame *= 0.8
         return frame
 
     LAMP_EVERY = 34                                               # Neonfahrt: Abstand der Straßenlaternen in LEDs

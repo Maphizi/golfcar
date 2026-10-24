@@ -5,6 +5,9 @@
 // Mitten = Wetterleuchten (uSheet), Höhen = Regen + Funken am Kabel (uCable), Drop/22:04 = Blitz in den Turm (uStrikeT,
 // uBoltSeed), Kabel glüht (uCableGlow), Weißblitz (uFlash). Figuren aus uFigTex (8x3): Professor (uDoc), Zeitmaschine
 // (uCar/uCarPar), Tanzpaar + Girlanden (uDance/uDancer). uZoom = Nahaufnahme aufs Zifferblatt.
+// Ablauf der Nacht: uStorm (Gewitter: Regen, Wolken, ferne Blitze uFarBolt = Alter, x, Seed, Stärke), uFinal (Countdown:
+// Kabel knistert, Rand dunkelt), uDocPos (x, y, Sichtbarkeit: Professor am Zeiger oder kletternd), Schaufenster in acht
+// Neonfarben mit Paar im Fenster uWinCouple (Fenster, Sichtbarkeit), Pfützen unter uGround spiegeln die Fenster.
 in vec2 vUv;
 out vec4 fragColor;
 uniform float iTime;
@@ -18,6 +21,8 @@ uniform vec4 uWindows, uCable, uSheet, uFig, uDoc, uDocFitA, uDocFitB, uCar, uCa
 uniform vec4 uBands0, uBands1, uPeaks0, uPeaks1;
 uniform float uSeed, uBassS, uMidS, uHighS, uEnergy, uLive, uBeatPulse, uBeatStep, uStep, uStepPhase, uPattern, uFlash;
 uniform float uClockT, uStrikeT, uBoltSeed, uCableGlow, uDance, uZoom;
+uniform float uStorm, uFinal, uGround;
+uniform vec4 uDocPos, uWinCouple, uFarBolt;
 const float PI = 3.14159265;
 
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
@@ -88,6 +93,52 @@ float bolt(vec2 p, vec2 a, vec2 b, float seed, float amp, int n) {
     }
     return dmin;
 }
+// Acht Neonfarben der Schaufenster (Tanzabend 1955)
+vec3 winCol(int i) {
+    if (i == 0) return vec3(1.0, 0.42, 0.68);                                              // Rosa
+    if (i == 1) return vec3(0.25, 0.95, 0.88);                                             // Türkis
+    if (i == 2) return vec3(1.0, 0.76, 0.28);                                              // Gold
+    if (i == 3) return vec3(0.68, 0.52, 1.0);                                              // Lavendel
+    if (i == 4) return vec3(0.45, 1.0, 0.58);                                              // Mint
+    if (i == 5) return vec3(1.0, 0.5, 0.32);                                               // Koralle
+    if (i == 6) return vec3(0.42, 0.68, 1.0);                                              // Himmelblau
+    return vec3(1.0, 0.62, 0.42);                                                          // Apricot
+}
+// Schaufenster an uv: rgb = Licht, a = Deckung (Scheibe 0.95, Rahmen 0.5); col = col * (1 - 0.65 a) + rgb.
+// Pegel = Band i, Spitze als Linie, Lauflicht je Fensterpaar, im Fenster uWinCouple.x tanzt ein Paar vor dem Neon.
+vec4 windowsAt(vec2 uv, float aspect, float t, float act, float strikeK) {
+    for (int i = 0; i < 8; i++) {
+        float fi = float(i);
+        float wx = mix(uWindows.x, uWindows.y, fi / 7.0);
+        float hw = uWindows.w * 0.5;
+        float hh = hw * aspect * 1.3;
+        vec2 d = (uv - vec2(wx, uWindows.z)) / vec2(hw, hh);
+        if (abs(d.x) >= 1.0 || abs(d.y) >= 1.0) continue;
+        float band = bandAt(i), pk = peakAt(i);
+        float yy = d.y * 0.5 + 0.5;
+        float fill = smoothstep(0.08, -0.08, yy - band);
+        float pane = smoothstep(1.0, 0.92, abs(d.x)) * smoothstep(1.0, 0.92, abs(d.y));
+        float wrun = (floor(fi / 2.0) == act ? 1.0 : 0.0) * (1.0 - 0.6 * uStepPhase);
+        float flick = 1.0 - 0.25 * step(0.96, hash12(vec2(fi, floor(t * 18.0)))) * step(0.7, band);
+        vec3 neon = mix(hueShift(winCol(i), uBeatStep * 0.05), vec3(0.95, 0.97, 1.0), strikeK);
+        float level = min(1.2, 0.08 + 1.1 * band + 0.4 * uBeatPulse * step(0.6, band)) * flick;
+        float grad = 0.7 + 0.3 * (1.0 - yy);                                               // unten heller
+        vec3 wcol = neon * (fill * level * 1.15 * grad + (1.0 - fill) * (0.06 + 0.14 * band)) + neon * wrun * (0.5 + 0.6 * band);
+        wcol += vec3(1.0, 0.97, 0.9) * smoothstep(0.06, 0.0, abs(yy - pk)) * step(0.05, pk) * 0.6;
+        if (uWinCouple.y > 0.01 && abs(fi - uWinCouple.x) < 0.5) {
+            vec2 p = uv * vec2(aspect, 1.0);
+            vec2 fp = vec2(wx * aspect, uWindows.z - hh * 0.92);
+            float w = hw * aspect * 1.5;
+            vec4 sA = figFit(uDancer.x, p, fp, w, uDancerFitA, 0.0), sB = figFit(uDancer.y, p, fp, w, uDancerFitB, 0.0);
+            vec4 fs = mix(sA, sB, uDancer.z);
+            wcol += neon * (0.45 + 0.35 * uBeatPulse) * uWinCouple.y;                      // das Fenster leuchtet hinter dem Paar
+            wcol = mix(wcol, fs.rgb * 0.45 + neon * 0.15, fs.a * uWinCouple.y);
+        }
+        float frame = 1.0 - pane;
+        return vec4(wcol * pane + neon * frame * (0.25 * level + 0.7 * wrun), pane * 0.95 + frame * 0.5);
+    }
+    return vec4(0.0);
+}
 
 void main() {
     float aspect = iResolution.x / iResolution.y;
@@ -118,18 +169,31 @@ void main() {
         sheet = uSheet.z * exp(-uSheet.x * 5.0) * flick * smoothstep(0.7, 0.0, abs(uv.x - uSheet.y)) * smoothstep(0.4, 0.95, uv.y);
     }
     vec3 cloudCol = mix(vec3(0.35, 0.3, 0.6), vec3(0.9, 0.6, 1.0), uBassS);
-    col += cloudCol * cloudHi * sky * (0.08 + 0.55 * uBassS * uBassS) * (0.4 + 0.6 * live);
+    col += cloudCol * cloudHi * sky * (0.08 + 0.55 * uBassS * uBassS + 0.12 * uStorm) * (0.4 + 0.6 * live);
+    col = mix(col, col * vec3(0.8, 0.85, 1.05), sky * uStorm * 0.4);                         // Gewitter: Himmel kälter
     col += vec3(0.75, 0.8, 1.0) * sky * (0.5 + 0.5 * cloud) * (sheet * 0.9 + boltK * 0.6);
     col += vec3(0.6, 0.65, 0.9) * dark * sheet * 0.12;                                     // Wetterleuchten hellt die Nacht auf
+    // ---- Ferne Blitze hinter den Häusern (Gewitter, ab und zu auch in der ruhigen Nacht)
+    float farK = 0.0;
+    if (uFarBolt.x < 0.6) {
+        farK = uFarBolt.w * exp(-uFarBolt.x * 7.0) * (0.55 + 0.45 * step(0.4, hash12(vec2(floor(t * 40.0), 11.0))));
+        vec2 p = uv * vec2(aspect, 1.0);
+        vec2 a = vec2(uFarBolt.y * aspect, 1.05);
+        vec2 b = vec2((uFarBolt.y + (hash12(vec2(uFarBolt.z, 3.0)) - 0.5) * 0.12) * aspect, 0.55 + 0.06 * hash12(vec2(uFarBolt.z, 4.0)));
+        float d = bolt(p, a, b, uFarBolt.z, 0.09, 10);
+        float behind = smoothstep(0.6, 0.3, lum) * smoothstep(0.58, 0.66, uv.y);           // nur am Himmel, nicht vor dem Turm
+        col += vec3(0.8, 0.85, 1.0) * (smoothstep(0.003, 0.0, d) * 1.6 + smoothstep(0.05, 0.0, d) * 0.4) * farK * behind;
+        col += vec3(0.5, 0.55, 0.85) * sky * farK * 0.35 * smoothstep(0.6, 0.0, abs(uv.x - uFarBolt.y));
+    }
     // ---- Regen (Höhen): schräge Streifen, Stille = kein Regen
     {
-        vec2 rp = vec2(uv.x * aspect + uv.y * 0.18, uv.y);
+        vec2 rp = vec2(uv.x * aspect + uv.y * (0.18 + 0.3 * uStorm), uv.y);
         float colX = floor(rp.x * 160.0);
         float speed = 2.2 + 1.4 * hash12(vec2(colX, 5.0));
         float ry = fract(rp.y * 2.5 + t * speed + hash12(vec2(colX, 6.0)));
-        float streak = smoothstep(0.0, 0.08, ry) * smoothstep(0.3, 0.09, ry) * step(0.55, hash12(vec2(colX, floor(rp.y * 2.5 + t * speed) + 9.0)));
+        float streak = smoothstep(0.0, 0.08, ry) * smoothstep(0.3, 0.09, ry) * step(0.55 - 0.25 * uStorm, hash12(vec2(colX, floor(rp.y * 2.5 + t * speed) + 9.0)));
         float rain = streak * smoothstep(0.5, 0.0, abs(fract(rp.x * 160.0) - 0.5));
-        col += vec3(0.6, 0.7, 0.9) * rain * (0.05 + 0.28 * uHighS) * live;
+        col += vec3(0.6, 0.7, 0.9) * rain * (0.05 + 0.28 * uHighS + 0.3 * uStorm) * max(live, uStorm);
     }
     // ---- Beleuchtete Stellen des Fotos: warmes Licht pulst mit dem Bass, Lauflicht in vier Zonen auf den Beat
     float lights = smoothstep(0.45, 0.7, lum) * smoothstep(0.08, 0.25, sat) * step(plate.b, plate.r + 0.05) * smoothstep(0.6, 0.3, uv.y);
@@ -138,29 +202,20 @@ void main() {
     float run = (zone == act ? 1.0 : 0.0) * (1.0 - 0.7 * uStepPhase);
     col += plate / max(lum, 0.2) * lights * (0.1 + 0.4 * uBassS + 0.9 * run + 0.4 * uFlash) * live;
     col = mix(col, col * 0.6, lights * (1.0 - live) * 0.5);
-    // ---- Acht Schaufenster = acht Bänder: warmes Licht steigt von unten, Spitze als Linie, Lauflicht je Fensterpaar
-    for (int i = 0; i < 8; i++) {
-        float fi = float(i);
-        float wx = mix(uWindows.x, uWindows.y, fi / 7.0);
-        float hw = uWindows.w * 0.5;
-        float hh = hw * aspect * 1.3;
-        vec2 d = (uv - vec2(wx, uWindows.z)) / vec2(hw, hh);
-        if (abs(d.x) >= 1.0 || abs(d.y) >= 1.0) continue;
-        float band = bandAt(i), pk = peakAt(i);
-        float fill = smoothstep(0.08, -0.08, d.y * 0.5 + 0.5 - band);
-        float pane = smoothstep(1.0, 0.92, abs(d.x)) * smoothstep(1.0, 0.92, abs(d.y));
-        float pair = floor(fi / 2.0);
-        float wrun = (pair == act ? 1.0 : 0.0) * (1.0 - 0.7 * uStepPhase);
-        float flick = 1.0 - 0.25 * step(0.96, hash12(vec2(fi, floor(t * 18.0)))) * step(0.7, band);
-        vec3 warm = hueShift(vec3(1.0, 0.78, 0.45), fi * 0.03 - 0.1 + uBeatStep * 0.012);
-        float level = min(1.1, 0.05 + 1.0 * band + 0.4 * uBeatPulse * step(0.6, band)) * flick;
-        float grad = 0.7 + 0.3 * (1.0 - (d.y * 0.5 + 0.5));                                 // unten heller
-        vec3 wcol = warm * (fill * level * 1.1 * grad + (1.0 - fill) * (0.04 + 0.12 * band)) + warm * wrun * 0.6 * (0.3 + band);
-        col = mix(col, col * 0.35 + wcol, pane * live * 0.95);
-        float pkLine = smoothstep(0.06, 0.0, abs(d.y * 0.5 + 0.5 - pk)) * step(0.05, pk);
-        col += vec3(1.0, 0.95, 0.8) * pkLine * pane * 0.6 * live;
-        float frame = (1.0 - pane) * step(abs(d.x), 1.0) * step(abs(d.y), 1.0);
-        col = mix(col, col * 0.5 + warm * 0.3 * level, frame * live);
+    // ---- Acht Schaufenster in Neon (Tanzabend), darunter spiegeln die Pfützen sie
+    float strikeK = strike < 10.0 ? 0.5 * exp(-strike * 0.4) : 0.0;
+    vec4 win = windowsAt(uv, aspect, t, act, strikeK);
+    col = col * (1.0 - 0.65 * win.a * live) + win.rgb * live;
+    if (uv.y < uGround) {
+        float depth = uGround - uv.y;
+        float gmask = smoothstep(0.0, 0.015, depth);
+        vec2 rp = vec2(uv.x + 0.0035 * sin(uv.y * 190.0 + t * 2.6) * (0.6 + uBassS) + 0.002 * sin(uv.x * 70.0 - t * 1.3), uGround + depth);
+        vec4 wr = windowsAt(rp, aspect, t, act, strikeK);
+        float fadeR = exp(-depth * 9.0);
+        col += wr.rgb * gmask * fadeR * (0.35 + 0.35 * uBassS) * live;
+        float wet = smoothstep(0.35, 0.75, lum) * gmask;                                      // nasse Lichter pulsen mit dem Bass
+        col += plate * wet * (0.25 * uBassS + 0.3 * uBeatPulse * uBassS) * live;
+        col += vec3(0.7, 0.8, 1.0) * gmask * fadeR * (boltK * 0.5 + farK * 0.25 + sheet * 0.15);
     }
     {                                                                                      // neuntes Fenster unter dem Turm: Bass + Beat
         float wx = uWindows.y + (uWindows.y - uWindows.x) / 7.0;
@@ -191,14 +246,16 @@ void main() {
         float core = smoothstep(0.005, 0.0, dmin);
         float halo = smoothstep(0.04, 0.0, dmin);
         col = mix(col, vec3(0.05, 0.04, 0.03), core * 0.6);                                   // das Kabel selbst, dunkel
-        col += vec3(1.0, 0.75, 0.4) * core * (0.12 + 0.25 * live + 1.3 * glow + 0.8 * boltK);
+        float crackle = uFinal * (0.4 + 0.6 * step(0.5, hash12(vec2(floor(t * 25.0), floor(sPar * 12.0)))));
+        col += vec3(1.0, 0.75, 0.4) * core * (0.12 + 0.25 * live + 1.3 * glow + 0.8 * boltK + 1.1 * crackle);
+        col += vec3(0.6, 0.8, 1.0) * halo * crackle * 0.35;
         col += vec3(1.0, 0.55, 0.2) * halo * (0.5 * glow + 0.3 * boltK);
         // Funken: hüpfen vom Kabel, mit den Höhen häufiger; Strom läuft beim Blitz zur Laterne
         for (int k = 0; k < 10; k++) {
             float fk = float(k);
             float slot = floor(t * 12.0 + fk * 3.7);
             float h1 = hash12(vec2(slot, fk + 41.0)), h2 = hash12(vec2(slot, fk + 43.0)), h3 = hash12(vec2(slot, fk + 47.0));
-            float on = step(1.0 - (0.08 + 0.5 * uHighS * live + 0.6 * uCableGlow), h3);
+            float on = step(1.0 - (0.08 + 0.5 * uHighS * live + 0.6 * uCableGlow + 0.5 * uFinal), h3);
             float f = h1;
             vec2 q = mix(a, b, f) - vec2(0.0, sag * 4.0 * f * (1.0 - f));
             float age = fract(t * 12.0 + fk * 3.7) / 12.0;
@@ -321,21 +378,21 @@ void main() {
         col += vec3(0.6, 0.7, 1.0) * face * near * 0.25 * step(0.6, hash12(vec2(floor(t * 20.0), 8.0)));
     }
     // ---- Professor hängt am Zifferblatt (Pose je Beat, baumelt), beim Blitz in Weiß
-    float figMode = uFig.x;
-    if (figMode == 1.0 || figMode == 3.0) {
+    if (uDocPos.z > 0.01) {
         vec2 p = uv * vec2(aspect, 1.0);
-        vec2 pos = vec2(cc.x * aspect + uDoc.w * cr, cc.y + 0.15 * cr + 0.02 * cr * sin(t * 2.2));
+        vec2 pos = vec2(uDocPos.x * aspect + uDoc.w * cr, uDocPos.y + 0.02 * cr * sin(t * 2.2));
         float sway = (0.05 * sin(t * 1.7) + 0.03 * uBeatPulse) * cr;
         p.x += sway * (pos.y - p.y) / cr;                                                      // baumelt um den Griff
         vec4 s = mix(figFit(uDoc.x, p, pos, cr * 1.6, uDocFitA, 1.0), figFit(uDoc.y, p, pos, cr * 1.6, uDocFitB, 1.0), uDoc.z);
         s.rgb *= 0.8 + 0.3 * live + 0.8 * boltK;
         s.rgb = mix(s.rgb, vec3(1.0), uFlash * 0.6);
-        col = mix(col, s.rgb, s.a);
-        col += vec3(1.0, 0.8, 0.4) * s.a * uBeatPulse * 0.15;
+        col = mix(col, s.rgb, s.a * uDocPos.z);
+        col += vec3(1.0, 0.8, 0.4) * s.a * uDocPos.z * uBeatPulse * 0.15;
     }
     // ---- Weißblitz, Vignette, Stille
     col += vec3(1.0, 1.0, 1.0) * uFlash * uFlash * 0.9;
     col *= 0.78 + 0.22 * live;
+    col *= 1.0 - 0.2 * uFinal * smoothstep(0.25, 0.75, length(vUv - 0.5));                   // Countdown: der Rand dunkelt
     col *= 1.0 - 0.3 * pow(length(vUv - 0.5) * 1.3, 2.5);
     col = col / (1.0 + col * 0.12);
     fragColor = vec4(col, 1.0);
