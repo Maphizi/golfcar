@@ -445,13 +445,15 @@ Farbfronten nur nahe der Bildschirmfarbe (±20 Grad, alle 12-20 s, 0,02-0,04 Ket
 (alle `TJ_DASH` 36 LEDs ein Strich, Versatz = `dist` x `TJ_K` 30) in einer Farbe, die mit der Strecke nach hinten ziehen; ab 60 MPH
 werden sie bis 88 zu Streifen (Zeitkreise laden); `timejump_jump` -> `boost_until` 3 s: weich auslaufender Schub (Fronten bis 5x,
 Striche 3x und länger, Elektroblau, wenige Kometen), kein Blitz, kein Flackern; `timejump_start` beschleunigt nicht. `drive` (neonrace, `neonrace.led_state()`: `dist`,
-`speed`, `driving`, `nitro`, `honk_t0`, `near_t0`, `district_t0`/`district_len`, `police_t0`/`police_len`): Straße, Versatz =
-`dist` x `DRIVE_K` 30 LEDs (ruhig, ~18 LEDs/s bei Reisetempo), Laternen alle `LAMP_EVERY` 34 LEDs mit Lichtkegel (bei Nitro
-Streifen nach vorne), Neonschilder 6-15 LEDs in einer Straßenkarte (`drv["sign"]`, Länge 2x Kette) in Haupt-/Akzentfarbe/Bernstein,
-Farbton +0,06 alle 4 Beats (weich), sanftes Flackern; Grundglimmen 7-10 % Bildschirmfarbe; darüber die Felder aus `_duel` (hell,
-hier nur jeden `DUEL_EVERY` 2. Beat um `DUEL_STEP` 5 LEDs, gleitend ~0,4 s); Hupe zwei sanfte Aufheller, Beinahe-Treffer weißer
-Streifen 1,2 s, Viertelwechsel Lichtwand von vorne nach hinten über `district_len`, Polizeidrohnen rot-blauer Blinker (1,6 Hz) alle
-7 s in 5 s von hinten nach vorne; `event()` ignoriert in `drive` alle `neonrace_*`-Profile. `duel`: zwei Felder à `DUEL_W` 10 LEDs in Bildschirm-Haupt- und Akzentfarbe (voll ausgesteuert, Akzent gedreht, wenn zu
+`speed`, `driving`, `nitro`, `honk_t0`, `near_t0`, `district_t0`/`district_len`, `police_t0`/`police_len`, `light` = Lichtmenge
+des Stadtteils 0..1 aus dem Bild, `neonrace.district_light`): Straße, Versatz = `dist` x `DRIVE_K` 18 LEDs (ruhig, ~11 LEDs/s bei
+Reisetempo), Laternen alle `LAMP_EVERY` 34 LEDs mit Lichtkegel (bei Nitro Streifen nach vorne), Neonschilder in einer Straßenkarte
+(`drv["sign"]`, Länge 2x Kette, zwei Plätze je Laternenabstand, je Schild `rank`) in Haupt-/Akzentfarbe/Bernstein, sichtbar wenn
+`rank` < Dichte 0.33 + 0.62 x `light` (gleitet ~3 s): dunkle Viertel ~27 % der LEDs deutlich an, helle bis ~66 %; Grundglimmen
+7-20 % Bildschirmfarbe (mit `light`); Farbton +0,06 alle 8 Beats (weich), sanftes Flackern; darüber die Felder aus `_duel` (hell,
+hier nur jeden `DUEL_EVERY` 4. Beat um `DUEL_STEP` 5 LEDs, gleitend ~0,6 s); Hupe zwei sanfte Aufheller, Beinahe-Treffer weißer
+Streifen 1,6 s, Viertelwechsel Lichtwand von vorne nach hinten über `district_len`, Polizeidrohnen rot-blauer Blinker (1,6 Hz) alle
+9 s in 7 s von hinten nach vorne; `event()` ignoriert in `drive` alle `neonrace_*`-Profile. `duel`: zwei Felder à `DUEL_W` 10 LEDs in Bildschirm-Haupt- und Akzentfarbe (voll ausgesteuert, Akzent gedreht, wenn zu
 ähnlich), je `DUEL_EVERY` Beats `DUEL_STEP` LEDs weiter (gleitend, Schub = doppelt), Modi in `duel["mode"]`: `free` (Richtung je Beat zu 28 %
 gewechselt, 12-24 Beats), `lock` Gleichschritt 6-12 Beats, `meet` aufeinander zu -> `merged`: übereinander in dritter Farbe (Farbton
 weit weg von beiden), 2-5 Beats als eines weiter, dann teilen (3 Beats auseinander); Kreuzen = Überlappung dritte Farbe; Rest 3 %

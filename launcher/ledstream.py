@@ -889,8 +889,8 @@ class LedStream:
         return frame
 
     LAMP_EVERY = 34                                               # Neonfahrt: Abstand der Straßenlaternen in LEDs
-    DRIVE_K = 30.0                                                # LEDs je Streckeneinheit der Szene (uDist): ruhig, ~18 LEDs/s bei Reisetempo
-    DUEL_EVERY = 2                                                # Felder gehen nur jeden 2. Beat
+    DRIVE_K = 18.0                                                # LEDs je Streckeneinheit der Szene (uDist): ruhig, ~11 LEDs/s bei Reisetempo
+    DUEL_EVERY = 4                                                # Felder gehen nur einmal je Takt
     DUEL_STEP = 5                                                 # ... und dann nur ein halbes Feld weit
 
     def _drive(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
@@ -908,14 +908,16 @@ class LedStream:
         if dv is None or dv["L"] != 2 * n:
             L = 2 * n
             sign = np.full(L, -1)
+            rank = np.ones(L)                                     # Schild sichtbar, wenn rank < Dichte (helle Viertel = mehr)
             u = self.rng.randint(4, 10)
-            while u < L - 20:
-                if self.rng.random() < 0.65:
-                    a = u + self.rng.randint(5, self.LAMP_EVERY - 18)
-                    w = self.rng.randint(6, 15)
+            while u < L - 40:
+                for a0, a1, w0, w1 in ((1, 6, 6, 13), (19, 22, 6, 11)):   # zwei Plätze je Laternenabstand
+                    a = u + self.rng.randint(a0, a1)
+                    w = self.rng.randint(w0, w1)
                     sign[a:min(L, a + w)] = self.rng.randrange(3)
+                    rank[a:min(L, a + w)] = self.rng.random()
                 u += self.LAMP_EVERY
-            dv = self.drv = {"L": L, "sign": sign, "hue_step": 0.0, "hue_s": 0.0}
+            dv = self.drv = {"L": L, "sign": sign, "rank": rank, "hue_step": 0.0, "hue_s": 0.0, "light": 0.5}
         main, acc = self._base_col()
         main = _no_white(np.asarray(main, dtype=float))
         acc = _no_white(np.asarray(acc, dtype=float)) if np.asarray(acc).max() > 8 else main
@@ -926,11 +928,14 @@ class LedStream:
         off = dist * self.DRIVE_K
         if is_beat:
             dv["beats"] = dv.get("beats", 0) + 1
-            if dv["beats"] % 4 == 0:
-                dv["hue_step"] += 0.06                            # Schilder wechseln die Farbe nur alle 4 Beats, weich
-        dv["hue_s"] += (dv["hue_step"] - dv["hue_s"]) * min(1.0, dt * 1.2)
-        # Straße: Grundglimmen in der Bildschirmfarbe
-        frame = np.tile(main * (0.07 + 0.03 * self.bass_s), (n, 1))
+            if dv["beats"] % 8 == 0:
+                dv["hue_step"] += 0.06                            # Schilder wechseln die Farbe nur alle 8 Beats, weich
+        dv["hue_s"] += (dv["hue_step"] - dv["hue_s"]) * min(1.0, dt * 0.8)
+        light_t = float(st.get("light", 0.5)) if st else 0.5    # Stadtteil hell (1) oder dunkel (0), gleitet beim Wechsel
+        dv["light"] += (light_t - dv["light"]) * min(1.0, dt / 3.0)
+        lt = dv["light"]
+        # Straße: Grundglimmen in der Bildschirmfarbe (helle Viertel: deutlich mehr)
+        frame = np.tile(main * (0.07 + 0.13 * lt + 0.03 * self.bass_s), (n, 1))
         # Neonschilder (Straßenkoordinate u = Position - Versatz)
         uu = (idx - int(off)) % dv["L"]
         sc = dv["sign"][uu]
@@ -938,9 +943,12 @@ class LedStream:
         ha = float(_hue(acc[None, :])[0]) / 360.0
         pal = np.array([_hsv((hm + dv["hue_s"]) % 1.0, 1.0, 1.0), _hsv((ha + dv["hue_s"]) % 1.0, 1.0, 1.0),
                         _hsv((0.09 + dv["hue_s"] * 0.3) % 1.0, 1.0, 1.0)])
-        m = sc >= 0
-        flick = 0.92 + 0.08 * np.sin(now * 2.2 + uu * 0.7)
-        frame[m] = pal[sc[m]] * (0.55 + 0.25 * self.bass_s) * flick[m][:, None]
+        dens = 0.33 + 0.62 * lt                                   # dunkel ~ ein Schild je Laterne, hell fast alle Plätze
+        vis = np.clip((dens - dv["rank"][uu]) / 0.08, 0.0, 1.0) * (sc >= 0)
+        m = vis > 0.0
+        flick = 0.92 + 0.08 * np.sin(now * 1.4 + uu * 0.7)
+        sk = vis[m][:, None]
+        frame[m] = frame[m] * (1.0 - sk) + pal[sc[m]] * (0.55 + 0.25 * self.bass_s) * flick[m][:, None] * sk
         # Laternen mit Lichtkegel; bei Nitro ziehen sie sich zu Streifen
         ph = (idx - off) % self.LAMP_EVERY
         dd = ph - self.LAMP_EVERY / 2.0
@@ -958,8 +966,8 @@ class LedStream:
             k = math.sin(math.pi * min(1.0, t_h / 0.45)) if t_h < 0.45 else math.sin(math.pi * (t_h - 0.45) / 0.45) * 0.7
             frame = frame * (1.0 + 0.4 * k) + main * 0.12 * k
         t_n = now - float(st.get("near_t0", -100.0)) if st else 99.0
-        if 0.0 <= t_n < 1.2:
-            pos = t_n / 1.2
+        if 0.0 <= t_n < 1.6:
+            pos = t_n / 1.6
             x = idx / max(1, n - 1)
             frame += np.outer(np.exp(-((x - pos) / 0.03) ** 2), np.array([230.0, 235.0, 255.0]))
         t_d = now - float(st.get("district_t0", -100.0)) if st else 99.0
@@ -971,7 +979,7 @@ class LedStream:
             frame = frame * (1.0 - 0.5 * np.exp(-((x - pos) / 0.08) ** 2))[:, None] + np.outer(wall, acc * 0.6 + WHITE * 0.3)
         t_p = now - float(st.get("police_t0", -100.0)) if st else 99.0
         if 0.0 <= t_p < float(st.get("police_len", 14.0) if st else 14.0):
-            u = (t_p % 7.0) / 5.0                                 # alle 7 s überholt einer, 5 s von hinten nach vorne
+            u = (t_p % 9.0) / 7.0                                 # alle 9 s überholt einer, 7 s von hinten nach vorne
             if u <= 1.0:
                 pos = 1.0 - u
                 px = int(round(pos * (n - 1)))
@@ -1066,7 +1074,7 @@ class LedStream:
                     nxt = pos[i] + dirs[i] * step
                 pos[i] = min(max(nxt, 0.0), float(n - w))
         for i in (0, 1):                                           # kurz eingerastet (~0,1 s)
-            d["pos_s"][i] += (d["pos"][i] - d["pos_s"][i]) * min(1.0, dt * 4.0)   # weich gleiten (~0,4 s)
+            d["pos_s"][i] += (d["pos"][i] - d["pos_s"][i]) * min(1.0, dt * 2.5)   # weich gleiten (~0,6 s)
         base = (a * 0.03 + b * 0.02) * (live * (0.7 + 0.3 * self.bass_s) + (1.0 - live) * 0.6)
         frame = np.tile(base, (n, 1))
         lvl = (0.85 + 0.15 * self.bar_lift) * live + (1.0 - live) * 0.45

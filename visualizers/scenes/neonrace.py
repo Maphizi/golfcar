@@ -103,6 +103,9 @@ class Controller:
         self.districts = [(i, _load_rgba(ASSETS / f)) for i, (f, _, _) in enumerate(DISTRICTS) if (ASSETS / f).exists()]
         self.districts = [(i, img) for i, img in self.districts if img is not None]
         self.district = 0                               # Index in self.districts
+        # Lichtmenge je Stadtteil (0 = dunkel .. 1 = hell, aus dem Bild) für die LED-Kette: helle Viertel = mehr LEDs an
+        self.district_light = [min(1.0, max(0.0, (float(img[::24, ::24, :3].max(axis=2).mean()) - 45.0) / 35.0))
+                               if img is not None else 0.5 for _, img in self.districts]
         self.district_next = 0
         self.district_t0 = -10.0
         self.scene = self.districts[0][1] if self.districts else None
@@ -392,7 +395,8 @@ class Controller:
         return {"program": "drive", "dist": float(self.dist), "speed": float(self.speed), "driving": bool(self.driving),
                 "nitro": float(self.nitro), "honk_t0": float(self.honk_t0), "near_t0": float(self.near_t0),
                 "district_t0": float(self.district_t0), "district_len": DISTRICT_LEN, "police_t0": float(police),
-                "police_len": float(EVENTS[EV_DRONES][1])}
+                "police_len": float(EVENTS[EV_DRONES][1]),
+                "light": float(self.district_light[self.district]) if self.district_light else 0.5}
 
     def uniform_names(self):
         names = ["uSceneTex", "uSceneBTex", "uHoloTex", "uTrafficTex", "uObsTex", "uSceneSize", "uSceneBSize", "uHoloSize",
