@@ -1284,7 +1284,9 @@ eine feste Farbfolge, die nur vor und zurück läuft, mal langsam, mal schneller
 vereinen sich, dazwischen ziehen schmale Akzentbänder in der Akzent- und der Gegenfarbe mit, und immer wieder liegen
 dunkelgrüne Täler dazwischen, aus geht sie nie; am Tresen ist es ruhiger und grüner, auf der Reise voll bunt. Beim Orakel stehen die acht Tafeln unter dem Kopf auf der Kette: jede LED bekommt der Reihe nach eine Tafelfarbe (Rot, Orange,
 Gelb, Grün, Türkis, Blau, Violett, Magenta, dann von vorne), immer nur ein Punkt je Farbe, und sie leuchtet genau dann, wenn ihre
-Tafel im Beat-Muster an ist. Bei HAL 3000 ziehen dunkel- und hellrote Felder wie die
+Tafel im Beat-Muster an ist. Fährt der grüne Scanner über den Bildschirm, läuft ein grüner Streifen einmal durch die Kette;
+explodiert der Kopf, startet ein Ring in der Mitte und läuft zu beiden Enden, bunte Datenblöcke fliegen mit; setzt das Orakel eine
+Maske auf, dreht die Kette zweieinhalb Sekunden lang durch, und solange die Maske sitzt, wandern die Farben im Beat weiter. Bei HAL 3000 ziehen dunkel- und hellrote Felder wie die
 Zellen des Korridors langsam und immer in dieselbe Richtung vorbei, ein Viertel dunkler als der Rest, und ab und zu kommt von einem Ende ein einzelnes helles Feld, das im Takt Schritt für Schritt rund eine Minute
 über die ganze Kette wandert, mal von vorne, mal von hinten, mit gelegentlichem Schritt zurück. Die Slotmaschinen haben ein mechanisches Lauflicht in den Lichtfarben des
 gewählten Automaten: ein Ansteuerpunkt an, der nächste aus, auf jedem Beat springt das Muster hart um einen Punkt weiter (an wird aus,

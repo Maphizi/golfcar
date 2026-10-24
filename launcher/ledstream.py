@@ -679,14 +679,54 @@ class LedStream:
         n = self.n
         cols = np.array(st.get("cols") or [[255, 30, 20]] * 8, dtype=float)[:8]
         lvl = np.array((list(st.get("lvl") or []) + [0.0] * 8)[:8], dtype=float)
-        k = np.arange(n) % len(cols)
-        if self.reverse:
-            k = (n - 1 - np.arange(n)) % len(cols)
+        pos = np.arange(n) if not self.reverse else n - 1 - np.arange(n)
+        x = pos / max(1, n - 1)
+        ps = getattr(self, "panelled", None)
+        if ps is None:
+            ps = self.panelled = {"rot": 0, "spin_t": 0.0}
+        mk = float(st.get("mask_k", 0.0))
+        ma = now - float(st.get("mask_t0", -100.0))
+        # Maske auf: einmal durchdrehen (2,5 s Farbwirbel), danach rücken die Farben je Beat einen Platz weiter
+        if mk > 0.5 and 0.0 <= ma < 2.5:
+            if now - ps["spin_t"] > 0.08:
+                ps["spin_t"] = now
+                ps["rot"] += 1
+        elif mk > 0.5 and is_beat:
+            ps["rot"] += 1
+        k = (pos + ps["rot"]) % len(cols)
+        lk = pos % len(cols)                                      # Tafel an/aus bleibt am Platz, die Farbe wandert
         if live:
-            level = 0.04 + 0.96 * lvl[k] * (0.85 + 0.15 * self.bass_s)
+            level = 0.04 + 0.96 * lvl[lk] * (0.85 + 0.15 * self.bass_s)
         else:
             level = np.full(n, 0.12 + 0.08 * np.sin(now * 0.8))
-        return cols[k] * level[:, None]
+        if mk > 0.5 and 0.0 <= ma < 2.5:                          # beim Aufsetzen: alles an, pumpt mit dem Bass
+            level = np.maximum(level, 0.55 + 0.45 * math.sin(ma * 9.0) ** 2)
+        frame = cols[k] * level[:, None]
+        # Scanner: grüner Streifen läuft einmal von vorne nach hinten, Schweif dahinter, kleine Funken
+        sa = now - float(st.get("scan_t0", -100.0))
+        slen = float(st.get("scan_len", 2.4))
+        if 0.0 <= sa < slen:
+            head = -0.05 + 1.1 * sa / slen
+            dx = x - head
+            line = np.exp(-(dx / 0.006) ** 2) + 0.45 * np.exp(dx / 0.06) * (dx < 0)
+            sparks = (self.nrng.random(n) < 0.03) * (np.abs(dx) < 0.03) * 0.6
+            frame = frame + np.outer(line + sparks, np.array([75.0, 255.0, 205.0]))
+        # Datenexplosion: Ring startet in der Mitte und läuft zu beiden Enden, bunte Datenblöcke fliegen mit
+        ba = now - float(st.get("burst_t0", -100.0))
+        if 0.0 <= ba < 2.2:
+            r = ba / 2.0 * 0.5
+            d = np.abs(x - 0.5)
+            ring = np.exp(-((d - r) / 0.01) ** 2) * math.exp(-ba * 0.8)
+            frame = frame + np.outer(ring, np.array([150.0, 230.0, 255.0]))
+            if ps.get("burst") != st.get("burst_t0"):
+                ps["burst"] = st.get("burst_t0")
+                ps["chunks"] = [(self.rng.choice((-1, 1)) * self.rng.uniform(0.25, 1.0), self.rng.randrange(len(cols))) for _ in range(14)]
+            for sp, ci in ps.get("chunks", []):
+                c = (0.5 + sp * r) * (n - 1)
+                a0, a1 = int(max(0, c - 2)), int(min(n, c + 2))
+                if a0 < a1:
+                    frame[a0:a1] = frame[a0:a1] * 0.3 + cols[ci] * math.exp(-ba * 0.9)
+        return frame
 
     def _idx(self) -> np.ndarray:
         """0 = vorne am Cart .. 1 = hinten."""

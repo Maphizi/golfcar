@@ -471,7 +471,11 @@ dunkelgrüne Täler `TRIP_DG` (~30 %), nie aus (Boden 35 % Dunkelgrün); Beat = 
 +0,06-0,14 über ~4 s; am Tresen (intensity 0) mehr Dunkelgrün (55 %), Akzente bleiben. `panels` (oracle,
 `oracle.led_state()`: `cols` = Farben der acht Tafel-Glyphen aus `_panel_colors()` (Atlaszellen 16-23, hellste 20 %, Grauanteil
 raus), `lvl` = `panel_lvl` mit Nachglühen): LED i zeigt Tafel i % 8, also Rot, Orange, Gelb, Grün, Türkis, Blau, Violett, Magenta
-je ein Ansteuerpunkt, an solange die Tafel an ist (Beat-Muster der Szene), aus 4 %; Stille = alle leise atmend.
+je ein Ansteuerpunkt, an solange die Tafel an ist (Beat-Muster der Szene), aus 4 %; Stille = alle leise atmend. Dazu aus
+`led_state`: Scanner (`scan_t0`/`scan_len`) = grüner Streifen (75,255,205) mit Schweif und Funken einmal von vorne nach hinten;
+Datenexplosion (`burst_t0`) = Ring von der Mitte zu beiden Enden in ~2 s plus 14 bunte Datenblöcke; Maske (`mask_k`, `mask_t0`):
+beim Aufsetzen 2,5 s Farbwirbel (Farben rücken alle 0,08 s, alles an, pumpt), solange sie sitzt rücken die Farben je Beat einen
+Platz (`panelled["rot"]`, An/Aus der Tafeln bleibt am Platz).
 `city` (rooftop, `rooftop.led_state()`: `state` = laufender Lichtzustand 0-6 + `mix`, `weather`, Zeitpunkte `blackout_t0`,
 `emp_t0`/`emp_seed`, `lightning_t0`, `fire_t0`): Fensterfront `_city_setup()` (Fenster 2-4 LEDs, Lücke 1-2, Häuser alle 4-9 Fenster
 mit 3-6 Lücke; `CITY_PAL` Magenta/Cyan/Bernstein/Violett), ~40 % an, je Beat kippen 1,5-4,5 % der Fenster. Zustände: 1 Notstrom

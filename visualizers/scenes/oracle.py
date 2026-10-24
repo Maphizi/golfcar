@@ -486,8 +486,10 @@ class Controller:
 
     # -- Engine ------------------------------------------------------------
     def led_state(self) -> dict:
-        """LED-Board: Programm "panels", je LED eine Tafelfarbe im Wechsel, hell, solange die Tafel an ist."""
-        return {"program": "panels", "cols": self.panel_cols, "lvl": list(self.panel_lvl)}
+        """LED-Board: Programm "panels", je LED eine Tafelfarbe im Wechsel, hell, solange die Tafel an ist; dazu Scanner,
+        Datenexplosion (Ring) und Maske als Zeitpunkte/Einblendung."""
+        return {"program": "panels", "cols": self.panel_cols, "lvl": list(self.panel_lvl), "scan_t0": self.scan_t0,
+                "scan_len": SCAN_SECONDS, "burst_t0": self.burst_t0, "mask_k": float(self.mask_k), "mask_t0": self.mask_t0}
 
     def images(self) -> dict:
         return {"uSceneTex": (self.scene if self.scene is not None else self.blank, 1),
