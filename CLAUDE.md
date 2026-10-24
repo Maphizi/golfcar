@@ -381,22 +381,28 @@ Energie > 0.2. OBEN Gewitter `uStormT` (20 s, `uBolt0..2`), UNTEN Paradoxon `uEj
 `uFade`), ENTER `uOverT` 1,21 GW (2,5 s). Beat-Ringe `uRing0..5`, Drop `uFlash`/`uHue`, Oszilloskope aus `uAudioTex`. Test: `python -m visualizers.engine flux --test-signal --demo`.
 
 ### Uhrturm (`visualizers/scenes/clocktower.py`, Taste 4 / HAL)
-Wie Orakel: Zeiger `uHands` (h, m, s in Umdrehungen; Sekunde tickt je Beat, `uClockT` 21:00 -> 22:04 mit Energie), Blitz
-`strike()` (`uStrikeT`, `uBoltSeed`, `uCableGlow`, danach 10 s Stillstand, Rücklauf), acht Schaufenster = Bänder (`uBands0/1`,
-`uPeaks0/1`), Lauflicht `uStep/uStepPhase/uPattern`, Wetterleuchten `uSheet`. Figuren `clocktower_figures.png` 8x3 à 192 (Reihe 0
-Professor, 1 Zeitmaschine, 2 Tanzpaar; `_fit_cells()` misst je Zelle -> `uCarFit`, `uDocFitA/B`,
-`uDancerFitA/B`). LINKS `uDoc`, RECHTS `uCar`/`uCarPar`, OBEN beide (`uFig`), UNTEN Tanzball `uDance`/`uDancer`, ENTER Blitz,
-SPACE/BACKSPACE `uZoom`. `[scenes.clocktower] clock = [x, y, r]`, `windows = [x0, x7, y, w]`, `cable = [x0, y0, x1, y1]`,
-`ground` 0.205 (Fuß der Häuser, darunter spiegeln die Pfützen die Fenster). Die Nacht spielt sich selbst ab (`act`, ~3 min je
-Runde, `_rate()`: bis 22:02 mit der Energie, Countdown immer `FINAL_SECONDS` 20 s, Demo 4x): 0 ruhige Nacht bis `ACT_STORM`
-21:50 (alle `AUTO_EVENT` 18-35 s `_auto_event`: Professor klettert `CLIMB_SECONDS` am Turm hoch, Paar tanzt `COUPLE_SECONDS` in
-einem Schaufenster `uWinCouple`, Funke übers Kabel), 1 Gewitter (`uStorm`: Regen dichter und schräger, ferne Blitze `uFarBolt`
-alle 2-5 s, Uhr rückt `STORM_ZOOM` heran, Professor hängt am Zeiger, `uDocPos` = x, y, Sichtbarkeit), 2 Countdown ab
-`ACT_FINAL` 22:02 (`uFinal`: Kabel knistert, Rand dunkelt, Zeitmaschine wartet bei `CAR_WAIT_X`, Overlay "22:04 IN 0:NN"),
-3 = 22:04: Blitz, `CAR_DELAY` 0,6 s später rast die Zeitmaschine mit Feuerspuren los, Uhr steht, Rücklauf. Drop vor
-`DROP_STRIKE_MIN` = Gewitterstoß + 10 Minuten vor, danach Blitz. Schaufenster in acht Neonfarben (`winCol`, `windowsAt`).
-LED-Board: `led_state()` -> Programm `clockwork`.
-Test: `python -m visualizers.engine clocktower --test-signal --demo`.
+Neu gebaut (Runde 3, `docs/future_plan.md`): nah am Turm, `clocktower_tower.png` (oben das leere Zifferblatt, darunter eine
+verwinkelte Fassade mit 13 schiefen Fenstern, unten Straße). `scripts/clocktower_assets.py` (scipy, nur zum Erzeugen; aus
+`future_assets.sh`) schneidet aus `raw/clocktower_tower|silhouettes|climber|hands|clockwork|car.png`: Fensterkarte
+`clocktower_winmask.png` (Fenster = reinschwarze Scheiben; R = Nr. x 16, G = Scheibe weich, B = nächstes Fenster, A = Lichtschein),
+`clocktower_layout.json` (Fensterrechtecke, Zifferblatt x, y, Radius), Silhouetten `clocktower_sil.png` 8x3 à 128x192 (Alpha =
+Schatten), Professor `clocktower_climber.png` 8x2 à 160x360 (Reihe 0 Kletterzyklus vor Stein, nur Mantel/Haar/Hände freigestellt,
+Saum läuft aus; Reihe 1 Posen `POSE_HANG2..POSE_CROUCH` = Zellen 8-15), Zeiger `clocktower_hands.png` 3x1 à 128x512 (Drehpunkt
+in der Zellmitte), Uhrwerk `clocktower_clockwork.png`, Zeitmaschine `clocktower_car.png` 3x1 à 512x200 (vormultipliziert:
+`col * (1 - a) + rgb`). Shader: Fenster-Nr. per `texelFetch` aus `uWinTex`, je Fenster `uWinA[i]` (Rechteck), `uWinB[i]` (Farbton,
+Sättigung, Stufe, gespiegelt + Wippen), `uWinC[i]` (Silhouette A, B, Überblendung, Versatz); `Window` im Controller: Farbe
+wechselt auf Beats (1-2 Fenster, alle 8 Beats Farbwelle von links), Stufe = Spektrumband, Silhouette alle 6-14 s (`SIL_EMPTY`
+leer), manche laufen durchs Zimmer, Paare wippen. Zeiger `uHands`, Sekunde tickt je Beat. Ablauf `act` (~3 min): 0 ruhige Nacht,
+der Professor klettert bei `CLIMB_START` los (`CLIMB_SECONDS` 28 s auf `CLIMB_PATH`), 1 Gewitter ab `ACT_STORM` 21:50
+(`uStorm`, ferne Blitze `uFarBolt`, `STORM_ZOOM`, Professor hängt unter dem Zifferblatt), 2 Countdown ab `ACT_FINAL` 22:02
+(`FINAL_SECONDS` 20 s, Fenster pulsen, Silhouetten `SIL_LOOK`, Kabel knistert, Zeitmaschine wartet mit Blitzbögen, Overlay
+"22:04 IN 0:NN"), 3 Uhr spielt verrückt (`CRAZY_SECONDS` 5,5 s: Zeiger rasen per `crazy_vel`, Zifferblatt durchsichtig mit
+Uhrwerk `uCrazy`/`uGearRot`, Funken, Beben, Fenster flackern wild), 4 Blitz `uBoltT` (Einschlag, Sprünge im Glas, alle Fenster
+gleißen und gehen aus, kommen einzeln zurück, Zeitmaschine rast mit Feuerspuren, Professor rutscht ab, `STOP_SECONDS` 10 s,
+Rücklauf). Drop vor `DROP_STRIKE_MIN` = Gewitterstoß + 10 Minuten vor. Knüppel LINKS Professor (klettern/nächste Pose), RECHTS
+Zeitmaschine, OBEN alle Fenster wechseln, UNTEN Tanzabend (Paare, Pastell), ENTER 22:04 sofort, SPACE/BACKSPACE Zoom.
+`[scenes.clocktower] cable` = Bezier vom Sims zur Laterne; `clock` überschreibt das gemessene Zifferblatt. LED-Board:
+`led_state()` -> Programm `clockwork`. Test: `python -m visualizers.engine clocktower --test-signal --demo`.
 
 ### Almanach (`visualizers/scenes/almanacslots.py`, Taste 5 / Slots)
 Dünne Unterklasse der Slotmaschine (siehe "Slotmaschinen"): drei Walzen, Rahmen `future_frame.png`, Automaten `FUTURE`.
@@ -463,13 +469,14 @@ kurz alles in ihrer Farbe); `navcomputer.led_state()` liefert `flying` und das l
 ASTEROIDENFELD = graue Brocken schneller, WURMLOCH/SONNE/NEBEL = Tönung. `fire` (campfire, `led_state` level/blue): warmweißes
 Fackellicht (255,125,30; auf LEDs wirkt erst das warmweiß), träges Glimmen je LED (`embers`), Wabern `gust`, Helligkeit mit der Feuerstufe, blau nur bei `blue` > 0 aus `led_state` (Kristall; `campfire_big`/`campfire_blue` setzen in `fire` keine blaue Tönung). `vortex` (blackhole, core, flux, pond): Punkte driften von beiden Enden zur Mitte, Mitte glimmt
 mit dem Bass. `breathe` (taxi): langsames Atmen + zwei wandernde Wolken. `clockwork` (clocktower,
-`clocktower.led_state()`: `clock_k` 0 = 21:00 .. 1 = 22:04, läuft nach dem Blitz zurück, `act`, `storm`, `final`, `strike_age`,
-`sec`, `sheet`, `far`, `spark_age`, `car`/`car_wait`, `doc`, `dance`, `couple`): Gewitterblau mit Regenschimmer (im Gewitter mehr),
+`clocktower.led_state()`: `clock_k` 0 = 21:00 .. 1 = 22:04, läuft nach dem Blitz zurück, `act`, `storm`, `final`, `crazy`,
+`stopped`/`rewind`, `strike_age` (seit dem Blitz), `sec`, `sheet`, `far`, `spark_age`, `car`/`car_wait`, `doc`, `dance`, `wins`
+= je Fenster Lage, Farbe, Stufe): Gewitterblau mit Regenschimmer (im Gewitter mehr),
 Laternen alle `CW_LAMP` 48 LEDs, goldener Zeitbalken wächst von vorne nach hinten bis 22:04 (heller Kopf, beim Rücklauf grün),
 Sekundenzeiger orangeroter Punkt (tickt mit der Szene), Wetterleuchten/ferne Blitze an ihrer Bildposition, Countdown = Funken am
 Balkenende + vorne blau flackernde Zeitkreise, 22:04 = Blitz über die Kette, Feuerspur der Zeitmaschine von vorne nach hinten
-(4 s), 10 s blau-weißes Flackern bei gedimmtem Balken; Professor = warmweißes Wischen, Paar im Fenster = Fleck in der
-Fensterfarbe (`CW_WIN`), Tanzball = Girlanden in den Fensterfarben; `event()` ignoriert `clocktower*`-Profile, kein Drop-Aufheller. `square` (Marktplatz): viel an und ruhig, ganze Kette im
+(4 s), 10 s blau-weißes Flackern bei gedimmtem Balken; Fenster = weiche Lichtpunkte in ihrer Farbe an ihrer Bildposition, Uhr spielt
+verrückt = Balken flackert + Funken über die Kette; Professor = warmweißes Wischen, Tanzabend = Girlanden in `CW_WIN`; `event()` ignoriert `clocktower*`-Profile, kein Drop-Aufheller. `square` (Marktplatz): viel an und ruhig, ganze Kette im
 Laternenlicht der Epoche (Tönung `square_<Jahr>`, `_no_white`) auf 55-70 %, Laternenkegel ~alle 60 LEDs atmen 8-12 s, zwei fast
 stehende Wolken in der Zweitfarbe; `event()`: `square_lightning` (ENTER) = sanfte Lichtwelle, `square_blackout` = 14 s auf 45 %
 gedämpft (`sq_dim_until`), nur `square_jump` blitzt (Special lightning). `heart` (hearttree): vorne hell, hinten dunkler

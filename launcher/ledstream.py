@@ -780,8 +780,9 @@ class LedStream:
         blaue Aufhellung an der Stelle des Schirms, ferne Blitze schmal und hell. Countdown: Funken am Balkenende, vorne
         flackern die Zeitkreise der wartenden Zeitmaschine blau. 22:04: Blitz über die ganze Kette, die Zeitmaschine rast als
         Feuerspur von vorne nach hinten (liegt 4 s), 10 s blau-weißes Flackern (Uhr steht), dann läuft der Balken mit grünem
-        Kopf zurück. Figuren: Professor = warmweißes Wischen, Funke = Punkt läuft durch, Paar im Fenster = Fleck in der
-        Fensterfarbe, Tanzball = Girlanden in den acht Fensterfarben, je Beat im Wechsel."""
+        Kopf zurück. Fenster (`wins`: Lage, Farbe, Stufe) = weiche Lichtpunkte in ihrer Farbe an ihrer Bildposition. Die Uhr
+        spielt verrückt (`crazy`): Balken flackert, Funken sprühen über die ganze Kette. Figuren: Professor = warmweißes
+        Wischen, Funke = Punkt läuft durch, Tanzabend = Girlanden in den acht Fensterfarben, je Beat im Wechsel."""
         n = self.n
         x = self._idx()
         cw = getattr(self, "cw", None)
@@ -793,7 +794,6 @@ class LedStream:
         final = float(st.get("final", 0.0))
         clock_k = float(st.get("clock_k", (T * 0.004) % 1.0))
         sa = float(st.get("strike_age", 1e3))
-        act = int(st.get("act", 0))
         # Grund: Gewitterblau, der Bass hebt ihn, Regen schimmert auf einzelnen LEDs
         lvl = 0.22 + 0.03 * math.sin(T * 0.37) + 0.08 * storm + 0.1 * self.bass_s * live
         frame = np.outer(np.full(n, lvl), np.array([30.0, 70.0, 255.0]))
@@ -807,9 +807,12 @@ class LedStream:
         lamp = np.exp(-(((lp - 0.5) * self.CW_LAMP) / 2.2) ** 2) * (0.45 + 0.1 * np.sin(T * 0.5 + x * 23.0))
         frame += np.outer(lamp, np.array([255.0, 140.0, 45.0]))
         # Zeitbalken 21:00 -> 22:04
-        rewind = act == 3 and sa >= 10.0
+        rewind = bool(st.get("rewind", False))
+        crazy = float(st.get("crazy", 0.0))
         bar = np.clip((clock_k - x) * n / 3.0 + 0.5, 0.0, 1.0)
-        bk = 0.4 if (act == 3 and sa < 10.0) else 1.0                     # Uhr steht: Balken gedimmt, Feuerspur und Flackern davor
+        bk = 0.4 if st.get("stopped") else 1.0                          # Uhr steht: Balken gedimmt, Feuerspur und Flackern davor
+        if crazy > 0.01:                                                   # Uhr spielt verrückt: Balken flackert
+            bk *= 1.0 - 0.6 * crazy * (self.nrng.random() < 0.5)
         frame = frame * (1.0 - 0.75 * bar * bk)[:, None] + np.outer(bar * (0.42 + 0.08 * self.bar_lift) * bk, np.array([255.0, 165.0, 35.0]))
         head = np.exp(-((x - clock_k) * n / 2.5) ** 2)
         frame += np.outer(head, np.array([90.0, 255.0, 140.0]) if rewind else np.array([255.0, 220.0, 140.0])) * 0.9
@@ -819,6 +822,8 @@ class LedStream:
         if final > 0.01:
             near = (np.abs(x - clock_k) * n < 14.0) & (self.nrng.random(n) < 0.25 * final)
             spark[near] = 1.0
+        if crazy > 0.01:
+            spark[self.nrng.random(n) < 0.03 * crazy] = 1.0
         frame += np.outer(spark, np.array([255.0, 230.0, 180.0]))
         # Sekundenzeiger
         sec = float(st.get("sec", (T / 60.0) % 1.0))
@@ -846,13 +851,9 @@ class LedStream:
         if doc > 0.01:
             c = 0.5 + 0.45 * math.sin(T * 2.0 * math.pi / 7.0)
             frame += np.outer(np.exp(-((x - c) / 0.07) ** 2) * 0.45 * doc, np.array([255.0, 215.0, 165.0]))
-        # Paar im Fenster
-        wi, wvis = st.get("couple", (0, 0.0))
-        if wvis > 0.01:
-            w0, w7 = st.get("windows", (0.186, 0.613))
-            pos = w0 + int(wi) * (w7 - w0) / 7.0
-            amp = wvis * (0.55 + 0.35 * math.exp(-(T - self.last_beat) / 0.3))
-            frame += np.outer(np.exp(-((x - pos) / 0.03) ** 2) * amp, CW_WIN[int(wi) % 8])
+        # Fenster: weiche Lichtpunkte in ihrer Farbe an ihrer Bildposition
+        for wx, wc, wl in st.get("wins", ()):
+            frame += np.outer(np.exp(-((x - wx) / 0.018) ** 2) * 0.32 * min(1.2, wl), np.asarray(wc, dtype=float))
         # Tanzball: Girlanden, Birnen alle 6 LEDs in den Fensterfarben, je Beat im Wechsel
         dance = float(st.get("dance", 0.0))
         if dance > 0.01:

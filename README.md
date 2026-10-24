@@ -838,28 +838,17 @@ Farbwechsel des Y und die Schleifen laufen rückwärts, Stille = nur Glimmen und
 Controller `visualizers/scenes/flux.py`, Shader `visualizers/shaders/flux/frag.glsl`.
 Test: `python -m visualizers.engine flux --test-signal --demo`.
 
-**Uhrturm (Taste 4 im Thema ZURÜCK IN DIE ZUKUNFT, `clocktower`):** Das Gegenstück zu HAL 3000. Das Rathaus in der
-Gewitternacht (`assets/future/clocktower_scene.png`), das leere Zifferblatt bekommt im Shader seine Zeiger: der
-Sekundenzeiger tickt auf jeden Beat, die großen Zeiger kriechen mit der Energie von 21:00 Richtung 22:04, in Stille
-tickt die Uhr wie eine echte. Bei 22:04 (oder Drop oder Startknopf) schlägt der Blitz in den Turm, das Kabel zur
-Laterne glüht, Weißblitz, die Uhr bleibt zehn Sekunden stehen und läuft dann zurück. Die acht Schaufenster unter dem
-Turm sind die acht Spektrumbänder, Lauflicht über Fenster und Laternen auf den Beat, Bass lässt die Wolken von innen
-leuchten und den Turm beben, Mitten sind Wetterleuchten, Höhen Regen und Funken am Kabel. Knüppel links = der
-Professor hängt am Zifferblatt (Posen auf den Beat, beim Blitz erschrickt er), rechts = die Zeitmaschine rast mit
-Feuerspuren über den Platz, oben = beide, unten = Tanzball (Girlanden-Lichter über dem Platz blinken im Takt, ein Paar
-aus 1955 tanzt), Kippschalter AN = Nahaufnahme aufs Zifferblatt, AUS = zurück. Figuren aus `clocktower_figures.png`
-(8x3: Professor, Zeitmaschine, Tanzpaar). Board `clocktower`, `clocktower_doc`, `clocktower_car`, `clocktower_both`,
-`clocktower_dance`, `clocktower_strike`. `[scenes.clocktower]` `clock` (x, y, Radius), `windows` (x erste, x letzte,
-y, Breite), `cable` (Turm zu Laterne), `ground` (Fuß der Häuser für die Pfützen). Controller
-`visualizers/scenes/clocktower.py`, Shader `visualizers/shaders/clocktower/frag.glsl`.
-Die Nacht spielt sich auch ohne Knüppel selbst ab, rund drei Minuten je Runde: in der ruhigen Nacht klettert der Professor
-ab und zu am Turm hoch, ein Paar tanzt in einem der Schaufenster (acht Neonfarben wie beim Tanzabend, die Pfützen spiegeln
-sie) oder ein Funke springt übers Kabel; ab 21:50 zieht das Gewitter auf (dichter Regen, ferne Blitze, die Uhr rückt
-heran, der Professor hängt am Zeiger); ab 22:02 läuft ein Countdown, die Zeitmaschine wartet am Platzrand, das Kabel
-knistert; um 22:04 schlägt der Blitz ein und die Zeitmaschine rast mit Feuerspuren los. Ein Drop vor 21:38 bringt nur
-einen Gewitterstoß und springt zehn Minuten vor. LED-Kette (Programm `clockwork`): goldener Zeitbalken von vorne nach
-hinten bis 22:04, Sekundenzeiger als Punkt, Gewitterblau mit Regen und Laternen, Blitze, Feuerspur, blau-weißes Flackern
-solange die Uhr steht. Test: `python -m visualizers.engine clocktower --test-signal --demo`.
+**Uhrturm (Taste 4 im Thema ZURÜCK IN DIE ZUKUNFT, `clocktower`):** Das Gegenstück zu HAL 3000, filmisch statt Comic.
+Nah am Turm in der Gewitternacht: oben das große Zifferblatt mit Messingzeigern, darunter eine verwinkelte Fassade mit 13
+schiefen Fenstern, unten nasse Straße. Jedes Fenster hat sein eigenes Licht, das auf den Beat die Farbe wechselt und mit
+einem Frequenzband atmet; darin wechseln Silhouetten (tanzende Paare, Gitarrist, Hund, Hand und Gesicht an der Scheibe …).
+Die Nacht läuft von selbst in rund drei Minuten: der Professor klettert die Fassade hoch, ab 21:50 zieht das Gewitter auf,
+ab 22:02 läuft ein Countdown, um 22:04 spielt die Uhr verrückt (Zeiger rasen, das Zifferblatt wird durchsichtig, dahinter
+dreht sich das Uhrwerk), dann schlägt der Blitz ein, das Glas springt, alle Fenster gleißen auf und die Zeitmaschine rast
+mit Feuerspuren über die Straße. Knüppel links = Professor, rechts = Zeitmaschine, oben = alle Fenster wechseln, unten =
+Tanzabend, Startknopf = 22:04 sofort, Kippschalter = Nahaufnahme. Bilder: `docs/future_plan.md` Runde 3, Schnitt
+`scripts/clocktower_assets.py`. LED-Kette: Programm `clockwork` (Zeitbalken bis 22:04, Sekundenzeiger, Fensterfarben,
+Gewitter, Blitz, Feuerspur). Test: `python -m visualizers.engine clocktower --test-signal --demo`.
 
 **Almanach (Taste 5 im Thema ZURÜCK IN DIE ZUKUNFT, `almanacslots`):** Das Gegenstück zur Slotmaschine, gleicher
 Aufbau: **drei Walzen** füllen das Bild, darüber der Casino-Rahmen von 1985 (`assets/slots/future_frame.png`: Gold,

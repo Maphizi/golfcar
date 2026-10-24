@@ -196,12 +196,9 @@ base_zoom = 0.5            # Grundnähe (0 = ganzes Foto, 1 = Nahaufnahme wie Ki
 
 [scenes.clocktower]
 shader = "clocktower"
-controller = "clocktower"  # Uhrturm (Zukunft-Taste 4)
+controller = "clocktower"  # Uhrturm (Zukunft-Taste 4): Zifferblatt und Fenster kommen aus assets/future/clocktower_layout.json
 render_scale = 0.6
-clock = [0.667, 0.824, 0.045]            # Zifferblatt x, y, Radius (am Foto gemessen)
-windows = [0.186, 0.613, 0.268, 0.044]   # Schaufenster: x erste, x letzte (8 von 9, das neunte liegt unter dem Turm), y Mitte, Breite
-cable = [0.714, 0.764, 0.922, 0.463]     # Kabel Turm -> Laterne: x0, y0, x1, y1
-ground = 0.205                           # Fuß der Häuser: darunter spiegeln die Pfützen die Schaufenster
+cable = [0.646, 0.676, 0.69, 0.33, 0.87, 0.26]   # Kabel vom Sims zur Laterne: Bezier P0, P1, P2 (x, y von unten)
 
 [scenes.almanacslots]
 shader = "slots"

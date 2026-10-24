@@ -20,8 +20,8 @@ echo "== Fluxkompensator =="
 plate flux_scene flux_scene.png
 slice flux_objects flux_objects.png 6 4 192
 echo "== Uhrturm =="
-plate clocktower_scene clocktower_scene.png
-slice clocktower_figures clocktower_figures.png 8 3 192
+slice clocktower_figures clocktower_figures.png 8 3 192   # Professor/Zeitmaschine für Paradoxon und Almanach
+$PY scripts/clocktower_assets.py 2>/dev/null | grep -v "^pygame\|^Hello"   # neuer Uhrturm (Runde 3)
 echo "== Almanach =="
 plate almanac_scene almanac_scene.png
 s=$(f almanac_symbols); [ -n "$s" ] && $PY - "$s" "$OUT/almanac_symbols.png" <<'PYEOF' 2>/dev/null
