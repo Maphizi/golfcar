@@ -140,8 +140,8 @@ class LedStream:
         self.mq_flip_at = 0.0
         # zweites Muster "Lauflicht": ein Block an, einer aus, im Wechsel; hüpft je Beat einen Block weiter, Drop = Richtung
         # umkehren und meist neue Farbe; wechselt sich mit der Markise ab (mq_mode 0 Markise, 1 Lauflicht, mq_mix = Überblendung)
-        self.mq_mode = 0
-        self.mq_mix = 0.0
+        self.mq_mode = 1                                          # beginnt mit dem Lauflicht
+        self.mq_mix = 1.0
         self.mq_mode_at = time.monotonic() + self.rng.uniform(45.0, 90.0)
         self.chase_ci = 0                                         # Lauflichtfarbe: 0 A, 1 B, 2 A mit gedrehtem Farbton
         self.chase_hue = 0.0
@@ -411,9 +411,9 @@ class LedStream:
 
     # -- Programme -----------------------------------------------------------------------------------------------
     def _slots(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
-        """Casino-Markise wie ein Vegas-Eingang: Blöcke in derselben Farbe (Farbe A hell, Farbe A gedimmt, Farbe B hell im Wechsel, kein Weiß), alle an, nur die Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat weiter (1 2 3 4), weich eingerastet, mal vor, mal zurück,
+        """Casino-Markise wie ein Vegas-Eingang: Blöcke aus je drei Ansteuerpunkten in derselben Farbe (Farbe A hell, Farbe A gedimmt, Farbe B hell im Wechsel, kein Weiß), alle an, nur die Helligkeit wandert leicht; das Muster rückt genau einen Block je Beat weiter (1 2 3 4), weich eingerastet, mal vor, mal zurück,
         beim Drehen läuft es schnell von selbst; alle paar Beats wechseln die Farben durch, ab und zu kehrt die Richtung um. Zweites Muster
-        (Lauflicht, wechselt sich alle 45-90 s mit der Markise ab, weich überblendet): ein Ansteuerpunkt an, der nächste aus, ganz mechanisch
+        (Lauflicht, beginnt damit und wechselt sich alle 45-90 s mit der Markise ab, weich überblendet): ein Ansteuerpunkt an, der nächste aus, ganz mechanisch
         ohne Gleiten und Flimmern; auf jedem Beat springt das Muster hart einen Punkt weiter (an wird aus, aus wird an), beim Drop kommt
         eine neue Farbe. Gewinn: klein = zweimal
         Blitzen, groß = heller Lauf von vorne, Jackpot = Gold/Weiß-Stroboskop und Funkeln."""
@@ -449,7 +449,7 @@ class LedStream:
         if now >= self.mq_flip_at:                                # auch ohne Musik ab und zu umkehren
             self.mq_dir *= -1.0
             self.mq_flip_at = now + self.rng.uniform(6.0, 14.0)
-        block = max(3, n // 60)                                   # Blockgröße nach LED-Dichte (784 LEDs -> 13 LEDs, ~8 cm)
+        block = 3                                                 # drei Ansteuerpunkte je Farbe, kurze Blöcke wie am Casino-Eingang
         period = 3 * block
         if spinning:                                              # Walzen drehen: läuft von selbst, schnell
             self.mq_pos += self.mq_dir * block * 4.0 * dt
