@@ -1,6 +1,7 @@
 # Ansagen beim Moduswechsel und beim Boot. Werden einmal mit Piper vorgerendert
 # (scripts/announce_build.sh -> models/announce/*.wav) und vom Launcher ohne Verzögerung abgespielt.
-# Pro Eintrag wird zufällig ein Satz gewählt. Leere Liste = keine Ansage.
+# Pro Eintrag wird zufällig ein Satz gewählt, die zuletzt gespielten (gut die Hälfte) kommen erst danach wieder
+# (logs/announce_recent.json). Leere Liste = keine Ansage.
 
 enabled = true
 volume = 0.6
@@ -10,11 +11,19 @@ boot = [
   "KITT-Cart online. Hyperantrieb getarnt, Schilde bereit. Pilot leider auch.",
   "Systeme hochgefahren. Droidenkern aktiv. Ich bin bereit. Du hoffentlich auch.",
   "Guten Tag, Pilot. Ich übernehme die Systeme, du das Steuer. Vorerst.",
+  "Bordsysteme online. Treibstoff: Strom. Ziel: unklar. Stimmung: kosmisch.",
+  "Antrieb warm, Lichter an, Musik bereit. Fehlt nur noch jemand mit Plan.",
+  "Hallo, Pilot. Ich habe die Nacht durchgerechnet. Ergebnis: Wir fahren.",
+  "Startsequenz abgeschlossen. Bitte anschnallen. Oder wenigstens festhalten.",
+  "Ich bin wach. Das Universum ist groß. Der Golfplatz zum Glück nicht.",
 ]
 gaming = [
   "Holo-Arcade. Natürlich.",
   "Spielkonsole aktiviert. Deine Reflexe werden ab jetzt protokolliert.",
   "Simulationsdeck geladen. Ich dachte, wir wären hier zum Golfen.",
+  "Arcade. Ich drücke dir die Daumen. Ich habe keine.",
+  "Spielzeit. Wer verliert, schiebt das Taxi.",
+  "Holo-Arcade geladen. Pausen gibt es nur für die Hupe.",
 ]
 pond = [
   "Der Moorsee. Bitte nichts hineinwerfen, was man noch braucht.",
@@ -27,28 +36,48 @@ trip = [
 viz_psychedelic = [
   "Hyperraum. Bitte trotzdem auf den Fairway achten.",
   "Sprung vorbereitet. Koordinaten: irgendwo zwischen Loch vier und fünf.",
+  "Navigationscomputer. Startknopf, und wir sind weg.",
+  "Kurs gesetzt. Ziel: alles, was leuchtet.",
+  "Hyperantrieb vorgeglüht. Der Kippschalter holt uns wieder runter.",
+  "Sterne auf Vorwärts. Bitte keine Asteroiden anfassen.",
+  "Navigationsmodus. Ich fliege, du schaust. Faire Arbeitsteilung.",
+  "Wurmloch, Nebel, Kometen. Das Übliche für einen Dienstag.",
 ]
 viz_crt = [
   "Zielcomputer aktiv. Er zielt auf nichts, aber er sieht gut dabei aus.",
   "Zielerfassung. Bitte nicht auf das Clubhaus.",
+  "Zielcomputer. Fadenkreuz kalibriert, Ziel weiterhin unklar.",
 ]
 viz_eye = [
   "Taktik-Scanner. Fremde Gleiter in Reichweite: zwei. Beide langsamer als wir.",
   "Scanner aktiv. Ich sehe alles. Das meiste ignoriere ich.",
+  "Scanner läuft. Keine Feinde. Nur ein paar Golfer.",
 ]
 campfire = [
   "Lagerfeuer am Außenposten. Ich simuliere Wärme. Mehr geht nicht.",
   "Feuer an, zwei Monde oben. Marshmallows bringst du selbst mit.",
   "Ein Lagerfeuer auf einem fremden Planeten. Romantik, technisch gelöst.",
+  "Rast am Rand der Galaxis. Holz liegt oben, Funken unten.",
+  "Zeit für eine Pause. Das Feuer brennt, der Saturn dreht sich.",
+  "Lagerfeuer. Hier erzählt man Geschichten. Meine sind alle wahr.",
+  "Feuer an. Bitte keine Marshmallows in den Antrieb.",
+  "Knistern, Funken, Polarlicht. Ich könnte mich daran gewöhnen.",
 ]
 blackhole = [
   "Schwarzes Loch voraus. Ich halte Abstand. Du hoffentlich auch.",
   "Ereignishorizont in Sicht. Dahinter kein Empfang, auch kein Golf.",
   "Singularität. Alles fällt rein, sogar deine Handicaps.",
+  "Das Schwarze Loch. Knüppel zur Seite, und ein Planet ist Geschichte.",
+  "Gravitation auf Maximum. Bitte Kleingeld festhalten.",
+  "Hier verschwindet sogar Licht. Deine Ausreden zuerst.",
+  "Ein Loch im Universum. Wir parken am Rand.",
+  "Schwerkraft wie in einer Montagsbesprechung. Nichts kommt wieder raus.",
 ]
 news = [
   "Galaktische Nachrichten. Alles erfunden, nichts davon falscher als die echten.",
   "Sender wird aufgebaut. Die Redaktion ist ein Droide mit Fantasie.",
+  "Nachrichten aus dem All. Heute: nichts Neues, aber laut.",
+  "Die Galaxis berichtet. Ich habe nichts davon geprüft.",
 ]
 hearttree = [
   "Der Herzbaum. Er schlägt im Takt. Deinem, hoffentlich.",
@@ -65,28 +94,61 @@ woodeye = [
 hal = [
   "HAL wird geweckt. Bitte nicht erschrecken, er meint es gut. Sagt er.",
   "Zentralrechner online. Er sieht alles. Er beurteilt auch alles.",
+  "HAL 3000. Er hört zu. Ob er versteht, ist eine andere Frage.",
+  "Guten Abend. Hier spricht HAL. Bitte keine Kapseltüren öffnen.",
+  "Der Zentralrechner ist wach. Er hat schlecht geschlafen.",
+  "HAL ist online. Sprich deutlich, er ist empfindlich.",
+  "Rotes Auge, ruhige Stimme. Alles unter Kontrolle. Seiner.",
+  "HAL übernimmt. Keine Panik. Das sagt er immer.",
 ]
 droid = [
   "Bord-Droide wird geweckt. Ich übernehme keine Haftung für sein Niveau.",
   "BIBO kommt. Er ist nicht klug, aber er meint es gut.",
+  "BIBO ist da. Er hat geübt. Man hört es nicht.",
+  "Der Droide ist wach. Bitte langsam sprechen, er ist neu hier.",
 ]
 slots = [
   "Slotmaschine. Die Bank gewinnt, der Automat schwebt, du staunst.",
   "Glücksspiel im Orbit. Einsatz zehn Credits, Hoffnung unbezahlbar.",
   "Walzen laufen. Ich habe die Quoten gesehen. Du nicht.",
+  "Casino im All. Der Hebel ist der Startknopf, das Glück ist Zufall.",
+  "Drei Walzen, null Garantie. Viel Spaß.",
+  "Willkommen am Automaten. Hausregel: Das Haus hat recht.",
+  "Einsatz bitte. Ich zähle mit. Leider.",
+  "Klingeling. Das ist nicht dein Gewinn, das ist die Begrüßung.",
 ]
 error = [
   "Systemfehler. Keine Sorge, der ist Absicht. Glaube ich.",
   "Kernbruch simuliert. Alles rot, nichts kaputt. Vermutlich.",
   "Fehlerbild aktiv. Wenn das echt wäre, hätte ich mich nicht gemeldet.",
+  "Achtung. Alles bricht zusammen. Planmäßig.",
+  "Fehlermodus. Bitte Ruhe bewahren. Ich tue es auch. Fast.",
+  "Rote Lampen überall. Hübsch, oder?",
+  "Systemabsturz bestellt, Systemabsturz geliefert.",
+  "Grün gegen Rot. Wer gewinnt, entscheidet die Musik.",
 ]
 home = [
   "Hauptmenü.",
   "Zurück zur Brücke. Eine deiner besseren Entscheidungen.",
+  "Zurück am Taxistand.",
+  "Taxistand. Der Zähler läuft, die Sterne auch.",
+  "Basis erreicht. Ich habe dich vermisst. Ein bisschen. Statistisch.",
+  "Brücke. Wohin als Nächstes, Pilot?",
+  "Startbildschirm. Alles auf Anfang, nur die Musik nicht.",
+  "Wieder daheim. Daheim ist, wo die Steckdose ist.",
 ]
 theme = [   # Begrüßung, wenn am Taxistand ein Thema gewählt wird (Themen können eigene haben)
   "Thema gewählt. Ich passe mich an. Widerwillig, aber ich passe mich an.",
   "Neues Programm geladen. Die Sterne bleiben die alten.",
+  "Neues Thema. Gleiches Taxi, andere Galaxis.",
+  "Umgebaut in Rekordzeit. Bitte nicht nach den Schrauben fragen.",
+  "Programm gewechselt. Die Fahrgäste merken es nie.",
+  "Tapetenwechsel im Orbit. Steht dir.",
+]
+planeten = [
+  "Sternenhimmel. Leertaste, und wir springen.",
+  "Planeten voraus. Bitte rechts halten.",
+  "Der Himmel ist offen. Wir auch.",
 ]
 kitt = []   # der Bordcomputer-Modus begrüßt selbst ([ui].greeting in kitt.toml)
 
@@ -103,55 +165,95 @@ theme = [
   "Der Wald hat dich bemerkt. Er ist nicht beeindruckt, aber er lässt dich fahren.",
   "Willkommen unter den Wurzeln. Die Bäume haben gesprochen. Du darfst bleiben.",
   "Moos auf den Sitzen, Pilze im Tank. Das Grün übernimmt.",
+  "Grün gewählt. Die Bäume nicken. Langsam, aber sie nicken.",
+  "Willkommen im Wald. Hier hat alles Wurzeln, außer dir.",
+  "Das Moos übernimmt das Steuer. Es fährt sehr vorsichtig.",
 ]
 boot = [
   "Der Wald erwacht. Langsam. Alles hier ist langsam, außer dir.",
   "Die Wurzeln sind wach, die Pilze sind wach. Der Fahrer, mal sehen.",
   "Guten Abend, Wanderer. Der Wald fährt mit. Er sitzt hinten.",
+  "Die Pilze haben gezählt. Du bist wieder da.",
+  "Morgentau auf dem Lenkrad. Der Wald wünscht eine gute Fahrt.",
+  "Der Wald atmet ein. Und wartet, bis du losfährst.",
+  "Erwacht. Die Frösche haben schon gestimmt. Für dich, knapp.",
 ]
 home = [
   "Zurück am Waldrand.",
   "Der Taxistand im Moos. Die Schnecke war schneller als du. Wieder.",
   "Am Waldrand. Die Eule hat deine Rückkehr protokolliert.",
+  "Zurück im Moos.",
+  "Der Taxistand unter der Eiche. Sie war vor dir hier.",
+  "Am Waldrand. Die Pilze haben dich vermisst. Einer zumindest.",
+  "Wieder hier. Der Fuchs hat dein Taxi bewacht. Gegen Bezahlung.",
 ]
 trip = [
   "Der Waldtresen ist geöffnet. Iss, was leuchtet. Bereue, was danach kommt.",
   "Die Speisekarte des Waldes. Der Fliegenpilz empfiehlt sich selbst.",
   "Setz dich an den Tresen. Der Frosch mixt heute. Er hat keine Lizenz.",
+  "Der Tresen ist gedeckt. Die Pilze sind höflich, die Folgen nicht.",
+  "Hunger? Der Wald kocht. Mit Zutaten, die man nicht nachfragt.",
+  "Bitte Platz nehmen. Das Menü wechselt, während du liest.",
+  "Ein Bissen, und die Bäume tanzen. Zwei, und du tanzt mit.",
 ]
 pond = [
   "Der Moorsee. Was hineinfällt, kommt anders zurück.",
   "Stilles Wasser, tiefer Strudel. Wirf nichts hinein, was dich mag.",
   "Der See schläft. Weck ihn ruhig. Er hat Hunger.",
+  "Das Moor glänzt. Etwas darunter glänzt zurück.",
+  "Wasser, Schilf, ein Strudel. Der Frosch passt auf.",
+  "Der See singt leise. Die Pflanzen wachsen, wenn du die Musik lauter machst.",
+  "Moorsee. Wer hier Steine hüpfen lässt, bekommt Antwort.",
 ]
 woodeye = [
   "Der Wald öffnet ein Auge. Starre nicht zurück. Du verlierst.",
   "Das Auge erwacht. Die Frösche nehmen ihre Plätze ein. Jeder sein Ton.",
   "Es sieht dich. Es sah dich schon, als du noch an der Tankstelle warst.",
+  "Das Auge zwinkert. Das ist ein gutes Zeichen. Meistens.",
+  "Es blickt dich an. Die Zwerge ducken sich schon.",
+  "Der Wald hat ein Auge auf dich geworfen. Wörtlich.",
+  "Die Eule kennt dich. Das Auge auch. Die Frösche fragen noch.",
 ]
 forestslots = [
   "Der Pilzautomat. Der Wald gibt, der Wald nimmt. Meist nimmt er.",
   "Zieh den Hebel. Die Eicheln sind schon weg, du weißt es nur noch nicht.",
   "Der Lichthirsch zahlt aus. Einmal im Jahrhundert. Dieses war es nicht.",
+  "Vier Walzen voller Pilze. Einer davon ist giftig. Für dein Konto.",
+  "Der Automat summt wie eine Biene. Er sticht auch so.",
+  "Drei Fliegenpilze nebeneinander, und der Wald lacht.",
+  "Hebel ziehen, Glück haben. Oder Moos. Moos gibt es immer.",
 ]
 hearttree = [
   "Der Herzbaum. Er schlägt im Takt der Musik. Lehn dich nicht an, er merkt das.",
   "Ein Baum mit Puls. Älter als dein Golfplatz, geduldiger als du.",
   "Hörst du es schlagen? Das ist nicht dein Herz. Noch nicht.",
+  "Der Herzbaum schlägt. Im Frühling schneller, im Winter leise.",
+  "Spürst du den Takt? Die Wurzeln spüren ihn auch.",
+  "Ein Baum mit Herz. Bitte nicht schnitzen.",
+  "Jede Jahreszeit ein anderer Schlag. Hör genau hin.",
 ]
 overdose = [
   "Zu viel gegessen. Der Wald dreht sich jetzt mit dir. Halt dich an nichts fest, es hat Augen.",
   "Überdosis. Die Schnecke ruft den Notdienst. Sie ist langsam.",
   "Das war der falsche Pilz. Oder der richtige. Das weiß man erst nachher.",
+  "Der Wald dreht sich. Das ist normal. Glaub mir.",
+  "Augen zu und durch. Die Eule hilft, wenn du sie rufst.",
+  "Zu viel Wald im Blut. Gegengift links oder rechts.",
+  "Alles verschwimmt. Das Wesen da hinten auch. Hoffentlich.",
 ]
 error = [
   "Störung im Wald. Ein Pilz hat sich ins System gesetzt. Er bleibt.",
   "Die Wurzeln haben ein Kabel gefunden. Sie fanden es lecker.",
   "Fehler. Der Wald kennt keine Fehler, nur Kompost.",
+  "Der Wald hat einen Schluckauf.",
+  "Ein Specht hackt im System. Er findet es lustig.",
+  "Rot im Unterholz. Die Pilze kümmern sich.",
 ]
 gaming = [
   "Die Spielhöhle unter den Wurzeln. Die Eule führt die Bestenliste.",
   "Arcade im Baumstumpf. Deine Reflexe hat der Fuchs schon bewertet.",
+  "Spielen im Wald. Die Eichhörnchen wetten gegen dich.",
+  "Arcade unter dem Blätterdach. Der Hirsch hält den Rekord.",
 ]
 droid = [
   "Der Bord-Droide wird geweckt. Der Wald hätte lieber einen Igel gehabt.",
@@ -179,53 +281,93 @@ theme = [
     "Verbindung steht. Willkommen in Sektor 7. Deine Daten sind bereits unterwegs.",
     "Neon geladen. Regen geladen. Fahrer wird geladen. Bitte warten.",
     "Cyberpunk aktiv. Der Konzern grüßt. Der Konzern grüßt immer.",
+    "Cyberpunk. Regen, Neon, und kein Netz, das dich nicht kennt.",
+    "Du bist jetzt Teil der Stadt. Sie hat nicht gefragt.",
+    "Sektor 7 geladen. Bitte Chrom anlegen.",
 ]
 boot = [
     "System hochgefahren. Die Stadt schläft nie. Du auch nicht mehr.",
     "Guten Abend, Fahrer. Dein Puls wurde registriert. Zur Sicherheit.",
     "Online. Das Netz hat dich gesehen. Es findet dich interessant.",
+    "Neustart abgeschlossen. Die Stadt hat nicht gewartet.",
+    "Nachtschicht beginnt. Wie jede Nacht. Für immer.",
+    "Verbindung zum Netz steht. Drei Werbeangebote warten auf dich.",
+    "Implantate kalibriert. Fahrer bestätigt. Leider.",
 ]
 home = [
     "Zurück am Taxistand. Der Regen hat gewartet.",
     "Sektor 7, Taxistand. Die Neonkatze hat deinen Platz freigehalten.",
     "Am Stand. Das Taxameter läuft trotzdem.",
+    "Zurück in Sektor 7.",
+    "Taxistand. Der Regen fällt, die Preise steigen.",
+    "Am Stand. Die Drohne über dir ist nur zufällig da.",
+    "Wieder hier. Die Neonkatze hat geschnurrt. Ein seltenes Kompliment.",
 ]
 neonrace = [
     "Neonfahrt. Startknopf, und die Stadt zieht vorbei. Bremsen ist Verhandlungssache.",
     "Scheibenwischer an, Neon an, Verstand aus. Losfahren.",
     "Die Straße gehört dir. Die Polizeidrohnen sehen das anders.",
+    "Die Stadt rauscht vorbei. Nicht nach hinten schauen, da ist nur Werbung.",
+    "Autopilot aktiv. Er fährt schneller als erlaubt. Absichtlich.",
+    "Neue Bezirke, alte Probleme. Gas geben.",
+    "Hupe ist oben, Rückspiegel unten. Bremse ist ein Mythos.",
 ]
 core = [
     "Der Kern. Alles, was hineinfällt, wird zu Daten. Auch du, wenn du zu nah kommst.",
     "Reaktorkern online. Bitte nichts Wertvolles hineinwerfen. Oder doch.",
     "Der Kern hat Hunger. Füttere ihn mit dem Knüppel.",
+    "Datenstrom offen. Der Kern trinkt alles.",
+    "Hier wird gerechnet, gestrahlt und verschluckt. Meist alles gleichzeitig.",
+    "Der Kern pulsiert im Beat. Er mag deine Musik. Er mag nichts sonst.",
+    "Kernzone. Bitte nur mit Schutzbrille starren.",
 ]
 oracle = [
     "Das Orakel erwacht. Es weiß, was du gleich fragst. Es weiß auch die Antwort. Es sagt sie nicht.",
     "Hologramm geladen. Die Maske spricht, wenn du den Startknopf drückst. Höflich sein.",
     "Das Orakel. Acht Tafeln, eine Wahrheit, keine Garantie.",
+    "Das Orakel schläft nie. Es tut nur so.",
+    "Frag nicht. Es antwortet trotzdem.",
+    "Die Maske lächelt. Das Gesicht darunter nicht.",
+    "Orakel online. Es kennt deine Zukunft. Es findet sie langweilig.",
 ]
 cyberslots = [
     "Pachinko. Der Konzern gewinnt. Die Katze auch. Du nicht.",
     "Hebel ziehen, Eddies verlieren. Willkommen in Sektor 7.",
     "Der KI-Kern zahlt aus. Einmal pro Jahrhundert. Dieses nicht.",
+    "Fünf Walzen, ein Konzern, null Mitleid.",
+    "Pachinko. Die Kugeln rollen, dein Kontostand auch.",
+    "Die Netzgeister drehen mit. Sie spielen falsch.",
+    "Einsatz erhöht. Der Konzern bedankt sich.",
 ]
 rooftop = [
     "Dachterrasse. Die Stadt pulst. Nicht anlehnen, das Geländer ist nur Hologramm.",
     "Über den Dächern. Regen, Neon, und ein Fahrer, der nicht runterschauen sollte.",
     "Die Stadt von oben. Jedes Fenster ein Leben. Keins davon deins.",
+    "Auf dem Dach. Säureregen heute, mit Aussicht.",
+    "Die Stadt unter dir flackert. Stromausfall ist hier Romantik.",
+    "Wetterbericht: Asche, Neon, gelegentlich Feuerwerk.",
+    "Dachterrasse. Der EMP ist nur zur Deko. Meistens.",
 ]
 blackice = [
     "Einbruch erkannt. Das ICE ist schwarz. Dein Puls auch gleich.",
     "Du wurdest zurückverfolgt. Der Konzern schickt Grüße. Und Daemonen.",
     "Black Ice. Jack out, solange du noch kannst. Oder bleib. Das ICE ist geduldig.",
+    "Alarmstufe Schwarz. Die Bildschirme sehen dich.",
+    "Trace läuft. Bitte nicht nervös werden. Das sieht man.",
+    "Eingedrungen. Und jetzt bemerkt. Klassiker.",
+    "Die Monitore flackern. Jemand schaut zurück.",
 ]
 error = [
     "Störung im Netz. Ein Daemon hat sich festgesetzt. Er bleibt.",
+    "Fehler im System. Der Konzern nennt es Feature.",
+    "Systemabsturz. Bitte nicht den Stecker ziehen, er ist vergoldet.",
+    "Glitch. Er ist hübsch. Lass ihn.",
 ]
 gaming = [
     "Arcade geladen. Deine Highscores gehören dem Konzern.",
     "Spielhalle Sektor 7. Die Katze führt die Bestenliste.",
+    "Arcade. Jeder Punkt wird verkauft.",
+    "Spielhalle. Neon an, Verstand aus.",
 ]
 droid = [
     "Der Bord-Droide wird geweckt. Der Konzern hätte lieber einen Toaster geschickt.",
@@ -253,53 +395,93 @@ theme = [
     "Großer Gott! Die Zeitkreise sind an. Achtundachtzig Meilen pro Stunde, und wir sehen uns in der Zukunft.",
     "Zurück in die Zukunft. Wo wir hinfahren, brauchen wir keine Straßen. Fairways reichen.",
     "Plutonium ist im Kofferraum, der Fluxkompensator fluxt. Einsteigen, Marty. Äh, Fahrer.",
+    "Zeitmaschine bereit. Ziel: irgendwann. Abfahrt: jetzt.",
+    "Großer Gott, das Taxi ist ein Zeitreisemobil!",
+    "Willkommen im Jahr ... Moment, ich schaue nach.",
 ]
 boot = [
     "Zeitkreise hochgefahren. Zielzeit: Loch neunzehn. Jetztzeit: zu spät. Zuletzt abgefahren: egal.",
     "Großer Gott, es funktioniert! Die Maschine läuft. Bitte nicht die Flügeltüren im Gewitter öffnen.",
     "Eins Komma einundzwanzig Gigawatt. Hab ich. Blitz fehlt noch. Fahr einfach los.",
+    "Der Fluxkompensator glimmt. Das ist gut. Glaube ich.",
+    "Datum eingestellt, Gurte angelegt, Hund im Kofferraum. Nein, Scherz.",
+    "Zeitkreise hochgefahren. Bitte nicht die Vergangenheit ändern. Zumindest nicht viel.",
+    "Guten Morgen! Oder Abend. In welchem Jahr sind wir eigentlich?",
 ]
 home = [
     "Zurück am Taxistand. Welches Jahr haben wir? Egal, der Kaffee ist derselbe.",
     "Taxistand, Jetztzeit. Die Zeitkreise bleiben an, für alle Fälle.",
     "Am Stand. Wenn das hier 1955 ist, bitte niemandem sagen, wer du bist.",
+    "Zurück in der Gegenwart. Halbwegs.",
+    "Taxistand. Die Uhr geht vor. Oder wir nach.",
+    "Am Stand. Der Professor ist schon wieder weg. Im Jahr 1885.",
+    "Wieder hier. Hast du jemandem aus der Zukunft erzählt? Nicht?",
 ]
 timejump = [
     "Zeitsprung. Gas geben, achtundachtzig Meilen, und die Straße ist ein anderes Jahr. Festhalten!",
     "Zeitkreise an. Der Tacho folgt der Musik. Bei achtundachtzig wird es ernst.",
     "Wo wir hinfahren, brauchen wir keine Straßen. Trotzdem: Spur halten.",
+    "Gas geben! Bei achtundachtzig wird es hell.",
+    "Die Epochen ziehen vorbei. Bitte keine Dinosaurier überfahren.",
+    "Zeitsprung vorbereitet. Die Reifen brennen schon.",
+    "Neunzehnhundertfünfundfünfzig, wir kommen! Oder zweitausendfünfzehn. Egal.",
 ]
 flux = [
     "Der Fluxkompensator. Er macht Zeitreisen möglich. Und er frisst alles, was du hineinwirfst.",
     "Fluxkompensator online. Bitte den Hund nicht hineinwerfen. Er war schon mal in der Zukunft.",
     "Drei Lichtarme, ein Y, eins Komma einundzwanzig Gigawatt. Was kann schon schiefgehen?",
+    "Er fluxt! Er fluxt!",
+    "Ladung steigt. Bei voll gibt es einen Blitz. Ganz normal.",
+    "Bitte nichts Wertvolles in den Kompensator. Die Zeit frisst es.",
+    "Gewitter oben, Paradoxon unten, Gigawatt in der Mitte.",
 ]
 clocktower = [
     "Der Uhrturm. Zweiundzwanzig Uhr vier. Der Blitz kommt, das Kabel hält hoffentlich.",
     "Uhrturm. Der Sekundenzeiger tanzt zur Musik. Ich hänge am Zifferblatt. Nicht schon wieder.",
     "Rettet den Uhrturm! Oder lasst den Blitz einschlagen. Beides geht.",
+    "Der Blitz schlägt um zweiundzwanzig Uhr vier ein. Pünktlich wie nie.",
+    "Die Uhr steht. Das war der Blitz. Damals.",
+    "Schaufenster leuchten, Zeiger tanzen. Das Kabel hält. Hoffentlich.",
+    "Uhrturm. Hier ist die Zeit stehen geblieben. Und dann weitergerannt.",
 ]
 almanacslots = [
     "Der Almanach. Ein Casino aus dem falschen 1985. Hier gewinnt immer der Falsche.",
     "Hebel ziehen. Wer den Sportalmanach hat, kennt das Ergebnis. Du hast ihn nicht.",
     "Casino. Zweiundzwanzig Uhr vier dreifach ist der Jackpot. Der Blitz zahlt aus.",
+    "Ein Casino voller Sportergebnisse. Alle aus der Zukunft.",
+    "Hier gewinnt, wer schummelt. Also nicht du.",
+    "Drei Walzen, drei Zeitalter, ein Almanach.",
+    "Der Automat kennt das Ergebnis. Er verrät es nicht.",
 ]
 square = [
     "Der Marktplatz. Vier Epochen, ein Rathaus, immer dieselbe Uhr. Knüppel links ist früher, rechts ist später.",
     "Marktplatz. 1885, 1955, 1985, 2015. Such dir ein Jahr aus, der Turm bleibt.",
     "Hier stand ich schon mit Kabel in der Hand. Die Uhr geht immer noch falsch.",
+    "Marktplatz. Die Uhr springt durch die Jahrhunderte.",
+    "Pferdekutsche, Cadillac, Schwebeboard. Selber Platz.",
+    "Hier hat sich viel verändert. Nur die Uhr nicht.",
+    "Welches Jahr hättest du gern? Der Knüppel entscheidet.",
 ]
 paradox = [
     "Paradoxon! Die Zeitlinie bricht. Dein Foto verblasst. Das ist schlecht. Großer Gott, das ist sehr schlecht.",
     "Zeitkreise defekt. Dinosaurier im Jahr 1985. Das hatte ich nicht berechnet.",
     "Du hast deine Eltern verhindert. Zumindest fast. Schnell, das Foto!",
+    "Die Geschichte schreibt sich um. Leider falsch.",
+    "Dinge aus der falschen Zeit. Bitte nicht berühren.",
+    "Das Universum knirscht. Das ist nie ein gutes Geräusch.",
+    "Das Foto verblasst. Schnell, Hilfe holen!",
 ]
 error = [
     "Störung in den Zeitkreisen. Das Plutonium ist alle. Bitte an den nächsten Blitz fahren.",
+    "Zeitfehler. Wir sind gleichzeitig hier und gestern.",
+    "Die Zeitkreise flackern. Bitte nicht nachsehen, welches Jahr wir haben.",
+    "Großer Gott. Das war nicht berechnet.",
 ]
 gaming = [
     "Arcade. Wild Gunman. Wie ein Babyspielzeug, sagen die Kinder aus 2015.",
     "Spielhalle 1985. Münzen rein, Jahrzehnt raus.",
+    "Arcade. Der Highscore ist aus dem Jahr 2015.",
+    "Spielhalle. Die Jugend von heute hat keine Ahnung von Joysticks.",
 ]
 droid = [
     "Der Bord-Droide. Hab ich 2015 gekauft. Kommt mit Kaffeefunktion.",

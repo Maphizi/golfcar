@@ -55,7 +55,7 @@ ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-S
   `LedStream` führt `bri` alle 0,5 s nach (`bri_prof` x min(1, dim x Faktor)). keymap `led_up`/`led_down`.
 - Stimme: `launcher/volume_knob.py` (`[volume].enabled = false` am Cart; Stimme folgt der Musik über `voice_gain`): nimmt
   KEY_NEXTSONG/PREVIOUSSONG (`keys`), REL (`rel`) oder ABS-Achse `axis` -> `logs/voice_volume.txt`, von Piper je Satz gelesen. Grundlautstärke aller
-  Sprecher im Verhältnis zur Musik: `[volume].voice_gain` 0.5 (`piper_tts.voice_gain()`, nach mtime gecacht; `voice_volume()` =
+  Sprecher im Verhältnis zur Musik: `[volume].voice_gain` 0.35 (`piper_tts.voice_gain()`, nach mtime gecacht; `voice_volume()` =
   Knopf x Gain, gilt für KITT, HAL, BIBO und die Ansagen in `kitt/announce.py` zusätzlich zu `announce.toml` `volume`).
   REL-Modus nimmt REL_MISC/DIAL/WHEEL/HWHEEL (`REL_CODES`), `RelDecoder` (auch für den Musikknopf): das PXN-CB1 schickt REL_MISC
   ~60/s mit der Knopfstellung, daher 1 s Anlauf, dann zählen nur Änderungen (Differenz 8 Bit, max. 3 Schritte); echte Dreher
@@ -493,6 +493,9 @@ Sternenhimmel mit Warp-Flug-Modus.
 Hall in `PiperTTS`), `[themes.<name>.lines]`. Build rendert je Thema mit eigener Stimme alle Gruppen (`<thema>__<gruppe>_<hash>.wav`),
 lädt fehlende Stimmen per `piper.download_voices` nach. `play(group, target, theme=None)` nimmt das gewählte Thema.
 Launcher: `switch()` gibt den effektiven Modus zurück, `announce(eff)`; Taxistand spielt `theme` beim Bestätigen.
+Je hörbare Gruppe 6-8 Sätze; `_pick()` meidet die zuletzt gespielten (gut die Hälfte der Auswahl, `logs/announce_recent.json`,
+Schlüssel `<thema|standard>:<gruppe>`). Build rendert Standardsätze nicht in der Themenstimme, wenn das Thema den Modus ersetzt
+(`_replaced_modes()` aus themes.toml). Lautstärke aller Sprecher: `[volume].voice_gain` 0.35 in settings.toml.
 
 ## Musik vom Handy (`scripts/setup_cast.sh`)
 Spotify Connect (`kitt-spotify`, librespot/raspotify, Premium nötig) und AirPlay (`kitt-airplay`, shairport-sync) als

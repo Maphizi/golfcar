@@ -32,8 +32,8 @@ every_seconds = 180
 
 [volume]
 # Grundlautstärke ALLER Sprecher (KITT, HAL, BIBO, Ansagen) im Verhältnis zur Musik: 1.0 = wie gerendert, 0.5 = halb
-# so laut (-6 dB). Der Drehknopf (unten) regelt zusätzlich darauf.
-voice_gain = 0.5
+# so laut (-6 dB), 0.35 = gut ein Drittel (-9 dB). Der Drehknopf (unten) regelt zusätzlich darauf.
+voice_gain = 0.35
 # Eigener Drehknopf für die STIMME: am Cart aus (enabled = false), der zweite Knopf regelt die LED-Helligkeit ([led_knob]),
 # der erste die Lautstärke des ganzen Ausgangs ([music]); die Stimme folgt im Verhältnis voice_gain. Bei enabled = true
 # nimmt der Knopf KEY_NEXTSONG/KEY_PREVIOUSSONG (keys = true, ein Raster = step Prozent), REL_MISC (rel) oder eine

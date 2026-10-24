@@ -523,7 +523,7 @@ daneben. Die Datei ist nicht im Repo (Markenrechte), lege sie selbst ab.
   `voice_gain`. Eingeschaltet nimmt der Knopf dieselben Titel-Tasten (`keys = true`) oder eine ABS-Achse `axis` und schreibt
   einen Faktor nach `logs/voice_volume.txt`; jeder Sprecher (KITT, HAL, BIBO, Ansagen) liest ihn vor jedem Satz.
   `max_percent` 130 erlaubt etwas lauter als normal. `target = "sink"` regelt stattdessen alles.
-  Die Grundlautstärke aller Sprecher im Verhältnis zur Musik steht in `[volume].voice_gain` (0.5 = halb so laut wie
+  Die Grundlautstärke aller Sprecher im Verhältnis zur Musik steht in `[volume].voice_gain` (0.35 = gut ein Drittel von
   gerendert); der Knopf regelt darauf, die Ansagen nehmen dazu noch `announce.toml` `volume`. Das PXN-CB1 meldet die
   Knopfstellung dauernd (etwa 60-mal je Sekunde), deshalb zählt der Launcher nur Änderungen des Werts als Schritte. Tut der Knopf nichts:
   `scripts/voice_knob_check.py` zeigt die Geräte, was beim Drehen ankommt und den Faktor in der Datei, und spielt eine Ansage.
@@ -1156,7 +1156,8 @@ erfindet keine Markennamen oder Figuren. Ansagen in `config/announce.toml` entsp
 ## Extras
 
 **Ansagen beim Moduswechsel** (`config/announce.toml`): KITT kommentiert jeden Tastendruck mit einem
-zufälligen Satz aus der Liste des Modus, dazu eine Boot-Ansage. Die Sätze werden einmal mit Piper
+zufälligen Satz aus der Liste des Modus (sechs bis acht je Modus und Thema; die zuletzt gehörten kommen erst nach
+einigen anderen wieder), dazu eine Boot-Ansage. Die Sätze werden einmal mit Piper
 vorgerendert (`scripts/announce_build.sh`, nach jeder Textänderung erneut) und liegen als WAV in
 `models/announce/`. Der Launcher spielt sie ohne Modell-Ladezeit über `pw-play` ab. Aus mit
 `announce = false` in `settings.toml` oder einer leeren Liste je Modus.

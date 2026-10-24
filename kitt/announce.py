@@ -12,6 +12,7 @@ Fehlt eine Gruppe im Thema, werden die Standardsätze genommen, aber mit der The
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import random
 import shutil
@@ -23,7 +24,40 @@ from launcher import config as lcfg
 
 log = logging.getLogger("announce")
 OUT = lcfg.ROOT / "models" / "announce"
+RECENT_FILE = lcfg.ROOT / "logs" / "announce_recent.json"   # zuletzt gespielte Sätze je Gruppe (über Neustarts hinweg)
 _current: subprocess.Popen | None = None
+
+
+def _replaced_modes(theme: str) -> set:
+    """Modi, die das Thema durch eigene ersetzt (themes.toml modes): deren Standardsätze spielt das Thema nie."""
+    try:
+        for t in lcfg._load("themes.toml").get("themes", []):
+            if t.get("name") == theme:
+                return set((t.get("modes") or {}).keys())
+    except Exception:
+        pass
+    return set()
+
+
+def _pick(group_key: str, candidates: list) -> Path:
+    """Zufällige Ansage, aber keine der zuletzt gespielten: gemerkt wird gut die Hälfte der Auswahl, damit sich derselbe
+    Satz erst nach einigen anderen wiederholt."""
+    try:
+        recent = json.loads(RECENT_FILE.read_text())
+    except (OSError, ValueError):
+        recent = {}
+    hist = [h for h in recent.get(group_key, []) if any(c.name == h for c in candidates)]
+    keep = max(0, min(len(candidates) - 1, (len(candidates) + 1) // 2))
+    fresh = [c for c in candidates if c.name not in hist[-keep:]] if keep else candidates
+    path = random.choice(fresh or candidates)
+    hist = (hist + [path.name])[-max(1, keep):]
+    recent[group_key] = hist
+    try:
+        RECENT_FILE.parent.mkdir(parents=True, exist_ok=True)
+        RECENT_FILE.write_text(json.dumps(recent))
+    except OSError:
+        pass
+    return path
 
 
 def _cfg() -> dict:
@@ -94,7 +128,8 @@ def build() -> int:
         if ts["voice"]:
             tcfg["voice"] = ts["voice"]
         if ts["voice"] or ts["tts"]:                                       # eigene Stimme: alle Gruppen damit rendern
-            groups = {g: (ts["lines"].get(g) or lines) for g, lines in cfg.get("lines", {}).items()}
+            skip = _replaced_modes(name) - set(ts["lines"])                # ersetzte Modi spielt das Thema nie
+            groups = {g: (ts["lines"].get(g) or lines) for g, lines in cfg.get("lines", {}).items() if g not in skip}
             groups.update({g: l for g, l in ts["lines"].items() if g not in groups})
         else:                                                               # nur eigene Sätze, Rest kommt vom Standard
             groups = dict(ts["lines"])
@@ -142,7 +177,7 @@ def play(group: str, target: str = "", theme: str | None = None) -> bool:
         candidates = [c for c in (_wav_name(group, t) for t in base) if c.exists()]
     if not candidates:
         return False
-    path = random.choice(candidates)
+    path = _pick(f"{prefix or 'standard'}:{group}", candidates)
     if _current and _current.poll() is None:
         _current.kill()                      # laufende Ansage abbrechen
     vol = float(cfg.get("volume", 1.0))
