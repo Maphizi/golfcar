@@ -407,7 +407,7 @@ Sprung, Hue, Spiegel/Seed), `uCreM0..4` (nächste Zelle, Morph 0..1, Seed, Alter
 die nächste Zelle (`MORPH_LEN` 2,8 s, Shader `creatureMorph`: Verzerrung + Rauschmaske + Leuchtsaum), Auftauchen/Verschwinden
 als Rauschauflösung (`FADE_IN` 2,5 s, `FADE_OUT` 3 s, `leave()` beim Phasenende), Beat-Sprung nur sanft (`lunge_t0`, in
 der Gigawatt-Phase stärker), Drop = alle morphen; Zeitmaschine beim Hilferuf mit Funken aus Heck/Rädern und Lichtbögen, Foto `uPhotoTex` (driver.png, 512 px) im Polaroid
-`uPhoto = [x, y, w]` mit `uFade` (fbm-Maske), Hand prozedural `uHand`. LINKS/RECHTS `ANTIDOTES` (`uRelief`), OBEN `uRebootT`,
+`uPhoto = [x, y, w]` mit `uFade` (= `fade_s`, folgt `fade` weich: Foto löst sich von oben nach unten in leeres Fotopapier auf, unruhige bläulich flimmernde Kante mit Funken, Rest vergilbt), Hand prozedural `uHand`. LINKS/RECHTS `ANTIDOTES` (`uRelief`), OBEN `uRebootT`,
 UNTEN `uPhotoView`, ENTER `uHelpT` (Zeitmaschine `uCar` + Professor `uProf` aus `clocktower_figures.png`), SPACE/BACKSPACE
 `uShock`. Beat `uCut`, Gigawatt-Blitze `uBolt`, `WHISPERS`. Test: `python -m visualizers.engine paradox --test-signal --demo`.
 

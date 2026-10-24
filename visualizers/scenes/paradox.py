@@ -176,6 +176,7 @@ class Controller:
         self.wave = 0
         self.poison = 0.0
         self.fade = 0.0
+        self.fade_s = 0.0                                                     # angezeigte Stufe, folgt fade weich
         self.bass_s = self.mid_s = self.high_s = 0.0
         self.energy = 0.0
         self.live_s = 0.0
@@ -412,6 +413,8 @@ class Controller:
             self.poison = min(1.0, self.poison + 0.15)
             self.fade = min(1.0, self.fade + 0.25)
             log.info("Rückfall nach %s", self.relief_label)
+        # Kante wandert weich statt zu springen (Rücksprünge schneller)
+        self.fade_s += (self.fade - self.fade_s) * min(1.0, dt / (0.6 if self.fade < self.fade_s else 2.5))
         self.photo_view += ((1.0 if self.photo_view_on else 0.0) - self.photo_view) * min(1.0, dt / 0.6)
         self.shock += ((1.0 if self.shock_on else 0.0) - self.shock) * min(1.0, dt / 1.0)
         # Anachronismen: lauern, rücken näher, verschwinden; in der Gigawatt-Phase mehr und größer
@@ -460,7 +463,7 @@ class Controller:
             "uFigSize": size(self.figs), "uPhotoOK": 1.0 if self.photo is not None else 0.0,
             "uFigOK": 1.0 if self.figs is not None else 0.0, "uPhoto": self.photo_cfg, "uHand": self.hand_cfg,
             "uSeed": self.seed, "uPhase": float(self.phase), "uPhaseT": pt, "uPhaseLen": PHASE_LEN[self.phase],
-            "uWave": float(self.wave), "uPoison": self.poison, "uFade": self.fade, "uRelief": self.relief,
+            "uWave": float(self.wave), "uPoison": self.poison, "uFade": self.fade_s, "uRelief": self.relief,
             "uRebootT": (now - self.reboot_t0) if now - self.reboot_t0 < 3.0 else -1.0, "uPhotoView": self.photo_view,
             "uHelpT": help_t if help_t < 5.0 else -1.0, "uShock": self.shock,
             "uBassS": self.bass_s, "uMidS": self.mid_s, "uHighS": self.high_s, "uEnergy": self.energy, "uLive": self.live_s,

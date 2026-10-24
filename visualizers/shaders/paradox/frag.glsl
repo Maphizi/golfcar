@@ -106,12 +106,21 @@ vec4 photoAt(vec2 q, float fade, float t) {
         vec2 o = vec2(i == 1 || i == 3 ? 1.0 : -1.0, i >= 2 ? 1.0 : -1.0) * fw;
         pc += bilin(uPhotoTex, (tq + o) * uPhotoSize, uPhotoSize, vec2(0.0), uPhotoSize - 1.0).rgb * 0.25;
     }
-    float inner = min(min(q.x, 1.0 - q.x), min(q.y, 1.0 - q.y)) * 2.0;        // 0 am Rand, 1 in der Mitte
-    float m = inner * 0.55 + fbm(q * vec2(4.0, 3.0) + uSeed * 0.1) * 0.6 + 0.08 * sin(t * 0.7 + q.y * 5.0);
-    float vis = smoothstep(fade * 1.35 - 0.3, fade * 1.35 + 0.05, m);
-    vis *= 1.0 - fade * 0.25;                                                  // das Ganze wird blasser
-    vec3 washed = mix(pc, vec3(0.92, 0.9, 0.84), 0.6 * fade);                  // Reste werden milchig
-    return vec4(washed, vis);
+    // Verblassen wie im Film: das Bild löst sich von oben nach unten auf (unruhige Kante aus fbm), darüber bleibt leeres,
+    // vergilbtes Fotopapier; an der Kante flimmert die Zeitlinie bläulich. fade 0.3 = oberes Drittel weg, 1.0 = ganz leer.
+    float edge = 1.08 - fade * 1.2;                                             // wandert von oben nach unten
+    float wob = (fbm(q * vec2(5.0, 3.0) + vec2(uSeed * 0.1, t * 0.08)) - 0.5) * 0.22 + 0.02 * sin(q.x * 23.0 + t * 1.7);
+    float y = q.y + wob;
+    float gone = smoothstep(edge - 0.035, edge + 0.035, y);                     // 1 = schon verschwunden
+    vec3 blank = vec3(0.86, 0.82, 0.72) * (0.92 + 0.08 * fbm(q * 7.0 + 3.0));    // leeres Fotopapier
+    vec3 aged = mix(pc, vec3(dot(pc, vec3(0.3, 0.55, 0.15))) * vec3(1.05, 0.98, 0.85), 0.45 * fade);   // Rest wird blass
+    vec3 outc = mix(aged, blank, gone);
+    float glow = exp(-abs(y - edge) * 38.0) * step(0.02, fade) * step(fade, 0.98);
+    float flick = 0.6 + 0.4 * sin(t * 13.0 + q.x * 40.0) * sin(t * 7.0 + q.x * 17.0);
+    outc += vec3(0.45, 0.65, 1.0) * glow * flick * 0.9;
+    float sparks = step(0.985, hash12(floor(q * vec2(90.0, 60.0)) + floor(t * 12.0))) * exp(-abs(y - edge) * 14.0) * step(0.02, fade);
+    outc += vec3(0.7, 0.85, 1.0) * sparks * step(fade, 0.98);
+    return vec4(outc, 1.0);
 }
 // Durchsichtige Hand (prozedural): Handfläche + fünf Finger, liegt unten rechts auf dem Tisch
 float capsule(vec2 p, vec2 a, vec2 b, float r) { vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h) - r; }
@@ -378,7 +387,7 @@ void main() {
         d += vec2(0.004 * sin(t * 20.0), 0.003 * cos(t * 17.0)) * uBeatPulse;
         vec2 q = d * vec2(1.0, 1.333) * 0.5 + 0.5;
         vec2 frame = abs(d) - vec2(1.1, 0.95);
-        float inFrame = step(max(frame.x, frame.y + 0.25 * step(d.y, 0.0)), 0.0);   // breiter Rand unten (Polaroid)
+        float inFrame = step(max(frame.x, frame.y - 0.25 * step(d.y, 0.0)), 0.0);   // breiter Rand unten (Polaroid)
         vec3 dark = vec3(0.02, 0.015, 0.01) + vec3(0.05, 0.08, 0.15) * uBeatPulse * horror;
         vec3 paper = vec3(0.9, 0.88, 0.82) * (0.94 + 0.06 * fbm(d * 9.0 + uSeed));
         vec4 ph = uPhotoOK > 0.5 ? photoAt(q, uFade, t) : vec4(0.0);
