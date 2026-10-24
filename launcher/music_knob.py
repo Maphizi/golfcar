@@ -21,9 +21,10 @@ import time
 import evdev
 from evdev import ecodes
 
+from launcher.volume_knob import REL_CODES, RelDecoder
+
 log = logging.getLogger("music")
 DEVICE_NAME = "PXN"
-REL_CODES = {ecodes.REL_MISC, ecodes.REL_DIAL, ecodes.REL_WHEEL, ecodes.REL_HWHEEL}
 
 
 class MusicKnob(threading.Thread):
@@ -77,6 +78,7 @@ class MusicKnob(threading.Thread):
 
     def _loop(self, devs: list[evdev.InputDevice]) -> None:
         info = {}
+        dec = RelDecoder("Musikknopf")
         for d in devs:
             for code, ai in d.capabilities(absinfo=True).get(ecodes.EV_ABS, []):
                 if isinstance(ai, evdev.AbsInfo):
@@ -93,9 +95,10 @@ class MusicKnob(threading.Thread):
                                 self.nudge(1)
                             elif ev.code == ecodes.KEY_VOLUMEDOWN:
                                 self.nudge(-1)
-                        elif ev.type == ecodes.EV_REL and ev.code in REL_CODES and self.use_rel and ev.value:
-                            val = ev.value - 256 if 128 <= ev.value < 256 else ev.value   # 224 = -32 bei 8-Bit-Drehern
-                            self.nudge(1 if val > 0 else -1)
+                        elif ev.type == ecodes.EV_REL and ev.code in REL_CODES and self.use_rel:
+                            n = dec.step(ev.value)
+                            if n:
+                                self.nudge(n)
                         elif ev.type == ecodes.EV_ABS and self.axis is not None and ev.code == self.axis:
                             ai = info.get(ev.code)
                             lo, hi = (ai.min, ai.max) if ai and ai.max > ai.min else (0, 255)

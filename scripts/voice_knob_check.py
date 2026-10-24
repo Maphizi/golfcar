@@ -83,7 +83,10 @@ def main() -> int:
               " (oder music_up / music_down) eintragen")
     for (path, t, c), (n, vals) in seen.items():
         names = ecodes.bytype.get(t, {}).get(c, c)
-        print(f"  {path} {ecodes.EV.get(t, t)} {names}: {n} Ereignisse, Werte {sorted(vals)[:8]}")
+        print(f"  {path} {ecodes.EV.get(t, t)} {names}: {n} Ereignisse, Werte {sorted(vals)[:12]}")
+        if t == ecodes.EV_REL and n > 100:
+            print(f"    -> {n / 10:.0f}/s von selbst: das Board meldet die Knopfstellung dauernd; der Launcher zählt nur Änderungen"
+                  f" ({'der Wert hat sich geändert, Knopf wurde gedreht' if len(vals) > 1 else 'Wert blieb gleich, Knopf stand still'})")
     print()
     if len(sys.argv) > 1:
         try:

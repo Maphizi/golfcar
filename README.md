@@ -521,7 +521,8 @@ daneben. Die Datei ist nicht im Repo (Markenrechte), lege sie selbst ab.
   `logs/voice_volume.txt`; jeder Sprecher (KITT, HAL, BIBO, Ansagen) liest ihn vor jedem Satz.
   `max_percent` 130 erlaubt etwas lauter als normal. `target = "sink"` regelt stattdessen alles.
   Die Grundlautstärke aller Sprecher im Verhältnis zur Musik steht in `[volume].voice_gain` (0.5 = halb so laut wie
-  gerendert); der Knopf regelt darauf, die Ansagen nehmen dazu noch `announce.toml` `volume`. Tut der Knopf nichts:
+  gerendert); der Knopf regelt darauf, die Ansagen nehmen dazu noch `announce.toml` `volume`. Das PXN-CB1 meldet die
+  Knopfstellung dauernd (etwa 60-mal je Sekunde), deshalb zählt der Launcher nur Änderungen des Werts als Schritte. Tut der Knopf nichts:
   `scripts/voice_knob_check.py` zeigt die Geräte, was beim Drehen ankommt und den Faktor in der Datei, und spielt eine Ansage.
 - Musik: `launcher/music_knob.py` steuert mpv über dessen Socket `/tmp/mpv.sock`, und wenn kein mpv läuft
   (Musik vom Handy über Spotify Connect, AirPlay oder Bluetooth) den ganzen Ausgang über `wpctl`; die Stimme folgt

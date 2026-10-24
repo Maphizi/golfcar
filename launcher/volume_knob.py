@@ -30,6 +30,52 @@ SKIP = {ecodes.ABS_HAT0X, ecodes.ABS_HAT0Y}
 REL_CODES = {ecodes.REL_MISC, ecodes.REL_DIAL, ecodes.REL_WHEEL, ecodes.REL_HWHEEL}   # Dreh-Ereignisse des Knopfs
 
 
+class RelDecoder:
+    """Macht aus REL-Ereignissen des PXN Schritte (+1/-1 je Ereignis). Zwei Arten von Geräten:
+    - echte Schritte: nur beim Drehen kommt ein Ereignis mit +n / -n (224 = -32 bei 8 Bit)
+    - Stellung: das Board schickt den Wert dauernd (~60/s) und er ändert sich nur beim Drehen (PXN-CB1: REL_MISC)
+    Die erste Sekunde nach dem ersten Ereignis ist Anlauf (Ereignisse werden verworfen): kommen darin >= REPEAT
+    Ereignisse mit demselben Wert, ist es ein Stellungsgeber (ein echter Dreher schickt ohne Drehen gar nichts); dann
+    zählt nur eine Änderung, Richtung aus der Differenz (8 Bit mit Überlauf)."""
+    REPEAT = 25
+    WARMUP_S = 1.0
+
+    def __init__(self, name: str):
+        self.name = name
+        self.last = None
+        self.t0 = 0.0
+        self.warm: list[int] = []
+        self.decided = False
+        self.positional = False
+
+    def step(self, value: int) -> int:
+        """Schritte (-3..3) für ein REL-Ereignis, 0 = nichts."""
+        now = time.monotonic()
+        if not self.decided:
+            if not self.t0:
+                self.t0 = now
+            self.warm.append(value)
+            self.last = value
+            if now - self.t0 < self.WARMUP_S:
+                return 0
+            self.decided = True
+            top = max(self.warm.count(v) for v in set(self.warm))
+            self.positional = top >= self.REPEAT
+            log.info("%s: %d Ereignisse im Anlauf -> %s", self.name, len(self.warm),
+                     "Knopf meldet die Stellung, nur Änderungen zählen" if self.positional else "echte Dreh-Schritte")
+            return 0
+        prev, self.last = self.last, value
+        if self.positional:
+            if prev is None or value == prev:
+                return 0
+            d = ((value - prev + 128) % 256) - 128
+            return max(-3, min(3, d))
+        if value == 0:
+            return 0
+        val = value - 256 if 128 <= value < 256 else value       # 224 = -32 bei 8-Bit-Drehern
+        return 1 if val > 0 else -1
+
+
 class VolumeKnob(threading.Thread):
     def __init__(self, cfg: dict | None = None):
         super().__init__(name="volume-knob", daemon=True)
@@ -106,6 +152,7 @@ class VolumeKnob(threading.Thread):
                 if isinstance(ai, evdev.AbsInfo):
                     abs_info[(d.fd, code)] = ai
         rel_seen: set[int] = set()
+        dec = RelDecoder("Lautstärkeknopf")
         while not self._stop.is_set():
             r, _, _ = select.select([d.fd for d in devs], [], [], 0.2)
             for d in devs:
@@ -117,14 +164,13 @@ class VolumeKnob(threading.Thread):
                             # Dreh-Ereignis: jedes Ereignis = ein Schritt
                             if ev.type != ecodes.EV_REL or ev.code not in REL_CODES:
                                 continue
-                            if ev.value == 0:
+                            n = dec.step(ev.value)
+                            if n == 0:
                                 continue
-                            val = ev.value - 256 if 128 <= ev.value < 256 else ev.value   # 224 = -32 bei 8-Bit-Drehern
-                            if ev.value not in rel_seen:
+                            if ev.value not in rel_seen and len(rel_seen) < 12:
                                 rel_seen.add(ev.value)
-                                log.info("%s Rohwert %d -> %+d (Richtung %s)", ecodes.REL.get(ev.code, ev.code), ev.value, val,
-                                         "hoch" if val > 0 else "runter")
-                            delta = self.step if val > 0 else -self.step
+                                log.info("%s Rohwert %d -> %+d Schritt(e)", ecodes.REL.get(ev.code, ev.code), ev.value, n)
+                            delta = self.step * n
                             if self.invert:
                                 delta = -delta
                             self.cur_pct = max(self.min_pct, min(self.max_pct, self.cur_pct + delta))

@@ -48,7 +48,9 @@ ein USB-Mikrofon, wenn vorhanden. Diagnose: `scripts/hal_audio_check.sh`, A2DP-S
   Beobachtung, Log meldet bewegte Achsen) -> `logs/voice_volume.txt`, von Piper je Satz gelesen. Grundlautstärke aller
   Sprecher im Verhältnis zur Musik: `[volume].voice_gain` 0.5 (`piper_tts.voice_gain()`, nach mtime gecacht; `voice_volume()` =
   Knopf x Gain, gilt für KITT, HAL, BIBO und die Ansagen in `kitt/announce.py` zusätzlich zu `announce.toml` `volume`).
-  REL-Modus nimmt REL_MISC/DIAL/WHEEL/HWHEEL (`REL_CODES`), Log "Stimme NN% -> voice_volume.txt"; Prüfung auf dem Pi:
+  REL-Modus nimmt REL_MISC/DIAL/WHEEL/HWHEEL (`REL_CODES`), `RelDecoder` (auch für den Musikknopf): das PXN-CB1 schickt REL_MISC
+  ~60/s mit der Knopfstellung, daher 1 s Anlauf, dann zählen nur Änderungen (Differenz 8 Bit, max. 3 Schritte); echte Dreher
+  (nur Ereignisse beim Drehen) werden erkannt. Log "Stimme NN% -> voice_volume.txt"; Prüfung auf dem Pi:
   `scripts/voice_knob_check.py [faktor]` (Geräte, 10 s Ereignisse, Datei, Ansage).
 - Musik: `launcher/music_knob.py`, KEY_VOLUMEUP/DOWN (immer), REL_MISC/DIAL/WHEEL (`[music].rel`) oder ABS-Achse
   (`[music].axis`) -> mpv-Socket `/tmp/mpv.sock` (`scripts/music.sh` startet mpv mit Socket); ohne mpv (Musik vom Handy)
