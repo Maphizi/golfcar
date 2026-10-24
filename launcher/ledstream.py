@@ -1276,13 +1276,33 @@ class LedStream:
         bo = now - float(st.get("blackout_t0", -100.0))
         emp = now - float(st.get("emp_t0", -100.0))
         dark = np.zeros(nw)
+        bo_black = 1.0                                            # Stromausfall: Faktor für die ganze Kette (0 = schwarz)
         if 0.0 <= bo < 14.0:
-            off = min(1.0, bo / 2.5) if bo < 8.0 else max(0.0, 1.0 - (bo - 8.0) / 5.0)
-            dark = (c["rank"] < off).astype(float)
-            if 13.2 <= bo < 14.0:                                 # am Ende knallt alles auf Überlast
-                wl[:] = 1.0
-                wcol[:] = np.array([255, 190, 80])
-                dark[:] = 0.0
+            # 1) 0-0,8 s: Fenster gehen in einer schnellen Welle aus, 2) bis 4,5 s alles ganz dunkel (auch Regen, Autos,
+            # Warnlichter), 3) ab 4,5 s kommen die Häuser im Beat zurück, knallbunt (je Haus eigener Farbton, der je Beat
+            # weiterspringt), ab 9 s ist alles bunt da, die letzten 1,5 s gleitet es zurück in die normale Stadt
+            t0 = float(st.get("blackout_t0", 0.0))
+            if c.get("bo_t0") != t0:
+                c["bo_t0"] = t0
+                nh = int(c["house"].max()) + 1
+                c["bo_hue"] = self.nrng.random(nh)
+                c["bo_order"] = self.nrng.random(nh)
+                c["bo_rot"] = 0.0
+            if is_beat:
+                c["bo_rot"] += 0.09
+            if bo < 0.8:
+                dark = (c["rank"] < bo / 0.8).astype(float)
+            elif bo < 4.5:
+                bo_black = 0.0
+            else:
+                back = min(1.0, (bo - 4.5) / 4.5)                  # Anteil der Häuser, die wieder da sind
+                there = c["bo_order"][c["house"]] < back
+                hue = (c["bo_hue"][c["house"]] + c["bo_rot"]) % 1.0
+                bunt = _hsv_arr(hue, 1.0, 1.0)
+                k_b = 1.0 if bo < 12.5 else max(0.0, (14.0 - bo) / 1.5)
+                lv_b = np.where(there, np.where(c["rank"] < 0.85, 1.0, 0.0), 0.0)
+                wl = wl * (1.0 - k_b) + lv_b * k_b
+                wcol = wcol * (1.0 - k_b) + bunt * k_b
         elif 0.0 <= emp < 10.0:
             seed = float(st.get("emp_seed", 50.0))
             centre = (seed * 0.6180339) % 1.0
@@ -1294,7 +1314,7 @@ class LedStream:
             edge = np.abs(np.abs(xs - centre) - radius) < 0.015
             wl = np.where(edge & (self.nrng.random(nw) < 0.5), 1.0, wl)
         wl = wl * (1.0 - dark)
-        emerg_only = (0.0 <= bo < 13.2 and bo > 1.0) or state == 1
+        emerg_only = state == 1 and not (0.0 <= bo < 14.0)
         # Lichtzustand
         sc = None
         if state == 1 or emerg_only:                              # Blackout: Notstrom
@@ -1406,6 +1426,8 @@ class LedStream:
                     if 0 <= j < n:
                         frame[j] = np.array([255.0, 0.0, 0.0]) if (red ^ (o == 1)) else np.array([0.0, 40.0, 255.0])
         c["cars"] = keepc
+        if bo_black < 1.0:
+            frame = frame * bo_black                              # Stromausfall: wirklich alles dunkel
         # Blitz (nur Blitzschlag oder kräftiger Drop): zweimal kurz bläulich-weiß, dann Nachglühen
         fa = now - c["flash_t"]
         if 0.0 <= fa < 0.7:

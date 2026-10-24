@@ -481,8 +481,10 @@ Platz (`panelled["rot"]`, An/Aus der Tafeln bleibt am Platz).
 mit 3-6 Lücke; `CITY_PAL` Magenta/Cyan/Bernstein/Violett), ~40 % an, je Beat kippen 1,5-4,5 % der Fenster. Zustände: 1 Notstrom
 (5 % Fenster warm flackernd, rote Flugwarnlichter), 2 rot + Drehlicht hin und her, 3 giftgrün mit Röhrenflackern, 4 Gold, 85 % an,
 alle 4 Beats brennt ein Haus durch, 5 Fenster aus + 4 Reklamen à 15-20 LEDs mit Lauflicht (Muster je Beat), 6 blau-weiß; Wetter:
-Regen-Schimmer, Nebel weich/blass, Säure grüner Stich, Asche glühende Punkte. Stromausfall blockweise aus, Notstrom, Rückkehr, am
-Ende Gold; EMP als Welle vom Punkt aus, Fenster kommen einzeln zurück; Blitz nur beim Zustand 6 (höchstens alle 8 s) oder beim
+Regen-Schimmer, Nebel weich/blass, Säure grüner Stich, Asche glühende Punkte. Stromausfall (`blackout_t0`, 14 s): 0-0,8 s Fenster in
+schneller Welle aus, bis 4,5 s die ganze Kette schwarz (`bo_black`, auch Regen, Autos, Warnlichter), dann kommen die Häuser in
+zufälliger Folge (`bo_order`) bis 9 s zurück, knallbunt (je Haus `bo_hue`, +0,09 je Beat, 85 % der Fenster an), ab 12,5 s gleitet
+es zurück in die normale Stadt; kein Notstrom dabei (nur im Lichtzustand 1); EMP als Welle vom Punkt aus, Fenster kommen einzeln zurück; Blitz nur beim Zustand 6 (höchstens alle 8 s) oder beim
 Drop (höchstens alle 30 s); `event()` ignoriert in `city` lightning/blackout/fireworks-Profile (Feuerwerk kommt aus `fire_t0`).
 Specials: fliegendes Auto alle 25-50 s (Scheinwerfer + Rücklichter), Polizeidrohne alle 60-120 s (rot/blau). `glitch` (blackice, paradox, overdose): das Störprogramm `_error` in den
 Themenfarben (`c_red`/`c_green` aus col/col2) mit eigenem 40-s-Phasenzyklus. `error` = Systemfehler (oben beschrieben). `slots` (`slots.py` `led_state`, alle vier Automaten): Casino-Lauflicht `_slots` als Basis:
