@@ -772,6 +772,8 @@ class LedStream:
         return frame
 
     CW_LAMP = 48                                                  # Uhrturm: Abstand der Laternen in LEDs
+    CW_TURN = 1.25                                                # Minutenzeiger-Umdrehungen je Kettenlänge der Fensterlichter
+    CW_SEC = 0.15                                                 # Kettenlängen je Umdrehung des Sekundenzeigers (~2 LEDs je Schlag)
 
     def _clockwork(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
         """Uhrturm (Zurück in die Zukunft, Taste 4): die Nacht bis 22:04 auf der Kette. Grund Gewitterblau mit Regenschimmer
@@ -780,7 +782,8 @@ class LedStream:
         blaue Aufhellung an der Stelle des Schirms, ferne Blitze schmal und hell. Countdown: Funken am Balkenende, vorne
         flackern die Zeitkreise der wartenden Zeitmaschine blau. 22:04: Blitz über die ganze Kette, die Zeitmaschine rast als
         Feuerspur von vorne nach hinten (liegt 4 s), 10 s blau-weißes Flackern (Uhr steht), dann läuft der Balken mit grünem
-        Kopf zurück. Fenster (`wins`: Lage, Farbe, Stufe) = weiche Lichtpunkte in ihrer Farbe an ihrer Bildposition. Die Uhr
+        Kopf zurück. Fenster (`wins`: Lage, Farbe, Stufe) = weiche Lichtpunkte in ihrer Farbe, zweimal über die Kette verteilt,
+        laufen mit den Zeigern (`min_turns`/`sec_turns`): Uhr vorwärts = nach hinten, rückwärts = nach vorne. Die Uhr
         spielt verrückt (`crazy`): Balken flackert, Funken sprühen über die ganze Kette. Figuren: Professor = warmweißes
         Wischen, Funke = Punkt läuft durch, Tanzabend = Girlanden in den acht Fensterfarben, je Beat im Wechsel."""
         n = self.n
@@ -851,9 +854,20 @@ class LedStream:
         if doc > 0.01:
             c = 0.5 + 0.45 * math.sin(T * 2.0 * math.pi / 7.0)
             frame += np.outer(np.exp(-((x - c) / 0.07) ** 2) * 0.45 * doc, np.array([255.0, 215.0, 165.0]))
-        # Fenster: weiche Lichtpunkte in ihrer Farbe an ihrer Bildposition
-        for wx, wc, wl in st.get("wins", ()):
-            frame += np.outer(np.exp(-((x - wx) / 0.018) ** 2) * 0.32 * min(1.2, wl), np.asarray(wc, dtype=float))
+        # Fensterlichter: zweimal über die Kette verteilt, sie laufen mit den Zeigern: Uhr vorwärts = nach hinten,
+        # rückwärts (verrückt, Rücklauf) = nach vorne; der Minutenzeiger schiebt eine Kette je CW_TURN Umdrehungen,
+        # jeder Sekundenschlag rückt sie ein Stück weiter
+        wins = st.get("wins", ())
+        if wins:
+            off = float(st.get("min_turns", 0.0)) / self.CW_TURN + float(st.get("sec_turns", 0.0)) * self.CW_SEC
+            xs = [w[0] for w in wins]
+            lo, hi = min(xs), max(xs) + 1e-6
+            for wx, wc, wl in wins:
+                base = 0.5 * (wx - lo) / (hi - lo)
+                for half in (0.0, 0.5):
+                    pos = (base + half + off) % 1.0
+                    d = ((x - pos + 0.5) % 1.0) - 0.5
+                    frame += np.outer(np.exp(-(d / 0.016) ** 2) * 0.42 * min(1.2, wl), np.asarray(wc, dtype=float))
         # Tanzball: Girlanden, Birnen alle 6 LEDs in den Fensterfarben, je Beat im Wechsel
         dance = float(st.get("dance", 0.0))
         if dance > 0.01:

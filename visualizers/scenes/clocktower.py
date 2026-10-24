@@ -183,6 +183,9 @@ class Controller:
         self.crazy_vel = [0.0, 0.0, 0.0]
         self.crazy_next = 0.0
         self.cw_rot = 0.0                                 # Drehung des Uhrwerks
+        self.hand_prev: tuple[float, float] | None = None
+        self.min_turns = 0.0                              # Minuten- und Sekundenzeiger fortlaufend (rückwärts = weniger),
+        self.sec_turns = 0.0                              # danach laufen die Lichter auf der LED-Kette
         self.act = 0
         self.act_t0 = now
         self.storm = 0.0
@@ -372,6 +375,7 @@ class Controller:
             "far": (now - self.far_t0, self.far_x, self.far_k),
             "spark_age": now - self.spark_t0, "car": car, "car_wait": self._car_wait(), "car_t0": self.car_t0,
             "doc": self.doc_vis, "dance": 1.0 if self.dance else 0.0, "beat_step": self.beat_n, "wins": wins,
+            "min_turns": self.min_turns, "sec_turns": self.sec_turns,
         }
 
     def _car_wait(self) -> bool:
@@ -617,12 +621,17 @@ class Controller:
     def _pack(self, now: float) -> dict:
         size = lambda a: (float(a.shape[1]), float(a.shape[0])) if a is not None else (1.0, 1.0)
         bolt_age = now - self.bolt_t0
+        hands = self._hands(now)
+        if self.hand_prev is not None:                                    # Zeiger fortlaufend mitzählen (vor und zurück)
+            self.min_turns += ((hands[1] - self.hand_prev[0] + 0.5) % 1.0) - 0.5
+            self.sec_turns += ((hands[2] - self.hand_prev[1] + 0.5) % 1.0) - 0.5
+        self.hand_prev = (hands[1], hands[2])
         out = {
             "uSceneSize": size(self.scene), "uSilSize": size(self.sil), "uDocSize": size(self.climber),
             "uHandSize": size(self.hands_tex), "uGearSize": size(self.clockwork), "uCarSize": size(self.car_tex),
             "uSeed": self.seed, "uClock": self.clock, "uCable": self.cable[:4], "uCable2": self.cable[4:6],
             "uBassS": self.bass_s, "uMidS": self.mid_s, "uHighS": self.high_s, "uEnergy": self.energy, "uLive": self.live_s,
-            "uBeatPulse": self.beat_pulse, "uFlash": self.flash, "uHands": self._hands(now), "uClockT": self.progress,
+            "uBeatPulse": self.beat_pulse, "uFlash": self.flash, "uHands": hands, "uClockT": self.progress,
             "uBoltT": bolt_age if bolt_age < STOP_SECONDS + REWIND_SECONDS else -1.0, "uBoltSeed": self.bolt_seed,
             "uCrazy": self.crazy_k, "uGearRot": self.cw_rot, "uStorm": self.storm, "uFinal": self.final_k,
             "uSheet": (now - self.sheet_t0, self.sheet_x, self.sheet_k, 0.0),

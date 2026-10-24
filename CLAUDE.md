@@ -471,12 +471,14 @@ Fackellicht (255,125,30; auf LEDs wirkt erst das warmweiß), träges Glimmen je 
 mit dem Bass. `breathe` (taxi): langsames Atmen + zwei wandernde Wolken. `clockwork` (clocktower,
 `clocktower.led_state()`: `clock_k` 0 = 21:00 .. 1 = 22:04, läuft nach dem Blitz zurück, `act`, `storm`, `final`, `crazy`,
 `stopped`/`rewind`, `strike_age` (seit dem Blitz), `sec`, `sheet`, `far`, `spark_age`, `car`/`car_wait`, `doc`, `dance`, `wins`
-= je Fenster Lage, Farbe, Stufe): Gewitterblau mit Regenschimmer (im Gewitter mehr),
+= je Fenster Lage, Farbe, Stufe, `min_turns`/`sec_turns` = Minuten-/Sekundenzeiger fortlaufend gezählt, rückwärts = weniger): Gewitterblau mit Regenschimmer (im Gewitter mehr),
 Laternen alle `CW_LAMP` 48 LEDs, goldener Zeitbalken wächst von vorne nach hinten bis 22:04 (heller Kopf, beim Rücklauf grün),
 Sekundenzeiger orangeroter Punkt (tickt mit der Szene), Wetterleuchten/ferne Blitze an ihrer Bildposition, Countdown = Funken am
 Balkenende + vorne blau flackernde Zeitkreise, 22:04 = Blitz über die Kette, Feuerspur der Zeitmaschine von vorne nach hinten
-(4 s), 10 s blau-weißes Flackern bei gedimmtem Balken; Fenster = weiche Lichtpunkte in ihrer Farbe an ihrer Bildposition, Uhr spielt
-verrückt = Balken flackert + Funken über die Kette; Professor = warmweißes Wischen, Tanzabend = Girlanden in `CW_WIN`; `event()` ignoriert `clocktower*`-Profile, kein Drop-Aufheller. `square` (Marktplatz): viel an und ruhig, ganze Kette im
+(4 s), 10 s blau-weißes Flackern bei gedimmtem Balken; Fensterlichter = weiche Lichtpunkte in ihrer Farbe, zweimal über die Kette verteilt, laufen
+mit den Zeigern (Versatz = `min_turns` / `CW_TURN` 1,25 + `sec_turns` x `CW_SEC` 0,15 Ketten): Uhr vorwärts = nach hinten (je
+Sekundenschlag ein Ruck), verrückt = rasen vor und zurück, Uhr steht = stehen, Rücklauf = nach vorne; Uhr spielt verrückt = Balken
+flackert + Funken über die Kette; Professor = warmweißes Wischen, Tanzabend = Girlanden in `CW_WIN`; `event()` ignoriert `clocktower*`-Profile, kein Drop-Aufheller. `square` (Marktplatz): viel an und ruhig, ganze Kette im
 Laternenlicht der Epoche (Tönung `square_<Jahr>`, `_no_white`) auf 55-70 %, Laternenkegel ~alle 60 LEDs atmen 8-12 s, zwei fast
 stehende Wolken in der Zweitfarbe; `event()`: `square_lightning` (ENTER) = sanfte Lichtwelle, `square_blackout` = 14 s auf 45 %
 gedämpft (`sq_dim_until`), nur `square_jump` blitzt (Special lightning). `heart` (hearttree): vorne hell, hinten dunkler
