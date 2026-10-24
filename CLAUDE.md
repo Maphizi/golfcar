@@ -171,8 +171,10 @@ Ereignisse `EVENTS` (alle 20-40 s; `EV_ROOTS` Wurzeln mit optional `assets/trip/
 `GOD_MIN_GAP` 60 s und nur bei `energy > 0.45`, Chance `GOD_CHANCE_PER_S`; nur mit `assets/trip/gods.png` 3x2 à 512,
 `GOD_NAMES`/`GOD_LINES`), Symbolsätze `SYMBOL_SETS` (Zellen im 8x5-Atlas). Ein Programm für alle Wesen: Profil (mirrors,
 tempo, palette, twist, warp, symbols_key) wird in `_set_phase(PH_TRIP)` gewürfelt, trip.toml-Profile sind unbenutzt.
-Kaleidoskop-Varianten `uVariant` (0 klassisch, 1 Tunnel, 2 Blüte, 3 Zellen; `_next_variant`, Überblendung 3 s), Wanderung
-alle 15-30 s, Beat = Drehstoß. Test: `python -m visualizers.engine trip --demo`.
+Kaleidoskop-Varianten `uVariant` (0 klassisch, 1 Tunnel, 2 Blüte, 3 Zellen; `_next_variant`, Überblendung `VARIANT_FADE` 8 s), Wanderung
+alle 15-30 s, Beat = Drehstoß. Hintergrund ruhig: eigene Zeit `bg_t` -> `uBgT` (nur `tripImage`, `BG_SLOW` 0.45, kaum Energie-Schwankung),
+Drehung `spin` 0.04 statt 0.1, Spiegel/Palette gleiten 5/8 s; Symbole und Ereignisse laufen weiter auf `uTripT`. LED-Board:
+`led_state()` -> Programm `trip`. Test: `python -m visualizers.engine trip --demo`.
 
 ## Moorsee (`visualizers/scenes/pond.py`, Thema green ersetzt Taste 3)
 `themes.toml` `modes = { blackhole = "pond" }`. Waldsee `assets/pond/lake.png` + Seegrund `bottom.png` + Kreaturen-Atlas
@@ -437,7 +439,11 @@ hinten, Tempo mit der Energie, Beat hebt sie kurz; alle 25-45 s `planet` (weiche
 kurz alles in ihrer Farbe); `navcomputer.led_state()` liefert `flying` und das laufende Ereignis: KOMETENSCHAUER = `comet`-Läufer,
 ASTEROIDENFELD = graue Brocken schneller, WURMLOCH/SONNE/NEBEL = Tönung. `fire` (campfire, `led_state` level/blue): warmweißes
 Fackellicht (255,125,30; auf LEDs wirkt erst das warmweiß), träges Glimmen je LED (`embers`), Wabern `gust`, Helligkeit mit der Feuerstufe, bei `blue` > 0 blau. `vortex` (blackhole, core, flux, pond): Punkte driften von beiden Enden zur Mitte, Mitte glimmt
-mit dem Bass. `breathe` (taxi, clocktower, woodeye, trip, hearttree, square): langsames Atmen + zwei wandernde Wolken. `panels` (oracle,
+mit dem Bass. `breathe` (taxi, clocktower, woodeye, hearttree, square): langsames Atmen + zwei wandernde Wolken. `trip` (Waldtresen,
+`led_state` intensity): Farbfeld aus zwei Sinuswellen mit langsam wandernden Wellenlängen (`k1`, `k2`, Blasen teilen/vereinen
+sich), verbogen von `warp`, Farbton über den ganzen Farbkreis (`_hsv_arr`), dreht über Minuten; dunkelgrüne Täler `TRIP_DG` (~30 %),
+nie aus (Boden 35 % Dunkelgrün); Beat = Phasenschritt 0.012 weich (~1 s), Drop = Palette dreht 0.2-0.45 über ~4 s; am Tresen
+(intensity 0) überwiegt Dunkelgrün. `panels` (oracle,
 `oracle.led_state()`: `cols` = Farben der acht Tafel-Glyphen aus `_panel_colors()` (Atlaszellen 16-23, hellste 20 %, Grauanteil
 raus), `lvl` = `panel_lvl` mit Nachglühen): LED i zeigt Tafel i % 8, also Rot, Orange, Gelb, Grün, Türkis, Blau, Violett, Magenta
 je ein Ansteuerpunkt, an solange die Tafel an ist (Beat-Muster der Szene), aus 4 %; Stille = alle leise atmend.

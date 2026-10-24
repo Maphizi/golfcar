@@ -36,7 +36,7 @@ SCENE_BASE = {
     "campfire": "fire",
     "blackhole": "vortex", "core": "vortex", "flux": "vortex", "pond": "vortex",
     "rooftop": "city",
-    "taxi": "breathe", "oracle": "breathe", "clocktower": "breathe", "woodeye": "breathe", "trip": "breathe",
+    "taxi": "breathe", "oracle": "breathe", "clocktower": "breathe", "woodeye": "breathe", "trip": "trip",
     "hearttree": "breathe", "square": "breathe",
     "blackice": "glitch", "paradox": "glitch", "overdose": "glitch",
     "hal": "hal",
@@ -397,6 +397,8 @@ class LedStream:
             frame = self._slots(now, dt, st, bass, high, is_beat, live)
         elif program == "duel":                                   # Neonfahrt: zwei Felder im Beat
             frame = self._duel(now, dt, st, bass, high, is_beat, live)
+        elif program == "trip":                                   # Waldtresen: bunt, ganz langsam, morphend
+            frame = self._trip(now, dt, st, bass, high, is_beat, live)
         elif program == "city":                                   # Dachterrasse: Fensterfront der Stadt
             frame = self._city(now, dt, st, bass, high, is_beat, live)
         elif program == "stars":
@@ -763,6 +765,44 @@ class LedStream:
             frame[m0] = a * lvl
             frame[m1] = b * lvl
             frame[m0 & m1] = c3 * lvl                              # beim Kreuzen: Überlappung in der dritten Farbe
+        return frame
+
+    TRIP_DG = np.array([0.0, 95.0, 18.0])                         # Dunkelgrün des Waldes (häufig, nie ganz aus)
+
+    def _trip(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Waldtresen (Thema green, Taste 2): ein ganz langsam fließendes, morphendes Farbfeld in allen Farben, dazwischen
+        immer wieder dunkelgrüne Täler, nie ganz aus. Zwei Wellen mit langsam wandernden Wellenlängen (Blasen teilen und
+        vereinen sich), verbogen von einer dritten; der Farbton dreht sich über Minuten. Beat = winziger, weich eingerasteter
+        Phasenschritt, Drop = die ganze Palette dreht über einige Sekunden weiter. Am Tresen (vor der Reise) überwiegt das
+        Dunkelgrün mit wenigen Farbinseln, während der Reise wird es voll bunt."""
+        n = self.n
+        x = self._idx()
+        tp = getattr(self, "tripled", None)
+        if tp is None:
+            tp = self.tripled = {"T": self.rng.uniform(0.0, 500.0), "ph": 0.0, "ph_s": 0.0, "hue": 0.0, "hue_s": 0.0}
+        inten = float(st.get("intensity", 1.0)) if st else 1.0
+        inten = 0.25 + 0.75 * max(0.0, min(1.0, inten))
+        tp["T"] += dt * (0.6 + 0.4 * self.energy) * (1.0 if live else 0.6)
+        if is_beat:
+            tp["ph"] += 0.012
+        if 0.0 < now - self.last_drop <= dt * 1.5:
+            tp["hue"] += self.rng.uniform(0.2, 0.45)
+        tp["ph_s"] += (tp["ph"] - tp["ph_s"]) * min(1.0, dt * 1.2)
+        tp["hue_s"] += (tp["hue"] - tp["hue_s"]) * min(1.0, dt / 4.0)
+        T = tp["T"]
+        tau = 2.0 * math.pi
+        k1 = 1.2 + 0.8 * math.sin(T * 0.011)                       # Wellenlängen wandern: Blasen teilen und vereinen sich
+        k2 = 2.6 + 1.2 * math.sin(T * 0.007 + 1.0)
+        warp = 0.12 * np.sin(tau * (x * 0.7 + T * 0.006))
+        field = 0.6 * np.sin(tau * (x * k1 + T * 0.012 + warp)) + 0.4 * np.sin(tau * (x * k2 - T * 0.009 + tp["ph_s"]))
+        hue = 0.33 + T * 0.004 + tp["hue_s"] + (0.62 * field + 0.32 * np.sin(tau * (x * 0.5 - T * 0.003))) * inten   # ganzer Farbkreis
+        val = 0.55 + 0.3 * (0.5 + 0.5 * np.sin(tau * (x * 1.3 - T * 0.01) + field)) + 0.12 * self.bass_s
+        col = _hsv_arr(hue % 1.0, 1.0, np.clip(val, 0.0, 1.0))
+        m = 0.5 + 0.5 * np.sin(tau * (x * (0.9 + 0.4 * math.sin(T * 0.005)) + T * 0.008 + 0.3 * field))
+        dg = np.clip((m - 0.55) / 0.3, 0.0, 1.0)                  # dunkelgrüne Täler, wandern mit
+        dg = np.maximum(dg, (1.0 - inten) * 0.75)                 # am Tresen überwiegt das Dunkelgrün
+        frame = col * (1.0 - dg[:, None]) + self.TRIP_DG * (0.8 + 0.2 * self.bass_s) * dg[:, None]
+        frame = np.maximum(frame, self.TRIP_DG * 0.35)            # nie ganz aus
         return frame
 
     CITY_PAL = np.array([[255, 0, 170], [0, 220, 255], [255, 140, 10], [140, 40, 255]], dtype=float)   # Magenta, Cyan, Bernstein, Violett
@@ -1522,6 +1562,19 @@ def _hue(p: np.ndarray) -> np.ndarray:
     d = np.maximum(mx - mn, 1e-6)
     h = np.where(mx == r, (g - b) / d % 6.0, np.where(mx == g, (b - r) / d + 2.0, (r - g) / d + 4.0))
     return (h * 60.0) % 360.0
+
+
+def _hsv_arr(h: np.ndarray, s: float, v) -> np.ndarray:
+    """HSV -> RGB (0..255) für ganze Arrays (h 0..1, v Skalar oder Array)."""
+    h6 = h * 6.0
+    i = np.floor(h6).astype(int) % 6
+    f = h6 - np.floor(h6)
+    v = np.broadcast_to(np.asarray(v, dtype=float), h.shape)
+    p, q, t = v * (1 - s), v * (1 - s * f), v * (1 - s * (1 - f))
+    r = np.choose(i, [v, q, p, p, t, v])
+    g = np.choose(i, [t, v, v, q, p, p])
+    b = np.choose(i, [p, p, t, v, v, q])
+    return np.stack([r, g, b], axis=1) * 255.0
 
 
 def _hsv(h: float, s: float, v: float) -> np.ndarray:

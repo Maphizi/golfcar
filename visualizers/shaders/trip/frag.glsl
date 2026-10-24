@@ -13,6 +13,7 @@ uniform vec2 uBarSize, uBeingsSize, uSymbolSize, uFaceSize, uTexSize, uGodSize, 
 uniform float uGodOK, uRootOK;
 uniform vec4 uVariant;                                    // Variante, vorige, Überblendung, Texturversatz
 uniform float uNumTex, uPhase, uPhaseT, uSlide, uCell, uTripT, uSpin, uMirrors, uPalette, uIntensity;
+uniform float uBgT;                     // langsame Zeit nur für den Kaleidoskop-Hintergrund
 uniform float uBassS, uMidS, uHighS, uEnergy, uPulse, uEvent, uEventT, uEventLen, uEventSeed, uFaceOK;
 uniform vec4 uProfile, uProfile2, uSymA, uSymB, uEvSym;   // Profil: twist, warp, tempo, idx; Zeiten: eat, comedown
 const float PI = 3.14159265;
@@ -348,8 +349,8 @@ void main() {
     float inten = uIntensity;
     if (phase == 2 || phase == 3) {
         float tripMix = phase == 2 ? smoothstep(0.0, 2.0, pt) : 1.0 - smoothstep(0.0, uProfile2.y, pt);
-        vec3 trip = tripImage(uv, uTripT, max(inten, 0.15), uVariant.x);
-        if (uVariant.z < 0.999) trip = mix(tripImage(uv, uTripT, max(inten, 0.15), uVariant.y), trip, smoothstep(0.0, 1.0, uVariant.z));
+        vec3 trip = tripImage(uv, uBgT, max(inten, 0.15), uVariant.x);
+        if (uVariant.z < 0.999) trip = mix(tripImage(uv, uBgT, max(inten, 0.15), uVariant.y), trip, smoothstep(0.0, 1.0, uVariant.z));
         trip = tripSymbols(trip, uv, uTripT, max(inten, 0.2));
         trip = tripEvent(trip, uv, uTripT, aspect);
         // Rand atmet

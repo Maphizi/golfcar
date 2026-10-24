@@ -30,6 +30,8 @@ EVENT_EVERY = (20.0, 40.0)
 GOD_MIN_GAP = 60.0                    # Waldgötter selten: frühestens nach 60 s, und nur wenn die Musik aufdreht
 GOD_CHANCE_PER_S = 0.025              # ab dann je Sekunde bei lauter Musik (Energie > Schwelle), sonst gar nicht
 VARIANT_EVERY = (25.0, 50.0)          # Kaleidoskop-Variante wechselt von selbst (und bei jedem zweiten Drop)
+VARIANT_FADE = 8.0                    # Überblendung zwischen zwei Varianten (s): langsames Morphen
+BG_SLOW = 0.45                        # Hintergrund läuft so viel langsamer als die Reisezeit bei mittlerer Musik
 N_VARIANTS = 4
 # Ereignisse: (Name, Dauer, HUD-Zeile); Index + 1 = uEvent
 EVENTS = [
@@ -111,7 +113,8 @@ class Controller:
         self.drop_armed = False
         self.quiet_since: float | None = None
         self.last_drop = 0.0
-        self.trip_t = 0.0                 # Reisezeit (läuft mit dem Tempo)
+        self.trip_t = 0.0                 # Reisezeit (läuft mit dem Tempo): Symbole, Ereignisse
+        self.bg_t = 0.0                   # Zeit des Kaleidoskop-Hintergrunds: deutlich langsamer (BG_SLOW), ruhig
         self.spin = 0.0
         self.mirrors = 8.0
         self.mirrors_target = 8.0
@@ -241,9 +244,10 @@ class Controller:
         if self.phase == PH_TRIP:
             self.intensity = min(1.0, self.intensity + dt / (16.0 if not self.demo else 4.0))
             self.trip_t += dt * self.tempo * (0.7 + 0.9 * self.energy + 0.6 * self.bass_s)
-            self.spin += dt * self.tempo * 0.1 * (1.0 + 2.0 * self.bass_s) * self.spin_dir
-            self.mirrors += (self.mirrors_target - self.mirrors) * min(1.0, dt / 2.0)
-            self.palette += (self.palette_target - self.palette) * min(1.0, dt / 3.0)
+            self.bg_t += dt * self.tempo * BG_SLOW * (0.8 + 0.3 * self.energy + 0.15 * self.bass_s)   # ruhig, kaum Schwankung
+            self.spin += dt * self.tempo * 0.04 * (1.0 + 0.6 * self.bass_s) * self.spin_dir
+            self.mirrors += (self.mirrors_target - self.mirrors) * min(1.0, dt / 5.0)
+            self.palette += (self.palette_target - self.palette) * min(1.0, dt / 8.0)
             if now >= self.variant_next:
                 self._next_variant(now)
             if now >= self.wander_next:                               # zufällige Wanderung: Spiegel, Palette, Texturen
@@ -327,12 +331,16 @@ class Controller:
             out[f"uTex{i}"] = (self.textures[i % max(1, len(self.textures))] if self.textures else self.blank, 1)
         return out
 
+    def led_state(self) -> dict:
+        """LED-Board: Programm "trip", Farbigkeit folgt der Reise (Tresen ruhig dunkelgrün, Reise voll bunt)."""
+        return {"program": "trip", "intensity": float(self.intensity), "tripping": self.phase == PH_TRIP}
+
     def uniform_names(self):
         return ("uBarTex", "uBeingsTex", "uSymbolTex", "uFaceTex", "uTex0", "uTex1", "uTex2", "uBarSize", "uBeingsSize",
                 "uSymbolSize", "uFaceSize", "uTexSize", "uNumTex", "uPhase", "uPhaseT", "uSlide", "uCell", "uProfile",
                 "uProfile2", "uSymA", "uSymB", "uTripT", "uSpin", "uMirrors", "uPalette", "uIntensity", "uBassS", "uMidS",
                 "uHighS", "uEnergy", "uPulse", "uEvent", "uEventT", "uEventLen", "uEventSeed", "uEvSym", "uFaceOK",
-                "uGodTex", "uRootTex", "uGodSize", "uRootSize", "uGodOK", "uRootOK", "uVariant")
+                "uGodTex", "uRootTex", "uGodSize", "uRootSize", "uGodOK", "uRootOK", "uVariant", "uBgT")
 
     def uniforms(self, t: float, f) -> dict:
         self._advance(f)
@@ -362,7 +370,8 @@ class Controller:
             "uEvSym": tuple(float(v) for v in evs), "uFaceOK": 1.0 if self.face is not None else 0.0,
             "uGodSize": size(self.gods), "uRootSize": size(self.roots), "uGodOK": 1.0 if self.gods is not None else 0.0,
             "uRootOK": 1.0 if self.roots is not None else 0.0,
-            "uVariant": (float(self.variant), float(self.variant_prev), min(1.0, (now - self.variant_t0) / 3.0), self.tex_shift),
+            "uVariant": (float(self.variant), float(self.variant_prev), min(1.0, (now - self.variant_t0) / VARIANT_FADE), self.tex_shift),
+            "uBgT": self.bg_t % 1000.0,
         }
 
     def overlays(self, t: float):

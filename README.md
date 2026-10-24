@@ -564,7 +564,9 @@ Naturtexturen (`assets/trip/tex_*.png`: Blätterdach, Frosch auf Lotus, Fliegenp
 Spiralverdrehung, Rauschverzerrung, wandernden Farben, Lichtadern, Tunnelringen, das über etwa 25
 Sekunden an Intensität gewinnt; Symbole aus `assets/trip/symbols.png` (Augenblüten, Frösche,
 Schmetterlinge, Blätter, Farne, Schnecken, Federn, Pilze, Pollen) kreisen im Kaleidoskop und ziehen
-frei durchs Bild. Musik: Bass lässt alles atmen, Beats pulsen Zoom und Lichtadern, Höhen funkeln,
+frei durchs Bild. Der Kaleidoskop-Hintergrund läuft auf einer eigenen, ruhigen Zeit, gut halb so schnell wie die
+Symbole, dreht sich langsam und morpht über acht Sekunden in die nächste Variante; Spiegelzahl und Palette gleiten über
+mehrere Sekunden. Musik: Bass lässt alles atmen, Beats pulsen Zoom und Lichtadern, Höhen funkeln,
 Drops wechseln Palette oder Spiegelzahl. Ereignisse alle 30 bis 60 Sekunden: Froschkonzert mit
 Schallringen, Pilzregen, der Wald schaut (Augen öffnen sich und blinzeln), Schmetterlingsschwarm,
 Pollensturm, Lichthirsch, und wenn `assets/trip/face.png` vorhanden ist, das eigene Gesicht riesig
@@ -1267,7 +1269,9 @@ der EMP als Welle; ab und zu fliegt ein Auto oder eine Polizeidrohne vorbei. Geb
 alle 30 Sekunden bei einem Drop. Black Ice, Paradoxon und
 Überdosis bekommen das Störprogramm des Systemfehlers in ihren Themenfarben. In der Neonfahrt gehen zwei Felder aus je zehn LEDs in den beiden Hauptfarben des Bildschirms auf jedem Beat ein Feld nach
 links oder rechts und wechseln immer wieder die Richtung; ab und zu laufen sie im Gleichschritt, ab und zu aufeinander zu,
-liegen dann übereinander und leuchten in einer dritten Farbe, gehen kurz als eines weiter und teilen sich wieder. Beim Orakel stehen die acht Tafeln unter dem Kopf auf der Kette: jede LED bekommt der Reihe nach eine Tafelfarbe (Rot, Orange,
+liegen dann übereinander und leuchten in einer dritten Farbe, gehen kurz als eines weiter und teilen sich wieder. Am Waldtresen fließt auf der Kette ein ganz langsames, morphendes Farbfeld durch den ganzen Farbkreis, Blasen teilen und
+vereinen sich, dazwischen liegen immer wieder dunkelgrüne Täler, aus geht sie nie; am Tresen selbst überwiegt das Dunkelgrün,
+auf der Reise wird es voll bunt, ein Drop dreht die ganze Palette langsam weiter. Beim Orakel stehen die acht Tafeln unter dem Kopf auf der Kette: jede LED bekommt der Reihe nach eine Tafelfarbe (Rot, Orange,
 Gelb, Grün, Türkis, Blau, Violett, Magenta, dann von vorne), immer nur ein Punkt je Farbe, und sie leuchtet genau dann, wenn ihre
 Tafel im Beat-Muster an ist. Bei HAL 3000 ziehen dunkel- und hellrote Felder wie die
 Zellen des Korridors langsam und immer in dieselbe Richtung vorbei, ein Viertel dunkler als der Rest, und ab und zu kommt von einem Ende ein einzelnes helles Feld, das im Takt Schritt für Schritt rund eine Minute
