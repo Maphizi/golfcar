@@ -714,13 +714,16 @@ class Controller:
                 "uStakeT", "uSepia")
 
     def led_state(self) -> dict:
-        """Für launcher/ledstream.py: Casino-Markise; Gewinnstufe nur in der Ergebnisphase."""
+        """Für launcher/ledstream.py: Casino-Lauflicht; Gewinnstufe nur in der Ergebnisphase; je Walze (Position in Symbolen,
+        Drehzahl in Symbolen/s, Sekunden seit dem Einrasten), damit die Kette beim Drehen mit den Walzen läuft."""
         now = time.monotonic()
         res = self.state == ST_RESULT
         th = self.themes[self.theme]
         cols = [tuple(int(max(0.0, min(1.0, c)) * 255) for c in col) for col in th.get("colors", ())[:2]]
+        n = self.n_reels
         return {"program": "slots", "spinning": self.state == ST_SPIN, "win": int(self.win) if res else 0,
-                "win_age": (now - self.state_t0) if res else 0.0, "colors": cols}     # Lichtfarben des Automaten
+                "win_age": (now - self.state_t0) if res else 0.0, "colors": cols,     # Lichtfarben des Automaten
+                "reels": [(float(r.pos), float(r.speed), float(now - self.stop_t0[i])) for i, r in enumerate(self.reels[:n])]}
 
     def uniform_names(self):
         return self.UNIFORMS
