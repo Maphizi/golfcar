@@ -32,7 +32,7 @@ log = logging.getLogger("leds")
 
 # Grundprogramm je Szene (ruhig; Specials kommen aus den Ereignissen der Szene über wled.apply_mode_async / led_state)
 SCENE_BASE = {
-    "navcomputer": "stars", "planets": "stars", "timejump": "timejump", "neonrace": "duel", "splash": "stars",
+    "navcomputer": "stars", "planets": "stars", "timejump": "timejump", "neonrace": "drive", "splash": "stars",
     "campfire": "fire",
     "blackhole": "vortex", "core": "vortex", "flux": "vortex", "pond": "vortex",
     "rooftop": "city",
@@ -269,6 +269,8 @@ class LedStream:
                 hb["pulses"].append((now, 1.5))                   # großer Herzschlag (Startknopf)
                 hb["pulses"].append((now + 0.3, 0.9))
             return
+        if self.base == "drive" and n.startswith("neonrace_"):
+            return                                                # Neonfahrt: Start, Nitro, Hupe, Polizei kommen aus led_state
         if self.base == "city" and ("lightning" in n or "blackout" in n or "fireworks" in n):
             return                                                # Dachterrasse: Blitz, Stromausfall, Feuerwerk kommen aus led_state
         if STATE_PROFILE.match(n):
@@ -403,7 +405,9 @@ class LedStream:
             frame = self._error(now, dt, {"phase": phase, "k": k, "pct": k, "good": False}, bass, high, is_beat, live)
         elif program == "slots":
             frame = self._slots(now, dt, st, bass, high, is_beat, live)
-        elif program == "duel":                                   # Neonfahrt: zwei Felder im Beat
+        elif program == "drive":                                  # Neonfahrt: Straße mit Laternen und Schildern + zwei Felder
+            frame = self._drive(now, dt, st, bass, high, is_beat, live)
+        elif program == "duel":                                   # zwei Felder im Beat (allein)
             frame = self._duel(now, dt, st, bass, high, is_beat, live)
         elif program == "heart":                                  # Herzbaum: Herzschlag von vorne nach hinten
             frame = self._heart(now, dt, st, bass, high, is_beat, live)
@@ -718,6 +722,97 @@ class LedStream:
         if live < 0.5:
             pos = (math.sin(now * 0.15) * 0.5 + 0.5)
             frame = np.outer(np.exp(-((x - pos) / 0.06) ** 2) * (0.2 + 0.15 * math.sin(now * 1.2)), col)
+        return frame
+
+    LAMP_EVERY = 26                                               # Neonfahrt: Abstand der Straßenlaternen in LEDs
+    DRIVE_K = 100.0                                               # LEDs je Streckeneinheit der Szene (uDist)
+
+    def _drive(self, now, dt, st: dict, bass, high, is_beat, live) -> np.ndarray:
+        """Neonfahrt: die Kette ist die Straße, an der man vorbeifährt. Straßenlaternen (alle LAMP_EVERY LEDs, Lichtkegel) und
+        Neonschilder (6-15 LEDs in Haupt-, Akzentfarbe und Bernstein, Farbton springt je Beat weiter) ziehen genau mit der
+        gefahrenen Strecke der Szene von vorne nach hinten; steht der Wagen, stehen sie. Die Straße glimmt in der
+        Bildschirmfarbe. Darüber hell die zwei Felder (`_duel`). Specials aus led_state: Nitro = Lichtstreifen, Hupe = zweimal
+        Aufblinken, Beinahe-Treffer = weißer Streifen huscht nach hinten, Viertelwechsel = Lichtwand von vorne nach hinten,
+        Polizeidrohnen = rot-blauer Blinker überholt von hinten nach vorne."""
+        n = self.n
+        idx = np.arange(n)
+        if self.reverse:
+            idx = n - 1 - idx
+        dv = getattr(self, "drv", None)
+        if dv is None or dv["L"] != 2 * n:
+            L = 2 * n
+            sign = np.full(L, -1)
+            u = self.rng.randint(4, 10)
+            while u < L - 20:
+                if self.rng.random() < 0.65:
+                    a = u + self.rng.randint(5, self.LAMP_EVERY - 18)
+                    w = self.rng.randint(6, 15)
+                    sign[a:min(L, a + w)] = self.rng.randrange(3)
+                u += self.LAMP_EVERY
+            dv = self.drv = {"L": L, "sign": sign, "hue_step": 0.0, "hue_s": 0.0}
+        main, acc = self._base_col()
+        main = _no_white(np.asarray(main, dtype=float))
+        acc = _no_white(np.asarray(acc, dtype=float)) if np.asarray(acc).max() > 8 else main
+        dist = float(st.get("dist", 0.0)) if st else now * 0.3
+        speed = float(st.get("speed", 0.4)) if st else 0.4
+        driving = bool(st.get("driving", True)) if st else True
+        nitro = float(st.get("nitro", 0.0)) if st else 0.0
+        off = dist * self.DRIVE_K
+        if is_beat:
+            dv["hue_step"] += 0.08
+        dv["hue_s"] += (dv["hue_step"] - dv["hue_s"]) * min(1.0, dt * 8.0)
+        # Straße: Grundglimmen in der Bildschirmfarbe
+        frame = np.tile(main * (0.07 + 0.03 * self.bass_s), (n, 1))
+        # Neonschilder (Straßenkoordinate u = Position - Versatz)
+        uu = (idx - int(off)) % dv["L"]
+        sc = dv["sign"][uu]
+        hm = float(_hue(main[None, :])[0]) / 360.0
+        ha = float(_hue(acc[None, :])[0]) / 360.0
+        pal = np.array([_hsv((hm + dv["hue_s"]) % 1.0, 1.0, 1.0), _hsv((ha + dv["hue_s"]) % 1.0, 1.0, 1.0),
+                        _hsv((0.09 + dv["hue_s"] * 0.3) % 1.0, 1.0, 1.0)])
+        m = sc >= 0
+        flick = 0.85 + 0.15 * np.sin(now * 9.0 + uu * 0.7)
+        frame[m] = pal[sc[m]] * (0.55 + 0.25 * self.bass_s) * flick[m][:, None]
+        # Laternen mit Lichtkegel; bei Nitro ziehen sie sich zu Streifen
+        ph = (idx - off) % self.LAMP_EVERY
+        dd = ph - self.LAMP_EVERY / 2.0
+        trail = 2.0 + 22.0 * nitro + 4.0 * speed
+        lamp = np.exp(-(dd / 1.6) ** 2) + 0.25 * np.exp(-(dd / 5.0) ** 2) + np.where(dd < 0, 0.45 * np.exp(dd / trail), 0.0)
+        lamp_col = np.clip(acc * 0.5 + np.array([255.0, 200.0, 140.0]) * 0.5, 0, 255)
+        frame += np.outer(np.clip(lamp, 0.0, 1.2) * (0.7 if driving else 0.45), lamp_col)
+        # die zwei Felder im Beat darüber, hell
+        duel = self._duel(now, dt, st, bass, high, is_beat, live)
+        bright = duel.max(axis=1) > 60
+        frame[bright] = duel[bright]
+        # Specials
+        t_h = now - float(st.get("honk_t0", -100.0)) if st else 99.0
+        if 0.0 <= t_h < 0.5 and (t_h < 0.12 or 0.25 < t_h < 0.37):
+            frame = frame * 1.6 + main * 0.25
+        t_n = now - float(st.get("near_t0", -100.0)) if st else 99.0
+        if 0.0 <= t_n < 0.4:
+            pos = t_n / 0.4
+            x = idx / max(1, n - 1)
+            frame += np.outer(np.exp(-((x - pos) / 0.03) ** 2), np.array([230.0, 235.0, 255.0]))
+        t_d = now - float(st.get("district_t0", -100.0)) if st else 99.0
+        dlen = float(st.get("district_len", 3.2)) if st else 3.2
+        if 0.0 <= t_d < dlen:
+            pos = t_d / dlen
+            x = idx / max(1, n - 1)
+            wall = np.exp(-((x - pos) / 0.02) ** 2)
+            frame = frame * (1.0 - 0.5 * np.exp(-((x - pos) / 0.08) ** 2))[:, None] + np.outer(wall, acc * 0.6 + WHITE * 0.3)
+        t_p = now - float(st.get("police_t0", -100.0)) if st else 99.0
+        if 0.0 <= t_p < float(st.get("police_len", 14.0) if st else 14.0):
+            u = (t_p % 4.0) / 2.5                                 # alle 4 s überholt einer, 2,5 s von hinten nach vorne
+            if u <= 1.0:
+                pos = 1.0 - u
+                px = int(round(pos * (n - 1)))
+                red = (now * 4.0) % 1.0 < 0.5
+                for o in range(-2, 3):
+                    j = px + o
+                    if 0 <= j < n:
+                        frame[j if not self.reverse else n - 1 - j] = np.array([255.0, 0.0, 0.0]) if (red ^ (o > 0)) else np.array([0.0, 40.0, 255.0])
+        if not live:
+            frame *= 0.75
         return frame
 
     DUEL_W = 10                                                   # Neonfahrt: Breite eines Felds in Ansteuerpunkten

@@ -384,6 +384,16 @@ class Controller:
                 "uTrafficTex": (self.traffic if self.traffic is not None else self.blank, 1),
                 "uObsTex": (self.obs_tex if self.obs_tex is not None else self.blank, 1)}
 
+    def led_state(self) -> dict:
+        """LED-Board: Programm "drive" (Straße mit Laternen und Neonschildern, die mit der gefahrenen Strecke vorbeiziehen),
+        dazu Ereigniszeitpunkte (time.monotonic) für Hupe, Beinahe-Treffer, Viertelwechsel und Polizeidrohnen."""
+        ev = self.event
+        police = ev["t0"] if ev is not None and ev["kind"] == EV_DRONES else -100.0
+        return {"program": "drive", "dist": float(self.dist), "speed": float(self.speed), "driving": bool(self.driving),
+                "nitro": float(self.nitro), "honk_t0": float(self.honk_t0), "near_t0": float(self.near_t0),
+                "district_t0": float(self.district_t0), "district_len": DISTRICT_LEN, "police_t0": float(police),
+                "police_len": float(EVENTS[EV_DRONES][1])}
+
     def uniform_names(self):
         names = ["uSceneTex", "uSceneBTex", "uHoloTex", "uTrafficTex", "uObsTex", "uSceneSize", "uSceneBSize", "uHoloSize",
                  "uTrafficSize", "uObsSize", "uDistT", "uDistMix",
