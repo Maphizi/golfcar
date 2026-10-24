@@ -508,6 +508,9 @@ Launcher: `switch()` gibt den effektiven Modus zurück, `announce(eff)`; Taxista
 Je hörbare Gruppe 6-8 Sätze; `_pick()` meidet die zuletzt gespielten (gut die Hälfte der Auswahl, `logs/announce_recent.json`,
 Schlüssel `<thema|standard>:<gruppe>`). Build rendert Standardsätze nicht in der Themenstimme, wenn das Thema den Modus ersetzt
 (`_replaced_modes()` aus themes.toml). Lautstärke aller Sprecher: `[volume].voice_gain` 0.35 in settings.toml.
+`[themes.spacetaxi]` hat nur `tts` = die HAL-3000-Werte aus `kitt/hal/app.py` `prepare_cfg` (pitch 1.0, length 1.15, robot 35 Hz,
+mix 0.25, ohne Bits, Kamm 3 ms): das Space-Programm sagt die Standardsätze mit HALs Stimme an; fehlen die Dateien noch, spielt
+`play()` die Standardstimme. KITT (Taste 10) und BIBO behalten ihre eigene Stimme (`kitt.toml` `[tts]`).
 
 ## Musik vom Handy (`scripts/setup_cast.sh`)
 Spotify Connect (`kitt-spotify`, librespot/raspotify, Premium nötig) und AirPlay (`kitt-airplay`, shairport-sync) als

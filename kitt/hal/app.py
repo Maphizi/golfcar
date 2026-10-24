@@ -91,7 +91,7 @@ class HalUI(PersonaUI):
         cfg["voice"]["require_name"] = False
         cfg["voice"]["max_sentences"] = 3
         cfg["voice"]["mood"] = False
-        tts = cfg["tts"]
+        tts = cfg["tts"]                    # dieselben Werte stehen in config/announce.toml [themes.spacetaxi] (Ansagen)
         tts["pitch_factor"] = 1.0
         tts["length_scale"] = 1.15          # langsamer, ruhiger
         tts["robot"] = True

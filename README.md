@@ -1157,7 +1157,8 @@ erfindet keine Markennamen oder Figuren. Ansagen in `config/announce.toml` entsp
 
 **Ansagen beim Moduswechsel** (`config/announce.toml`): KITT kommentiert jeden Tastendruck mit einem
 zufälligen Satz aus der Liste des Modus (sechs bis acht je Modus und Thema; die zuletzt gehörten kommen erst nach
-einigen anderen wieder), dazu eine Boot-Ansage. Die Sätze werden einmal mit Piper
+einigen anderen wieder), dazu eine Boot-Ansage. Im Space-Programm spricht sie die Stimme von HAL 3000, die anderen Themen haben
+ihre eigenen Stimmen. Die Sätze werden einmal mit Piper
 vorgerendert (`scripts/announce_build.sh`, nach jeder Textänderung erneut) und liegen als WAV in
 `models/announce/`. Der Launcher spielt sie ohne Modell-Ladezeit über `pw-play` ab. Aus mit
 `announce = false` in `settings.toml` oder einer leeren Liste je Modus.
