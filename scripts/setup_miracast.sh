@@ -58,7 +58,10 @@ check() {
   echo "  WLAN-Kanal jetzt: $(iw dev "$WIFI" info 2>/dev/null | awk '/channel/{print $2, $3, $4}')"
   echo "== Programme =="
   for p in wf-recorder ffmpeg nmcli busctl; do printf "  %-12s %s\n" "$p" "$(command -v $p || echo fehlt)"; done
-  ffmpeg -hide_banner -encoders 2>/dev/null | grep -q libx264 && echo "  libx264      ok" || echo "  libx264      fehlt (ffmpeg ohne x264)"
+  # erst ganz lesen, dann suchen: grep -q bricht die Ausgabe ab, mit pipefail sähe das wie "fehlt" aus
+  enc="$(ffmpeg -hide_banner -encoders 2>/dev/null)"
+  case "$enc" in *libx264*) echo "  libx264      ok" ;; *) echo "  libx264      fehlt (ffmpeg ohne x264)" ;; esac
+  wf-recorder --help 2>&1 | grep -c -- "--codec" >/dev/null && echo "  wf-recorder  $(wf-recorder --version 2>&1 | head -1)"
   echo "== Bildschirm-Session =="
   pgrep -a -x labwc | head -1 | sed 's/^/  /'; ls /run/user/*/wayland-* 2>/dev/null | sed 's/^/  /'
   echo "== Empfänger in der Nähe (15 s) =="
