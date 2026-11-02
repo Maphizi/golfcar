@@ -184,6 +184,48 @@ def p2p_up(cfg: dict, peer: dict) -> tuple[str, str]:
     return ipif, addr
 
 
+# -- GO-Wunsch (wpa_supplicant, nur zur Laufzeit) ------------------------------------------------------------------
+# Der WLAN-Treiber des Pi (brcmfmac) kann neben dem normalen WLAN keinen eigenen Wi-Fi-Direct-Hotspot (Gruppenleiter,
+# GO) aufmachen: "Failed to set beacon parameters". Als Teilnehmer (P2P-Client) darf er mitmachen. Daher vor dem Verbinden
+# den GO-Wunsch auf 0 setzen, dann übernimmt der Empfänger die Leiterrolle; danach wieder der alte Wert.
+WPAS = "fi.w1.wpa_supplicant1"
+WPAS_P2P_IF = "fi.w1.wpa_supplicant1.Interface.P2PDevice"
+
+
+def _wpas_paths(wifi: str) -> list[str]:
+    paths = []
+    for name in (wifi, f"p2p-dev-{wifi}"):
+        try:
+            paths.append(bus("call", WPAS, "/fi/w1/wpa_supplicant1", WPAS, "GetInterface", "s", name)[0])
+        except (RuntimeError, IndexError, KeyError, ValueError):
+            continue
+    return paths
+
+
+def set_go_intent(wifi: str, intent: int) -> dict[str, int]:
+    """GO-Wunsch (0 = nie Gruppenleiter .. 15 = immer) setzen. Liefert die alten Werte je Pfad."""
+    old = {}
+    for path in _wpas_paths(wifi):
+        try:
+            cfg = bus("get-property", WPAS, path, WPAS_P2P_IF, "P2PDeviceConfig") or {}
+            old[path] = int(cfg.get("GOIntent", {}).get("data", 7))
+            bus("set-property", WPAS, path, WPAS_P2P_IF, "P2PDeviceConfig", "a{sv}", "1", "GOIntent", "u", str(intent))
+            log.info("GO-Wunsch %s: %d -> %d", path.rsplit("/", 1)[-1], old[path], intent)
+        except (RuntimeError, ValueError, AttributeError) as exc:
+            log.warning("GO-Wunsch nicht setzbar (%s): %s", path, exc)
+    if not old:
+        log.warning("wpa_supplicant über D-Bus nicht erreichbar, GO-Wunsch bleibt Standard (der Pi könnte Gruppenleiter werden)")
+    return old
+
+
+def restore_go_intent(old: dict[str, int]) -> None:
+    for path, val in old.items():
+        try:
+            bus("set-property", WPAS, path, WPAS_P2P_IF, "P2PDeviceConfig", "a{sv}", "1", "GOIntent", "u", str(val))
+        except RuntimeError:
+            pass
+
+
 def p2p_down() -> None:
     sh(["nmcli", "connection", "down", CON_NAME], timeout=20.0)
 
@@ -515,8 +557,10 @@ def run(cfg: dict, once: bool, max_seconds: float) -> int:
         def guard() -> bool:                                               # WLAN darf nicht wegfallen
             return (not was_up) or wlan_state(wifi)[0]
 
+        go_old: dict[str, int] = {}
         try:
             set_status(f"verbinde mit {peer['name']}")
+            go_old = set_go_intent(wifi, 0)
             ipif, my_ip = p2p_up(cfg, peer)
             log.info("Wi-Fi Direct steht: %s, eigene IP %s", ipif, my_ip)
             for _ in range(5):                                             # die ersten Sekunden genau hinsehen
@@ -535,6 +579,7 @@ def run(cfg: dict, once: bool, max_seconds: float) -> int:
             set_status(f"Fehler: {exc}")
         finally:
             p2p_down()
+            restore_go_intent(go_old)
         if once:
             return 0
         stop.wait(float(cfg["retry_seconds"]))

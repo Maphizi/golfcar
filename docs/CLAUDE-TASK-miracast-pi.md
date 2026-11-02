@@ -113,3 +113,17 @@ nichts den Kanal. Alternative ohne Funk: HDMI-Splitter/HDMI-Funkstrecke (keine S
 **Hinweise:** Miracast hat 50-150 ms Verzögerung (bei Retro-Spielen spürbar). Der Pi 5 hat keinen Hardware-H.264-Encoder,
 libx264 braucht bei 720p30 etwa einen Kern (Dienst läuft mit Nice 5). Der Dongle kann auch AirPlay, aber für Linux gibt es
 keinen brauchbaren AirPlay-Bildsender, daher Miracast.
+
+### Testläufe auf dem Pi (2026-11-02)
+
+1. Erster Test: Dongle gefunden (`530E1F_P2P`, CE:C4:B2:53:0E:1F, Signal 100, Miracast-Empfänger), aber
+   `nmcli connection up` lief nach 45 s in den Timeout, am Dongle tat sich nichts. Ursache: in den WFD-IEs des Senders war
+   Bit 7 der Geräteinfo gesetzt (= TDLS bevorzugt), der Dongle reagierte nicht. Korrigiert auf 0x0010.
+2. Zweiter Test: `P2P-GO-NEG-SUCCESS role=GO freq=5785`, dann `Failed to set beacon parameters` /
+   `p2p-wlan0-1: Could not connect to kernel driver` / `P2P-GROUP-FORMATION-FAILURE`. Der Pi wurde Gruppenleiter (GO),
+   brcmfmac kann neben wlan0 (Vodafone, 5540 MHz) aber keinen eigenen Hotspot aufmachen. Chip-Kombinationen:
+   `managed<=2, P2P-device<=1, P2P-client/GO<=1, channels<=2` und `managed<=1, AP<=1, P2P-client<=1, channels<=1`.
+   WLAN und Tailscale blieben in beiden Tests verbunden.
+   Korrektur: vor dem Verbinden setzt `miracast.py` den GO-Wunsch von wpa_supplicant (D-Bus `P2PDeviceConfig.GOIntent`)
+   auf 0, damit der Dongle Gruppenleiter wird und der Pi nur Teilnehmer ist; danach wieder der alte Wert.
+   Falls es trotzdem nicht geht: WLAN des Carts auf 2,4 GHz oder zweiter USB-WLAN-Stick nur für Miracast.
