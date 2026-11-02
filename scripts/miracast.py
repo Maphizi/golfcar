@@ -49,8 +49,9 @@ DEV_IF = "org.freedesktop.NetworkManager.Device"
 DEVICE_TYPE_WIFI_P2P = 30
 CON_NAME = "kitt-miracast"
 RTSP_PORT = 7236
-# WFD-Geräteinfo des Senders: Typ Quelle, Sitzung verfügbar, Steuerport 7236, max. 200 Mbit/s
-WFD_IES = "00:00:06:00:90:1c:44:00:c8"
+# WFD-Geräteinfo des Senders (Unterelement 0): Typ Quelle, Sitzung verfügbar, Verbindung über Wi-Fi Direct (Bit 7 = 0,
+# nicht TDLS), Steuerport 7236, max. 200 Mbit/s
+WFD_IES = "00:00:06:00:10:1c:44:00:c8"
 # CEA-Auflösungen (Bit -> Breite, Höhe, Bilder/s) aus der WFD-Spezifikation
 CEA = {0: (640, 480, 60), 5: (1280, 720, 30), 6: (1280, 720, 60), 7: (1920, 1080, 30), 8: (1920, 1080, 60)}
 EXIT_WLAN_CONFLICT = 3
@@ -119,7 +120,8 @@ def wfd_kind(ies: list[int]) -> str:
     return "kein Miracast"
 
 
-def find_peers(dev: str, seconds: float) -> list[dict]:
+def find_peers(dev: str, seconds: float, keep: bool = False) -> list[dict]:
+    """Partner suchen. keep=True: die Suche läuft weiter (direkt danach verbinden, sonst fällt der Partner heraus)."""
     try:
         bus("call", NM, dev, P2P_IF, "StartFind", "a{sv}", "1", "timeout", "i", str(int(max(seconds, 5)) + 5))
     except RuntimeError as exc:
@@ -134,10 +136,11 @@ def find_peers(dev: str, seconds: float) -> list[dict]:
                             "signal": prop(p, PEER_IF, "Strength"), "kind": wfd_kind(prop(p, PEER_IF, "WfdIEs") or [])}
             except RuntimeError:
                 continue
-    try:
-        bus("call", NM, dev, P2P_IF, "StopFind")
-    except RuntimeError:
-        pass
+    if not keep:
+        try:
+            bus("call", NM, dev, P2P_IF, "StopFind")
+        except RuntimeError:
+            pass
     return list(peers.values())
 
 
@@ -500,7 +503,7 @@ def run(cfg: dict, once: bool, max_seconds: float) -> int:
             return 2
         was_up, wlan_con = wlan_state(wifi)
         log.info("WLAN %s: %s", wifi, f"verbunden mit {wlan_con}" if was_up else "nicht verbunden")
-        peer = match_peer(find_peers(dev, 12.0), str(cfg["peer"]))
+        peer = match_peer(find_peers(dev, 12.0, keep=True), str(cfg["peer"]))
         if not peer:
             set_status(f"Empfänger '{cfg['peer']}' nicht gefunden")
             if once:

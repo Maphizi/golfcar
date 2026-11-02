@@ -34,6 +34,7 @@ while [ $# -gt 0 ]; do
 done
 WIFI="$(python3 -c "import tomllib;print(tomllib.load(open('$ROOT/config/settings.toml','rb')).get('miracast',{}).get('wifi','wlan0'))" 2>/dev/null || echo wlan0)"
 UNIT=/etc/systemd/system/kitt-miracast.service
+IW="$(command -v iw || echo /usr/sbin/iw)"                    # liegt in /usr/sbin, nicht im PATH normaler Benutzer
 mkdir -p "$ROOT/logs"
 
 check() {
@@ -49,13 +50,14 @@ check() {
     echo "  FEHLT: p2p-dev-$WIFI nicht in NetworkManager -> wpa_supplicant ohne P2P oder NM zu alt"
   fi
   echo "== Chip: gleichzeitige Verbindungen (iw list) =="
-  phy="$(iw dev "$WIFI" info 2>/dev/null | awk '/wiphy/{print "phy"$2}')"
-  iw phy "$phy" info 2>/dev/null | sed -n '/valid interface combinations/,/^\s*$/p' | head -8 | sed 's/^/  /'
-  if iw phy "$phy" info 2>/dev/null | grep -q "#channels <= 1"; then
+  phy="$($IW dev "$WIFI" info 2>/dev/null | awk '/wiphy/{print "phy"$2}')"
+  combos="$($IW phy "$phy" info 2>/dev/null | grep -A6 "valid interface combinations")"
+  echo "${combos:-  (iw liefert nichts)}" | head -8 | sed 's/^/  /'
+  if echo "$combos" | grep -q "#channels <= 1"; then
     echo "  ACHTUNG: nur ein Kanal gleichzeitig. Wi-Fi Direct klappt nur, wenn der Empfänger den Kanal des WLANs nimmt;"
     echo "           sonst zweiter USB-WLAN-Stick für Miracast ([miracast] wifi = \"wlan1\")."
   fi
-  echo "  WLAN-Kanal jetzt: $(iw dev "$WIFI" info 2>/dev/null | awk '/channel/{print $2, $3, $4}')"
+  echo "  WLAN-Kanal jetzt: $($IW dev "$WIFI" info 2>/dev/null | awk '/channel/{print $2, $3, $4}')"
   echo "== Programme =="
   for p in wf-recorder ffmpeg nmcli busctl; do printf "  %-12s %s\n" "$p" "$(command -v $p || echo fehlt)"; done
   # erst ganz lesen, dann suchen: grep -q bricht die Ausgabe ab, mit pipefail sähe das wie "fehlt" aus
@@ -92,9 +94,18 @@ case "$MODE" in
     systemctl is-active --quiet kitt-miracast && { echo "Dienst läuft schon, erst --disable"; exit 1; }
     guard_off; guard_on
     echo "Test: $SECS s senden. Ausführlich: KITT_MIRACAST_DEBUG=1 davor."
+    t0="$(date '+%Y-%m-%d %H:%M:%S')"
+    # nur für die Testdauer genauer protokollieren (ändert keine Verbindung, danach zurück auf Standard)
+    sudo nmcli general logging level DEBUG domains WIFI,SUPPLICANT 2>/dev/null
     sudo -E python3 "$ROOT/scripts/miracast.py" run --once --seconds "$SECS"
     rc=$?
     guard_off
+    sudo nmcli general logging level INFO domains DEFAULT 2>/dev/null
+    echo "== Wi-Fi Direct im Systemprotokoll (NetworkManager, wpa_supplicant) =="
+    sudo journalctl --no-pager -o short-precise --since "$t0" -u NetworkManager -u wpa_supplicant 2>/dev/null \
+      | grep -iE "p2p|wfd|wps|go-neg|group|kitt-miracast|peer|freq|fail|error|timeout|status" | tail -n 80 | sed 's/^/  /'
+    echo "== WLAN-Verbindung =="
+    $IW dev "$WIFI" link 2>/dev/null | grep -E "Connected|freq|SSID" | sed 's/^/  /'
     echo "Ende (Code $rc). Status: $(cat "$ROOT/logs/miracast_status.txt" 2>/dev/null)"
     nmcli -f DEVICE,STATE,CONNECTION device | grep -E "^$WIFI " | sed 's/^/WLAN: /'
     ;;
