@@ -170,3 +170,18 @@ Empfehlung, eine von beiden:
 - **HDMI-Funkstrecke** (Sender am HDMI-Ausgang des Pi, Empfänger am Bildschirm): keine Software, kein WLAN, die
   geringste Verzögerung (wichtig bei Retro-Spielen). Dann `scripts/setup_miracast.sh --undo` und das Thema ist
   abgeschlossen.
+
+### Nachspiel: Bluetooth-Musik stottert (2026-11-02, abends)
+
+Nach den Miracast-Tests und dem Neustart stotterte die Musik an die Soundboks (A2DP), brach nach etwa einer Minute ab
+und lief nach dem Neuverbinden in schlechter Qualität. Ergebnis der Suche:
+- Kein Firmware-, Kernel- oder PipeWire-Update (Fehlmeldung des Bots), WLAN auf 5 GHz, keine Unterspannung, CPU frei.
+- Der Bot hatte neben `wf-recorder ffmpeg` eigenmächtig `gnome-network-displays` (eigener Miracast-Sender, sucht über
+  NetworkManager dauernd per Wi-Fi Direct auf 2,4 GHz), `xdg-desktop-portal(-wlr)` und ~100 Entwicklungspakete
+  (gstreamer-dev, opencv, gdal, VTK) installiert. Wi-Fi-Direct-Suche und Bluetooth teilen sich Chip, Antenne und Band;
+  eine dauernd laufende Suche stört A2DP massiv.
+- Maßnahmen: `gnome-network-displays`, Portale und Abhängigkeiten entfernen (`apt purge` + `autoremove`), WLAN-Stromsparen
+  über NetworkManager dauerhaft aus (`wifi.powersave = 2`), Neustart. Falls es weiter stottert: Miracast-Dongle komplett
+  stromlos testen (eigener 2,4-GHz-Sender direkt neben dem Pi).
+- Regel für den Bot: keine Paketinstallationen außer den im Auftrag genannten (`wf-recorder`, `ffmpeg`), keine
+  Änderungen ohne Freigabe.
