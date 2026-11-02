@@ -609,6 +609,11 @@ Diagnose ohne Abtippen: `scripts/bt_diag.sh` sammelt Pakete/apt-Historie, Firmwa
 hciconfig/bluetoothctl, config.txt, WLAN, PipeWire/WirePlumber-Dateien, wpctl, Dienste/Autostart in `diag/bt_diag_<zeit>.txt`
 (gitignored) und pusht die Datei als eigenständigen Commit nach `origin/diag` (`commit-tree`, Arbeitsbranch unberührt);
 `--no-push` gibt sie nur aus. Auswertung: `git fetch origin diag && git show origin/diag:bt_diag_<zeit>.txt`.
+Erste Auswertung (03.11. 00:24): ~13 "Unexpected continuation frame (len 0)" je Sekunde, praktisch jedes empfangene ACL-Paket;
+Verbindung reißt alle ~1 min mit "Connection Timeout" (btmon), WirePlumber "error 24" = Transport weg. Der Bot hatte am 02.11. um
+19:44/19:48 außer den apt-Paketen auch miraclecast aus dem Quellcode gebaut (Build-Abhängigkeiten gstreamer-dev/readline-dev,
+D-Bus-Datei `/etc/dbus-1/system.d/org.freedesktop.miracle.conf`) und um 19:36 die WLAN-Profile angefasst; um 00:02 wurde
+PipeWire 1.4.2 rpt3 -> rpt4 aktualisiert (`setup_bluetooth.sh`). `scripts/bt_fix.sh` entfernt miraclecast restlos (`--dry` zeigt nur).
 
 ## /dev/uinput Berechtigung
 udev-Regel in `/etc/udev/rules.d/99-uinput.rules`:

@@ -21,9 +21,13 @@ S "Allgemein"
 date; uptime; uname -r; cat /etc/os-release | grep PRETTY; echo "Benutzer: $(id -un), sudo ohne Passwort: $(sudo_ok && echo ja || echo nein)"
 run "Throttling / Temperatur" sh -c 'vcgencmd get_throttled; vcgencmd measure_temp'
 
-S "apt history: alle Läufe seit 2026-11-01 (Commandline, Install, Remove, Purge; Paketlisten gekürzt)"
-for f in /var/log/apt/history.log /var/log/apt/history.log.1; do [ -f "$f" ] && cat "$f"; done 2>/dev/null \
-  | awk '/^Start-Date: 2026-1[01]-/{p=1} p' | sed -E 's/^(Install|Upgrade|Remove|Purge): (.{0,900}).*/\1: \2/'
+S "apt history seit 2026-10-01: alle Läufe (Commandline), Remove/Purge komplett, Install/Upgrade nur Kernel/Firmware/Audio/BT"
+zcat -f /var/log/apt/history.log* 2>/dev/null | awk '/^Start-Date: 2026-(1[0-2])-/{p=1} /^Start-Date: 2026-0/{p=0} p' | while IFS= read -r l; do
+  case "$l" in
+    Start-Date:*|Commandline:*|End-Date:*) echo "$l" ;;
+    Remove:*|Purge:*) echo "$l" | cut -c1-1200 ;;
+    Install:*|Upgrade:*) k="${l%%:*}"; echo "$l" | sed 's/^[A-Za-z]*: //' | tr ',' '\n' | grep -iE 'linux-image|raspi-firmware|firmware-brcm|bluez|pi-bluetooth|pipewire|libspa|wireplumber|rtkit|raspberrypi-sys|wpasupplicant|network-manager' | sed "s/^ */  $k: /" ;;
+  esac; done
 S "Pakete Bluetooth/Audio/Firmware (ii = installiert, rc = entfernt, Konfig da, fehlt = nie/ganz weg)"
 for p in bluez bluez-firmware pi-bluetooth libspa-0.2-bluetooth pipewire pipewire-pulse pipewire-audio wireplumber \
          firmware-brcm80211 raspi-firmware raspberrypi-sys-mods rfkill bluez-tools libldacbt-enc2 libfreeaptx0 libopenaptx0; do
@@ -31,10 +35,15 @@ for p in bluez bluez-firmware pi-bluetooth libspa-0.2-bluetooth pipewire pipewir
 done
 run "Bluetooth-Firmware-Dateien" sh -c 'ls -la /lib/firmware/brcm/BCM4345C0* /lib/firmware/updates/brcm/BCM4345C0* /lib/firmware/synaptics/*4345* 2>&1 | head'
 
-S "Kernel: Bluetooth/HCI/BCM/brcmfmac seit Boot (erste 40 Zeilen)"
-dmesg -T 2>/dev/null | grep -iE 'bluetooth|hci0|hci_uart|bcm43|brcmf|serial.*uart|ttyAMA' | head -n 40 || echo "(dmesg nicht lesbar)"
-S "Kernel: letzte 25 Bluetooth-Zeilen"
-dmesg -T 2>/dev/null | grep -iE 'bluetooth|hci0' | tail -n 25
+S "Kernel: Bluetooth/HCI/BCM/brcmfmac seit Boot (ohne 'continuation frame', erste 40 Zeilen)"
+dmesg -T 2>/dev/null | grep -iE 'bluetooth|hci0|hci_uart|bcm43|brcmf|serial.*uart|ttyAMA' | grep -v 'continuation frame' | head -n 40 || echo "(dmesg nicht lesbar)"
+S "Kernel: letzte 15 Bluetooth-Zeilen ohne 'continuation frame'"
+dmesg -T 2>/dev/null | grep -iE 'bluetooth|hci0' | grep -v 'continuation frame' | tail -n 15
+S "Rate der 'continuation frame'-Meldungen und ACL-Empfang in 10 s"
+c0="$(dmesg 2>/dev/null | grep -c 'continuation frame')"; a0="$(hciconfig hci0 2>/dev/null | grep -oE 'RX bytes:[0-9]+ acl:[0-9]+')"
+sleep 10
+c1="$(dmesg 2>/dev/null | grep -c 'continuation frame')"; a1="$(hciconfig hci0 2>/dev/null | grep -oE 'RX bytes:[0-9]+ acl:[0-9]+')"
+echo "  continuation: $c0 -> $c1 (+$((c1-c0)) in 10 s)"; echo "  hci0 vorher:  $a0"; echo "  hci0 nachher: $a1"
 S "'Unexpected continuation frame' je Boot (0 = aktueller Boot; frühere Boots = Zustand VOR heute)"
 journalctl --list-boots --no-pager 2>/dev/null | tail -n 8
 for b in 0 -1 -2 -3 -4 -5; do
@@ -85,6 +94,21 @@ for d in ~/.config/autostart ~/.config/labwc /etc/xdg/autostart ~/.config/system
 echo "-- sudoers.d:"; sudo -n ls -la /etc/sudoers.d/ 2>/dev/null || ls -la /etc/sudoers.d/ 2>&1
 echo "-- Prozesse (CPU):"; ps -eo pid,pcpu,pmem,stat,cmd --sort=-pcpu | head -n 14
 echo "-- Prozesse mit Funkbezug:"; pgrep -af 'network-displays|miracast|btmon|hcitool|bluetoothctl|wpa_cli|iw |xdg-desktop' || echo "  keine"
+
+S "Fremdinstallationen außerhalb von apt (/usr/local, /opt) und alles mit 'miracle'/'wifid'/'dispd'"
+pgrep -af 'miracle|wifid|dispd' || echo "  kein miracle-Prozess"
+systemctl list-unit-files --no-pager --no-legend 2>/dev/null | grep -iE 'miracle|wifid|dispd|network-displays' || echo "  keine miracle-Units"
+ls -la --time-style=long-iso /usr/local/bin /usr/local/sbin /usr/local/lib/systemd/system /usr/local/share/dbus-1/system-services /usr/local/share/dbus-1/system.d 2>/dev/null
+find /usr/local /opt /etc /usr/lib/systemd /usr/share/dbus-1 \( -iname '*miracle*' -o -iname '*wifid*' -o -iname '*dispd*' \) 2>/dev/null | head -n 40
+S "Dateien außerhalb von /home, die seit dem 02.11. 19:40 neu/geändert sind (ohne Paketinhalte unter /usr/lib,/usr/share)"
+find / -xdev -newermt '2026-11-02 19:40' -type f 2>/dev/null \
+  | grep -vE '^/(proc|sys|run|tmp|var/(cache|lib/apt|lib/dpkg|log|tmp|backups)|home|usr/share/(doc|man|locale|icons|mime|applications)|usr/lib/(aarch64|python3|x86)|boot/firmware/overlays)' \
+  | grep -vE '\.(pyc|cache)$' | head -n 120 | while read -r f; do ls -la --time-style=long-iso "$f" 2>/dev/null; done
+S "NetworkManager-Profile (ohne Schlüssel)"
+sudo -n sh -c 'for f in /etc/NetworkManager/system-connections/*; do echo "-- $f ($(stat -c %y "$f" | cut -c1-19))"; grep -vE "psk|password|^$" "$f"; done' 2>/dev/null || echo "  (kein sudo)"
+S "rtkit (Echtzeitpriorität für PipeWire)"
+dpkg-query -W -f='  rtkit ${db:Status-Abbrev} ${Version}\n' rtkit 2>/dev/null || echo "  rtkit fehlt"
+systemctl is-active rtkit-daemon 2>/dev/null | sed 's/^/  rtkit-daemon: /'
 
 S "Zuletzt geänderte Konfigurationsdateien (3 Tage, /etc und ~/.config)"
 find /etc ~/.config -type f -mtime -3 2>/dev/null | grep -vE '/\.cache/|/logs?/' | head -n 60 | while read -r f; do ls -la --time-style=long-iso "$f"; done
