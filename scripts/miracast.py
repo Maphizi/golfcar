@@ -545,7 +545,10 @@ def run(cfg: dict, once: bool, max_seconds: float) -> int:
             return 2
         was_up, wlan_con = wlan_state(wifi)
         log.info("WLAN %s: %s", wifi, f"verbunden mit {wlan_con}" if was_up else "nicht verbunden")
-        peer = match_peer(find_peers(dev, 12.0, keep=True), str(cfg["peer"]))
+        # eigene Suche vor dem Verbinden beenden: NetworkManager startet zum Verbinden seine eigene, läuft unsere noch,
+        # scheitert sie ("another p2p_scan was already running") und die Verhandlung beginnt nie
+        peer = match_peer(find_peers(dev, 12.0), str(cfg["peer"]))
+        time.sleep(1.5)
         if not peer:
             set_status(f"Empfänger '{cfg['peer']}' nicht gefunden")
             if once:
