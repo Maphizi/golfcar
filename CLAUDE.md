@@ -596,6 +596,22 @@ Spotify Connect (`kitt-spotify`, librespot/raspotify, Premium nötig) und AirPla
 PipeWire-Zugriff). Kein Chromecast möglich. Android ohne AirPlay: `scripts/setup_bluetooth.sh`. Titel: `logs/now_playing.txt`
 (`scripts/spotify_event.sh` via `--onevent`). Status: `scripts/setup_cast.sh --status`.
 
+## Miracast (`scripts/miracast.py`, `scripts/setup_miracast.sh`, `docs/CLAUDE-TASK-miracast-pi.md`)
+Bild drahtlos an einen Miracast-Empfänger (Dongle "HD Wireless Screen Mirroring", `530E1F_P2P`; kann auch AirPlay, für Linux
+gibt es aber keinen AirPlay-Bildsender). Wi-Fi Direct über NetworkManager (`p2p-dev-wlan0`, Profil `kitt-miracast`, WFD-IEs als
+Quelle, Port 7236) NEBEN dem normalen WLAN, nicht miraclecast (übernimmt die Karte exklusiv, Tailscale wäre weg). Ablauf
+`run()`: Empfänger per D-Bus-Suche (`busctl`, `StartFind`, Peers mit `WfdIEs`) nach `[miracast] peer`, `nmcli connection up`,
+dann wartet `serve()` auf die TCP-Verbindung des Empfängers und `Session` führt RTSP M1-M7 (M2 abwarten, M3 Fähigkeiten,
+M4 Format: Wunsch `width/height/fps` falls im CEA-Bitfeld, Ton AAC sonst LPCM oder none, M5 SETUP-Auslöser, M6/M7 vom
+Empfänger) und Keepalive M16 alle 20 s. Strom (`Streamer`): `wf-recorder` als Session-Benutzer (`runuser`, `WAYLAND_DISPLAY`)
+-> libx264 ultrafast/zerolatency Baseline, Keyframe je Sekunde, MPEG-TS auf stdout -> `ffmpeg` (stille Tonspur `anullsrc`
+mit `-re`, PIDs 0x1011/0x1100, `-shortest`, `nobuffer` + kurze Analyse) -> `rtp_mpegts`. WLAN-Wächter: war wlan0 verbunden
+und fällt nach dem Aufbau weg -> sofort abbauen, `nmcli device connect wlan0`, `logs/miracast_status.txt`, Exit 3
+(`RestartPreventExitStatus`). Dienst `systemd/kitt-miracast.service` (root, Nice 5, Log `logs/miracast.log`, Strom-Log
+`logs/miracast_stream.log`). `setup_miracast.sh` ohne Option = nur prüfen (Chip-Kombinationen aus `iw`, Programme, Suche),
+`--install`, `--test [S]` (Sicherheitsnetz-Timer `kitt-miracast-guard` 5 min), `--enable/--disable/--status/--undo`.
+`KITT_MIRACAST_DEBUG=1` zeigt jede RTSP-Nachricht. Zweiter USB-WLAN-Stick: `[miracast] wifi = "wlan1"`.
+
 ## /dev/uinput Berechtigung
 udev-Regel in `/etc/udev/rules.d/99-uinput.rules`:
 ```

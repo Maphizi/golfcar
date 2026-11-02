@@ -113,3 +113,18 @@ sdl_videodriver = "auto"
 # Um SD-Schreibzugriffe zu sparen, kann hier später ein tmpfs stehen, z. B. "/run/user/1000/kitt-logs".
 dir = "logs"
 level = "INFO"
+
+[miracast]
+# Bild drahtlos an einen Miracast-Empfänger (scripts/miracast.py, Einrichten/Test/Autostart: scripts/setup_miracast.sh).
+# Wi-Fi Direct über NetworkManager neben dem normalen WLAN; fällt wlan0 dabei aus, bricht der Sender sofort ab.
+peer = "530E1F"            # Name (Teil davon) oder MAC des Empfängers ("HD Wireless Screen Mirroring" zeigt 530E1F_P2P)
+wifi = "wlan0"             # WLAN-Chip für Wi-Fi Direct; mit zweitem USB-WLAN-Stick z. B. "wlan1"
+user = ""                  # Benutzer der labwc-Session (leer = Besitzer von UID 1000)
+width = 1280               # Wunschauflösung; der Empfänger muss sie können, sonst die nächstbeste
+height = 720
+fps = 30
+kbps = 4000                # H.264-Datenrate (Software-Encoder, der Pi 5 hat keinen Hardware-Encoder)
+audio = "silent"           # "silent" = stille Tonspur (viele Empfänger brauchen eine), "none" = ohne Ton
+retry_seconds = 20         # Dienst: so lange warten bis zum nächsten Versuch
+connect_timeout = 45
+capture = ""               # eigener Aufnahmebefehl statt wf-recorder ({w}, {h}, {fps}, {kbps}); MPEG-TS auf stdout

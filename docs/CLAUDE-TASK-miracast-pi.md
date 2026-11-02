@@ -71,3 +71,45 @@ Aktuell verbunden:
 2. Ob die Verbindung zu `530E1F_P2P` hergestellt werden konnte
 3. Falls nicht möglich: Erklärung + bester alternativer Weg
 4. Alle Systemänderungen dokumentiert
+
+---
+
+## Stand (Claude Code, umgesetzt im Repo, auf dem Pi noch auszuführen)
+
+Ohne SSH-Zugang zum Pi (Tailscale-IP und Schlüssel liegen nur auf Marcs Rechner) ist alles als Skript im Repo gebaut,
+wie die anderen Setup-Skripte. Auf dem Pi nach `git pull`:
+
+```
+scripts/setup_miracast.sh             # 1. prüfen, ändert nichts, sucht 530E1F_P2P -> Ausgabe an Claude geben
+scripts/setup_miracast.sh --install   # 2. wf-recorder + ffmpeg, Dienst kitt-miracast (aus)
+scripts/setup_miracast.sh --test 60   # 3. ein Versuch, 60 s senden, mit Sicherheitsnetz
+scripts/setup_miracast.sh --enable    # 4. Autostart
+```
+
+**1. Was installiert/konfiguriert wird**
+- `scripts/miracast.py`: Miracast-Sender. Wi-Fi Direct über NetworkManager (`p2p-dev-wlan0`, Profil `kitt-miracast`),
+  RTSP-Steuerung WFD M1-M7 + Keepalive (Port 7236), Bild per `wf-recorder` aus der labwc-Session (Launcher, Visualizer,
+  RetroArch unter Xwayland mit Shadern), `libx264` 720p30 ~4 Mbit/s, MPEG-TS über RTP (PIDs 0x1011/0x1100), stille
+  AAC-Tonspur. Einstellungen `config/settings.toml` `[miracast]`.
+- `systemd/kitt-miracast.service` -> `/etc/systemd/system/` (root, sucht den Empfänger, verbindet, bei Abbruch neu
+  nach 20 s). Pakete: `wf-recorder`, `ffmpeg`. Sonst keine Systemänderungen: wlan0, seine Verbindungen und
+  NetworkManager-Einstellungen bleiben unangetastet.
+
+**Bewusst nicht miraclecast:** `miracle-wifid` übernimmt die WLAN-Karte exklusiv (eigener wpa_supplicant,
+NetworkManager muss loslassen) -> Vodafone und Tailscale wären weg. Sein Sender-Teil (`miracle-wfdctl`) ist experimentell,
+`miracle-sinkctl` ist der Empfänger, nicht der Sender. NetworkManager kann Wi-Fi Direct selbst, parallel zum WLAN.
+
+**WLAN-Schutz:** fällt wlan0 nach dem Aufbau von Wi-Fi Direct aus (Chip schafft zwei Kanäle nicht), baut der Sender
+sofort ab, verbindet wlan0 neu, schreibt das nach `logs/miracast_status.txt` und startet nicht wieder (Exit 3). Beim
+Test zusätzlich ein Timer, der nach 5 min alles zurücksetzt.
+
+**2. Verbindung zu 530E1F_P2P:** noch nicht ausprobiert (kein Zugriff auf den Pi). Lokal geprüft: der RTSP-Ablauf
+gegen einen nachgebauten Empfänger (Formatwahl, SETUP, PLAY, Keepalive, TEARDOWN) und der RTP-Strom (MPEG-TS,
+Payload 33, richtige PIDs).
+
+**3. Falls es nicht klappt:** zweiter USB-WLAN-Stick nur für Miracast (`[miracast] wifi = "wlan1"`), dann teilt sich
+nichts den Kanal. Alternative ohne Funk: HDMI-Splitter/HDMI-Funkstrecke (keine Software, kaum Verzögerung).
+
+**Hinweise:** Miracast hat 50-150 ms Verzögerung (bei Retro-Spielen spürbar). Der Pi 5 hat keinen Hardware-H.264-Encoder,
+libx264 braucht bei 720p30 etwa einen Kern (Dienst läuft mit Nice 5). Der Dongle kann auch AirPlay, aber für Linux gibt es
+keinen brauchbaren AirPlay-Bildsender, daher Miracast.
