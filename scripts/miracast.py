@@ -216,11 +216,12 @@ WPAS_ROOT = "/fi/w1/wpa_supplicant1"
 WPAS_IF = "fi.w1.wpa_supplicant1.Interface"
 WPAS_P2P_IF = "fi.w1.wpa_supplicant1.Interface.P2PDevice"
 WPAS_PEER = "fi.w1.wpa_supplicant1.Peer"
-STATUS_BOTH_INTENT_0 = 9
+STATUS_BOTH_INTENT_15 = 9
+ATTEMPTS = 3
 GO_IP = "192.168.49.1"
 P2P_STATUS = {0: "ok", 1: "Information gerade nicht verfügbar (Empfänger wartet auf Bestätigung)", 2: "Parameter nicht passend",
               3: "Grenze erreicht", 4: "ungültiger Parameter", 5: "Anfrage nicht erfüllbar", 6: "vorheriges Protokoll gescheitert",
-              7: "kein gemeinsamer Kanal", 8: "unbekannte Gruppe", 9: "beide wollen nicht Gruppenleiter sein (GO-Wunsch 0)",
+              7: "kein gemeinsamer Kanal", 8: "unbekannte Gruppe", 9: "beide wollen Gruppenleiter sein (GO-Wunsch 15)",
               10: "WPS-Methode passt nicht", 11: "vom Benutzer abgelehnt"}
 
 
@@ -309,6 +310,19 @@ def _group_ifname(args: dict, since: float) -> str:
     raise RuntimeError("Gruppenschnittstelle nicht gefunden")
 
 
+def set_oper_channel(ifpath: str, channel: int) -> None:
+    """Betriebskanal für den Fall, dass der Pi die Gruppe leitet (0 = wpa_supplicant wählt). Ohne Vorgabe nahm er
+    5785 MHz, und das lehnt brcmfmac neben wlan0 ab ("Set Channel failed ... -52")."""
+    try:
+        if channel:
+            bus("set-property", WPAS, ifpath, WPAS_P2P_IF, "P2PDeviceConfig", "a{sv}", "2",
+                "OperRegClass", "u", "81" if channel <= 13 else "124", "OperChannel", "u", str(channel))
+        else:
+            bus("set-property", WPAS, ifpath, WPAS_P2P_IF, "P2PDeviceConfig", "a{sv}", "1", "OperChannel", "u", "0")
+    except RuntimeError as exc:
+        log.warning("Betriebskanal nicht setzbar: %s", exc)
+
+
 def wpas_disconnect(ifpath: str) -> None:
     for method in ("Cancel", "Disconnect"):
         try:
@@ -325,20 +339,21 @@ def p2p_up_wpas(cfg: dict, peer: dict, mon: WpasMonitor) -> Link:
     peer_path = wpas_peer_path(ifpath, peer["mac"])
     intent = int(os.environ.get("KITT_MIRACAST_INTENT", cfg.get("go_intent", 0)))
     intent = min(15, max(0, intent))
-    go_freq = _channel_freq(int(cfg.get("go_channel", 6)))
+    go_channel = int(cfg.get("go_channel", 6))
     pin = str(cfg.get("wps_pin", "") or "")
-    attempts = [(intent, 0)] + ([(15, go_freq)] if intent < 15 else [])
-    for n, (want, freq) in enumerate(attempts):
+    set_oper_channel(ifpath, go_channel)
+    # Bei gleichem GO-Wunsch (der Dongle meldet 0) entscheidet ein Münzwurf, wer leitet: daher mehrere Anläufe; nach
+    # einem Fehlschlag mit Wunsch 0, damit möglichst der Empfänger leitet (der Pi braucht dann keinen Hotspot)
+    for n in range(ATTEMPTS):
+        want = intent if n == 0 else 0
         mon.take()
         wpas_disconnect(ifpath)
         args = ["peer", "o", peer_path, "wps_method", "s", "keypad" if pin else "pbc", "go_intent", "i", str(want),
                 "join", "b", "false", "persistent", "b", "false"]
-        if freq:
-            args += ["frequency", "i", str(freq)]
         if pin:
             args += ["pin", "s", pin]
-        log.info("Verbinde über wpa_supplicant: GO-Wunsch %d%s, WPS %s", want, f", Kanal {freq} MHz" if freq else "",
-                 "PIN" if pin else "Knopf (PBC)")
+        log.info("Verbinde über wpa_supplicant (Versuch %d/%d): GO-Wunsch %d, Kanal %d falls der Pi leitet, WPS %s",
+                 n + 1, ATTEMPTS, want, go_channel, "PIN" if pin else "Knopf (PBC)")
         bus("call", WPAS, ifpath, WPAS_P2P_IF, "Connect", "a{sv}", str(len(args) // 3), *args)
         t0 = time.monotonic()
         end = t0 + float(cfg["connect_timeout"])
@@ -350,11 +365,11 @@ def p2p_up_wpas(cfg: dict, peer: dict, mon: WpasMonitor) -> Link:
                 if member == "GONegotiationFailure":
                     st = int(a.get("status", -1))
                     fail = f"Verhandlung abgelehnt, Status {st}: {P2P_STATUS.get(st, '?')}"
-                    if st == STATUS_BOTH_INTENT_0 and n + 1 < len(attempts):
-                        log.info("%s -> Versuch als Gruppenleiter", fail)
-                        fail = "retry"
+                elif member == "GONegotiationSuccess":
+                    log.info("Verhandlung ok: Pi wird %s auf %s MHz", "Gruppenleiter" if a.get("role_go") == "GO" else "Teilnehmer",
+                             a.get("frequency", "?"))
                 elif member == "GroupFormationFailure":
-                    fail = f"Gruppe kam nicht zustande ({a.get('arg') or a})"
+                    fail = f"Gruppe kam nicht zustande ({a.get('arg') or 'ohne Angabe'}; Treiber: siehe dmesg)"
                 elif member == "WpsFailed":
                     fail = f"WPS gescheitert ({a})"
                 elif member == "GroupStarted":
@@ -368,10 +383,13 @@ def p2p_up_wpas(cfg: dict, peer: dict, mon: WpasMonitor) -> Link:
                 started = {"role": role}
             else:
                 fail = f"keine Antwort des Empfängers in {int(cfg['connect_timeout'])} s (Rolle '{role or 'device'}')"
-        if fail == "retry":
-            continue
         if fail:
             wpas_disconnect(ifpath)
+            if n + 1 < ATTEMPTS:
+                log.warning("%s -> neuer Anlauf", fail)
+                time.sleep(2.0)
+                continue
+            set_oper_channel(ifpath, 0)
             raise RuntimeError(fail)
         role = str(started.get("role", "client"))
         ifname = _group_ifname(started, t0)
@@ -399,8 +417,10 @@ def p2p_up_wpas(cfg: dict, peer: dict, mon: WpasMonitor) -> Link:
             if server:
                 server.stop()
             wpas_disconnect(ifpath)
+            set_oper_channel(ifpath, 0)
 
         return Link(ifname, my_ip, role, close)
+    set_oper_channel(ifpath, 0)
     raise RuntimeError("Verbindung nicht möglich")
 
 

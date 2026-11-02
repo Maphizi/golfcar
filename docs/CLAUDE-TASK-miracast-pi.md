@@ -138,3 +138,9 @@ keinen brauchbaren AirPlay-Bildsender, daher Miracast.
    `unmanaged-devices=interface-name:p2p-wlan0-*`, wird mit `--undo` entfernt) und vergibt die IP selbst (Teilnehmer:
    kleiner DHCP-Client; Leiter: 192.168.49.1 + kleiner DHCP-Server). `connect = "nm"` = alter Weg. Der Test speichert das
    vollständige Journal in `logs/miracast_journal.txt` und zeigt eine Kurzfassung ohne Lauschzeilen plus `dmesg brcmfmac`.
+4. Fünfter Test (direkt über wpa_supplicant): Verhandlung in 6 s erfolgreich, aber der Pi wurde trotz GO-Wunsch 0
+   Leiter (der Dongle meldet ebenfalls 0, dann entscheidet der Münzwurf), und dmesg zeigt den echten Fehler:
+   `brcmf_cfg80211_start_ap: Set Channel failed: chspec=53405, -52` = Kanal 157 (5785 MHz) wird vom Treiber abgelehnt.
+   Korrektur: Betriebskanal für den Fall "Pi leitet" auf `go_channel` 6 (2,4 GHz, P2PDeviceConfig OperChannel, danach
+   zurückgesetzt), bis zu 3 Anläufe je Verbindung (nach einem Fehlschlag mit GO-Wunsch 0, damit möglichst der Dongle
+   leitet). Statuscode 9 richtiggestellt (= beide wollen leiten).
