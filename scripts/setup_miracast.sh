@@ -92,9 +92,12 @@ install_unit() {
 
 guard_on() {
   # Sicherheitsnetz: falls der Test hängt oder das WLAN verliert, nach 5 min alles zurück
+  # $WIFI wird NUR neu verbunden, wenn es wirklich getrennt ist (ein "device connect" auf ein verbundenes WLAN
+  # würde es kurz trennen -> Tailscale weg, der Bot verliert den Pi)
   sudo systemd-run --quiet --unit=kitt-miracast-guard --on-active=300 /bin/sh -c \
-    "nmcli connection down kitt-miracast; nmcli device connect $WIFI" 2>/dev/null \
-    && echo "Sicherheitsnetz aktiv: in 5 min wird Wi-Fi Direct getrennt und $WIFI neu verbunden."
+    "pkill -f 'scripts/miracast.py run'; nmcli connection down kitt-miracast 2>/dev/null; \
+     nmcli -g GENERAL.STATE device show $WIFI | grep -q '^100' || nmcli device connect $WIFI" 2>/dev/null \
+    && echo "Sicherheitsnetz aktiv: in 5 min wird Wi-Fi Direct getrennt und $WIFI nur bei Bedarf neu verbunden."
 }
 guard_off() { sudo systemctl stop kitt-miracast-guard.timer 2>/dev/null; true; }
 

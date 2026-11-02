@@ -144,3 +144,29 @@ keinen brauchbaren AirPlay-Bildsender, daher Miracast.
    Korrektur: Betriebskanal für den Fall "Pi leitet" auf `go_channel` 6 (2,4 GHz, P2PDeviceConfig OperChannel, danach
    zurückgesetzt), bis zu 3 Anläufe je Verbindung (nach einem Fehlschlag mit GO-Wunsch 0, damit möglichst der Dongle
    leitet). Statuscode 9 richtiggestellt (= beide wollen leiten).
+5. Sechster und siebter Test (Betriebskanal 6, bis zu 3 Anläufe, davor Dongle stromlos): beide Male
+   `keine Antwort des Empfängers in 45 s (Rolle 'device')` – es kam überhaupt kein P2P-Signal mehr vom Dongle
+   (keine Verhandlung, kein WPS, kein Fehler in dmesg). Der Dongle wurde zuverlässig gefunden, das WLAN blieb während
+   des Verbindens oben. Nach dem siebten Test war der Pi für den Bot kurz nicht erreichbar und wurde neu gestartet;
+   wahrscheinliche Ursache: das Kommando des Bots lief vor dem Ende der 3 x 45 s in sein Zeitlimit, das Sicherheitsnetz
+   (`kitt-miracast-guard`, 5 min) machte danach `nmcli device connect wlan0` auf das VERBUNDENE WLAN, und das trennt
+   es kurz (Tailscale weg). Korrigiert: das Sicherheitsnetz beendet nur noch das Skript und verbindet wlan0 ausschließlich,
+   wenn es wirklich getrennt ist; 2 Anläufe à 30 s, damit der ganze Test ins Zeitfenster des Bots passt.
+
+### Stand und Empfehlung (2026-11-02, nach 7 Tests)
+
+Was funktioniert: Erkennung des Dongles, WLAN-Wächter (Vodafone/Tailscale blieben bei jedem Verbindungsversuch
+oben), die komplette RTSP/RTP-Strecke gegen einen nachgebauten Empfänger. Was nicht funktioniert: eine stabile Wi-Fi-
+Direct-Gruppe über den eingebauten Chip des Pi 5, während er auf 5540 MHz (DFS) im Heim-WLAN hängt. Einmal (Test 5) kam
+die Verhandlung durch, scheiterte dann am Treiber (Pi als Leiter auf 5785 MHz nicht erlaubt); seit der Umstellung auf
+Kanal 6 antwortet der Dongle gar nicht mehr. Weitere Anläufe am eingebauten Chip lohnen nicht.
+
+Empfehlung, eine von beiden:
+- **USB-WLAN-Stick nur für Miracast** (Chip MediaTek MT7921U oder MT7612U, kein Realtek – die laufen unter Linux
+  ohne Fremdtreiber mit P2P): einstecken, `[miracast] wifi = "wlan1"` in `config/settings.toml`,
+  `scripts/setup_miracast.sh --install` (legt den NetworkManager-Drop-in für `p2p-wlan1-*` an), dann
+  `scripts/setup_miracast.sh --test 60`. Der gesamte Code bleibt, nur der Funk ist getrennt: eigener Kanal, Leiterrolle
+  erlaubt, kein DFS. Ab dann ist auch der Bildstrom auf echter Hardware prüfbar.
+- **HDMI-Funkstrecke** (Sender am HDMI-Ausgang des Pi, Empfänger am Bildschirm): keine Software, kein WLAN, die
+  geringste Verzögerung (wichtig bei Retro-Spielen). Dann `scripts/setup_miracast.sh --undo` und das Thema ist
+  abgeschlossen.

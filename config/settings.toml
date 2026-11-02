@@ -126,7 +126,7 @@ fps = 30
 kbps = 4000                # H.264-Datenrate (Software-Encoder, der Pi 5 hat keinen Hardware-Encoder)
 audio = "silent"           # "silent" = stille Tonspur (viele Empfänger brauchen eine), "none" = ohne Ton
 retry_seconds = 20         # Dienst: so lange warten bis zum nächsten Versuch
-connect_timeout = 45
+connect_timeout = 30         # je Anlauf (2 Anläufe); der ganze Test muss ins Zeitfenster des Bots passen
 capture = ""               # eigener Aufnahmebefehl statt wf-recorder ({w}, {h}, {fps}, {kbps}); MPEG-TS auf stdout
 connect = "wpas"           # "wpas" = direkt über wpa_supplicant (Rolle wählbar), "nm" = über NetworkManager (immer GO-Wunsch 7)
 go_intent = 0              # Wunsch, Wi-Fi-Direct-Gruppenleiter zu werden (0 = Empfänger leitet, 15 = Pi leitet; Test: KITT_MIRACAST_INTENT=N)

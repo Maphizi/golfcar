@@ -603,8 +603,8 @@ exklusiv, Tailscale wäre weg). Suche über NetworkManager (`busctl`, `StartFind
 peer`; die Suche wird VOR dem Verbinden beendet, sonst "another p2p_scan was already running"). Verbinden `[miracast] connect`:
 `"wpas"` (Standard) direkt über wpa_supplicant-D-Bus (`WFDIEs` global setzen, `Connect` mit `go_intent` 0 = der Empfänger
 leitet, Pi nur Teilnehmer; `WpasMonitor` liest `GONegotiationSuccess/Failure` (Status in `P2P_STATUS`), `GroupStarted`,
-`WpsFailed` mit; bei gleichem GO-Wunsch (Dongle meldet 0) entscheidet der Münzwurf, daher `ATTEMPTS` 3 Anläufe, ab dem
-zweiten mit Wunsch 0; `set_oper_channel` setzt vorher `P2PDeviceConfig` OperChannel = `go_channel` 6 (ohne Vorgabe nahm
+`WpsFailed` mit; bei gleichem GO-Wunsch (Dongle meldet 0) entscheidet der Münzwurf, daher `ATTEMPTS` 2 Anläufe, der
+zweite mit Wunsch 0; `set_oper_channel` setzt vorher `P2PDeviceConfig` OperChannel = `go_channel` 6 (ohne Vorgabe nahm
 wpa_supplicant 5785 MHz, brcmfmac lehnt das als GO ab: dmesg "Set Channel failed ... -52"); Gruppenschnittstelle aus
 `GroupStarted.interface_object` -> `Ifname`, `nmcli device set ... managed no` + Drop-in `/etc/NetworkManager/conf.d/
 90-kitt-miracast.conf` `unmanaged-devices=interface-name:p2p-wlan0-*` (`--install`/`--test` legen es an, `--undo` entfernt

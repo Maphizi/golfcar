@@ -59,7 +59,7 @@ EXIT_WLAN_CONFLICT = 3
 
 log = logging.getLogger("miracast")
 DEFAULTS = {"peer": "530E1F", "wifi": "wlan0", "user": "", "width": 1280, "height": 720, "fps": 30, "kbps": 4000,
-            "audio": "silent", "retry_seconds": 20, "connect_timeout": 45, "capture": "", "connect": "wpas", "go_intent": 0,
+            "audio": "silent", "retry_seconds": 20, "connect_timeout": 30, "capture": "", "connect": "wpas", "go_intent": 0,
             "go_channel": 6, "wps_pin": ""}
 
 
@@ -217,7 +217,7 @@ WPAS_IF = "fi.w1.wpa_supplicant1.Interface"
 WPAS_P2P_IF = "fi.w1.wpa_supplicant1.Interface.P2PDevice"
 WPAS_PEER = "fi.w1.wpa_supplicant1.Peer"
 STATUS_BOTH_INTENT_15 = 9
-ATTEMPTS = 3
+ATTEMPTS = 2                                                           # je connect_timeout s; Bot-Kommandos haben ein Zeitlimit
 GO_IP = "192.168.49.1"
 P2P_STATUS = {0: "ok", 1: "Information gerade nicht verfügbar (Empfänger wartet auf Bestätigung)", 2: "Parameter nicht passend",
               3: "Grenze erreicht", 4: "ungültiger Parameter", 5: "Anfrage nicht erfüllbar", 6: "vorheriges Protokoll gescheitert",
