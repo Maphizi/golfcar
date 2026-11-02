@@ -128,4 +128,7 @@ audio = "silent"           # "silent" = stille Tonspur (viele Empfänger brauche
 retry_seconds = 20         # Dienst: so lange warten bis zum nächsten Versuch
 connect_timeout = 45
 capture = ""               # eigener Aufnahmebefehl statt wf-recorder ({w}, {h}, {fps}, {kbps}); MPEG-TS auf stdout
+connect = "wpas"           # "wpas" = direkt über wpa_supplicant (Rolle wählbar), "nm" = über NetworkManager (immer GO-Wunsch 7)
 go_intent = 0              # Wunsch, Wi-Fi-Direct-Gruppenleiter zu werden (0 = Empfänger leitet, 15 = Pi leitet; Test: KITT_MIRACAST_INTENT=N)
+go_channel = 6             # Kanal, wenn der Pi doch leiten muss (2,4 GHz, der Dongle lauscht auf 6)
+wps_pin = ""               # leer = WPS-Knopf (PBC); zeigt der Empfänger eine PIN, hier eintragen

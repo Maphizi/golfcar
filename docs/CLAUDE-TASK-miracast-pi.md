@@ -127,3 +127,14 @@ keinen brauchbaren AirPlay-Bildsender, daher Miracast.
    Korrektur: vor dem Verbinden setzt `miracast.py` den GO-Wunsch von wpa_supplicant (D-Bus `P2PDeviceConfig.GOIntent`)
    auf 0, damit der Dongle Gruppenleiter wird und der Pi nur Teilnehmer ist; danach wieder der alte Wert.
    Falls es trotzdem nicht geht: WLAN des Carts auf 2,4 GHz oder zweiter USB-WLAN-Stick nur für Miracast.
+3. Dritter/vierter Test (GO-Wunsch 0 bzw. 15 über D-Bus `P2PDeviceConfig`): keine Verhandlung mehr. Zwei Ursachen:
+   mein Skript ließ die eigene Suche weiterlaufen (NetworkManagers Suche beim Verbinden scheiterte: "another p2p_scan
+   was already running"), und NetworkManager übergibt beim Verbinden ohnehin fest GO-Wunsch 7 (deshalb 0 und 15 gleich).
+   Das Testprotokoll zeigte außerdem nur die letzte Sekunde (zu breiter Filter + Zeilenlimit).
+   Umbau: `[miracast] connect = "wpas"` (Standard) verbindet direkt über wpa_supplicant (D-Bus `Connect` mit `go_intent`
+   0 → der Dongle leitet, der Pi ist Teilnehmer; bei Status 9 "beide wollen nicht leiten" zweiter Versuch als Leiter auf
+   `go_channel` 6), liest die Signale mit (`busctl monitor`: GONegotiation*, GroupStarted, WpsFailed), setzt die
+   Gruppenschnittstelle in NetworkManager auf unmanaged (Drop-in `/etc/NetworkManager/conf.d/90-kitt-miracast.conf`,
+   `unmanaged-devices=interface-name:p2p-wlan0-*`, wird mit `--undo` entfernt) und vergibt die IP selbst (Teilnehmer:
+   kleiner DHCP-Client; Leiter: 192.168.49.1 + kleiner DHCP-Server). `connect = "nm"` = alter Weg. Der Test speichert das
+   vollständige Journal in `logs/miracast_journal.txt` und zeigt eine Kurzfassung ohne Lauschzeilen plus `dmesg brcmfmac`.

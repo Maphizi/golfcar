@@ -34,6 +34,7 @@ while [ $# -gt 0 ]; do
 done
 WIFI="$(python3 -c "import tomllib;print(tomllib.load(open('$ROOT/config/settings.toml','rb')).get('miracast',{}).get('wifi','wlan0'))" 2>/dev/null || echo wlan0)"
 UNIT=/etc/systemd/system/kitt-miracast.service
+NMCONF=/etc/NetworkManager/conf.d/90-kitt-miracast.conf        # Gruppenschnittstellen p2p-wlan0-N gehören miracast.py
 IW="$(command -v iw || echo /usr/sbin/iw)"                    # liegt in /usr/sbin, nicht im PATH normaler Benutzer
 mkdir -p "$ROOT/logs"
 
@@ -58,6 +59,8 @@ check() {
     echo "           sonst zweiter USB-WLAN-Stick für Miracast ([miracast] wifi = \"wlan1\")."
   fi
   echo "  WLAN-Kanal jetzt: $($IW dev "$WIFI" info 2>/dev/null | awk '/channel/{print $2, $3, $4}')"
+  echo "== NetworkManager-Ausnahme für p2p-$WIFI-* =="
+  [ -f "$NMCONF" ] && sed 's/^/  /' "$NMCONF" || echo "  noch nicht angelegt (kommt mit --install/--test)"
   echo "== Programme =="
   for p in wf-recorder ffmpeg nmcli busctl; do printf "  %-12s %s\n" "$p" "$(command -v $p || echo fehlt)"; done
   # erst ganz lesen, dann suchen: grep -q bricht die Ausgabe ab, mit pipefail sähe das wie "fehlt" aus
@@ -72,10 +75,18 @@ check() {
   [ -f "$ROOT/logs/miracast_status.txt" ] && sed 's/^/  /' "$ROOT/logs/miracast_status.txt" || echo "  (noch kein Versuch)"
 }
 
+nm_conf() {
+  # NetworkManager soll die Wi-Fi-Direct-Gruppenschnittstelle (p2p-wlan0-N) nicht anfassen (IP macht miracast.py selbst)
+  printf '%s\n' "# KITT-Cart Miracast (scripts/setup_miracast.sh): Gruppenschnittstellen verwaltet scripts/miracast.py selbst" \
+    "[keyfile]" "unmanaged-devices=interface-name:p2p-$WIFI-*" | sudo tee "$NMCONF" >/dev/null
+  sudo nmcli general reload conf 2>/dev/null || true
+}
+
 install_unit() {
   sudo apt-get install -y wf-recorder ffmpeg
   sed -e "s|__ROOT__|$ROOT|g" -e "s|__USER__|$(id -un)|g" "$ROOT/systemd/kitt-miracast.service" | sudo tee "$UNIT" >/dev/null
   sudo systemctl daemon-reload
+  nm_conf
   echo "Dienst kitt-miracast angelegt (aus). Test: scripts/setup_miracast.sh --test, Autostart: --enable"
 }
 
@@ -92,6 +103,7 @@ case "$MODE" in
   install) install_unit ;;
   test)
     systemctl is-active --quiet kitt-miracast && { echo "Dienst läuft schon, erst --disable"; exit 1; }
+    [ -f "$NMCONF" ] || nm_conf
     guard_off; guard_on
     echo "Test: $SECS s senden. Ausführlich: KITT_MIRACAST_DEBUG=1 davor."
     t0="$(date '+%Y-%m-%d %H:%M:%S')"
@@ -104,10 +116,16 @@ case "$MODE" in
     sudo nmcli general logging level INFO domains DEFAULT 2>/dev/null
     sudo busctl set-property fi.w1.wpa_supplicant1 /fi/w1/wpa_supplicant1 fi.w1.wpa_supplicant1 DebugLevel s info 2>/dev/null
     echo "== Wi-Fi Direct im Systemprotokoll (NetworkManager, wpa_supplicant) =="
-    sudo journalctl --no-pager -o short-precise --since "$t0" -u NetworkManager -u wpa_supplicant 2>/dev/null \
-      | grep -iE "go.?neg|intent|p2p-|invitation|provision|wps|group.formation|group-started|status=|kitt-miracast|fail|error|timeout|freq=|oper|listen|channel" \
-      | grep -viE "probe re(q|sp)|scan res|bss " | tail -n 120 | sed 's/^/  /' | tee "$ROOT/logs/miracast_journal.txt"
-    echo "(gespeichert in logs/miracast_journal.txt)"
+    sudo journalctl --no-pager -o short-precise --since "$t0" -u NetworkManager -u wpa_supplicant 2>/dev/null > "$ROOT/logs/miracast_journal.txt"
+    # Kurzfassung: Verhandlung, Rolle, Gruppe, WPS, Fehler; die vielen Lausch-/Suchzeilen bleiben in der Datei
+    grep -iE "go.?neg|go intent|invitation|provision|wps|group|status|kitt-miracast|p2p-dev-$WIFI\)|fail|error|timeout|reject|unknown|sending|received|beacon|p2p-$WIFI-|dhcp|role|managed" "$ROOT/logs/miracast_journal.txt" \
+      | grep -viE "remain-on-channel|listen|probe re|scan res|bss |device-found|device-lost|rx frame|roc_|scan_res|supp_state|signal" \
+      | sed -E 's/^[A-Za-z]+ +[0-9]+ ([0-9:.]+) [^ ]+ wpa_supplicant\[[0-9]+\]: /  \1 wpas: /; s/^[A-Za-z]+ +[0-9]+ ([0-9:.]+) [^ ]+ NetworkManager\[[0-9]+\]: /  \1 nm:   /' \
+      | cut -c1-220 | head -n 160
+    echo "  ($(grep -c . "$ROOT/logs/miracast_journal.txt") Zeilen gesamt in logs/miracast_journal.txt)"
+    grep -i suppressed "$ROOT/logs/miracast_journal.txt" | head -2 | sed 's/^/  ACHTUNG journald: /'
+    echo "== Treiber (dmesg brcmfmac, letzte Zeilen) =="
+    sudo dmesg -T 2>/dev/null | grep -iE "brcmf|p2p" | tail -n 12 | sed 's/^/  /'
     echo "== WLAN-Verbindung =="
     $IW dev "$WIFI" link 2>/dev/null | grep -E "Connected|freq|SSID" | sed 's/^/  /'
     echo "Ende (Code $rc). Status: $(cat "$ROOT/logs/miracast_status.txt" 2>/dev/null)"
@@ -123,7 +141,7 @@ case "$MODE" in
     ;;
   undo)
     sudo systemctl disable --now kitt-miracast 2>/dev/null
-    sudo rm -f "$UNIT"; sudo systemctl daemon-reload
+    sudo rm -f "$UNIT" "$NMCONF"; sudo systemctl daemon-reload; sudo nmcli general reload conf 2>/dev/null
     sudo nmcli connection delete kitt-miracast 2>/dev/null
     echo "Dienst und Profil entfernt."
     ;;

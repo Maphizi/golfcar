@@ -2,8 +2,8 @@
 """Miracast-Sender: der Pi schickt seinen Bildschirm (labwc-Session mit Launcher, Visualizern und RetroArch) drahtlos an
 einen Miracast-Empfänger (z. B. den Dongle "HD Wireless Screen Mirroring", Name 530E1F_P2P).
 
-Weg: Wi-Fi Direct über NetworkManager (Gerät p2p-dev-wlan0, läuft NEBEN dem normalen WLAN, Vodafone und Tailscale bleiben
-verbunden), dann die Miracast-Steuerung (RTSP, WFD M1-M7) mit dem Empfänger und der Videostrom als MPEG-TS über RTP:
+Weg: Wi-Fi Direct direkt über wpa_supplicant (D-Bus, Gerät p2p-dev-wlan0, läuft NEBEN dem normalen WLAN, Vodafone und
+Tailscale bleiben verbunden; der Pi ist nur Teilnehmer, der Empfänger leitet die Gruppe), dann die Miracast-Steuerung (RTSP, WFD M1-M7) mit dem Empfänger und der Videostrom als MPEG-TS über RTP:
 wf-recorder greift das Bild in der Wayland-Session ab (auch RetroArch unter Xwayland, Shader inklusive, die rechnet der
 Pi wie immer selbst), libx264 kodiert (der Pi 5 hat keinen Hardware-H.264-Encoder), ffmpeg schickt es an den Empfänger.
 
@@ -32,6 +32,7 @@ import re
 import shlex
 import signal
 import socket
+import struct
 import subprocess
 import sys
 import threading
@@ -58,7 +59,8 @@ EXIT_WLAN_CONFLICT = 3
 
 log = logging.getLogger("miracast")
 DEFAULTS = {"peer": "530E1F", "wifi": "wlan0", "user": "", "width": 1280, "height": 720, "fps": 30, "kbps": 4000,
-            "audio": "silent", "retry_seconds": 20, "connect_timeout": 45, "capture": "", "go_intent": 0}
+            "audio": "silent", "retry_seconds": 20, "connect_timeout": 45, "capture": "", "connect": "wpas", "go_intent": 0,
+            "go_channel": 6, "wps_pin": ""}
 
 
 def load_cfg() -> dict:
@@ -159,8 +161,23 @@ def wlan_state(wifi: str) -> tuple[bool, str]:
     return lines[0].startswith("100"), lines[1].strip()
 
 
-def p2p_up(cfg: dict, peer: dict) -> tuple[str, str]:
-    """Wi-Fi-Direct-Verbindung zum Empfänger aufbauen. Liefert (IP-Interface, eigene IP)."""
+class Link:
+    """Stehende Wi-Fi-Direct-Verbindung: IP-Schnittstelle, eigene IP, Rolle, Abbau."""
+
+    def __init__(self, ipif: str, ip: str, role: str, close):
+        self.ipif, self.ip, self.role, self._close = ipif, ip, role, close
+
+    def close(self) -> None:
+        try:
+            self._close()
+        except Exception as exc:                                           # noqa: BLE001 - Abbau darf nie scheitern
+            log.debug("Abbau: %s", exc)
+
+
+# -- Weg 1: NetworkManager ([miracast] connect = "nm") -------------------------------------------------------------
+# Einfach, aber NetworkManager übergibt beim Verbinden fest GO-Wunsch 7: der Pi wurde Gruppenleiter, und der Treiber
+# brcmfmac kann neben wlan0 keinen eigenen Hotspot aufmachen ("Failed to set beacon parameters").
+def p2p_up_nm(cfg: dict, peer: dict) -> Link:
     dev_if = f"p2p-dev-{cfg['wifi']}"
     exists = sh(["nmcli", "-g", "connection.id", "connection", "show", CON_NAME]).returncode == 0
     props = ["wifi-p2p.peer", peer["mac"], "wifi-p2p.wfd-ies", WFD_IES, "connection.autoconnect", "no",
@@ -180,54 +197,344 @@ def p2p_up(cfg: dict, peer: dict) -> tuple[str, str]:
             break
         time.sleep(1.0)
     if not addr:
+        p2p_down_nm()
         raise RuntimeError(f"keine IP auf {ipif or '?'}")
-    return ipif, addr
+    return Link(ipif, addr, "nm", p2p_down_nm)
 
 
-# -- GO-Wunsch (wpa_supplicant, nur zur Laufzeit) ------------------------------------------------------------------
-# Der WLAN-Treiber des Pi (brcmfmac) kann neben dem normalen WLAN keinen eigenen Wi-Fi-Direct-Hotspot (Gruppenleiter,
-# GO) aufmachen: "Failed to set beacon parameters". Als Teilnehmer (P2P-Client) darf er mitmachen. Daher vor dem Verbinden
-# den GO-Wunsch auf 0 setzen, dann übernimmt der Empfänger die Leiterrolle; danach wieder der alte Wert.
+def p2p_down_nm() -> None:
+    sh(["nmcli", "connection", "down", CON_NAME], timeout=20.0)
+
+
+# -- Weg 2: direkt über wpa_supplicant (Standard, [miracast] connect = "wpas") -------------------------------------
+# Wir bestimmen die Rolle selbst: GO-Wunsch 0 = der Empfänger leitet die Gruppe, der Pi ist nur Teilnehmer (kein
+# Hotspot nötig). Scheitert das, weil auch der Empfänger nicht leiten will (Status 9), versucht es der Pi als Leiter auf
+# `go_channel`. Die Gruppenschnittstelle (p2p-wlan0-N) bekommt ihre IP von uns: als Teilnehmer per kleinem DHCP-Client,
+# als Leiter 192.168.49.1 mit kleinem DHCP-Server; NetworkManager lässt sie in Ruhe (managed no).
 WPAS = "fi.w1.wpa_supplicant1"
+WPAS_ROOT = "/fi/w1/wpa_supplicant1"
+WPAS_IF = "fi.w1.wpa_supplicant1.Interface"
 WPAS_P2P_IF = "fi.w1.wpa_supplicant1.Interface.P2PDevice"
+WPAS_PEER = "fi.w1.wpa_supplicant1.Peer"
+STATUS_BOTH_INTENT_0 = 9
+GO_IP = "192.168.49.1"
+P2P_STATUS = {0: "ok", 1: "Information gerade nicht verfügbar (Empfänger wartet auf Bestätigung)", 2: "Parameter nicht passend",
+              3: "Grenze erreicht", 4: "ungültiger Parameter", 5: "Anfrage nicht erfüllbar", 6: "vorheriges Protokoll gescheitert",
+              7: "kein gemeinsamer Kanal", 8: "unbekannte Gruppe", 9: "beide wollen nicht Gruppenleiter sein (GO-Wunsch 0)",
+              10: "WPS-Methode passt nicht", 11: "vom Benutzer abgelehnt"}
 
 
-def _wpas_paths(wifi: str) -> list[str]:
-    paths = []
-    for name in (wifi, f"p2p-dev-{wifi}"):
+def wprop(path: str, iface: str, name: str):
+    return bus("get-property", WPAS, path, iface, name)
+
+
+def wpas_p2p_path(wifi: str) -> str | None:
+    """D-Bus-Objekt von wpa_supplicant, über das Wi-Fi Direct läuft (p2p-dev-wlan0, sonst wlan0)."""
+    for name in (f"p2p-dev-{wifi}", wifi):
         try:
-            paths.append(bus("call", WPAS, "/fi/w1/wpa_supplicant1", WPAS, "GetInterface", "s", name)[0])
-        except (RuntimeError, IndexError, KeyError, ValueError):
+            return bus("call", WPAS, WPAS_ROOT, WPAS, "GetInterface", "s", name)[0]
+        except (RuntimeError, IndexError, KeyError, ValueError, TypeError):
             continue
-    return paths
+    return None
 
 
-def set_go_intent(wifi: str, intent: int) -> dict[str, int]:
-    """GO-Wunsch (0 = nie Gruppenleiter .. 15 = immer) setzen. Liefert die alten Werte je Pfad."""
-    old = {}
-    for path in _wpas_paths(wifi):
+def wpas_peer_path(ifpath: str, mac: str) -> str:
+    want = [int(x, 16) for x in mac.split(":")]
+    try:
+        for p in wprop(ifpath, WPAS_P2P_IF, "Peers") or []:
+            if list(wprop(p, WPAS_PEER, "DeviceAddress") or []) == want:
+                return p
+    except RuntimeError:
+        pass
+    return f"{ifpath}/Peers/{mac.replace(':', '').lower()}"
+
+
+def set_wfd_ies() -> None:
+    """Miracast-Kennung (Quelle, Port 7236) in die Wi-Fi-Direct-Frames; dasselbe setzt NetworkManager aus wfd-ies."""
+    data = [str(int(x, 16)) for x in WFD_IES.split(":")]
+    bus("set-property", WPAS, WPAS_ROOT, WPAS, "WFDIEs", "ay", str(len(data)), *data)
+
+
+class WpasMonitor:
+    """Signale von wpa_supplicant mitlesen (busctl monitor): Verhandlung, Gruppe, WPS, Fehler."""
+    WANT = ("GONegotiationSuccess", "GONegotiationFailure", "GONegotiationRequest", "GroupFormationFailure",
+            "GroupStarted", "GroupFinished", "WpsFailed", "ProvisionDiscoveryFailure", "InvitationResult")
+
+    def __init__(self):
+        self.events: list[tuple[str, dict]] = []
+        self.lock = threading.Lock()
+        self.proc = subprocess.Popen(["busctl", "--json=short", "monitor", WPAS], stdout=subprocess.PIPE,
+                                     stderr=subprocess.DEVNULL, text=True)
+        threading.Thread(target=self._reader, daemon=True).start()
+
+    def _reader(self) -> None:
+        for line in self.proc.stdout:
+            try:
+                m = json.loads(line)
+            except ValueError:
+                continue
+            if m.get("type") != "signal" or m.get("member") not in self.WANT:
+                continue
+            args = {}
+            data = (m.get("payload") or {}).get("data") or []
+            if data and isinstance(data[0], dict):
+                args = {k: (v.get("data") if isinstance(v, dict) else v) for k, v in data[0].items()}
+            elif data:
+                args = {"arg": data[0]}
+            with self.lock:
+                self.events.append((m["member"], args))
+            log.info("wpa_supplicant: %s %s", m["member"], {k: v for k, v in args.items() if k != "interface_object"} or "")
+
+    def take(self) -> list[tuple[str, dict]]:
+        with self.lock:
+            ev, self.events = self.events, []
+        return ev
+
+    def stop(self) -> None:
+        self.proc.terminate()
+
+
+def _group_ifname(args: dict, since: float) -> str:
+    obj = args.get("interface_object")
+    if obj:
         try:
-            cfg = bus("get-property", WPAS, path, WPAS_P2P_IF, "P2PDeviceConfig") or {}
-            old[path] = int(cfg.get("GOIntent", {}).get("data", 7))
-            bus("set-property", WPAS, path, WPAS_P2P_IF, "P2PDeviceConfig", "a{sv}", "1", "GOIntent", "u", str(intent))
-            log.info("GO-Wunsch %s: %d -> %d", path.rsplit("/", 1)[-1], old[path], intent)
-        except (RuntimeError, ValueError, AttributeError) as exc:
-            log.warning("GO-Wunsch nicht setzbar (%s): %s", path, exc)
-    if not old:
-        log.warning("wpa_supplicant über D-Bus nicht erreichbar, GO-Wunsch bleibt Standard (der Pi könnte Gruppenleiter werden)")
-    return old
+            name = wprop(obj, WPAS_IF, "Ifname")
+            if name:
+                return str(name)
+        except RuntimeError:
+            pass
+    for p in sorted(Path("/sys/class/net").glob("p2p-*")):                # Rückfall: neue Gruppenschnittstelle suchen
+        if "-dev-" not in p.name and p.stat().st_mtime >= since - 2.0:
+            return p.name
+    raise RuntimeError("Gruppenschnittstelle nicht gefunden")
 
 
-def restore_go_intent(old: dict[str, int]) -> None:
-    for path, val in old.items():
+def wpas_disconnect(ifpath: str) -> None:
+    for method in ("Cancel", "Disconnect"):
         try:
-            bus("set-property", WPAS, path, WPAS_P2P_IF, "P2PDeviceConfig", "a{sv}", "1", "GOIntent", "u", str(val))
+            bus("call", WPAS, ifpath, WPAS_P2P_IF, method)
         except RuntimeError:
             pass
 
 
-def p2p_down() -> None:
-    sh(["nmcli", "connection", "down", CON_NAME], timeout=20.0)
+def p2p_up_wpas(cfg: dict, peer: dict, mon: WpasMonitor) -> Link:
+    ifpath = wpas_p2p_path(str(cfg["wifi"]))
+    if not ifpath:
+        raise RuntimeError("wpa_supplicant über D-Bus nicht erreichbar")
+    set_wfd_ies()
+    peer_path = wpas_peer_path(ifpath, peer["mac"])
+    intent = int(os.environ.get("KITT_MIRACAST_INTENT", cfg.get("go_intent", 0)))
+    intent = min(15, max(0, intent))
+    go_freq = _channel_freq(int(cfg.get("go_channel", 6)))
+    pin = str(cfg.get("wps_pin", "") or "")
+    attempts = [(intent, 0)] + ([(15, go_freq)] if intent < 15 else [])
+    for n, (want, freq) in enumerate(attempts):
+        mon.take()
+        wpas_disconnect(ifpath)
+        args = ["peer", "o", peer_path, "wps_method", "s", "keypad" if pin else "pbc", "go_intent", "i", str(want),
+                "join", "b", "false", "persistent", "b", "false"]
+        if freq:
+            args += ["frequency", "i", str(freq)]
+        if pin:
+            args += ["pin", "s", pin]
+        log.info("Verbinde über wpa_supplicant: GO-Wunsch %d%s, WPS %s", want, f", Kanal {freq} MHz" if freq else "",
+                 "PIN" if pin else "Knopf (PBC)")
+        bus("call", WPAS, ifpath, WPAS_P2P_IF, "Connect", "a{sv}", str(len(args) // 3), *args)
+        t0 = time.monotonic()
+        end = t0 + float(cfg["connect_timeout"])
+        started: dict | None = None
+        fail: str | None = None
+        while time.monotonic() < end and started is None and fail is None:
+            time.sleep(0.5)
+            for member, a in mon.take():
+                if member == "GONegotiationFailure":
+                    st = int(a.get("status", -1))
+                    fail = f"Verhandlung abgelehnt, Status {st}: {P2P_STATUS.get(st, '?')}"
+                    if st == STATUS_BOTH_INTENT_0 and n + 1 < len(attempts):
+                        log.info("%s -> Versuch als Gruppenleiter", fail)
+                        fail = "retry"
+                elif member == "GroupFormationFailure":
+                    fail = f"Gruppe kam nicht zustande ({a.get('arg') or a})"
+                elif member == "WpsFailed":
+                    fail = f"WPS gescheitert ({a})"
+                elif member == "GroupStarted":
+                    started = a
+        if started is None and fail is None:
+            try:
+                role = str(wprop(ifpath, WPAS_P2P_IF, "Role") or "")
+            except RuntimeError:
+                role = ""
+            if role in ("GO", "client"):
+                started = {"role": role}
+            else:
+                fail = f"keine Antwort des Empfängers in {int(cfg['connect_timeout'])} s (Rolle '{role or 'device'}')"
+        if fail == "retry":
+            continue
+        if fail:
+            wpas_disconnect(ifpath)
+            raise RuntimeError(fail)
+        role = str(started.get("role", "client"))
+        ifname = _group_ifname(started, t0)
+        log.info("Gruppe steht: Pi ist %s, Schnittstelle %s", "Gruppenleiter" if role == "GO" else "Teilnehmer", ifname)
+        sh(["nmcli", "device", "set", ifname, "managed", "no"])
+        sh(["ip", "link", "set", ifname, "up"])
+        server: DhcpServer | None = None
+        try:
+            if role == "GO":
+                sh(["ip", "addr", "add", f"{GO_IP}/24", "dev", ifname], check=True)
+                server = DhcpServer(ifname, GO_IP)
+                server.start()
+                my_ip = GO_IP
+            else:
+                my_ip, bits, srv = dhcp_client(ifname, min(40.0, float(cfg["connect_timeout"])))
+                sh(["ip", "addr", "add", f"{my_ip}/{bits}", "dev", ifname], check=True)
+                log.info("IP %s/%d vom Gruppenleiter %s", my_ip, bits, srv)
+        except Exception:
+            if server:
+                server.stop()
+            wpas_disconnect(ifpath)
+            raise
+
+        def close(server=server, ifpath=ifpath):
+            if server:
+                server.stop()
+            wpas_disconnect(ifpath)
+
+        return Link(ifname, my_ip, role, close)
+    raise RuntimeError("Verbindung nicht möglich")
+
+
+def _channel_freq(ch: int) -> int:
+    if 1 <= ch <= 13:
+        return 2407 + 5 * ch
+    if 36 <= ch <= 177:
+        return 5000 + 5 * ch
+    return 2437
+
+
+# -- Mini-DHCP für die Gruppenschnittstelle (ohne Pakete, die es auf dem Pi vielleicht nicht gibt) -------------------
+DHCP_MAGIC = b"\x63\x82\x53\x63"
+
+
+def _dhcp_build(op: int, xid: int, mac: bytes, yiaddr: str, siaddr: str, opts: list[tuple[int, bytes]]) -> bytes:
+    head = struct.pack("!BBBBIHH4s4s4s4s16s64s128s", op, 1, 6, 0, xid, 0, 0x8000, b"\0" * 4, socket.inet_aton(yiaddr),
+                       socket.inet_aton(siaddr), b"\0" * 4, mac.ljust(16, b"\0"), b"\0" * 64, b"\0" * 128)
+    body = b"".join(bytes([c, len(v)]) + v for c, v in opts)
+    return head + DHCP_MAGIC + body + b"\xff"
+
+
+def _dhcp_parse(data: bytes) -> dict | None:
+    if len(data) < 240 or data[236:240] != DHCP_MAGIC:
+        return None
+    op, _, _, _, xid = struct.unpack("!BBBBI", data[:8])
+    opts: dict[int, bytes] = {}
+    i = 240
+    while i < len(data):
+        c = data[i]
+        if c == 0:
+            i += 1
+            continue
+        if c == 255 or i + 1 >= len(data):
+            break
+        ln = data[i + 1]
+        opts[c] = data[i + 2:i + 2 + ln]
+        i += 2 + ln
+    return {"op": op, "xid": xid, "ciaddr": socket.inet_ntoa(data[12:16]), "yiaddr": socket.inet_ntoa(data[16:20]),
+            "chaddr": data[28:34], "opts": opts, "type": opts.get(53, b"\0")[0]}
+
+
+def _dhcp_socket(ifname: str, port: int) -> socket.socket:
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, ifname.encode())
+    s.bind(("", port))
+    s.settimeout(1.0)
+    return s
+
+
+def dhcp_client(ifname: str, timeout: float) -> tuple[str, int, str]:
+    """IP vom Gruppenleiter holen (DISCOVER/OFFER/REQUEST/ACK, Antworten per Broadcast). Liefert (IP, Maskenbits, Server)."""
+    mac = bytes.fromhex(Path(f"/sys/class/net/{ifname}/address").read_text().strip().replace(":", ""))
+    s = _dhcp_socket(ifname, 68)
+    xid = random.getrandbits(32)
+    base = [(61, b"\x01" + mac), (12, b"KITT-Cart"), (55, bytes([1, 3, 51, 54]))]
+    end = time.monotonic() + timeout
+    next_send = 0.0
+    offer: tuple[str, bytes] | None = None
+    try:
+        while time.monotonic() < end:
+            if time.monotonic() >= next_send:
+                if offer is None:
+                    pkt = _dhcp_build(1, xid, mac, "0.0.0.0", "0.0.0.0", [(53, b"\x01")] + base)
+                else:
+                    pkt = _dhcp_build(1, xid, mac, "0.0.0.0", "0.0.0.0",
+                                      [(53, b"\x03"), (50, socket.inet_aton(offer[0])), (54, offer[1])] + base)
+                s.sendto(pkt, ("255.255.255.255", 67))
+                next_send = time.monotonic() + 3.0
+            try:
+                data, _ = s.recvfrom(1500)
+            except socket.timeout:
+                continue
+            p = _dhcp_parse(data)
+            if not p or p["op"] != 2 or p["xid"] != xid:
+                continue
+            if p["type"] == 2 and offer is None:
+                offer = (p["yiaddr"], p["opts"].get(54, b"\0\0\0\0"))
+                next_send = 0.0
+            elif p["type"] == 5 and offer:
+                mask = p["opts"].get(1, b"\xff\xff\xff\0")
+                bits = bin(int.from_bytes(mask, "big")).count("1")
+                return p["yiaddr"], bits, socket.inet_ntoa(offer[1])
+            elif p["type"] == 6:
+                offer, next_send = None, 0.0
+    finally:
+        s.close()
+    raise TimeoutError("kein DHCP-Angebot vom Gruppenleiter")
+
+
+class DhcpServer(threading.Thread):
+    """Winziger DHCP-Server, wenn der Pi die Gruppe leitet: eine Adresse je Gerät aus 192.168.49.10 ff."""
+
+    def __init__(self, ifname: str, my_ip: str):
+        super().__init__(daemon=True)
+        self.ifname, self.my_ip = ifname, my_ip
+        self.leases: dict[bytes, str] = {}
+        self.stop_ev = threading.Event()
+
+    def run(self) -> None:
+        try:
+            s = _dhcp_socket(self.ifname, 67)
+        except OSError as exc:
+            log.warning("DHCP-Server nicht startbar: %s", exc)
+            return
+        net = self.my_ip.rsplit(".", 1)[0]
+        with s:
+            while not self.stop_ev.is_set():
+                try:
+                    data, _ = s.recvfrom(1500)
+                except socket.timeout:
+                    continue
+                except OSError:
+                    break
+                p = _dhcp_parse(data)
+                if not p or p["op"] != 1 or p["type"] not in (1, 3):
+                    continue
+                ip = self.leases.setdefault(p["chaddr"], f"{net}.{10 + len(self.leases)}")
+                if p["type"] == 1:
+                    kind = b"\x02"
+                else:
+                    want = socket.inet_ntoa(p["opts"][50]) if 50 in p["opts"] else p["ciaddr"]
+                    kind = b"\x05" if want == ip else b"\x06"
+                    if kind == b"\x05":
+                        log.info("DHCP: %s bekommt %s", p["chaddr"].hex(":"), ip)
+                opts = [(53, kind), (54, socket.inet_aton(self.my_ip)), (51, (3600).to_bytes(4, "big")),
+                        (1, socket.inet_aton("255.255.255.0")), (3, socket.inet_aton(self.my_ip))]
+                s.sendto(_dhcp_build(2, p["xid"], p["chaddr"], ip if kind != b"\x06" else "0.0.0.0", self.my_ip, opts),
+                         ("255.255.255.255", 68))
+
+    def stop(self) -> None:
+        self.stop_ev.set()
 
 
 # -- Bildquelle -----------------------------------------------------------------------------------------------------
@@ -560,21 +867,26 @@ def run(cfg: dict, once: bool, max_seconds: float) -> int:
         def guard() -> bool:                                               # WLAN darf nicht wegfallen
             return (not was_up) or wlan_state(wifi)[0]
 
-        go_old: dict[str, int] = {}
+        link: Link | None = None
+        mon: WpasMonitor | None = None
         try:
             set_status(f"verbinde mit {peer['name']}")
-            intent = int(os.environ.get("KITT_MIRACAST_INTENT", cfg.get("go_intent", 0)))
-            go_old = set_go_intent(wifi, intent) if 0 <= intent <= 15 else {}
-            ipif, my_ip = p2p_up(cfg, peer)
-            log.info("Wi-Fi Direct steht: %s, eigene IP %s", ipif, my_ip)
+            if str(cfg.get("connect", "wpas")) == "nm":
+                link = p2p_up_nm(cfg, peer)
+            else:
+                mon = WpasMonitor()
+                link = p2p_up_wpas(cfg, peer, mon)
+            log.info("Wi-Fi Direct steht: %s, eigene IP %s (%s)", link.ipif, link.ip, link.role)
             for _ in range(5):                                             # die ersten Sekunden genau hinsehen
                 if not guard():
                     raise WlanConflict()
                 time.sleep(1.0)
-            serve(cfg, my_ip, stop, max_seconds, guard)
+            serve(cfg, link.ip, stop, max_seconds, guard)
             set_status("Sitzung beendet")
         except WlanConflict:
-            p2p_down()
+            if link:
+                link.close()
+                link = None
             sh(["nmcli", "device", "connect", wifi], timeout=40.0)
             set_status(f"ABGEBROCHEN: {wifi} hat die Verbindung verloren, sobald Wi-Fi Direct lief. Der Chip schafft "
                        "beides nicht gleichzeitig -> zweiter USB-WLAN-Stick für Miracast ([miracast] wifi = \"wlan1\").")
@@ -582,8 +894,10 @@ def run(cfg: dict, once: bool, max_seconds: float) -> int:
         except (RuntimeError, TimeoutError, ConnectionError, OSError, subprocess.TimeoutExpired) as exc:
             set_status(f"Fehler: {exc}")
         finally:
-            p2p_down()
-            restore_go_intent(go_old)
+            if link:
+                link.close()
+            if mon:
+                mon.stop()
         if once:
             return 0
         stop.wait(float(cfg["retry_seconds"]))
@@ -612,7 +926,10 @@ def main() -> int:
             print("  nichts gefunden (Empfänger an? Er zeigt dann den Bildschirm mit 530E1F_P2P)")
         return 0
     if args[0] == "stop":
-        p2p_down()
+        p2p_down_nm()
+        path = wpas_p2p_path(str(cfg["wifi"]))
+        if path:
+            wpas_disconnect(path)
         return 0
     if args[0] == "run":
         once = "--once" in args
