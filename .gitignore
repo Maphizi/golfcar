@@ -21,3 +21,5 @@ assets/sfx/raw/
 assets/sfx/real/
 # Bild- und Shader-Cache (visualizers/engine/images.py, Mesa)
 .cache/
+# Diagnosedateien (scripts/bt_diag.sh pusht sie nach origin/diag)
+diag/

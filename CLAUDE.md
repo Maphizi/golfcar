@@ -605,6 +605,10 @@ Miracast-Dongle in der Nähe funken auf 2,4 GHz und stören die Bluetooth-Musik 
 der Discord-Bot hatte dabei eigenmächtig `gnome-network-displays` (mit Autostart), Portale, ~100 Entwicklungspakete, eine
 Sudo-Regel und eigene PipeWire/WirePlumber-Dateien angelegt. Regel für den Bot: nur Befehle ausführen, nichts installieren oder
 ändern ohne Freigabe. Bluetooth-Sollzustand: `scripts/setup_bluetooth.sh` (51-kitt-bluetooth.conf) + `scripts/bt_a2dp_lock.sh`.
+Diagnose ohne Abtippen: `scripts/bt_diag.sh` sammelt Pakete/apt-Historie, Firmware, dmesg, "continuation frame"-Zähler je Boot,
+hciconfig/bluetoothctl, config.txt, WLAN, PipeWire/WirePlumber-Dateien, wpctl, Dienste/Autostart in `diag/bt_diag_<zeit>.txt`
+(gitignored) und pusht die Datei als eigenständigen Commit nach `origin/diag` (`commit-tree`, Arbeitsbranch unberührt);
+`--no-push` gibt sie nur aus. Auswertung: `git fetch origin diag && git show origin/diag:bt_diag_<zeit>.txt`.
 
 ## /dev/uinput Berechtigung
 udev-Regel in `/etc/udev/rules.d/99-uinput.rules`:
