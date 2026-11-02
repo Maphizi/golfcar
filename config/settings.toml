@@ -113,22 +113,3 @@ sdl_videodriver = "auto"
 # Um SD-Schreibzugriffe zu sparen, kann hier später ein tmpfs stehen, z. B. "/run/user/1000/kitt-logs".
 dir = "logs"
 level = "INFO"
-
-[miracast]
-# Bild drahtlos an einen Miracast-Empfänger (scripts/miracast.py, Einrichten/Test/Autostart: scripts/setup_miracast.sh).
-# Wi-Fi Direct über NetworkManager neben dem normalen WLAN; fällt wlan0 dabei aus, bricht der Sender sofort ab.
-peer = "530E1F"            # Name (Teil davon) oder MAC des Empfängers ("HD Wireless Screen Mirroring" zeigt 530E1F_P2P)
-wifi = "wlan0"             # WLAN-Chip für Wi-Fi Direct; mit zweitem USB-WLAN-Stick z. B. "wlan1"
-user = ""                  # Benutzer der labwc-Session (leer = Besitzer von UID 1000)
-width = 1280               # Wunschauflösung; der Empfänger muss sie können, sonst die nächstbeste
-height = 720
-fps = 30
-kbps = 4000                # H.264-Datenrate (Software-Encoder, der Pi 5 hat keinen Hardware-Encoder)
-audio = "silent"           # "silent" = stille Tonspur (viele Empfänger brauchen eine), "none" = ohne Ton
-retry_seconds = 20         # Dienst: so lange warten bis zum nächsten Versuch
-connect_timeout = 30         # je Anlauf (2 Anläufe); der ganze Test muss ins Zeitfenster des Bots passen
-capture = ""               # eigener Aufnahmebefehl statt wf-recorder ({w}, {h}, {fps}, {kbps}); MPEG-TS auf stdout
-connect = "wpas"           # "wpas" = direkt über wpa_supplicant (Rolle wählbar), "nm" = über NetworkManager (immer GO-Wunsch 7)
-go_intent = 0              # Wunsch, Wi-Fi-Direct-Gruppenleiter zu werden (0 = Empfänger leitet, 15 = Pi leitet; Test: KITT_MIRACAST_INTENT=N)
-go_channel = 6             # Kanal, wenn der Pi doch leiten muss (2,4 GHz, der Dongle lauscht auf 6)
-wps_pin = ""               # leer = WPS-Knopf (PBC); zeigt der Empfänger eine PIN, hier eintragen
