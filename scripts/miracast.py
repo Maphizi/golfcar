@@ -58,7 +58,7 @@ EXIT_WLAN_CONFLICT = 3
 
 log = logging.getLogger("miracast")
 DEFAULTS = {"peer": "530E1F", "wifi": "wlan0", "user": "", "width": 1280, "height": 720, "fps": 30, "kbps": 4000,
-            "audio": "silent", "retry_seconds": 20, "connect_timeout": 45, "capture": ""}
+            "audio": "silent", "retry_seconds": 20, "connect_timeout": 45, "capture": "", "go_intent": 0}
 
 
 def load_cfg() -> dict:
@@ -560,7 +560,8 @@ def run(cfg: dict, once: bool, max_seconds: float) -> int:
         go_old: dict[str, int] = {}
         try:
             set_status(f"verbinde mit {peer['name']}")
-            go_old = set_go_intent(wifi, 0)
+            intent = int(os.environ.get("KITT_MIRACAST_INTENT", cfg.get("go_intent", 0)))
+            go_old = set_go_intent(wifi, intent) if 0 <= intent <= 15 else {}
             ipif, my_ip = p2p_up(cfg, peer)
             log.info("Wi-Fi Direct steht: %s, eigene IP %s", ipif, my_ip)
             for _ in range(5):                                             # die ersten Sekunden genau hinsehen

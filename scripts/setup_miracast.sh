@@ -97,13 +97,17 @@ case "$MODE" in
     t0="$(date '+%Y-%m-%d %H:%M:%S')"
     # nur für die Testdauer genauer protokollieren (ändert keine Verbindung, danach zurück auf Standard)
     sudo nmcli general logging level DEBUG domains WIFI,SUPPLICANT 2>/dev/null
+    sudo busctl set-property fi.w1.wpa_supplicant1 /fi/w1/wpa_supplicant1 fi.w1.wpa_supplicant1 DebugLevel s debug 2>/dev/null
     sudo -E python3 "$ROOT/scripts/miracast.py" run --once --seconds "$SECS"
     rc=$?
     guard_off
     sudo nmcli general logging level INFO domains DEFAULT 2>/dev/null
+    sudo busctl set-property fi.w1.wpa_supplicant1 /fi/w1/wpa_supplicant1 fi.w1.wpa_supplicant1 DebugLevel s info 2>/dev/null
     echo "== Wi-Fi Direct im Systemprotokoll (NetworkManager, wpa_supplicant) =="
     sudo journalctl --no-pager -o short-precise --since "$t0" -u NetworkManager -u wpa_supplicant 2>/dev/null \
-      | grep -iE "p2p|wfd|wps|go-neg|group|kitt-miracast|peer|freq|fail|error|timeout|status" | tail -n 80 | sed 's/^/  /'
+      | grep -iE "go.?neg|intent|p2p-|invitation|provision|wps|group.formation|group-started|status=|kitt-miracast|fail|error|timeout|freq=|oper|listen|channel" \
+      | grep -viE "probe re(q|sp)|scan res|bss " | tail -n 120 | sed 's/^/  /' | tee "$ROOT/logs/miracast_journal.txt"
+    echo "(gespeichert in logs/miracast_journal.txt)"
     echo "== WLAN-Verbindung =="
     $IW dev "$WIFI" link 2>/dev/null | grep -E "Connected|freq|SSID" | sed 's/^/  /'
     echo "Ende (Code $rc). Status: $(cat "$ROOT/logs/miracast_status.txt" 2>/dev/null)"

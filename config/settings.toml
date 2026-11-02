@@ -128,3 +128,4 @@ audio = "silent"           # "silent" = stille Tonspur (viele Empfänger brauche
 retry_seconds = 20         # Dienst: so lange warten bis zum nächsten Versuch
 connect_timeout = 45
 capture = ""               # eigener Aufnahmebefehl statt wf-recorder ({w}, {h}, {fps}, {kbps}); MPEG-TS auf stdout
+go_intent = 0              # Wunsch, Wi-Fi-Direct-Gruppenleiter zu werden (0 = Empfänger leitet, 15 = Pi leitet; Test: KITT_MIRACAST_INTENT=N)
