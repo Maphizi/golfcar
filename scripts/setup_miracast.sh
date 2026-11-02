@@ -9,7 +9,7 @@
 #   scripts/setup_miracast.sh --test [S]  ein Versuch, S Sekunden senden (Standard 60). Sicherheitsnetz: nach 5 min
 #                                          baut ein Timer Wi-Fi Direct ab und verbindet wlan0 neu, falls etwas hängt.
 #   scripts/setup_miracast.sh --enable    Autostart an (Dienst sucht den Empfänger, verbindet, bei Abbruch neu)
-#   scripts/setup_miracast.sh --disable   Autostart aus, Verbindung trennen
+#   scripts/setup_miracast.sh --disable   Autostart aus, alle Reste beenden (Prozesse, Timer, P2P-Suche, Protokollstufen)
 #   scripts/setup_miracast.sh --status    Dienst, letzte Meldungen, Verbindungen
 #   scripts/setup_miracast.sh --undo      Dienst und Wi-Fi-Direct-Profil entfernen (Pakete bleiben)
 #
@@ -101,6 +101,18 @@ guard_on() {
 }
 guard_off() { sudo systemctl stop kitt-miracast-guard.timer 2>/dev/null; true; }
 
+quiet() {
+  # alles aus, was ein Test oder der Dienst hinterlassen kann: Dienst, Timer, Prozesse, P2P-Suche, Protokollstufen
+  sudo systemctl disable --now kitt-miracast 2>/dev/null; guard_off
+  sudo pkill -f "scripts/miracast.py" 2>/dev/null; sudo pkill -f "busctl.*monitor fi.w1.wpa_supplicant1" 2>/dev/null
+  sudo nmcli connection down kitt-miracast 2>/dev/null
+  P2PDEV="$(nmcli -t -f DEVICE,TYPE device 2>/dev/null | awk -F: '$2=="wifi-p2p"{print $1; exit}')"
+  [ -n "$P2PDEV" ] && sudo busctl call org.freedesktop.NetworkManager "$(busctl call org.freedesktop.NetworkManager /org/freedesktop/NetworkManager org.freedesktop.NetworkManager GetDeviceByIpIface s "$P2PDEV" 2>/dev/null | awk '{print $2}' | tr -d '"')" org.freedesktop.NetworkManager.Device.WifiP2P StopFind 2>/dev/null
+  sudo nmcli general logging level INFO domains DEFAULT 2>/dev/null
+  sudo busctl set-property fi.w1.wpa_supplicant1 /fi/w1/wpa_supplicant1 fi.w1.wpa_supplicant1 DebugLevel s info 2>/dev/null
+  true
+}
+
 case "$MODE" in
   check) check ;;
   install) install_unit ;;
@@ -135,15 +147,20 @@ case "$MODE" in
     nmcli -f DEVICE,STATE,CONNECTION device | grep -E "^$WIFI " | sed 's/^/WLAN: /'
     ;;
   enable) [ -f "$UNIT" ] || install_unit; sudo systemctl enable --now kitt-miracast && echo "Autostart an." ;;
-  disable) sudo systemctl disable --now kitt-miracast 2>/dev/null; sudo nmcli connection down kitt-miracast 2>/dev/null; echo "Autostart aus." ;;
+  disable) quiet; echo "Autostart aus, Reste beendet, Protokollstufen zurück." ;;
   status)
     echo "Dienst: $(systemctl is-enabled kitt-miracast 2>/dev/null || echo fehlt) / $(systemctl is-active kitt-miracast 2>/dev/null)"
+    echo "Sicherheitsnetz-Timer: $(systemctl is-active kitt-miracast-guard.timer 2>/dev/null)"
+    echo "Prozesse: $(pgrep -af 'miracast.py|wf-recorder|busctl.*monitor' | sed 's/^/ /' | tr '\n' ';' || echo keine)"
+    echo "NM-Protokoll: $(nmcli general logging 2>/dev/null | tail -n +2 | tr -s ' ' | tr '\n' ' ')"
+    echo "wpa_supplicant-Protokoll: $(sudo busctl get-property fi.w1.wpa_supplicant1 /fi/w1/wpa_supplicant1 fi.w1.wpa_supplicant1 DebugLevel 2>/dev/null)"
+    echo "P2P-Suche im Journal seit Start: $(sudo journalctl -b -u wpa_supplicant --no-pager 2>/dev/null | grep -ci 'p2p' ) Zeilen"
     [ -f "$ROOT/logs/miracast_status.txt" ] && echo "Status: $(cat "$ROOT/logs/miracast_status.txt")"
     nmcli -f DEVICE,TYPE,STATE,CONNECTION device | sed 's/^/  /'
     tail -n 15 "$ROOT/logs/miracast.log" 2>/dev/null | sed 's/^/  /'
     ;;
   undo)
-    sudo systemctl disable --now kitt-miracast 2>/dev/null
+    quiet
     sudo rm -f "$UNIT" "$NMCONF"; sudo systemctl daemon-reload; sudo nmcli general reload conf 2>/dev/null
     sudo nmcli connection delete kitt-miracast 2>/dev/null
     echo "Dienst und Profil entfernt."

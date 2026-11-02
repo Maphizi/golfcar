@@ -622,6 +622,9 @@ Log `logs/miracast.log`, Strom-Log `logs/miracast_stream.log`). `setup_miracast.
 Kombinationen aus `iw` in /usr/sbin, Programme, Suche), `--install`, `--test [S]` (Sicherheitsnetz-Timer `kitt-miracast-guard`
 5 min; NetworkManager WIFI/SUPPLICANT und wpa_supplicant `DebugLevel debug` nur für die Testdauer; volles Journal in
 `logs/miracast_journal.txt`, Kurzfassung ohne Lausch-/Suchzeilen, `dmesg brcmfmac`), `--enable/--disable/--status/--undo`.
+`--disable`/`--undo` rufen `quiet()`: Dienst, Timer, `miracast.py`, `busctl monitor`, P2P-Suche und die Protokollstufen (NM INFO,
+wpa_supplicant info) zurück; `--status` zeigt genau diese Reste. Ein laufender Dienst oder Test sucht alle 20 s per P2P auf wlan0 und
+geht dabei vom Kanal: Musik vom Handy (Spotify Connect/AirPlay) stockt dann, SSH/Tailscale hakt.
 `KITT_MIRACAST_DEBUG=1` zeigt jede RTSP-Nachricht. Zweiter USB-WLAN-Stick: `[miracast] wifi = "wlan1"`.
 
 ## /dev/uinput Berechtigung
