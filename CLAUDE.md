@@ -128,6 +128,16 @@ Jeder Modus ist ein eigener Prozess; die Zeit bis zum ersten Bild steht im Log `
 `update.sh` vor). Der Prozessmanager setzt `MESA_SHADER_CACHE_DIR=.cache/mesa`, damit V3D die Shader nur einmal compiliert.
 Die Engine ruft `pygame.display.init()`/`font.init()` statt `pygame.init()` (kein SDL-Audio/Mixer). Launcher-Log: "Beende
 Modus ... / Modus beendet" zeigt die Stoppzeit (`stop_timeout` in modes.toml).
+Nahtloser Wechsel: `ProcessManager.start()` startet den neuen Modus, während der alte weiterläuft (`_old`, sein Bild bleibt
+stehen; Log "... bleibt stehen bis zum ersten Bild"). Der neue bekommt das Schreibende einer Pipe als `KITT_READY_FD`
+(`pass_fds`) und meldet nach dem ersten `flip()` über `launcher/ready.py` `signal_ready()` (Engine `__main__.py`,
+`kitt/ui/persona.py`, `kitt/ui/app.py`); `pm.tick()` in der Hauptschleife beendet dann den Vorgänger (Log "Vorgänger X geht
+(erstes Bild nach N s)"), spätestens nach `ready_timeout` 20 s (modes.toml, oben) oder wenn der neue vorher stirbt. Unter labwc
+erscheint das neue Fenster erst mit seinem ersten Bild über dem alten, daher kein Schwarz dazwischen. `hold = false` je Modus
+(`gaming`, `menu`) = wie früher erst beenden, dann starten; ein solcher Modus wird auch nie gehalten. Ein weiterer Wechsel
+während des Ladens beendet den gehaltenen Vorgänger sofort, der ladende wird zum Vorgänger. Ohne `KITT_READY_FD`
+(Start von Hand, Tests) ist `signal_ready()` wirkungslos. Test der Logik ohne Pi: Prozessmanager mit Platzhalter-Prozessen
+(siehe Commit "Nahtloser Moduswechsel").
 
 ## Lagerfeuer "Rast am Rand der Galaxis" (`visualizers/scenes/campfire.py`, Space-Taxi Taste 6)
 Foto `assets/campfire/scene.png` (Glut OHNE Flammen; Bot-Bilder `assets/campfire/raw/`, Prompts `docs/campfire_plan.md`,

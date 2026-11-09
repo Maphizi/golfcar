@@ -1,6 +1,9 @@
 # Modi des Launchers. Jeder Modus ist ein eigener Prozess.
 # Platzhalter: {python} = Interpreter des Launchers, {root} = Projektverzeichnis, {home} = Home-Verzeichnis
 # stop_timeout: Sekunden zwischen SIGTERM und SIGKILL beim Umschalten
+# hold (Standard true): beim Wechsel bleibt der alte Modus stehen, bis der neue sein erstes Bild gemeldet hat
+#   (KITT_READY_FD, launcher/ready.py); false = alter Modus wird wie früher erst beendet (Emulatoren, alte Menüs)
+ready_timeout = 20   # Sekunden, nach denen der alte Modus auch ohne Meldung des neuen beendet wird
 
 [modes.boot]
 label = "START"
@@ -19,6 +22,7 @@ label = "HAUPTMENÜ (ALT)"
 command = ["{python}", "-m", "launcher.home_screen"]
 cwd = "{root}"
 stop_timeout = 2
+hold = false
 
 [modes.gaming]
 label = "HOLO-ARCADE"
@@ -27,6 +31,7 @@ cwd = "{home}"
 stop_timeout = 8
 # Backend siehe scripts/run_gaming.sh: "xwayland" (Standard) oder "wayland"
 env = { KITT_GAMING_BACKEND = "xwayland" }
+hold = false
 
 [modes.viz_psychedelic]
 label = "HYPERRAUM"

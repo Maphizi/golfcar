@@ -16,7 +16,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from launcher import config, logsetup  # noqa: E402
+from launcher import config, logsetup, ready  # noqa: E402
 from visualizers.engine.analysis import Analyzer  # noqa: E402
 from visualizers.engine.audio_capture import AudioCapture  # noqa: E402
 
@@ -191,6 +191,7 @@ def main() -> int:
             if not first_logged:                       # frames wird je fps-Log zurückgesetzt, daher eigenes Flag
                 first_logged = True
                 phase("erstes Bild")
+                ready.signal_ready()                   # Launcher darf den Vorgänger jetzt beenden
                 log.info("Start %s: %s (gesamt %.1f s ab main)", args.scene, ", ".join(phases), time.monotonic() - t_main)
             if now - last_log >= log_interval:
                 fps = frames / (now - last_log)

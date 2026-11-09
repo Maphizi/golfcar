@@ -194,9 +194,7 @@ class Launcher:
         if self.pm.current and self.pm.current.name == mode and self.pm.is_running():
             log.info("Modus %s läuft bereits, ignoriert", mode)
             return mode
-        if self.pm.is_running():
-            self.pm.stop()
-        ok = self.pm.start(mode, {"KITT_THEME": theme.current_name()})
+        ok = self.pm.start(mode, {"KITT_THEME": theme.current_name()})   # Vorgänger bleibt stehen, bis der neue sein erstes Bild meldet
         if not ok and mode != HOME:
             log.warning("Fallback auf Home")
             self.pm.start(HOME)
@@ -360,6 +358,7 @@ class Launcher:
                 except Exception:
                     log.exception("Fehler bei Action %s", action)
             self._attract_tick()
+            self.pm.tick()                     # Vorgänger beenden, sobald der neue Modus bereit ist
             if self.led_back_at is not None and time.monotonic() >= self.led_back_at:
                 self.led_back_at = None
                 try:

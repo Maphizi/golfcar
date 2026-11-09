@@ -16,6 +16,7 @@ import numpy as np
 
 from kitt import config as kcfg
 from launcher import config as lcfg
+from launcher import ready
 from visualizers.engine.analysis import Analyzer
 
 log = logging.getLogger("kitt.ui")
@@ -153,6 +154,7 @@ class KittUI:
         t0 = time.monotonic()
         last_log = t0
         frames = 0
+        first_frame_done = False
         shot_done = False
         under_launcher = bool(os.environ.get("KITT_MODE"))
         rc = 0
@@ -187,6 +189,9 @@ class KittUI:
                     shot_done = True
                 pygame.display.flip()
                 frames += 1
+                if not first_frame_done:
+                    first_frame_done = True
+                    ready.signal_ready()           # Launcher darf den Vorgänger jetzt beenden
                 if now - last_log >= 10:
                     log.info("fps %.1f state=%s rms=%.2f", frames / (now - last_log), state, f.rms)
                     last_log, frames = now, 0
