@@ -625,6 +625,12 @@ Verbindung reißt alle ~1 min mit "Connection Timeout" (btmon), WirePlumber "err
 D-Bus-Datei `/etc/dbus-1/system.d/org.freedesktop.miracle.conf`) und um 19:36 die WLAN-Profile angefasst; um 00:02 wurde
 PipeWire 1.4.2 rpt3 -> rpt4 aktualisiert (`setup_bluetooth.sh`). `scripts/bt_fix.sh` entfernt miraclecast restlos (`--dry` zeigt nur).
 
+## Sitzung und Pi-Leiste (`scripts/session_start.sh`)
+Die Cart-Sitzung ist labwc mit eigener Konfiguration (`config/labwc/`), ohne den normalen Pi-Desktop. `session_start.sh`
+startet Hintergrund (swaybg), seit 17.11. die Pi-Leiste `wf-panel-pi` (Rückfall `lxpanel`; WLAN-, Bluetooth- und
+Lautstärkesymbol) und den Launcher-Dienst. Die Leiste liegt auf dem Desktop oben; Vollbild-Szenen decken sie ab.
+Aus: `KITT_NO_PANEL=1` in der Umgebung der Sitzung. Von Hand: `wf-panel-pi &` / `pkill wf-panel-pi`.
+
 ## /dev/uinput Berechtigung
 udev-Regel in `/etc/udev/rules.d/99-uinput.rules`:
 ```
