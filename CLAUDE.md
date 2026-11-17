@@ -625,6 +625,14 @@ Verbindung reißt alle ~1 min mit "Connection Timeout" (btmon), WirePlumber "err
 D-Bus-Datei `/etc/dbus-1/system.d/org.freedesktop.miracle.conf`) und um 19:36 die WLAN-Profile angefasst; um 00:02 wurde
 PipeWire 1.4.2 rpt3 -> rpt4 aktualisiert (`setup_bluetooth.sh`). `scripts/bt_fix.sh` entfernt miraclecast restlos (`--dry` zeigt nur).
 
+## Neuinstallation (`scripts/install.sh`, `docs/NEUINSTALLATION.md`)
+Frisches Raspberry Pi OS Trixie (64-bit, Desktop, Benutzer `maphizi`): `scripts/install.sh [--kitt] [--retropie]
+[--tailscale] [--wifi-5ghz] [--all] [--no-upgrade]` ruft in einem Durchlauf apt full-upgrade, `setup_phase2.sh`, Werkzeuge
+(mpv, yt-dlp, evtest), uinput-Regel, `setup_bluetooth.sh` + `bt_a2dp_lock.sh`, `setup_cast.sh`, `setup_phase7.sh` +
+`announce_build.sh`, optional `setup_phase5/6.sh` (Sprachassistent) und `setup_phase3.sh` (RetroPie), Tailscale aus der
+Paketquelle, Klänge/Bild-Cache und `autostart_enable.sh`; Protokoll `logs/install.log`, idempotent (bei Abbruch erneut starten).
+Danach von Hand: Neustart, Soundboks koppeln, WLED-Adresse, Spotify/AirPlay am Handy (Liste in der Doku).
+
 ## Sitzung und Pi-Leiste (`scripts/session_start.sh`)
 Die Cart-Sitzung ist labwc mit eigener Konfiguration (`config/labwc/`), ohne den normalen Pi-Desktop. `session_start.sh`
 startet Hintergrund (swaybg), seit 17.11. die Pi-Leiste `wf-panel-pi` (Rückfall `lxpanel`; WLAN-, Bluetooth- und
