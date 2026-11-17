@@ -2,4 +2,4 @@
 # Action an den laufenden Launcher senden, z. B.:  kittctl viz_crt  |  kittctl home  |  kittctl state
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
-exec "$ROOT/.venv/bin/python" -m launcher.ctl "$@"
+cd "$ROOT" && exec "$ROOT/.venv/bin/python" -m launcher.ctl "$@"   # aus jedem Verzeichnis aufrufbar
