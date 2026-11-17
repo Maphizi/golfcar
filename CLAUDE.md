@@ -138,6 +138,10 @@ erscheint das neue Fenster erst mit seinem ersten Bild über dem alten, daher ke
 während des Ladens beendet den gehaltenen Vorgänger sofort, der ladende wird zum Vorgänger. Ohne `KITT_READY_FD`
 (Start von Hand, Tests) ist `signal_ready()` wirkungslos. Test der Logik ohne Pi: Prozessmanager mit Platzhalter-Prozessen
 (siehe Commit "Nahtloser Moduswechsel").
+Startzeiten auswerten ohne Abtippen: `scripts/start_times.sh` sammelt je Szene die letzten "Start ..."-Zeilen mit Phasen, die
+langsamsten Starts, die Wechselzeilen des Launchers, Zustand und Beschreibbarkeit von `.cache/mesa` (Shader) und `.cache/img`
+(Bilder), Umgebung des laufenden Modus, Lesetempo des Datenträgers und die Python-Importzeit in `diag/start_times_<zeit>.txt`
+und pusht sie nach `origin/diag` (`--no-push` = nur ausgeben).
 
 ## Lagerfeuer "Rast am Rand der Galaxis" (`visualizers/scenes/campfire.py`, Space-Taxi Taste 6)
 Foto `assets/campfire/scene.png` (Glut OHNE Flammen; Bot-Bilder `assets/campfire/raw/`, Prompts `docs/campfire_plan.md`,
