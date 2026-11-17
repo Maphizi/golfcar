@@ -19,4 +19,8 @@
   <windowRules>
     <windowRule identifier="*" serverDecoration="no" />
   </windowRules>
+  <!-- DPMS deaktiviert: Bildschirm geht nie automatisch aus -->
+  <idle>
+    <dpms timeoutSecs="0" />
+  </idle>
 </labwc_config>
