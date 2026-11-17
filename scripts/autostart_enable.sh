@@ -6,6 +6,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LDM=/etc/lightdm/lightdm.conf
+rm -f ~/.config/autostart/kitt-launcher.desktop     # Desktop-Modus (autostart_desktop.sh) aus
 echo "== Pakete =="
 sudo apt-get install -y -qq swaybg 2>&1 | tail -1 || true
 echo "== Session-Datei =="

@@ -638,6 +638,12 @@ Die Cart-Sitzung ist labwc mit eigener Konfiguration (`config/labwc/`), ohne den
 startet Hintergrund (swaybg), seit 17.11. die Pi-Leiste `wf-panel-pi` (Rückfall `lxpanel`; WLAN-, Bluetooth- und
 Lautstärkesymbol) und den Launcher-Dienst. Die Leiste liegt auf dem Desktop oben; Vollbild-Szenen decken sie ab.
 Aus: `KITT_NO_PANEL=1` in der Umgebung der Sitzung. Von Hand: `wf-panel-pi &` / `pkill wf-panel-pi`.
+Desktop-Modus (`scripts/autostart_desktop.sh`, seit 17.11. der Normalfall am Cart): lightdm meldet im normalen Pi-Desktop
+(`rpd-labwc`) an, `~/.config/autostart/kitt-launcher.desktop` ruft `session_start.sh --desktop` (kein eigener Hintergrund,
+keine eigene Leiste, nur Umgebung an systemd und `kitt-launcher.service` neu starten). Taste 9 / ESC / `kittctl quit` beendet den
+Launcher mit Exit 0, der Dienst bleibt aus (`Restart=on-failure`), der Desktop liegt frei; wieder starten über das
+Desktop-Symbol/Menü "KITT-Cart" (`~/.local/share/applications/kitt-cart.desktop`) oder `systemctl --user restart kitt-launcher`.
+`autostart_enable.sh` (reine Cart-Sitzung) und `autostart_disable.sh` entfernen den Desktop-Autostart wieder.
 
 ## /dev/uinput Berechtigung
 udev-Regel in `/etc/udev/rules.d/99-uinput.rules`:
