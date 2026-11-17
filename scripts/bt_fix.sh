@@ -32,6 +32,24 @@ if pgrep -f 'miracle-(wifid|dispd|sinkctl|wifictl)' >/dev/null; then
   [ "$DRY" = 1 ] || sudo pkill -f 'miracle-(wifid|dispd|sinkctl|wifictl)'
 fi
 
+say "== Miracast-Wächter des Bots (kitt-miracast als Benutzerdienst, gnome-network-displays, sudo-Regel für wpa_cli) =="
+if systemctl --user list-unit-files --no-legend 2>/dev/null | grep -q '^kitt-miracast'; then
+  say "  Benutzerdienst kitt-miracast: $(systemctl --user is-active kitt-miracast 2>/dev/null)"
+  [ "$DRY" = 1 ] || systemctl --user disable --now kitt-miracast 2>/dev/null; removed=$((removed+1))
+fi
+rm_path "$HOME/.config/systemd/user/kitt-miracast.service" /etc/systemd/system/kitt-miracast.service \
+        "$HOME/.config/autostart/gnome-network-displays.desktop" /etc/sudoers.d/maphizi-wpa_cli
+if pgrep -f 'gnome-network-displays|miracast_watch' >/dev/null; then
+  pgrep -af 'gnome-network-displays|miracast_watch' | sed 's/^/  läuft: /'
+  [ "$DRY" = 1 ] || pkill -f 'gnome-network-displays|miracast_watch'; removed=$((removed+1))
+fi
+sudo -n /usr/sbin/wpa_cli -i p2p-dev-wlan0 p2p_stop_find >/dev/null 2>&1 || true
+if dpkg-query -W -f='${db:Status-Abbrev}' gnome-network-displays 2>/dev/null | grep -q '^ii'; then
+  say "  Paket gnome-network-displays ist installiert"
+  [ "$DRY" = 1 ] || { sudo apt-get purge -y -qq gnome-network-displays xdg-desktop-portal-wlr 2>&1 | tail -1; sudo apt-get autoremove -y -qq 2>&1 | tail -1; }
+  removed=$((removed+1))
+fi
+
 say "== miraclecast: Dateien =="
 rm_path /usr/local/bin/miracle-wifid /usr/local/bin/miracle-dispd /usr/local/bin/miracle-sinkctl /usr/local/bin/miracle-wifictl \
         /usr/local/bin/miracle-omxplayer /usr/local/bin/miracle-gst /usr/local/bin/gstplayer /usr/local/bin/uibc-viewer \

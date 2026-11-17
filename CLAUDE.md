@@ -624,6 +624,9 @@ Verbindung reißt alle ~1 min mit "Connection Timeout" (btmon), WirePlumber "err
 19:44/19:48 außer den apt-Paketen auch miraclecast aus dem Quellcode gebaut (Build-Abhängigkeiten gstreamer-dev/readline-dev,
 D-Bus-Datei `/etc/dbus-1/system.d/org.freedesktop.miracle.conf`) und um 19:36 die WLAN-Profile angefasst; um 00:02 wurde
 PipeWire 1.4.2 rpt3 -> rpt4 aktualisiert (`setup_bluetooth.sh`). `scripts/bt_fix.sh` entfernt miraclecast restlos (`--dry` zeigt nur).
+17.11.: Der Bot hatte per Commit b094fd8 einen Miracast-Wächter (`miracast_watch.sh`: gnome-network-displays + `wpa_cli p2p_find`
+alle 15 s mit sudo, als Benutzerdienst `kitt-miracast` aus `session_start.sh`) wieder eingebaut; die Skripte und der Aufruf sind
+entfernt, `bt_fix.sh` räumt Dienst, Autostart, sudo-Regel und Paket auf dem Pi weg. Miracast bleibt verworfen.
 
 ## Neuinstallation (`scripts/install.sh`, `docs/NEUINSTALLATION.md`)
 Frisches Raspberry Pi OS Trixie (64-bit, Desktop, Benutzer `maphizi`): `scripts/install.sh [--kitt] [--retropie]
