@@ -13,3 +13,5 @@ fi
 systemctl --user import-environment WAYLAND_DISPLAY DISPLAY XDG_SESSION_TYPE XDG_CURRENT_DESKTOP XDG_RUNTIME_DIR 2>/dev/null
 systemctl --user reset-failed kitt-launcher.service 2>/dev/null
 systemctl --user restart kitt-launcher.service
+# Erster Start jeder Szene nach dem Boot: alles Nötige mit niedrigster Priorität in den Seitencache lesen (scripts/warm_pagecache.sh)
+( sleep 8; ionice -c3 nice -n19 "$ROOT/scripts/warm_pagecache.sh" ) >/dev/null 2>&1 &

@@ -142,6 +142,10 @@ Startzeiten auswerten ohne Abtippen: `scripts/start_times.sh` sammelt je Szene d
 langsamsten Starts, die Wechselzeilen des Launchers, Zustand und Beschreibbarkeit von `.cache/mesa` (Shader) und `.cache/img`
 (Bilder), Umgebung des laufenden Modus, Lesetempo des Datenträgers und die Python-Importzeit in `diag/start_times_<zeit>.txt`
 und pusht sie nach `origin/diag` (`--no-push` = nur ausgeben).
+Erster Start nach dem Boot langsam, danach schnell = kalter Seitencache der SD-Karte (Python-Pakete, Shader-Cache, npy-Bilder).
+`scripts/warm_pagecache.sh` liest daher 8 s nach dem Sitzungsstart (aus `session_start.sh`, `ionice -c3 nice -n19`) `.venv/lib`,
+`.cache/mesa`, `.cache/img`, Code, Klänge, Bilder und Stimmen einmal in den Speicher (Log `logs/warm_pagecache.log`,
+`--status` zeigt mit vmtouch den Anteil im Speicher). Danach ist der erste Start jeder Szene so schnell wie der zweite.
 
 ## Lagerfeuer "Rast am Rand der Galaxis" (`visualizers/scenes/campfire.py`, Space-Taxi Taste 6)
 Foto `assets/campfire/scene.png` (Glut OHNE Flammen; Bot-Bilder `assets/campfire/raw/`, Prompts `docs/campfire_plan.md`,
